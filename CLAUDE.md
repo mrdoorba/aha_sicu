@@ -33,6 +33,9 @@
 1. Create/switch to `feature` branch before any work
 2. Commit frequently with atomic commits on `feature`
 3. When milestone reached, merge `feature` → `develop`
-4. Only touch `main` when user explicitly requests production deployment
+4. **Delete the feature branch** immediately after successful merge
+5. Only touch `main` when user explicitly requests production deployment
 
 **Proactive Commits:** After completing any logical unit of work (file created, feature done, bug fixed), commit immediately. Don't wait for user to ask.
+
+**Branch Cleanup:** Always delete `feature/*` branches after merging. Keep the repository clean - no stale branches.
