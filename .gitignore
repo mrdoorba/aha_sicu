@@ -56,6 +56,12 @@ override.tf.json
 *~
 .DS_Store
 
+# AI Tools
+.agent/
+.claude/
+.cursor/
+.gemini/
+
 # Firebase
 .firebase/
 firebase-debug.log
