@@ -1257,8 +1257,9 @@ SSE Event (if applicable) → useSSE hook → Other users' UI
 **Important Gaps:** None identified
 
 **Minor Gaps:**
-- No UX specification (acceptable for "function over form" MVP)
 - Calculator formula details are implementation, not architecture
+
+**Note:** UX Design Specification (`ux-design-specification.md`) has been created and provides comprehensive UI/UX guidance including design system (shadcn/ui), component patterns, user journeys, and accessibility requirements.
 
 **Future Enhancements:**
 - Add Sentry error tracking when needed
