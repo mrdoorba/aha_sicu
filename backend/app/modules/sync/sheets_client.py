@@ -37,19 +37,27 @@ class GoogleSheetsClient:
             self._service = build("sheets", "v4", credentials=creds)
         return self._service
 
-    async def fetch_brands_from_sheet(self) -> list[dict[str, Any]]:
-        """Fetch brand data from Google Sheet with exponential backoff retry.
+    async def fetch_sheet_data(
+        self,
+        spreadsheet_id: str,
+        range_name: str,
+    ) -> list[dict[str, Any]]:
+        """Fetch data from a Google Sheet with exponential backoff retry.
+
+        Args:
+            spreadsheet_id: The Google Sheets spreadsheet ID.
+            range_name: The range to fetch (e.g., "VP!A:Y").
 
         Returns:
-            List of brand dictionaries parsed from sheet rows.
+            List of dictionaries, one per row (header row becomes keys).
 
         Raises:
             SyncException: If fetch fails after retries or due to configuration issues.
         """
-        if not settings.gsheets_spreadsheet_id:
+        if not spreadsheet_id:
             raise SyncException(
                 code="SYNC_CREDENTIALS_MISSING",
-                detail="Google Sheets spreadsheet ID not configured",
+                detail="Spreadsheet ID not provided",
             )
 
         max_retries = 3
@@ -63,8 +71,8 @@ class GoogleSheetsClient:
                     lambda: service.spreadsheets()
                     .values()
                     .get(
-                        spreadsheetId=settings.gsheets_spreadsheet_id,
-                        range=settings.gsheets_range,
+                        spreadsheetId=spreadsheet_id,
+                        range=range_name,
                     )
                     .execute()
                 )
@@ -75,22 +83,25 @@ class GoogleSheetsClient:
 
                 # First row is header
                 headers = rows[0]
-                brands = []
+                data = []
                 for row in rows[1:]:
                     # Pad row with empty strings if shorter than headers
                     padded_row = row + [""] * (len(headers) - len(row))
-                    brand_data = dict(zip(headers, padded_row))
-                    brands.append(brand_data)
+                    row_data = dict(zip(headers, padded_row))
+                    data.append(row_data)
 
-                logger.info(f"Successfully fetched {len(brands)} brands from Google Sheets")
-                return brands
+                logger.info(
+                    f"Successfully fetched {len(data)} rows from {spreadsheet_id} range {range_name}"
+                )
+                return data
 
             except HttpError as e:
                 if e.resp.status == 429:  # Rate limit
                     if attempt < max_retries - 1:
                         delay = base_delay * (2**attempt)  # Exponential backoff
                         logger.warning(
-                            f"SYNC_RATE_LIMITED: Rate limit hit, retrying in {delay}s (attempt {attempt + 1}/{max_retries})"
+                            f"SYNC_RATE_LIMITED: Rate limit hit, retrying in {delay}s "
+                            f"(attempt {attempt + 1}/{max_retries})"
                         )
                         await asyncio.sleep(delay)
                         continue
@@ -101,11 +112,18 @@ class GoogleSheetsClient:
                         status_code=429,
                     )
                 elif e.resp.status == 404:
-                    logger.error(f"SYNC_SHEET_NOT_FOUND: Spreadsheet not found or inaccessible")
+                    logger.error(f"SYNC_SHEET_NOT_FOUND: Spreadsheet {spreadsheet_id} not found")
                     raise SyncException(
                         code="SYNC_SHEET_NOT_FOUND",
-                        detail="Spreadsheet not found or not accessible",
+                        detail=f"Spreadsheet not found or not accessible: {spreadsheet_id}",
                         status_code=404,
+                    )
+                elif e.resp.status == 403:
+                    logger.error(f"SYNC_PERMISSION_DENIED: No access to spreadsheet {spreadsheet_id}")
+                    raise SyncException(
+                        code="SYNC_PERMISSION_DENIED",
+                        detail=f"Permission denied. Share the sheet with the service account.",
+                        status_code=403,
                     )
                 else:
                     logger.error(f"SYNC_FAILED: Google Sheets API error: {e}")
@@ -132,5 +150,19 @@ class GoogleSheetsClient:
         # Should not reach here, but handle gracefully
         raise SyncException(
             code="SYNC_FAILED",
-            detail="Failed to fetch brands after all retries",
+            detail="Failed to fetch data after all retries",
+        )
+
+    async def fetch_vp_data(self) -> list[dict[str, Any]]:
+        """Fetch VP brand data from configured spreadsheet."""
+        return await self.fetch_sheet_data(
+            spreadsheet_id=settings.gsheets_vp_spreadsheet_id,
+            range_name=settings.gsheets_vp_range,
+        )
+
+    async def fetch_meeting_data(self) -> list[dict[str, Any]]:
+        """Fetch 1st Meeting brand data from configured spreadsheet."""
+        return await self.fetch_sheet_data(
+            spreadsheet_id=settings.gsheets_meeting_spreadsheet_id,
+            range_name=settings.gsheets_meeting_range,
         )

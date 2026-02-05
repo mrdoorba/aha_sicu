@@ -10,8 +10,10 @@ def mock_settings():
     """Mock settings with Google Sheets configuration."""
     with patch("app.modules.sync.sheets_client.settings") as mock:
         mock.gsheets_credentials_path = "./test-credentials.json"
-        mock.gsheets_spreadsheet_id = "test-spreadsheet-id"
-        mock.gsheets_range = "Sheet1!A:Z"
+        mock.gsheets_vp_spreadsheet_id = "test-vp-spreadsheet-id"
+        mock.gsheets_vp_range = "VP!A:Y"
+        mock.gsheets_meeting_spreadsheet_id = "test-meeting-spreadsheet-id"
+        mock.gsheets_meeting_range = "ZAP: 1st Meeting!A:D"
         yield mock
 
 
@@ -31,64 +33,61 @@ def mock_google_service():
 
 
 @pytest.mark.asyncio
-async def test_fetch_brands_returns_empty_list_for_empty_sheet(mock_settings, mock_google_service):
+async def test_fetch_sheet_data_returns_empty_list_for_empty_sheet(mock_settings, mock_google_service):
     """Test that empty sheet returns empty list."""
     from app.modules.sync.sheets_client import GoogleSheetsClient
 
     mock_google_service.spreadsheets().values().get().execute.return_value = {"values": []}
 
     client = GoogleSheetsClient()
-    brands = await client.fetch_brands_from_sheet()
+    data = await client.fetch_sheet_data("test-id", "Sheet1!A:Z")
 
-    assert brands == []
+    assert data == []
 
 
 @pytest.mark.asyncio
-async def test_fetch_brands_parses_sheet_data_correctly(mock_settings, mock_google_service):
-    """Test that sheet data is correctly parsed into brand dictionaries."""
+async def test_fetch_sheet_data_parses_correctly(mock_settings, mock_google_service):
+    """Test that sheet data is correctly parsed into dictionaries."""
     from app.modules.sync.sheets_client import GoogleSheetsClient
 
     mock_google_service.spreadsheets().values().get().execute.return_value = {
         "values": [
-            ["ID", "Brand Name", "Category", "Marketplace"],
-            ["1", "Nike", "Fashion", "Shopee"],
-            ["2", "Samsung", "Non-Fashion", "Tokopedia"],
+            ["Nama Brand", "Category", "Status"],
+            ["Nike", "Fashion", "Active"],
+            ["Samsung", "Non-Fashion", "Active"],
         ]
     }
 
     client = GoogleSheetsClient()
-    brands = await client.fetch_brands_from_sheet()
+    data = await client.fetch_sheet_data("test-id", "VP!A:C")
 
-    assert len(brands) == 2
-    assert brands[0]["ID"] == "1"
-    assert brands[0]["Brand Name"] == "Nike"
-    assert brands[0]["Category"] == "Fashion"
-    assert brands[0]["Marketplace"] == "Shopee"
-    assert brands[1]["ID"] == "2"
-    assert brands[1]["Brand Name"] == "Samsung"
-    assert brands[1]["Category"] == "Non-Fashion"
+    assert len(data) == 2
+    assert data[0]["Nama Brand"] == "Nike"
+    assert data[0]["Category"] == "Fashion"
+    assert data[1]["Nama Brand"] == "Samsung"
+    assert data[1]["Category"] == "Non-Fashion"
 
 
 @pytest.mark.asyncio
-async def test_fetch_brands_handles_rows_shorter_than_headers(mock_settings, mock_google_service):
+async def test_fetch_sheet_data_pads_short_rows(mock_settings, mock_google_service):
     """Test that rows shorter than headers are padded with empty strings."""
     from app.modules.sync.sheets_client import GoogleSheetsClient
 
     mock_google_service.spreadsheets().values().get().execute.return_value = {
         "values": [
-            ["ID", "Brand Name", "Category", "Marketplace"],
-            ["1", "Nike"],  # Missing category and marketplace
+            ["Brand", "Col2", "Col3", "Col4"],
+            ["Nike"],  # Missing 3 columns
         ]
     }
 
     client = GoogleSheetsClient()
-    brands = await client.fetch_brands_from_sheet()
+    data = await client.fetch_sheet_data("test-id", "Sheet!A:D")
 
-    assert len(brands) == 1
-    assert brands[0]["ID"] == "1"
-    assert brands[0]["Brand Name"] == "Nike"
-    assert brands[0]["Category"] == ""
-    assert brands[0]["Marketplace"] == ""
+    assert len(data) == 1
+    assert data[0]["Brand"] == "Nike"
+    assert data[0]["Col2"] == ""
+    assert data[0]["Col3"] == ""
+    assert data[0]["Col4"] == ""
 
 
 @pytest.mark.asyncio
@@ -100,26 +99,23 @@ async def test_exponential_backoff_on_rate_limit(mock_settings, mock_google_serv
 
     from app.modules.sync.sheets_client import GoogleSheetsClient
 
-    # Create rate limit error
     rate_limit_response = MagicMock()
     rate_limit_response.status = 429
     rate_limit_error = HttpError(resp=rate_limit_response, content=b"Rate limit exceeded")
 
-    # Fail twice with rate limit, succeed on third
     mock_google_service.spreadsheets().values().get().execute.side_effect = [
         rate_limit_error,
         rate_limit_error,
-        {"values": [["ID", "Name"], ["1", "Brand"]]},
+        {"values": [["Brand"], ["Nike"]]},
     ]
 
     client = GoogleSheetsClient()
 
-    # Patch asyncio.sleep to speed up test
     with patch("app.modules.sync.sheets_client.asyncio.sleep", new_callable=AsyncMock):
-        brands = await client.fetch_brands_from_sheet()
+        data = await client.fetch_sheet_data("test-id", "Sheet!A:A")
 
-    assert len(brands) == 1
-    assert brands[0]["Name"] == "Brand"
+    assert len(data) == 1
+    assert data[0]["Brand"] == "Nike"
 
 
 @pytest.mark.asyncio
@@ -132,12 +128,10 @@ async def test_rate_limit_max_retries_exceeded(mock_settings, mock_google_servic
     from app.core.exceptions import SyncException
     from app.modules.sync.sheets_client import GoogleSheetsClient
 
-    # Create rate limit error
     rate_limit_response = MagicMock()
     rate_limit_response.status = 429
     rate_limit_error = HttpError(resp=rate_limit_response, content=b"Rate limit exceeded")
 
-    # Fail all 3 attempts with rate limit
     mock_google_service.spreadsheets().values().get().execute.side_effect = [
         rate_limit_error,
         rate_limit_error,
@@ -148,7 +142,7 @@ async def test_rate_limit_max_retries_exceeded(mock_settings, mock_google_servic
 
     with patch("app.modules.sync.sheets_client.asyncio.sleep", new_callable=AsyncMock):
         with pytest.raises(SyncException) as exc_info:
-            await client.fetch_brands_from_sheet()
+            await client.fetch_sheet_data("test-id", "Sheet!A:A")
 
     assert exc_info.value.code == "SYNC_RATE_LIMITED"
     assert exc_info.value.status_code == 429
@@ -171,10 +165,33 @@ async def test_spreadsheet_not_found_error(mock_settings, mock_google_service):
     client = GoogleSheetsClient()
 
     with pytest.raises(SyncException) as exc_info:
-        await client.fetch_brands_from_sheet()
+        await client.fetch_sheet_data("test-id", "Sheet!A:A")
 
     assert exc_info.value.code == "SYNC_SHEET_NOT_FOUND"
     assert exc_info.value.status_code == 404
+
+
+@pytest.mark.asyncio
+async def test_permission_denied_error(mock_settings, mock_google_service):
+    """Test that 403 error raises appropriate SyncException."""
+    from googleapiclient.errors import HttpError
+
+    from app.core.exceptions import SyncException
+    from app.modules.sync.sheets_client import GoogleSheetsClient
+
+    forbidden_response = MagicMock()
+    forbidden_response.status = 403
+    forbidden_error = HttpError(resp=forbidden_response, content=b"Forbidden")
+
+    mock_google_service.spreadsheets().values().get().execute.side_effect = forbidden_error
+
+    client = GoogleSheetsClient()
+
+    with pytest.raises(SyncException) as exc_info:
+        await client.fetch_sheet_data("test-id", "Sheet!A:A")
+
+    assert exc_info.value.code == "SYNC_PERMISSION_DENIED"
+    assert exc_info.value.status_code == 403
 
 
 @pytest.mark.asyncio
@@ -185,29 +202,60 @@ async def test_missing_credentials_path_raises_exception():
 
     with patch("app.modules.sync.sheets_client.settings") as mock_settings:
         mock_settings.gsheets_credentials_path = None
-        mock_settings.gsheets_spreadsheet_id = "test-id"
 
         client = GoogleSheetsClient()
 
         with pytest.raises(SyncException) as exc_info:
-            await client.fetch_brands_from_sheet()
+            await client.fetch_sheet_data("test-id", "Sheet!A:A")
 
         assert exc_info.value.code == "SYNC_CREDENTIALS_MISSING"
 
 
 @pytest.mark.asyncio
-async def test_missing_spreadsheet_id_raises_exception(mock_google_service):
+async def test_missing_spreadsheet_id_raises_exception(mock_settings, mock_google_service):
     """Test that missing spreadsheet ID raises SyncException."""
     from app.core.exceptions import SyncException
     from app.modules.sync.sheets_client import GoogleSheetsClient
 
-    with patch("app.modules.sync.sheets_client.settings") as mock_settings:
-        mock_settings.gsheets_credentials_path = "./creds.json"
-        mock_settings.gsheets_spreadsheet_id = None
+    client = GoogleSheetsClient()
 
-        client = GoogleSheetsClient()
+    with pytest.raises(SyncException) as exc_info:
+        await client.fetch_sheet_data("", "Sheet!A:A")
 
-        with pytest.raises(SyncException) as exc_info:
-            await client.fetch_brands_from_sheet()
+    assert exc_info.value.code == "SYNC_CREDENTIALS_MISSING"
 
-        assert exc_info.value.code == "SYNC_CREDENTIALS_MISSING"
+
+@pytest.mark.asyncio
+async def test_fetch_vp_data_uses_correct_config(mock_settings, mock_google_service):
+    """Test that fetch_vp_data uses VP configuration."""
+    from app.modules.sync.sheets_client import GoogleSheetsClient
+
+    mock_google_service.spreadsheets().values().get().execute.return_value = {
+        "values": [["Nama Brand"], ["Nike"]]
+    }
+
+    client = GoogleSheetsClient()
+    await client.fetch_vp_data()
+
+    # Verify the correct spreadsheet ID and range were used
+    call_args = mock_google_service.spreadsheets().values().get.call_args
+    assert call_args[1]["spreadsheetId"] == "test-vp-spreadsheet-id"
+    assert call_args[1]["range"] == "VP!A:Y"
+
+
+@pytest.mark.asyncio
+async def test_fetch_meeting_data_uses_correct_config(mock_settings, mock_google_service):
+    """Test that fetch_meeting_data uses Meeting configuration."""
+    from app.modules.sync.sheets_client import GoogleSheetsClient
+
+    mock_google_service.spreadsheets().values().get().execute.return_value = {
+        "values": [["Brand"], ["Nike"]]
+    }
+
+    client = GoogleSheetsClient()
+    await client.fetch_meeting_data()
+
+    # Verify the correct spreadsheet ID and range were used
+    call_args = mock_google_service.spreadsheets().values().get.call_args
+    assert call_args[1]["spreadsheetId"] == "test-meeting-spreadsheet-id"
+    assert call_args[1]["range"] == "ZAP: 1st Meeting!A:D"

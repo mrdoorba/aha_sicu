@@ -1,55 +1,57 @@
-"""Brand database queries using parameterized SQL."""
+"""Brand data database queries using parameterized SQL."""
 
 import json
-from typing import Any
+from typing import Any, Literal
 
 from asyncpg import Connection
 
+TableName = Literal["brand_vp_data", "brand_meeting_data"]
 
-async def upsert_brand(
+
+async def upsert_brand_data(
     conn: Connection,
-    external_id: str,
-    name: str,
-    category: str | None = None,
-    marketplace: str | None = None,
-    raw_data: dict[str, Any] | None = None,
+    table: TableName,
+    brand_name: str,
+    raw_data: dict[str, Any],
 ) -> dict:
-    """Upsert brand by external_id (from Google Sheet).
+    """Upsert brand data by brand_name.
 
     Uses ON CONFLICT DO UPDATE to handle both insert and update cases.
     """
+    # Validate table name to prevent SQL injection
+    if table not in ("brand_vp_data", "brand_meeting_data"):
+        raise ValueError(f"Invalid table name: {table}")
+
     row = await conn.fetchrow(
-        """
-        INSERT INTO brands (external_id, name, category, marketplace, raw_data, updated_at)
-        VALUES ($1, $2, $3, $4, $5, NOW())
-        ON CONFLICT (external_id) DO UPDATE SET
-            name = EXCLUDED.name,
-            category = EXCLUDED.category,
-            marketplace = EXCLUDED.marketplace,
+        f"""
+        INSERT INTO {table} (brand_name, raw_data, updated_at)
+        VALUES ($1, $2, NOW())
+        ON CONFLICT (brand_name) DO UPDATE SET
             raw_data = EXCLUDED.raw_data,
             updated_at = NOW()
-        RETURNING id, external_id, name, category, marketplace, raw_data, created_at, updated_at
+        RETURNING id, brand_name, raw_data, created_at, updated_at
         """,
-        external_id,
-        name,
-        category,
-        marketplace,
-        json.dumps(raw_data) if raw_data else None,
+        brand_name,
+        json.dumps(raw_data),
     )
     return dict(row)
 
 
-async def get_brands(
+async def get_brand_data(
     conn: Connection,
+    table: TableName,
     limit: int = 50,
     offset: int = 0,
 ) -> list[dict]:
-    """Get brands with pagination."""
+    """Get brand data with pagination."""
+    if table not in ("brand_vp_data", "brand_meeting_data"):
+        raise ValueError(f"Invalid table name: {table}")
+
     rows = await conn.fetch(
-        """
-        SELECT id, external_id, name, category, marketplace, raw_data, created_at, updated_at
-        FROM brands
-        ORDER BY name ASC
+        f"""
+        SELECT id, brand_name, raw_data, created_at, updated_at
+        FROM {table}
+        ORDER BY brand_name ASC
         LIMIT $1 OFFSET $2
         """,
         limit,
@@ -58,20 +60,40 @@ async def get_brands(
     return [dict(row) for row in rows]
 
 
-async def get_brand_by_external_id(conn: Connection, external_id: str) -> dict | None:
-    """Get brand by external ID."""
+async def get_brand_by_name(
+    conn: Connection,
+    table: TableName,
+    brand_name: str,
+) -> dict | None:
+    """Get brand data by brand name."""
+    if table not in ("brand_vp_data", "brand_meeting_data"):
+        raise ValueError(f"Invalid table name: {table}")
+
     row = await conn.fetchrow(
-        """
-        SELECT id, external_id, name, category, marketplace, raw_data, created_at, updated_at
-        FROM brands
-        WHERE external_id = $1
+        f"""
+        SELECT id, brand_name, raw_data, created_at, updated_at
+        FROM {table}
+        WHERE brand_name = $1
         """,
-        external_id,
+        brand_name,
     )
     return dict(row) if row else None
 
 
-async def get_brands_count(conn: Connection) -> int:
-    """Get total count of brands."""
-    result = await conn.fetchval("SELECT COUNT(*) FROM brands")
+async def get_brand_count(conn: Connection, table: TableName) -> int:
+    """Get total count of brands in a table."""
+    if table not in ("brand_vp_data", "brand_meeting_data"):
+        raise ValueError(f"Invalid table name: {table}")
+
+    result = await conn.fetchval(f"SELECT COUNT(*) FROM {table}")
     return result or 0
+
+
+async def delete_all_brand_data(conn: Connection, table: TableName) -> int:
+    """Delete all data from a brand table. Returns count of deleted rows."""
+    if table not in ("brand_vp_data", "brand_meeting_data"):
+        raise ValueError(f"Invalid table name: {table}")
+
+    result = await conn.execute(f"DELETE FROM {table}")
+    # Result is like "DELETE 42"
+    return int(result.split()[-1]) if result else 0
