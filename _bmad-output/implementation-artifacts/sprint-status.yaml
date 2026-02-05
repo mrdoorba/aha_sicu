@@ -45,7 +45,7 @@ development_status:
   1-1-initialize-project-structure: done
   1-2-firebase-auth-backend-integration: done
   1-3-frontend-login-flow: done
-  epic-1-retrospective: optional
+  epic-1-retrospective: done
 
   # Epic 2: Brand Data Availability
   epic-2: backlog
