@@ -2,27 +2,89 @@
 
 import logging
 from datetime import datetime, timezone
+from typing import Any
 
+from app.config import settings
 from app.db.connection import db
 from app.db.queries import brands as brand_queries
 from app.db.queries import sync_status as sync_queries
-from app.modules.sync.schemas import SyncError, SyncResult, SyncStatusResponse
+from app.modules.sync.schemas import (
+    SheetSyncResult,
+    SyncError,
+    SyncResult,
+    SyncStatusResponse,
+)
 from app.modules.sync.sheets_client import GoogleSheetsClient
 
 logger = logging.getLogger(__name__)
 
 
+async def _sync_sheet_to_table(
+    rows: list[dict[str, Any]],
+    table: str,
+    brand_column: str,
+    sheet_type: str,
+) -> SheetSyncResult:
+    """Sync rows from a sheet to a database table.
+
+    Args:
+        rows: List of row dictionaries from Google Sheets.
+        table: Target table name ("brand_vp_data" or "brand_meeting_data").
+        brand_column: Column name containing the brand name.
+        sheet_type: "vp" or "meeting" for logging.
+
+    Returns:
+        SheetSyncResult with counts and errors.
+    """
+    synced_count = 0
+    errors: list[SyncError] = []
+
+    async with db.connection() as conn:
+        for row_data in rows:
+            try:
+                brand_name = row_data.get(brand_column, "").strip()
+
+                if not brand_name:
+                    errors.append(
+                        SyncError(
+                            brand="(empty)",
+                            error=f"Missing required column: {brand_column}",
+                        )
+                    )
+                    continue
+
+                await brand_queries.upsert_brand_data(
+                    conn,
+                    table=table,
+                    brand_name=brand_name,
+                    raw_data=row_data,
+                )
+                synced_count += 1
+
+            except Exception as e:
+                brand_name = row_data.get(brand_column, "Unknown")
+                errors.append(SyncError(brand=brand_name, error=str(e)))
+                logger.warning(f"Failed to sync {sheet_type} brand '{brand_name}': {e}")
+
+    return SheetSyncResult(
+        sheet_type=sheet_type,
+        rows_synced=synced_count,
+        errors=errors,
+        success=len(errors) == 0,
+    )
+
+
 async def run_sync() -> SyncResult:
-    """Execute full brand sync from Google Sheets.
+    """Execute full brand sync from both Google Sheets.
 
     Orchestrates the sync process:
     1. Create sync status record
-    2. Fetch brands from Google Sheets
-    3. Upsert each brand to database (partial failure tolerant)
+    2. Fetch and sync VP data
+    3. Fetch and sync Meeting data
     4. Update sync status with results
 
     Returns:
-        SyncResult with counts and any errors encountered.
+        SyncResult with results from both sheets.
     """
     sheets_client = GoogleSheetsClient()
 
@@ -35,62 +97,103 @@ async def run_sync() -> SyncResult:
 
     logger.info(f"Starting sync with ID: {sync_id}")
 
+    vp_result: SheetSyncResult | None = None
+    meeting_result: SheetSyncResult | None = None
+    all_errors: list[str] = []
+
     try:
-        # Fetch from Google Sheets
-        brand_rows = await sheets_client.fetch_brands_from_sheet()
-        logger.info(f"Fetched {len(brand_rows)} brands from Google Sheets")
+        # Sync VP sheet
+        if settings.gsheets_vp_spreadsheet_id:
+            try:
+                logger.info("Fetching VP data...")
+                vp_rows = await sheets_client.fetch_vp_data()
+                logger.info(f"Fetched {len(vp_rows)} rows from VP sheet")
 
-        synced_count = 0
-        errors: list[SyncError] = []
+                vp_result = await _sync_sheet_to_table(
+                    rows=vp_rows,
+                    table="brand_vp_data",
+                    brand_column=settings.gsheets_vp_brand_column,
+                    sheet_type="vp",
+                )
+                logger.info(
+                    f"VP sync: {vp_result.rows_synced} synced, {len(vp_result.errors)} errors"
+                )
+            except Exception as e:
+                logger.error(f"VP sync failed: {e}")
+                all_errors.append(f"VP: {e}")
+                vp_result = SheetSyncResult(
+                    sheet_type="vp", rows_synced=0, errors=[], success=False
+                )
+        else:
+            logger.info("VP spreadsheet not configured, skipping")
 
-        # Upsert each brand (continue on individual failures)
-        async with db.connection() as conn:
-            for brand_data in brand_rows:
-                try:
-                    external_id = brand_data.get("ID") or brand_data.get("id") or ""
-                    name = brand_data.get("Brand Name") or brand_data.get("name") or ""
+        # Sync Meeting sheet
+        if settings.gsheets_meeting_spreadsheet_id:
+            try:
+                logger.info("Fetching Meeting data...")
+                meeting_rows = await sheets_client.fetch_meeting_data()
+                logger.info(f"Fetched {len(meeting_rows)} rows from Meeting sheet")
 
-                    if not external_id or not name:
-                        errors.append(
-                            SyncError(
-                                brand=name or external_id or "Unknown",
-                                error="Missing required field: ID or Brand Name",
-                            )
-                        )
-                        continue
+                meeting_result = await _sync_sheet_to_table(
+                    rows=meeting_rows,
+                    table="brand_meeting_data",
+                    brand_column=settings.gsheets_meeting_brand_column,
+                    sheet_type="meeting",
+                )
+                logger.info(
+                    f"Meeting sync: {meeting_result.rows_synced} synced, "
+                    f"{len(meeting_result.errors)} errors"
+                )
+            except Exception as e:
+                logger.error(f"Meeting sync failed: {e}")
+                all_errors.append(f"Meeting: {e}")
+                meeting_result = SheetSyncResult(
+                    sheet_type="meeting", rows_synced=0, errors=[], success=False
+                )
+        else:
+            logger.info("Meeting spreadsheet not configured, skipping")
 
-                    await brand_queries.upsert_brand(
-                        conn,
-                        external_id=str(external_id),
-                        name=str(name),
-                        category=brand_data.get("Category") or brand_data.get("category"),
-                        marketplace=brand_data.get("Marketplace") or brand_data.get("marketplace"),
-                        raw_data=brand_data,
-                    )
-                    synced_count += 1
-                except Exception as e:
-                    brand_name = brand_data.get("Brand Name") or brand_data.get("name") or "Unknown"
-                    errors.append(SyncError(brand=brand_name, error=str(e)))
-                    logger.warning(f"Failed to sync brand '{brand_name}': {e}")
+        # Calculate totals
+        total_synced = (vp_result.rows_synced if vp_result else 0) + (
+            meeting_result.rows_synced if meeting_result else 0
+        )
+        total_errors = (
+            (len(vp_result.errors) if vp_result else 0)
+            + (len(meeting_result.errors) if meeting_result else 0)
+            + len(all_errors)
+        )
+        overall_success = total_errors == 0 and bool(vp_result or meeting_result)
 
-        # Update sync status with success
+        # Build error message
+        error_message = None
+        if all_errors or total_errors > 0:
+            error_parts = all_errors.copy()
+            if vp_result and vp_result.errors:
+                error_parts.append(f"VP: {len(vp_result.errors)} row errors")
+            if meeting_result and meeting_result.errors:
+                error_parts.append(f"Meeting: {len(meeting_result.errors)} row errors")
+            error_message = "; ".join(error_parts)
+
+        # Update sync status
         async with db.connection() as conn:
             await sync_queries.update_sync_status(
                 conn,
                 sync_id=sync_id,
                 completed_at=datetime.now(timezone.utc),
-                success=len(errors) == 0,
-                brands_synced=synced_count,
-                error_message=_format_errors(errors) if errors else None,
+                success=overall_success,
+                brands_synced=total_synced,
+                error_message=error_message,
             )
 
-        logger.info(f"Sync completed: {synced_count} brands synced, {len(errors)} errors")
+        logger.info(f"Sync completed: {total_synced} total synced, {total_errors} errors")
 
         return SyncResult(
             sync_id=sync_id,
-            brands_synced=synced_count,
-            errors=errors,
-            success=len(errors) == 0,
+            vp_result=vp_result,
+            meeting_result=meeting_result,
+            total_synced=total_synced,
+            total_errors=total_errors,
+            success=overall_success,
         )
 
     except Exception as e:
@@ -128,13 +231,3 @@ async def get_latest_sync_status() -> SyncStatusResponse | None:
         brands_synced=status["brands_synced"],
         error_message=status["error_message"],
     )
-
-
-def _format_errors(errors: list[SyncError]) -> str:
-    """Format error list for storage."""
-    if not errors:
-        return ""
-    error_msgs = [f"{e.brand}: {e.error}" for e in errors[:10]]  # Limit to first 10
-    if len(errors) > 10:
-        error_msgs.append(f"... and {len(errors) - 10} more errors")
-    return "; ".join(error_msgs)

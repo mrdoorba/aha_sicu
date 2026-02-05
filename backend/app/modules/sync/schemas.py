@@ -1,34 +1,38 @@
 """Pydantic schemas for sync module."""
 
 from datetime import datetime
-from typing import Any
+from typing import Literal
 
 from pydantic import BaseModel
 
 
-class BrandFromSheet(BaseModel):
-    """Raw brand data from Google Sheet."""
-
-    external_id: str
-    name: str
-    category: str | None = None
-    marketplace: str | None = None
-    raw_data: dict[str, Any] | None = None
+SheetType = Literal["vp", "meeting"]
 
 
 class SyncError(BaseModel):
-    """Error detail for a single brand sync failure."""
+    """Error detail for a single row sync failure."""
 
     brand: str | None
     error: str
 
 
+class SheetSyncResult(BaseModel):
+    """Result of syncing a single sheet."""
+
+    sheet_type: SheetType
+    rows_synced: int
+    errors: list[SyncError]
+    success: bool
+
+
 class SyncResult(BaseModel):
-    """Result of a sync operation."""
+    """Result of a full sync operation (both sheets)."""
 
     sync_id: int
-    brands_synced: int
-    errors: list[SyncError]
+    vp_result: SheetSyncResult | None
+    meeting_result: SheetSyncResult | None
+    total_synced: int
+    total_errors: int
     success: bool
 
 
