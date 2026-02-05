@@ -542,6 +542,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 ### Change Log
 
 - 2026-02-05: Implemented Google Sheets sync backend (Story 2.1) - all 8 tasks completed
+- 2026-02-05: Added Terraform configuration for Google Sheets Service Account (Epic 2 Critical Path Items #3, #4)
 
 ### File List
 
@@ -566,4 +567,7 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - backend/app/core/exceptions.py (added SyncException class)
 - backend/.env.example (added Google Sheets environment variables)
 - backend/pyproject.toml (added google-api-python-client and google-auth dependencies)
+- infrastructure/terraform/main.tf (added Google Sheets API and Service Account)
+- infrastructure/terraform/README.md (new - setup documentation)
+- .gitignore (added credentials directory pattern)
 
