@@ -11,5 +11,14 @@ class Settings(BaseSettings):
     app_name: str = "Store ICU API"
     debug: bool = False
 
+    # Database (Neon PostgreSQL)
+    database_url: str = ""
+    database_pool_min: int = 5
+    database_pool_max: int = 20
+
+    # Firebase Admin SDK
+    firebase_credentials_path: str | None = None
+    firebase_credentials_json: str | None = None
+
 
 settings = Settings()
