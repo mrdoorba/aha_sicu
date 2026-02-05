@@ -63,11 +63,13 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 | Database | Neon (PostgreSQL) | Project constraint |
 | Auth | Firebase Auth | Token-based, decoupled |
 | Processing | Polars | Excel parsing + calculations |
+| File Storage | Google Cloud Storage | Large file uploads (>32MB Cloud Run limit) |
 
 **External Dependencies:**
 - Google Sheets API (Brand Database sync)
 - Firebase Auth SDK
 - Neon connection pooling
+- Google Cloud Storage (file uploads)
 
 ### Cross-Cutting Concerns Identified
 
@@ -140,11 +142,12 @@ backend/
 │   │   │   ├── router.py
 │   │   │   ├── schemas.py
 │   │   │   └── service.py
-│   │   ├── upload/                # File upload module
+│   │   ├── upload/                # File upload module (GCS + ZIP support)
 │   │   │   ├── __init__.py
-│   │   │   ├── router.py
+│   │   │   ├── router.py          # Signed URL generation, process trigger
 │   │   │   ├── schemas.py
-│   │   │   └── service.py
+│   │   │   ├── service.py         # GCS operations, processing orchestration
+│   │   │   └── zip_handler.py     # ZIP extraction, multi-part Excel merge
 │   │   └── rules/                 # Rule configuration module
 │   │       ├── __init__.py
 │   │       ├── router.py
@@ -169,7 +172,8 @@ backend/
 │       └── api/
 │
 ├── Dockerfile
-├── pyproject.toml
+├── pyproject.toml                # UV project config with dependencies
+├── uv.lock                       # UV lockfile for reproducible builds
 └── .env.example
 ```
 
@@ -194,10 +198,14 @@ infrastructure/
 │   ├── main.tf              # Provider config, prefix, region
 │   ├── variables.tf         # Input variables
 │   ├── outputs.tf           # Output values
+│   ├── artifact_registry.tf # Docker registry with cleanup policy (keep 2)
 │   ├── cloud_run.tf         # Backend deployment
-│   ├── secrets.tf           # Secret Manager
+│   ├── secrets.tf           # Secret Manager (db_url, gsheets, firebase_admin)
+│   ├── storage.tf           # GCS bucket for file uploads
 │   ├── scheduler.tf         # Daily sync job
 │   ├── firebase.tf          # Firebase project, hosting site, auth
+│   ├── iam.tf               # Service accounts (api, scheduler, sheets, deploy)
+│   ├── workload_identity.tf # GitHub Actions OIDC federation (keyless auth)
 │   └── environments/
 │       ├── dev.tfvars
 │       └── prod.tfvars
@@ -224,7 +232,11 @@ infrastructure/
 
 **Build Tooling:**
 - Frontend: Vite (fast HMR, optimized builds)
-- Backend: Docker for Cloud Run deployment
+- Backend: UV (fast Python package/project manager) + Docker for Cloud Run deployment
+
+**Package Management:**
+- Backend: UV (replaces pip, pip-tools, virtualenv - single tool for dependency resolution, virtual environments, and project management)
+- Frontend: npm or pnpm
 
 **Testing Framework:**
 - Backend: pytest (unit tests for calculators, integration for API)
@@ -234,6 +246,7 @@ infrastructure/
 - Hot reload on both frontend and backend
 - Type checking throughout
 - ESLint + Prettier (frontend), Ruff (backend - fast Python 3.14 compatible)
+- UV for fast dependency management (`uv sync`, `uv run`, `uv add`)
 
 **Note:** Project initialization is the first implementation story.
 
@@ -310,6 +323,112 @@ infrastructure/
 - Events: `sync_status`, `new_evaluation`
 - One-way server → client push
 
+### File Upload Architecture
+
+**Why GCS is Required:**
+Cloud Run has a 32MB request body limit. Seller Center exports can reach 100MB+ when data is large, exported as ZIP archives containing multiple Excel parts.
+
+**GCS Bucket Configuration:**
+- Bucket name: `aha_sicu_uploads`
+- Location: `asia-southeast1` (same as Cloud Run)
+- Lifecycle: Auto-delete files after 24 hours (processed files don't need persistence)
+- Access: Private, signed URLs only
+
+**Supported Upload Types:**
+
+| Type | Extension | Description |
+|------|-----------|-------------|
+| Single Excel | `.xlsx`, `.xls` | Standard single-file upload |
+| ZIP Archive | `.zip` | Seller Center multi-part export |
+
+**ZIP Archive Structure (Seller Center Export):**
+```
+seller_export.zip
+├── data_part_1_of_3.xlsx
+├── data_part_2_of_3.xlsx
+└── data_part_3_of_3.xlsx
+```
+- Seller Center splits large datasets across multiple Excel files
+- Each part contains a subset of rows with identical column structure
+- Parts are numbered sequentially (part 1 of N, part 2 of N, etc.)
+
+**Upload Flow (Signed URL Pattern):**
+
+```
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 1. REQUEST SIGNED URL                                                        │
+│    Frontend → POST /api/v1/upload/signed-url                                │
+│    Body: { filename: "export.zip", content_type: "application/zip" }        │
+│    Response: { upload_url: "https://storage...", upload_id: "uuid" }        │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 2. DIRECT UPLOAD TO GCS                                                      │
+│    Frontend → PUT {upload_url}                                              │
+│    Body: <file binary>                                                      │
+│    (Bypasses Cloud Run entirely - no size limit)                            │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 3. TRIGGER PROCESSING                                                        │
+│    Frontend → POST /api/v1/upload/process                                   │
+│    Body: { upload_id: "uuid", brand_id: 123 }                               │
+└─────────────────────────────────────────────────────────────────────────────┘
+                                    ↓
+┌─────────────────────────────────────────────────────────────────────────────┐
+│ 4. BACKEND PROCESSING                                                        │
+│    a. Download file from GCS to memory                                      │
+│    b. Detect file type (Excel or ZIP)                                       │
+│    c. If ZIP: Extract → Sort parts → Merge into single DataFrame            │
+│    d. If Excel: Parse directly with Polars                                  │
+│    e. Run calculators                                                       │
+│    f. Store evaluation in database                                          │
+│    g. Delete file from GCS                                                  │
+│    h. Broadcast SSE event: `new_evaluation`                                 │
+└─────────────────────────────────────────────────────────────────────────────┘
+```
+
+**ZIP Processing Logic:**
+
+```python
+# Pseudocode for zip_handler.py
+def process_zip(zip_bytes: bytes) -> pl.DataFrame:
+    """Extract and merge multi-part Excel files from ZIP."""
+    with zipfile.ZipFile(BytesIO(zip_bytes)) as zf:
+        # 1. List Excel files, filter out __MACOSX, temp files
+        excel_files = [f for f in zf.namelist()
+                       if f.endswith(('.xlsx', '.xls'))
+                       and not f.startswith('__')]
+
+        # 2. Sort by part number (extract "part X of Y" pattern)
+        excel_files = sort_by_part_number(excel_files)
+
+        # 3. Read and concatenate all parts
+        dataframes = []
+        for excel_file in excel_files:
+            with zf.open(excel_file) as f:
+                df = pl.read_excel(f)
+                dataframes.append(df)
+
+        # 4. Vertical concat (all parts have same columns)
+        return pl.concat(dataframes)
+```
+
+**Upload Error Codes:**
+
+| Code | Description |
+|------|-------------|
+| `UPLOAD_INVALID_FORMAT` | Not .xlsx, .xls, or .zip |
+| `UPLOAD_ZIP_NO_EXCEL` | ZIP contains no Excel files |
+| `UPLOAD_ZIP_STRUCTURE_MISMATCH` | Excel parts have different columns |
+| `UPLOAD_FILE_TOO_LARGE` | Exceeds maximum allowed size |
+| `UPLOAD_SIGNED_URL_EXPIRED` | Signed URL validity (15 min) exceeded |
+| `UPLOAD_PROCESSING_FAILED` | General processing error |
+
+**GCS IAM Permissions:**
+- Cloud Run service account needs `roles/storage.objectAdmin` on the bucket
+- Signed URLs generated with `signBlob` permission
+
 ### Frontend Architecture
 
 **State Management:** TanStack Query + React Context
@@ -328,9 +447,166 @@ infrastructure/
 ### Infrastructure & Deployment
 
 **IaC:** Terraform
-- Manages: Cloud Run, Secret Manager, Scheduler, IAM, Firebase setup
+- Manages: Cloud Run, Secret Manager, Scheduler, IAM, Firebase setup, GCS bucket, Artifact Registry
 - Firebase Hosting deploys via Firebase CLI (not Terraform)
 - Runs only when infrastructure changes detected
+
+**Artifact Registry:**
+- Repository: `aha-sicu-registry` (Docker format)
+- Cleanup policy: Keep 2 latest versions, auto-delete older images
+- Rationale: Saves storage costs, 2 versions sufficient for rollback
+
+**Cloud Run Revisions:**
+- No automatic cleanup configured
+- Rationale: Revisions don't cost compute when idle, minimal metadata storage
+- Old revisions become non-functional anyway when their images are cleaned up
+- Optional: Add CI/CD cleanup step if revision clutter becomes an issue
+
+**Secret Manager:**
+- Stores all sensitive configuration for production
+- Secrets:
+  | Secret Name | Purpose |
+  |-------------|---------|
+  | `aha_sicu_db_url` | Neon PostgreSQL connection string |
+  | `aha_sicu_gsheets_credentials` | Google Sheets API service account key |
+  | `aha_sicu_firebase_admin` | Firebase Admin SDK credentials (for token verification) |
+- Cloud Run accesses secrets via `secretKeyRef` in service config
+- Local dev uses `.env` file (not committed to git)
+
+**Service Accounts & IAM (Least Privilege):**
+
+| Service Account | Purpose | IAM Roles |
+|-----------------|---------|-----------|
+| `aha-sicu-api-sa` | Cloud Run runtime | `secretmanager.secretAccessor`, `storage.objectAdmin` (on upload bucket only) |
+| `aha-sicu-scheduler-sa` | Cloud Scheduler | `run.invoker` (on Cloud Run service only) |
+| `aha-sicu-sheets-sa` | Google Sheets API | No GCP roles (key stored in Secret Manager, Sheet shared with SA email) |
+| `aha-sicu-deploy-sa` | GitHub Actions CI/CD | `run.admin`, `artifactregistry.writer`, `iam.serviceAccountUser` |
+
+**Cloud Run Service Account (`aha-sicu-api-sa`):**
+```
+# Dedicated SA - NOT using default Compute Engine SA
+resource "google_service_account" "cloud_run" {
+  account_id   = "aha-sicu-api-sa"
+  display_name = "Store ICU Cloud Run Service Account"
+}
+
+# Least privilege: Only access secrets it needs
+resource "google_secret_manager_secret_iam_member" "db_url" {
+  secret_id = google_secret_manager_secret.db_url.id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+
+# Least privilege: Only access upload bucket, not all GCS
+resource "google_storage_bucket_iam_member" "uploads" {
+  bucket = google_storage_bucket.uploads.name
+  role   = "roles/storage.objectAdmin"
+  member = "serviceAccount:${google_service_account.cloud_run.email}"
+}
+```
+
+**Cloud Scheduler Service Account (`aha-sicu-scheduler-sa`):**
+```
+# Separate SA for scheduler - can only invoke Cloud Run
+resource "google_service_account" "scheduler" {
+  account_id   = "aha-sicu-scheduler-sa"
+  display_name = "Store ICU Scheduler Service Account"
+}
+
+# Can only invoke the specific Cloud Run service
+resource "google_cloud_run_service_iam_member" "scheduler_invoker" {
+  service  = google_cloud_run_service.api.name
+  location = var.region
+  role     = "roles/run.invoker"
+  member   = "serviceAccount:${google_service_account.scheduler.email}"
+}
+```
+
+**GitHub Actions - Workload Identity Federation (No Keys!):**
+```
+# Workload Identity Pool for GitHub
+resource "google_iam_workload_identity_pool" "github" {
+  workload_identity_pool_id = "aha-sicu-github-pool"
+  display_name              = "GitHub Actions Pool"
+}
+
+# OIDC Provider for GitHub
+resource "google_iam_workload_identity_pool_provider" "github" {
+  workload_identity_pool_id          = google_iam_workload_identity_pool.github.workload_identity_pool_id
+  workload_identity_pool_provider_id = "github-provider"
+  display_name                       = "GitHub Provider"
+
+  attribute_mapping = {
+    "google.subject"       = "assertion.sub"
+    "attribute.actor"      = "assertion.actor"
+    "attribute.repository" = "assertion.repository"
+  }
+
+  oidc {
+    issuer_uri = "https://token.actions.githubusercontent.com"
+  }
+}
+
+# Deploy SA for GitHub Actions
+resource "google_service_account" "deploy" {
+  account_id   = "aha-sicu-deploy-sa"
+  display_name = "Store ICU Deploy Service Account"
+}
+
+# Allow GitHub repo to impersonate deploy SA
+resource "google_service_account_iam_member" "github_impersonate" {
+  service_account_id = google_service_account.deploy.name
+  role               = "roles/iam.workloadIdentityUser"
+  member             = "principalSet://iam.googleapis.com/${google_iam_workload_identity_pool.github.name}/attribute.repository/YOUR_ORG/store-icu"
+}
+
+# Deploy SA permissions
+resource "google_project_iam_member" "deploy_run_admin" {
+  project = var.project_id
+  role    = "roles/run.admin"
+  member  = "serviceAccount:${google_service_account.deploy.email}"
+}
+
+resource "google_project_iam_member" "deploy_artifact_writer" {
+  project = var.project_id
+  role    = "roles/artifactregistry.writer"
+  member  = "serviceAccount:${google_service_account.deploy.email}"
+}
+
+resource "google_service_account_iam_member" "deploy_act_as" {
+  service_account_id = google_service_account.cloud_run.name
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:${google_service_account.deploy.email}"
+}
+```
+
+**GitHub Actions Workflow (uses Workload Identity):**
+```yaml
+# .github/workflows/deploy.yml
+jobs:
+  deploy:
+    permissions:
+      contents: read
+      id-token: write  # Required for Workload Identity
+
+    steps:
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: projects/PROJECT_NUM/locations/global/workloadIdentityPools/aha-sicu-github-pool/providers/github-provider
+          service_account: aha-sicu-deploy-sa@PROJECT_ID.iam.gserviceaccount.com
+
+      # No SA key needed! GitHub OIDC token exchanged for GCP access token
+```
+
+**IAM Anti-Patterns Avoided:**
+
+| Anti-Pattern | Why It's Bad | Our Approach |
+|--------------|--------------|--------------|
+| Default Compute SA | Over-privileged, shared | Dedicated SA per service |
+| SA key in GitHub Secrets | Leak risk, rotation pain | Workload Identity Federation |
+| `roles/owner` or `roles/editor` | Full project access | Specific roles only |
+| One SA for everything | Blast radius if compromised | Isolated per purpose |
+| Project-wide storage access | Can access any bucket | Bucket-level IAM only |
 
 **Naming Convention:**
 - Resource prefix: `aha_sicu_`
@@ -345,6 +621,14 @@ infrastructure/
 - Infrastructure: Terraform apply (only if .tf files changed)
 - Build: Docker image → Artifact Registry
 - Deploy: Cloud Run (backend) + Firebase Hosting (frontend)
+- Optional cleanup (add later if needed):
+  ```bash
+  # Delete Cloud Run revisions older than latest 2
+  gcloud run revisions list --service=aha-sicu-api \
+    --region=asia-southeast1 --format="value(name)" \
+    --sort-by="~createTime" | tail -n +3 \
+    | xargs -r gcloud run revisions delete --quiet
+  ```
 
 **Environments:**
 - Development: local `.env`
@@ -632,9 +916,11 @@ store-icu/
 │   │   │   │
 │   │   │   ├── upload/
 │   │   │   │   ├── __init__.py
-│   │   │   │   ├── router.py         # POST /upload
-│   │   │   │   ├── schemas.py        # UploadResponse, FileValidation
-│   │   │   │   └── service.py        # process_excel_file()
+│   │   │   │   ├── router.py         # POST /upload/signed-url, POST /upload/process
+│   │   │   │   ├── schemas.py        # SignedUrlRequest, UploadProcess, UploadStatus
+│   │   │   │   ├── service.py        # generate_signed_url(), process_upload()
+│   │   │   │   ├── gcs_client.py     # GCS operations (upload, download, delete)
+│   │   │   │   └── zip_handler.py    # extract_and_merge_excel_parts()
 │   │   │   │
 │   │   │   ├── rules/
 │   │   │   │   ├── __init__.py
@@ -721,8 +1007,9 @@ store-icu/
 │   │   │   │   └── index.ts
 │   │   │   │
 │   │   │   ├── upload/
-│   │   │   │   ├── FileUpload.tsx
+│   │   │   │   ├── FileUpload.tsx        # Drag-drop, accepts .xlsx/.xls/.zip
 │   │   │   │   ├── FileUpload.test.tsx
+│   │   │   │   ├── UploadProgress.tsx    # Progress bar, status messages
 │   │   │   │   └── index.ts
 │   │   │   │
 │   │   │   ├── sync/
@@ -746,7 +1033,7 @@ store-icu/
 │   │   ├── hooks/
 │   │   │   ├── useBrands.ts
 │   │   │   ├── useEvaluations.ts
-│   │   │   ├── useUpload.ts
+│   │   │   ├── useUpload.ts          # Signed URL flow, progress tracking
 │   │   │   ├── useSync.ts
 │   │   │   ├── useRules.ts
 │   │   │   ├── useSSE.ts             # Server-sent events hook
@@ -781,12 +1068,14 @@ store-icu/
 │   │   ├── main.tf                   # Provider, project, region
 │   │   ├── variables.tf              # aha_sicu_ prefix, asia-southeast1
 │   │   ├── outputs.tf                # Cloud Run URL, etc.
+│   │   ├── artifact_registry.tf      # aha_sicu_registry (cleanup: keep 2 latest)
 │   │   ├── cloud_run.tf              # aha_sicu_api service
-│   │   ├── artifact_registry.tf      # aha_sicu_registry
-│   │   ├── secrets.tf                # aha_sicu_db_url, etc.
+│   │   ├── secrets.tf                # db_url, gsheets_credentials, firebase_admin
+│   │   ├── storage.tf                # aha_sicu_uploads bucket (24h lifecycle)
 │   │   ├── scheduler.tf              # aha_sicu_daily_sync
 │   │   ├── firebase.tf               # Project, hosting site
-│   │   ├── iam.tf                    # Service accounts, permissions
+│   │   ├── iam.tf                    # Service accounts (api, scheduler, sheets, deploy)
+│   │   ├── workload_identity.tf      # GitHub Actions OIDC (no SA keys!)
 │   │   └── environments/
 │   │       ├── dev.tfvars
 │   │       └── prod.tfvars
@@ -859,9 +1148,11 @@ SSE Event (if applicable) → useSSE hook → Other users' UI
 - `hooks/useBrands.ts`, `hooks/useSync.ts`
 
 **FR6-FR11 (Data Input & Upload):**
-- `modules/upload/` - Excel file processing
-- `components/upload/` - File upload UI
-- `hooks/useUpload.ts`
+- `modules/upload/` - GCS signed URLs, Excel/ZIP processing
+- `modules/upload/zip_handler.py` - Multi-part Excel merge from Seller Center exports
+- `modules/upload/gcs_client.py` - GCS operations
+- `components/upload/` - File upload UI with progress
+- `hooks/useUpload.ts` - Signed URL flow, direct GCS upload
 
 **FR12-FR22 (Calculators & Scoring):**
 - `calculators/` - All calculation logic (pure functions)
@@ -912,13 +1203,16 @@ SSE Event (if applicable) → useSSE hook → Other users' UI
 | Google Sheets API | `modules/sync/service.py` | Brand Database sync |
 | Firebase Auth | `core/security.py`, `firebase/` | User authentication |
 | Neon PostgreSQL | `db/connection.py` | Data persistence |
+| Google Cloud Storage | `modules/upload/gcs_client.py` | Large file uploads (Excel/ZIP) |
 
 **Internal Communication:**
 
 | From | To | Method |
 |------|-----|--------|
 | Frontend | Backend | REST API via openapi-fetch |
+| Frontend | GCS | Direct upload via signed URL |
 | Backend | Frontend | SSE for real-time updates |
+| Backend | GCS | Download for processing, then delete |
 | Modules | Calculators | Direct function calls |
 | Modules | Database | Via `db/queries/` |
 
@@ -939,7 +1233,7 @@ SSE Event (if applicable) → useSSE hook → Other users' UI
 | FR Category | Architectural Support | Status |
 |-------------|----------------------|--------|
 | FR1-FR5 (Brand Data) | `modules/sync/`, `modules/brands/` | ✅ |
-| FR6-FR11 (Data Input) | `modules/upload/`, Polars | ✅ |
+| FR6-FR11 (Data Input) | `modules/upload/`, GCS signed URLs, ZIP handler, Polars | ✅ |
 | FR12-FR22 (Calculators) | `calculators/`, `modules/evaluations/` | ✅ |
 | FR23-FR26 (Rules) | `modules/rules/`, role-based auth | ✅ |
 | FR27-FR33 (History) | `modules/evaluations/`, pagination | ✅ |
