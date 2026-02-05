@@ -1,0 +1,1 @@
+"""Security: Firebase Auth validation."""
