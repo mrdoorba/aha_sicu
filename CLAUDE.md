@@ -18,6 +18,11 @@
 - Don't bundle unrelated changes together
 - **Never include Co-Authored-By lines** in commit messages
 - **Always commit when work is complete** - Don't wait to be asked
+- **Always end commit messages with:** `Author: Mr. Door`
+
+## PR Standards
+
+- **Always end PR descriptions with:** `Author: Mr. Door`
 
 ## Before Any Commit
 
