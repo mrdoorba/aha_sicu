@@ -1,6 +1,6 @@
 # Story 1.1: Initialize Project Structure
 
-Status: ready-for-dev
+Status: done
 
 ## Story
 
@@ -49,39 +49,39 @@ So that **all future development has a consistent foundation to build upon**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Initialize Backend Structure (AC: #1)
-  - [ ] Create `backend/` directory with Python package structure
-  - [ ] Create `backend/pyproject.toml` with UV config and dependencies (FastAPI, uvicorn, pydantic-settings)
-  - [ ] Create `backend/app/__init__.py`
-  - [ ] Create `backend/app/main.py` with FastAPI app and health endpoint
-  - [ ] Create `backend/app/config.py` with Pydantic BaseSettings
-  - [ ] Create `backend/app/core/` directory with placeholder files
-  - [ ] Create `backend/app/db/` directory with connection.py, queries/, migrations/
-  - [ ] Create `backend/app/modules/__init__.py`
-  - [ ] Create `backend/app/calculators/__init__.py`
-  - [ ] Create `backend/Dockerfile` for Cloud Run
-  - [ ] Create `backend/.env.example`
-  - [ ] Verify backend runs with `uv run uvicorn app.main:app`
+- [x] Task 1: Initialize Backend Structure (AC: #1)
+  - [x] Create `backend/` directory with Python package structure
+  - [x] Create `backend/pyproject.toml` with UV config and dependencies (FastAPI, uvicorn, pydantic-settings)
+  - [x] Create `backend/app/__init__.py`
+  - [x] Create `backend/app/main.py` with FastAPI app and health endpoint
+  - [x] Create `backend/app/config.py` with Pydantic BaseSettings
+  - [x] Create `backend/app/core/` directory with placeholder files
+  - [x] Create `backend/app/db/` directory with connection.py, queries/, migrations/
+  - [x] Create `backend/app/modules/__init__.py`
+  - [x] Create `backend/app/calculators/__init__.py`
+  - [x] Create `backend/Dockerfile` for Cloud Run
+  - [x] Create `backend/.env.example`
+  - [x] Verify backend runs with `uv run uvicorn app.main:app`
 
-- [ ] Task 2: Initialize Frontend Structure (AC: #2)
-  - [ ] Create `frontend/` using Vite React TypeScript template
-  - [ ] Install and configure Tailwind CSS
-  - [ ] Install TanStack Query, React Hook Form, openapi-fetch
-  - [ ] Create directory structure: components/, pages/, hooks/, services/, firebase/, context/
-  - [ ] Configure `tsconfig.json` with strict mode
-  - [ ] Update `vite.config.ts` for project needs
-  - [ ] Create placeholder App.tsx with basic content
-  - [ ] Verify frontend runs with `npm run dev`
+- [x] Task 2: Initialize Frontend Structure (AC: #2)
+  - [x] Create `frontend/` using Vite React TypeScript template
+  - [x] Install and configure Tailwind CSS
+  - [x] Install TanStack Query, React Hook Form, openapi-fetch
+  - [x] Create directory structure: components/, pages/, hooks/, services/, firebase/, context/
+  - [x] Configure `tsconfig.json` with strict mode
+  - [x] Update `vite.config.ts` for project needs
+  - [x] Create placeholder App.tsx with basic content
+  - [x] Verify frontend runs with `npm run dev`
 
-- [ ] Task 3: Initialize Infrastructure Structure (AC: #3)
-  - [ ] Create `infrastructure/terraform/` directory
-  - [ ] Create `main.tf` with provider placeholder
-  - [ ] Create `variables.tf` with basic variables
-  - [ ] Create `.github/workflows/ci.yml` stub
+- [x] Task 3: Initialize Infrastructure Structure (AC: #3)
+  - [x] Create `infrastructure/terraform/` directory
+  - [x] Create `main.tf` with provider placeholder
+  - [x] Create `variables.tf` with basic variables
+  - [x] Create `.github/workflows/ci.yml` stub
 
-- [ ] Task 4: Root Project Setup (AC: #4)
-  - [ ] Create `README.md` with project overview
-  - [ ] Create `.gitignore` for Python, Node, Terraform, environment files
+- [x] Task 4: Root Project Setup (AC: #4)
+  - [x] Create `README.md` with project overview
+  - [x] Create `.gitignore` for Python, Node, Terraform, environment files
 
 ## Dev Notes
 
@@ -286,10 +286,105 @@ npm run dev
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Debug Log References
 
+- Tailwind CSS v4 required @tailwindcss/postcss plugin and @import syntax instead of v3 directives
+
 ### Completion Notes List
 
+- Task 1: Created backend structure with FastAPI, health endpoint, and modular package layout
+- Task 2: Scaffolded frontend with Vite + React + TypeScript, configured Tailwind CSS v4, installed TanStack Query/RHF/openapi-fetch
+- Task 3: Created Terraform structure with GCP provider and GitHub Actions CI workflow
+- Task 4: Added README with project overview and getting started guide
+
 ### File List
+
+**New Files:**
+- backend/pyproject.toml
+- backend/Dockerfile
+- backend/.env.example
+- backend/uv.lock
+- backend/app/__init__.py
+- backend/app/main.py
+- backend/app/config.py
+- backend/app/core/__init__.py
+- backend/app/core/dependencies.py
+- backend/app/core/exceptions.py
+- backend/app/core/middleware.py
+- backend/app/core/security.py
+- backend/app/db/__init__.py
+- backend/app/db/connection.py
+- backend/app/db/queries/__init__.py
+- backend/app/db/migrations/__init__.py
+- backend/app/modules/__init__.py
+- backend/app/calculators/__init__.py
+- backend/tests/__init__.py
+- backend/tests/test_main.py
+- frontend/ (scaffolded via Vite template)
+- frontend/package.json
+- frontend/vite.config.ts
+- frontend/postcss.config.js
+- frontend/tailwind.config.js
+- frontend/tsconfig.json
+- frontend/tsconfig.app.json
+- frontend/tsconfig.node.json
+- frontend/src/main.tsx
+- frontend/src/App.tsx
+- frontend/src/index.css
+- frontend/src/vite-env.d.ts
+- frontend/src/components/.gitkeep
+- frontend/src/pages/.gitkeep
+- frontend/src/hooks/.gitkeep
+- frontend/src/services/.gitkeep
+- frontend/src/firebase/.gitkeep
+- frontend/src/context/.gitkeep
+- infrastructure/terraform/main.tf
+- infrastructure/terraform/variables.tf
+- .github/workflows/ci.yml
+- README.md
+
+## Senior Developer Review (AI)
+
+**Review Date:** 2026-02-05
+**Reviewer:** Claude Opus 4.5 (Adversarial Code Review)
+**Outcome:** APPROVED (after fixes)
+
+### Issues Found & Resolved
+
+| ID | Severity | Issue | Resolution |
+|----|----------|-------|------------|
+| HIGH-1 | HIGH | Missing `tailwind.config.js` (AC violated) | Created `frontend/tailwind.config.js` |
+| HIGH-2 | HIGH | Story claimed file that didn't exist | File now exists, File List updated |
+| MEDIUM-1 | MEDIUM | Deprecated Pydantic `class Config` pattern | Updated to `model_config = SettingsConfigDict(...)` |
+| MEDIUM-2 | MEDIUM | Missing `vite-env.d.ts` type declaration | Created `frontend/src/vite-env.d.ts` |
+| MEDIUM-3 | MEDIUM | Generic package.json name "frontend" | Changed to `store-icu-frontend` |
+| LOW-1 | LOW | "staging" mentioned in TF variables | Updated description to "dev or prod" |
+| LOW-2 | LOW | Default CSS remnants in index.css | Cleaned up, kept only Tailwind import |
+| LOW-3 | LOW | CI lacks explicit type-check step | Added `tsc --noEmit` step |
+
+### Files Modified During Review
+
+- `frontend/tailwind.config.js` (created)
+- `frontend/src/vite-env.d.ts` (created)
+- `backend/app/config.py` (updated Pydantic config pattern)
+- `frontend/package.json` (renamed to store-icu-frontend)
+- `frontend/src/index.css` (cleaned up)
+- `infrastructure/terraform/variables.tf` (removed staging reference)
+- `.github/workflows/ci.yml` (added type-check step)
+
+### Verification
+
+All Acceptance Criteria now satisfied:
+- [x] Backend structure exists with all required files
+- [x] Frontend structure exists with all required files (including tailwind.config.js)
+- [x] Infrastructure structure exists
+- [x] Root project files present
+- [x] Backend health endpoint verified
+- [x] Frontend placeholder page verified
+
+## Change Log
+
+- 2026-02-05: Code review completed - 8 issues found and fixed, status updated to done
+- 2026-02-05: Story 1.1 implemented - project structure initialized with backend, frontend, infrastructure

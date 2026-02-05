@@ -187,7 +187,7 @@ This document provides the complete epic and story breakdown for Store ICU, deco
 
 ## Epic List
 
-### Epic 1: Project Foundation & Secure Access
+### Epic 1: Secure User Access
 Users can securely log in and access the Store ICU application.
 **FRs covered:** FR36, FR37
 **Additional:** Project initialization (lean modular structure from Architecture)
@@ -210,11 +210,13 @@ System owner can view and modify scoring thresholds without code deployment.
 
 ---
 
-## Epic 1: Project Foundation & Secure Access
+## Epic 1: Secure User Access
 
 Users can securely log in and access the Store ICU application.
 
-### Story 1.1: Initialize Project Structure
+### Story 1.1: Initialize Project Structure (Sprint 0)
+
+> **Sprint 0 Context:** This is a technical enabler story required before user-facing stories can begin. Common pattern for greenfield projects.
 
 As a **developer**,
 I want **the project scaffolded with the lean modular structure**,
