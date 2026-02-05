@@ -20,5 +20,10 @@ class Settings(BaseSettings):
     firebase_credentials_path: str | None = None
     firebase_credentials_json: str | None = None
 
+    # Google Sheets API
+    gsheets_credentials_path: str | None = None
+    gsheets_spreadsheet_id: str | None = None
+    gsheets_range: str = "Sheet1!A:Z"
+
 
 settings = Settings()
