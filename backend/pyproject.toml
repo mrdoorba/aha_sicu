@@ -11,7 +11,7 @@ dependencies = [
     "asyncpg>=0.30.0",
     "alembic>=1.13.0",
     "google-api-python-client>=2.150.0",
-    "google-auth>=2.35.0",
+    "google-auth>=2.38.0",
     "psycopg2-binary>=2.9.11",
     "sse-starlette>=3.2.0",
 ]

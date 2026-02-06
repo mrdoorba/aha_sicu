@@ -53,7 +53,7 @@ development_status:
   2-2-manual-sync-trigger-api: done
   2-3-brand-list-ui-with-sync-status: done
   2-4-real-time-sync-status-via-sse: done
-  2-5-daily-automatic-sync: backlog
+  2-5-daily-automatic-sync: review
   epic-2-retrospective: optional
 
   # Epic 3: Brand Evaluation Workflow
