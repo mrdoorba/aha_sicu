@@ -1,6 +1,6 @@
 # Story 2.5: Daily Automatic Sync
 
-Status: review
+Status: done
 
 ## Story
 
@@ -273,19 +273,41 @@ Claude Opus 4.6 (claude-opus-4-6)
 
 - backend/pyproject.toml (modified — google-auth version bump to >=2.38.0)
 - backend/uv.lock (modified — lock file updated)
-- backend/app/config.py (modified — added cloud_run_url setting)
-- backend/app/core/oidc.py (new — OIDC token verification)
-- backend/app/core/dependencies.py (modified — dual auth: Firebase + OIDC fallback)
+- backend/app/config.py (modified — added cloud_run_url + allowed_scheduler_emails settings)
+- backend/app/core/oidc.py (new — OIDC token verification with cached transport, broad error handling)
+- backend/app/core/dependencies.py (modified — dual auth: Firebase + OIDC fallback, SA email allowlist, exception chaining, debug logging)
 - backend/tests/unit/core/__init__.py (new — test package init)
-- backend/tests/unit/core/test_oidc.py (new — 7 OIDC unit tests)
-- backend/tests/integration/api/test_sync_trigger.py (modified — added 2 OIDC integration tests, updated invalid token test)
+- backend/tests/unit/core/test_oidc.py (new — 8 OIDC unit tests incl. transport error)
+- backend/tests/integration/api/test_sync_trigger.py (modified — 4 OIDC integration tests incl. allowlist rejection, run_sync assertion)
 - backend/tests/integration/api/test_sync.py (modified — updated invalid token test for dual auth)
 - backend/tests/integration/api/test_auth.py (modified — updated invalid token test for dual auth)
 - infrastructure/terraform/scheduler.tf (new — Cloud Scheduler job + API enablement)
 - infrastructure/terraform/iam.tf (new — scheduler service account + IAM binding)
-- infrastructure/terraform/variables.tf (modified — added cloud_run_url, cloud_run_service_name variables)
+- infrastructure/terraform/variables.tf (modified — added cloud_run_url with validation, cloud_run_service_name variables)
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door | **Date:** 2026-02-06 | **Model:** Claude Opus 4.6
+
+**Findings:** 2 High, 4 Medium, 2 Low — **All 8 fixed automatically**
+
+| # | Severity | Issue | Fix Applied |
+|---|----------|-------|-------------|
+| H1 | HIGH | No SA email whitelist in OIDC auth — any valid OIDC token accepted | Added `allowed_scheduler_emails` config + allowlist check in `dependencies.py` |
+| H2 | HIGH | Exception chaining lost in dual-auth fallback | Added `from oidc_exc` to raise in `dependencies.py:50` |
+| M1 | MEDIUM | `verify_oidc_token` only catches `ValueError`, misses network errors | Added broad `except Exception` fallback with logging in `oidc.py` |
+| M2 | MEDIUM | `cloud_run_url` TF variable lacks validation | Added validation block requiring empty or `https://` prefix |
+| M3 | MEDIUM | `requests.Request()` recreated per call | Cached as module-level `_google_transport_request` in `oidc.py` |
+| M4 | MEDIUM | OIDC integration test doesn't assert `run_sync` called | Added `mock_run_sync.assert_called_once()` |
+| L1 | LOW | Incomplete argument assertion in audience test | Added `assert call_args[0][0] == "valid-token"` |
+| L2 | LOW | No debug logging when Firebase fails before OIDC fallback | Added `logger.debug("Firebase auth failed, attempting OIDC fallback")` |
+
+**New tests added:** `test_verify_oidc_token_transport_error`, `test_post_sync_oidc_rejected_when_email_not_in_allowlist`
+**Total tests after fixes:** 79 passing (0 regressions)
+**Verdict:** APPROVED after fixes
 
 ## Change Log
 
 - 2026-02-06: Story 2.5 implementation complete — added OIDC dual-auth support for Cloud Scheduler, Terraform infrastructure for daily sync schedule, and comprehensive test coverage (76 tests, 0 regressions)
+- 2026-02-06: Code review fixes — resolved 8 issues (2 HIGH, 4 MEDIUM, 2 LOW): SA email allowlist, exception chaining, transport error handling, TF variable validation, cached Request(), test assertions, debug logging. 79 tests passing.
 
