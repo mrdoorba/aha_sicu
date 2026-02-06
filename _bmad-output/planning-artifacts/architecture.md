@@ -815,11 +815,28 @@ src/components/{Feature}/
 - Raise custom exceptions from `core/exceptions.py`
 - Let middleware convert to structured error responses
 - Log errors with context before raising
+- Always use exception chaining: `raise NewException(...) from original_exception` — never lose the original traceback
+- Never use bare `except Exception` that swallows errors silently — always log or re-raise
+- Network/external service errors must have broad `except Exception` with logging fallback, not just specific exception types
 
 **Frontend:**
 - TanStack Query handles API errors automatically
 - Display user-friendly messages from `detail` field
 - Log `code` for debugging
+- TanStack Query `queryFn` MUST throw on error — never return `null` or swallow errors silently
+- Every query/mutation error state MUST have visible UI (error message, retry button) — not just `console.log`
+
+#### SQL Safety Rules
+
+**ILIKE Queries (MUST follow):**
+- All user-input used in `ILIKE` queries MUST be escaped using `_escape_like()` helper to prevent pattern injection (`%`, `_`, `\`)
+- All `ILIKE` clauses using escaped input MUST include `ESCAPE '\'` — the escape helper is useless without this clause
+- Example: `WHERE brand_name ILIKE '%' || $1 || '%' ESCAPE '\'`
+- Search query parameters MUST have `max_length` validation (e.g., `Query(max_length=200)`)
+
+**Parameterized SQL:**
+- Always use `$1, $2` parameter placeholders — never f-strings or string concatenation for user input
+- Table names cannot be parameterized — use a validated allowlist (e.g., `_VALID_TABLES` frozenset with `_validate_table()` helper)
 
 #### Loading States
 
@@ -853,6 +870,12 @@ src/components/{Feature}/
 - [ ] Dates are ISO 8601 with timezone
 - [ ] Errors use structured format with code prefix
 - [ ] New modules follow the defined structure
+- [ ] Response schemas match Acceptance Criteria field-by-field (names, types, structure)
+- [ ] ILIKE queries include both `_escape_like()` AND `ESCAPE '\'` clause
+- [ ] Error states have visible UI — no swallowed errors in queryFn or services
+- [ ] Exception chaining preserved (`raise ... from e`) — no lost tracebacks
+- [ ] Frontend hooks use `apiClient.ts` (openapi-fetch) — never raw `fetch()`
+- [ ] File List matches `git diff` output — all changed files accounted for
 
 ### Pattern Examples
 

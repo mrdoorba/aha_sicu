@@ -48,13 +48,14 @@ development_status:
   epic-1-retrospective: done
 
   # Epic 2: Brand Data Availability
-  epic-2: in-progress
+  epic-2: done
   2-1-google-sheets-sync-backend: done
   2-2-manual-sync-trigger-api: done
   2-3-brand-list-ui-with-sync-status: done
   2-4-real-time-sync-status-via-sse: done
   2-5-daily-automatic-sync: done
-  epic-2-retrospective: optional
+  2-6-retrofit-accessibility-basics: backlog
+  epic-2-retrospective: done
 
   # Epic 3: Brand Evaluation Workflow
   epic-3: backlog

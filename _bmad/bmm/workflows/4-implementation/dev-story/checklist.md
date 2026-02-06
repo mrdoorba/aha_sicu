@@ -33,6 +33,7 @@ validation-rules:
 
 - [ ] **All Tasks Complete:** Every task and subtask marked complete with [x]
 - [ ] **Acceptance Criteria Satisfaction:** Implementation satisfies EVERY Acceptance Criterion in the story
+- [ ] **Response Schema Verification:** API response schemas match ACs field-by-field — verify field names, types, and structure against AC examples
 - [ ] **No Ambiguous Implementation:** Clear, unambiguous implementation that meets story requirements
 - [ ] **Edge Cases Handled:** Error conditions and edge cases appropriately addressed
 - [ ] **Dependencies Within Scope:** Only uses dependencies specified in story or project-context.md
@@ -50,10 +51,21 @@ validation-rules:
 ## 📝 Documentation & Tracking
 
 - [ ] **File List Complete:** File List includes EVERY new, modified, or deleted file (paths relative to repo root)
+- [ ] **File List Verified Against Git:** Run `git diff` on feature branch and cross-check every changed file appears in File List — no omissions
 - [ ] **Dev Agent Record Updated:** Contains relevant Implementation Notes and/or Debug Log for this work
 - [ ] **Change Log Updated:** Change Log includes clear summary of what changed and why
 - [ ] **Review Follow-ups:** All review follow-up tasks (marked [AI-Review]) completed and corresponding review items marked resolved (if applicable)
 - [ ] **Story Structure Compliance:** Only permitted sections of story file were modified
+
+## ♿ Accessibility Basics (Frontend Stories)
+
+- [ ] **Semantic HTML:** Proper elements used (buttons, headings, landmarks, labels) — no click-handler divs
+- [ ] **Keyboard Navigation:** All interactive elements reachable and operable via keyboard — no mouse-only traps
+- [ ] **Form Labels & Errors:** All inputs have visible labels; error messages are clear and associated with their fields
+- [ ] **Color Not Sole Indicator:** Status, errors, and states use icons or text alongside color
+- [ ] **Contrast & Readability:** Text meets reasonable contrast ratio; font sizes are legible
+- [ ] **Loading & Error States:** State changes are visible in DOM (not just visual animation) so screen readers can detect them
+- [ ] **Alt Text:** Meaningful images and icons have descriptive alt text; decorative ones are hidden from assistive tech
 
 ## 🔚 Final Status Verification
 
