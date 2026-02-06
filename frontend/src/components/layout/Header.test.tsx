@@ -64,7 +64,7 @@ describe('Header', () => {
 
     // Click the confirm logout button in modal
     const confirmButtons = screen.getAllByRole('button', { name: /logout/i });
-    const confirmButton = confirmButtons.find(btn => btn.textContent === 'Logout' && btn.className.includes('bg-[#EF4444]'));
+    const confirmButton = confirmButtons.find(btn => btn.textContent === 'Logout' && btn.className.includes('bg-destructive'));
     if (confirmButton) {
       await user.click(confirmButton);
     }

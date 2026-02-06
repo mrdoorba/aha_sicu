@@ -59,7 +59,7 @@ export const Header = () => {
 
   return (
     <>
-      <header className="bg-[#18181B] text-white">
+      <header className="bg-foreground text-white">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             <h1 className="text-xl font-semibold">Store ICU</h1>
@@ -92,11 +92,11 @@ export const Header = () => {
           >
             <h2
               id="logout-modal-title"
-              className="text-lg font-semibold text-[#18181B] mb-2"
+              className="text-lg font-semibold text-foreground mb-2"
             >
               Confirm Logout
             </h2>
-            <p id="logout-modal-description" className="text-[#71717A] mb-4">
+            <p id="logout-modal-description" className="text-muted-foreground mb-4">
               Are you sure you want to log out?
             </p>
             <div className="flex gap-3 justify-end">
@@ -104,14 +104,14 @@ export const Header = () => {
                 ref={cancelButtonRef}
                 onClick={handleCancelLogout}
                 disabled={isLoggingOut}
-                className="px-4 py-2 text-sm font-medium text-[#71717A] hover:text-[#18181B] transition-colors"
+                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
               >
                 Cancel
               </button>
               <button
                 onClick={handleConfirmLogout}
                 disabled={isLoggingOut}
-                className="px-4 py-2 text-sm font-medium bg-[#EF4444] text-white rounded-lg hover:bg-[#DC2626] disabled:opacity-50 transition-colors"
+                className="px-4 py-2 text-sm font-medium bg-destructive text-white rounded-lg hover:bg-destructive/85 disabled:opacity-50 transition-colors"
               >
                 {isLoggingOut ? 'Logging out...' : 'Logout'}
               </button>
