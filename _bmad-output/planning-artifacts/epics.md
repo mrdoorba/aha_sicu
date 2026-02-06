@@ -147,7 +147,7 @@ This document provides the complete epic and story breakdown for Store ICU, deco
 
 | FR | Epic | Description |
 |----|------|-------------|
-| FR1 | Epic 2 | Auto sync from Google Sheets |
+| FR1 | Epic 2 | Auto sync from two Google Sheets (VP + Meeting) |
 | FR2 | Epic 2 | Manual sync trigger |
 | FR3 | Epic 2 | View sync status |
 | FR4 | Epic 2 | Display sync errors |
@@ -193,7 +193,7 @@ Users can securely log in and access the Store ICU application.
 **Additional:** Project initialization (lean modular structure from Architecture)
 
 ### Epic 2: Brand Data Availability
-BD team can view synced brand data from Google Sheets and see live sync status.
+BD team can view synced brand data from two Google Sheets (VP + Meeting) and see live sync status.
 **FRs covered:** FR1, FR2, FR3, FR4, FR5, FR34
 
 ### Epic 3: Brand Evaluation Workflow
@@ -325,7 +325,7 @@ BD team can view synced brand data from Google Sheets and see live sync status.
 ### Story 2.1: Google Sheets Sync Backend
 
 As a **system**,
-I want **to sync brand data from the Brand Database Google Sheet**,
+I want **to sync brand data from two Google Sheets (VP and 1st Meeting)**,
 So that **the BD team has up-to-date brand information to evaluate**.
 
 **Acceptance Criteria:**
@@ -348,23 +348,33 @@ So that **the BD team has up-to-date brand information to evaluate**.
 **Then** store error details in `sync_status` with `success: false`
 **And** log error with `SYNC_FAILED` code and actionable message
 
-**Database Migration:** Create `brands` table:
+**Database Migration:** Create brand data tables:
+
+`brand_vp_data` (primary brand list from VP sheet):
 - `id` SERIAL PRIMARY KEY
-- `external_id` VARCHAR(100) UNIQUE (from Google Sheet)
-- `name` VARCHAR(255) NOT NULL
-- `category` VARCHAR(100) (e.g., Fashion, Non-Fashion)
-- `marketplace` VARCHAR(100)
-- `raw_data` JSONB (store full row for flexibility)
+- `brand_name` VARCHAR(255) UNIQUE NOT NULL
+- `raw_data` JSONB NOT NULL
 - `created_at` TIMESTAMPTZ DEFAULT NOW()
 - `updated_at` TIMESTAMPTZ DEFAULT NOW()
+- Indexes: `idx_brand_vp_data_brand_name`, `idx_brand_vp_data_updated_at`
 
-Create `sync_status` table:
+`brand_meeting_data` (supplementary from 1st Meeting sheet):
+- `id` SERIAL PRIMARY KEY
+- `brand_name` VARCHAR(255) UNIQUE NOT NULL
+- `raw_data` JSONB NOT NULL
+- `created_at` TIMESTAMPTZ DEFAULT NOW()
+- `updated_at` TIMESTAMPTZ DEFAULT NOW()
+- Indexes: `idx_brand_meeting_data_brand_name`, `idx_brand_meeting_data_updated_at`
+
+`sync_status`:
 - `id` SERIAL PRIMARY KEY
 - `started_at` TIMESTAMPTZ NOT NULL
 - `completed_at` TIMESTAMPTZ
 - `success` BOOLEAN
-- `brands_synced` INTEGER
+- `brands_synced` INTEGER DEFAULT 0
 - `error_message` TEXT
+- `sync_details` JSONB (per-sheet breakdown)
+- Index: `idx_sync_status_started_at` DESC
 
 ---
 
@@ -407,12 +417,17 @@ So that **I can select a brand to evaluate and know if data is fresh**.
 
 **Acceptance Criteria:**
 
+**Pre-requisite Task:** Initialize shadcn/ui in the frontend project (Tailwind v4 compatible).
+Install foundation components: Button, Input, Card, Badge, Table, Toast, Dialog, Progress.
+
 **Given** I am logged in and on the Brands page
 **When** the page loads
 **Then** I see a header showing "Last synced: [timestamp]" or "Sync in progress..."
+**And** sync status shows per-sheet breakdown (VP synced, Meeting synced)
 **And** I see a "Sync Now" button
-**And** I see a paginated list of brands (20 per page)
-**And** each brand card shows: name, category, marketplace
+**And** I see a paginated list of brands from VP data (20 per page)
+**And** each brand card shows: brand name and key fields from raw_data
+**And** if Meeting data exists for a brand, supplementary info is displayed
 
 **Given** I click "Sync Now"
 **When** the sync starts
@@ -498,7 +513,7 @@ So that **I can begin the evaluation workflow**.
 
 **Acceptance Criteria:**
 
-**Given** I am on the Brands page
+**Given** I am on the Brands page (showing VP brand list)
 **When** I click "Evaluate" on a brand card
 **Then** I am navigated to `/evaluation/{brand_id}`
 **And** I see the brand name and basic info at the top
@@ -540,7 +555,7 @@ So that **the system can process it through the calculators**.
 
 **Database Migration:** Create `brand_uploads` table:
 - `id` SERIAL PRIMARY KEY
-- `brand_id` INTEGER REFERENCES brands(id)
+- `brand_id` INTEGER REFERENCES brand_vp_data(id)
 - `filename` VARCHAR(255)
 - `file_size` INTEGER
 - `parsed_data` JSONB (extracted data from Polars)
@@ -579,7 +594,7 @@ So that **I can provide information that isn't in the Excel file**.
 
 **Database Migration:** Create `evaluation_inputs` table:
 - `id` SERIAL PRIMARY KEY
-- `brand_id` INTEGER REFERENCES brands(id)
+- `brand_id` INTEGER REFERENCES brand_vp_data(id)
 - `user_id` INTEGER REFERENCES users(id)
 - `manual_data` JSONB (flexible key-value for manual inputs)
 - `created_at` TIMESTAMPTZ DEFAULT NOW()
@@ -621,7 +636,7 @@ So that **the BD team gets the ads keyword analysis as part of the evaluation**.
 
 **Database Migration:** Create `calculator_results` table:
 - `id` SERIAL PRIMARY KEY
-- `brand_id` INTEGER REFERENCES brands(id)
+- `brand_id` INTEGER REFERENCES brand_vp_data(id)
 - `calculator_type` VARCHAR(50) (ads_keyword, discount, top_sku)
 - `score` DECIMAL(10,2)
 - `details` JSONB
@@ -814,7 +829,7 @@ So that **it becomes part of the evaluation history for this brand**.
 
 **Database Migration:** Create `evaluations` table:
 - `id` SERIAL PRIMARY KEY
-- `brand_id` INTEGER REFERENCES brands(id)
+- `brand_id` INTEGER REFERENCES brand_vp_data(id)
 - `user_id` INTEGER REFERENCES users(id)
 - `template` VARCHAR(20) (fashion, non_fashion)
 - `final_score` DECIMAL(5,2)
@@ -840,7 +855,7 @@ So that **I can review the team's work and find specific evaluations**.
 **Given** I am logged in and navigate to `/history`
 **When** the page loads
 **Then** I see a paginated list of evaluations (20 per page)
-**And** each row shows: Brand name, Final score, Template, Evaluator, Date
+**And** each row shows: Brand name (from VP data), Final score, Template, Evaluator, Date
 **And** I can click a row to view full details
 
 **Given** there are more than 20 evaluations
@@ -863,7 +878,7 @@ So that **I can quickly find a specific brand's evaluation history**.
 
 **Given** I am on the History page
 **When** I type in the search box (e.g., "Nike")
-**Then** the list filters to evaluations where brand name contains the search term (case-insensitive)
+**Then** the list filters to evaluations where brand name (from brand_vp_data) contains the search term (case-insensitive)
 **And** partial matches work (e.g., "Nik" matches "Nike")
 
 **Given** no results match my search
@@ -933,7 +948,7 @@ So that **I have complete context for decision-making**.
 **Given** I click on an evaluation in the history list
 **When** the detail view opens (modal or page)
 **Then** I see:
-- Brand name and basic info
+- Brand name and basic info (from VP data, enriched with Meeting data if available)
 - Final score with interpretation
 - Score breakdown table
 - All calculator results with details
