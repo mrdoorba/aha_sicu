@@ -5,6 +5,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Toaster } from './components/ui/sonner';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
+import { BrandsPage } from './pages/BrandsPage';
 
 const queryClient = new QueryClient();
 
@@ -20,6 +21,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <DashboardPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/brands"
+              element={
+                <ProtectedRoute>
+                  <BrandsPage />
                 </ProtectedRoute>
               }
             />
