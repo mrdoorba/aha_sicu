@@ -1,7 +1,7 @@
 """Pydantic schemas for sync module."""
 
 from datetime import datetime
-from typing import Literal
+from typing import Any, Literal
 
 from pydantic import BaseModel
 
@@ -46,3 +46,4 @@ class SyncStatusResponse(BaseModel):
     success: bool | None
     brands_synced: int
     error_message: str | None
+    sync_details: dict[str, Any] | None = None

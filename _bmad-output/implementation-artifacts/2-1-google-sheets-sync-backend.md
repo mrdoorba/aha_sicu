@@ -1,6 +1,6 @@
 # Story 2.1: Google Sheets Sync Backend
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -14,11 +14,11 @@ So that **the BD team has up-to-date brand information to evaluate**.
 
 1. **Given** the Google Sheets API credentials are configured (service account)
    **When** the sync service is triggered (manual or scheduled)
-   **Then** connect to the Brand Database spreadsheet using the configured Sheet ID
-   **And** read all brand rows from the designated range
-   **And** for each brand row, upsert into `brands` table (match by unique identifier)
-   **And** record sync timestamp in `sync_status` table
-   **And** return sync summary (brands synced count, errors if any)
+   **Then** connect to the configured spreadsheets (VP and Meeting) using the configured Sheet IDs
+   **And** read all brand rows from the designated ranges
+   **And** for each brand row, upsert into `brand_vp_data` and `brand_meeting_data` tables (match by brand name)
+   **And** record sync timestamp and per-sheet breakdown in `sync_status` table
+   **And** return sync summary (brands synced count per sheet, errors if any)
 
 2. **Given** the Google Sheets API returns a rate limit error
    **When** the sync is in progress
@@ -33,24 +33,27 @@ So that **the BD team has up-to-date brand information to evaluate**.
 ## Tasks / Subtasks
 
 - [x] Task 1: Create Database Migrations (AC: #1)
-  - [x] Create migration for `brands` table
-  - [x] Create migration for `sync_status` table
+  - [x] Create migration 002 for initial `brands` table
+  - [x] Create migration 003 for `sync_status` table
+  - [x] Create migration 004 to replace `brands` with `brand_vp_data` + `brand_meeting_data` (two-sheet model)
+  - [x] Create migration 005 to add `sync_details` JSONB to `sync_status` (per-sheet breakdown)
   - [x] Add indexes for performance (brand name search, sync timestamp)
   - [x] Run migrations and verify schema
 
 - [x] Task 2: Implement Database Queries (AC: #1, #3)
-  - [x] Create `backend/app/db/queries/brands.py` with brand CRUD queries
+  - [x] Create `backend/app/db/queries/brands.py` with brand data CRUD queries (supports both VP and Meeting tables)
   - [x] Create `backend/app/db/queries/sync_status.py` with sync status queries
-  - [x] Implement `upsert_brand()` using `ON CONFLICT DO UPDATE`
-  - [x] Implement `get_brands()` with pagination
-  - [x] Implement `create_sync_status()` and `update_sync_status()`
+  - [x] Implement `upsert_brand_data()` using `ON CONFLICT DO UPDATE` with table name validation
+  - [x] Implement `get_brand_data()` with pagination
+  - [x] Implement `create_sync_status()` and `update_sync_status()` (with `sync_details` JSONB)
 
 - [x] Task 3: Implement Google Sheets Client (AC: #1, #2)
   - [x] Create `backend/app/modules/sync/sheets_client.py`
   - [x] Configure Google Sheets API with service account credentials
-  - [x] Implement `fetch_brands_from_sheet()` method
-  - [x] Add exponential backoff retry logic for rate limits
-  - [x] Parse sheet data into structured format
+  - [x] Implement `fetch_sheet_data()` generic method with retry logic
+  - [x] Implement `fetch_vp_data()` and `fetch_meeting_data()` convenience methods
+  - [x] Add exponential backoff retry logic for rate limits (max 3 attempts)
+  - [x] Parse sheet data into structured format (header row becomes keys)
 
 - [x] Task 4: Implement Sync Service (AC: #1, #2, #3)
   - [x] Create `backend/app/modules/sync/service.py`
@@ -61,9 +64,10 @@ So that **the BD team has up-to-date brand information to evaluate**.
 
 - [x] Task 5: Create Sync Module Schema (AC: #1, #3)
   - [x] Create `backend/app/modules/sync/schemas.py`
-  - [x] Define `SyncStatus` response model
-  - [x] Define `SyncResult` model with counts and errors
-  - [x] Define `BrandFromSheet` model for raw sheet data
+  - [x] Define `SyncStatusResponse` model (with `sync_details` JSONB for per-sheet breakdown)
+  - [x] Define `SyncResult` model with VP/Meeting results
+  - [x] Define `SheetSyncResult` model per sheet
+  - [x] Define `SyncError` model for row-level failures
 
 - [x] Task 6: Create Sync API Router (AC: #1, #3)
   - [x] Create `backend/app/modules/sync/router.py`
@@ -87,22 +91,34 @@ So that **the BD team has up-to-date brand information to evaluate**.
 
 ### Database Schema
 
-**`brands` table:**
+**`brand_vp_data` table (VP sheet data):**
 ```sql
-CREATE TABLE brands (
+CREATE TABLE brand_vp_data (
     id SERIAL PRIMARY KEY,
-    external_id VARCHAR(100) UNIQUE NOT NULL,  -- from Google Sheet
-    name VARCHAR(255) NOT NULL,
-    category VARCHAR(100),  -- e.g., Fashion, Non-Fashion
-    marketplace VARCHAR(100),
-    raw_data JSONB,  -- store full row for flexibility
+    brand_name VARCHAR(255) NOT NULL,
+    raw_data JSONB NOT NULL,
     created_at TIMESTAMPTZ DEFAULT NOW(),
-    updated_at TIMESTAMPTZ DEFAULT NOW()
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT uq_brand_vp_data_brand_name UNIQUE (brand_name)
 );
 
-CREATE INDEX idx_brands_name ON brands(name);
-CREATE INDEX idx_brands_category ON brands(category);
-CREATE INDEX idx_brands_external_id ON brands(external_id);
+CREATE INDEX idx_brand_vp_data_brand_name ON brand_vp_data(brand_name);
+CREATE INDEX idx_brand_vp_data_updated_at ON brand_vp_data(updated_at DESC);
+```
+
+**`brand_meeting_data` table (1st Meeting sheet data):**
+```sql
+CREATE TABLE brand_meeting_data (
+    id SERIAL PRIMARY KEY,
+    brand_name VARCHAR(255) NOT NULL,
+    raw_data JSONB NOT NULL,
+    created_at TIMESTAMPTZ DEFAULT NOW(),
+    updated_at TIMESTAMPTZ DEFAULT NOW(),
+    CONSTRAINT uq_brand_meeting_data_brand_name UNIQUE (brand_name)
+);
+
+CREATE INDEX idx_brand_meeting_data_brand_name ON brand_meeting_data(brand_name);
+CREATE INDEX idx_brand_meeting_data_updated_at ON brand_meeting_data(updated_at DESC);
 ```
 
 **`sync_status` table:**
@@ -114,6 +130,7 @@ CREATE TABLE sync_status (
     success BOOLEAN,
     brands_synced INTEGER DEFAULT 0,
     error_message TEXT,
+    sync_details JSONB,  -- per-sheet VP/Meeting breakdown
     CONSTRAINT sync_status_completed_has_success CHECK (
         completed_at IS NULL OR success IS NOT NULL
     )
@@ -332,10 +349,18 @@ async def get_sync_status(current_user = Depends(get_current_user)):
 
 **Add to `.env.example`:**
 ```env
-# Google Sheets API
+# Google Sheets API - Credentials
 GSHEETS_CREDENTIALS_PATH=./credentials/gsheets-service-account.json
-GSHEETS_SPREADSHEET_ID=your-spreadsheet-id-here
-GSHEETS_RANGE=Sheet1!A:Z
+
+# VP Sheet (brand_vp_data)
+GSHEETS_VP_SPREADSHEET_ID=your-vp-spreadsheet-id
+GSHEETS_VP_RANGE=VP!A:Y
+GSHEETS_VP_BRAND_COLUMN=Nama Brand
+
+# 1st Meeting Sheet (brand_meeting_data)
+GSHEETS_MEETING_SPREADSHEET_ID=your-meeting-spreadsheet-id
+GSHEETS_MEETING_RANGE=ZAP: 1st Meeting!A:D
+GSHEETS_MEETING_BRAND_COLUMN=Brand
 ```
 
 ### Configuration Settings
@@ -345,10 +370,18 @@ GSHEETS_RANGE=Sheet1!A:Z
 class Settings(BaseSettings):
     # ... existing settings ...
 
-    # Google Sheets
-    GSHEETS_CREDENTIALS_PATH: str = "./credentials/gsheets-service-account.json"
-    GSHEETS_SPREADSHEET_ID: str
-    GSHEETS_RANGE: str = "Sheet1!A:Z"
+    # Google Sheets API - Credentials
+    gsheets_credentials_path: str | None = None
+
+    # VP Sheet (brand_vp_data)
+    gsheets_vp_spreadsheet_id: str | None = None
+    gsheets_vp_range: str = "VP!A:Y"
+    gsheets_vp_brand_column: str = "Nama Brand"
+
+    # 1st Meeting Sheet (brand_meeting_data)
+    gsheets_meeting_spreadsheet_id: str | None = None
+    gsheets_meeting_range: str = "ZAP: 1st Meeting!A:D"
+    gsheets_meeting_brand_column: str = "Brand"
 ```
 
 ### Error Codes
@@ -359,6 +392,7 @@ class Settings(BaseSettings):
 | `SYNC_FAILED` | 500 | General sync failure |
 | `SYNC_CREDENTIALS_MISSING` | 500 | Service account credentials not configured |
 | `SYNC_SHEET_NOT_FOUND` | 404 | Spreadsheet ID invalid or not accessible |
+| `SYNC_PERMISSION_DENIED` | 403 | Service account lacks sheet access |
 
 ### Naming Conventions (MUST FOLLOW)
 
@@ -367,7 +401,7 @@ class Settings(BaseSettings):
 | Python files | `snake_case.py` | `sheets_client.py` |
 | Python functions | `snake_case` | `fetch_brands_from_sheet()` |
 | Python classes | `PascalCase` | `GoogleSheetsClient` |
-| Database tables | `snake_case` plural | `brands`, `sync_status` |
+| Database tables | `snake_case` plural | `brand_vp_data`, `brand_meeting_data`, `sync_status` |
 | Database columns | `snake_case` | `external_id`, `created_at` |
 | API endpoints | `/kebab-case` | `/api/v1/sync/status` |
 | Error codes | `UPPER_SNAKE` prefix | `SYNC_RATE_LIMITED` |
@@ -505,7 +539,7 @@ Recent commits show Epic 1 is complete:
 
 2. **Credentials handling** — Service account JSON file should be stored securely. In production, use Secret Manager; in development, use local file path.
 
-3. **Sheet structure assumption** — Assumes first row is headers. Column names should match expected keys (ID, Brand Name, Category, Marketplace).
+3. **Sheet structure assumption** — Assumes first row is headers. VP sheet uses `Nama Brand` column, Meeting sheet uses `Brand` column. Column names are configurable via environment variables.
 
 4. **Partial sync tolerance** — If one brand fails to upsert, continue with others and report errors at the end.
 
@@ -530,25 +564,29 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 
 ### Completion Notes List
 
-- **Task 1**: Created migrations 002 (brands table) and 003 (sync_status table) with proper indexes for name search and timestamp ordering
-- **Task 2**: Implemented brand queries with upsert (ON CONFLICT DO UPDATE), pagination, and sync_status CRUD operations
-- **Task 3**: Implemented GoogleSheetsClient with lazy service initialization, exponential backoff retry (max 3 attempts, 1s/2s/4s delays), proper error handling for rate limits (429), not found (404), and credentials issues
-- **Task 4**: Implemented run_sync() orchestration with partial failure tolerance - continues syncing other brands if one fails, tracks all errors
-- **Task 5**: Created Pydantic schemas: BrandFromSheet, SyncError, SyncResult, SyncStatusResponse
-- **Task 6**: Created sync router with GET /api/v1/sync/status endpoint, requires authentication via get_current_user dependency
-- **Task 7**: Added gsheets_credentials_path, gsheets_spreadsheet_id, gsheets_range to Settings; updated .env.example
-- **Task 8**: Comprehensive test coverage - mocked Google API, tested retry logic, error scenarios, and API authentication
+- **Task 1**: Created migrations 002 (brands), 003 (sync_status), 004 (replace brands with brand_vp_data + brand_meeting_data), and 005 (add sync_details JSONB to sync_status)
+- **Task 2**: Implemented brand queries with `upsert_brand_data()` (ON CONFLICT DO UPDATE), `get_brand_data()` with pagination, centralized table validation via `_validate_table()` helper
+- **Task 3**: Implemented GoogleSheetsClient with lazy service initialization, `fetch_sheet_data()` generic method, `fetch_vp_data()` and `fetch_meeting_data()` convenience methods, exponential backoff retry (max 3 attempts, 1s/2s/4s delays), error handling for rate limits (429), not found (404), permission denied (403), and credentials issues
+- **Task 4**: Implemented `run_sync()` orchestration with two-sheet support (VP + Meeting), partial failure tolerance per sheet and per row, per-sheet breakdown persisted to `sync_details` JSONB
+- **Task 5**: Created Pydantic schemas: SyncError, SheetSyncResult, SyncResult (VP + Meeting results), SyncStatusResponse (with sync_details)
+- **Task 6**: Created sync router with `GET /api/v1/sync/status` endpoint, requires authentication via `get_current_user` dependency
+- **Task 7**: Added per-sheet config (VP: `gsheets_vp_spreadsheet_id`, `gsheets_vp_range`, `gsheets_vp_brand_column`; Meeting: `gsheets_meeting_spreadsheet_id`, `gsheets_meeting_range`, `gsheets_meeting_brand_column`) to Settings; updated .env.example
+- **Task 8**: Comprehensive test coverage - 12 unit tests for sheets_client, 9 unit tests for sync service, 5 integration tests for sync API
 
 ### Change Log
 
 - 2026-02-05: Implemented Google Sheets sync backend (Story 2.1) - all 8 tasks completed
 - 2026-02-05: Added Terraform configuration for Google Sheets Service Account (Epic 2 Critical Path Items #3, #4)
+- 2026-02-05: Expanded to two-sheet model (VP + Meeting) with migration 004
+- 2026-02-06: Code review fixes - added migration 005 (sync_details JSONB), centralized table validation, fixed Terraform SA naming to `aha-sicu-sheets-sa`, fixed lambda closure in sheets_client, removed unused `delete_all_brand_data()`, updated all documentation
 
 ### File List
 
 **New Files:**
 - backend/app/db/migrations/versions/002_create_brands_table.py
 - backend/app/db/migrations/versions/003_create_sync_status_table.py
+- backend/app/db/migrations/versions/004_replace_brands_with_vp_and_meeting.py
+- backend/app/db/migrations/versions/005_add_sync_details_to_sync_status.py
 - backend/app/db/queries/brands.py
 - backend/app/db/queries/sync_status.py
 - backend/app/modules/sync/__init__.py
@@ -560,14 +598,47 @@ Claude Opus 4.5 (claude-opus-4-5-20251101)
 - backend/tests/unit/sync/test_sheets_client.py
 - backend/tests/unit/sync/test_service.py
 - backend/tests/integration/api/test_sync.py
+- infrastructure/terraform/README.md (setup documentation)
 
 **Modified Files:**
 - backend/app/main.py (added sync router import and registration)
-- backend/app/config.py (added Google Sheets settings)
+- backend/app/config.py (added Google Sheets settings for VP and Meeting sheets)
 - backend/app/core/exceptions.py (added SyncException class)
-- backend/.env.example (added Google Sheets environment variables)
+- backend/.env.example (added Google Sheets environment variables for both sheets)
 - backend/pyproject.toml (added google-api-python-client and google-auth dependencies)
-- infrastructure/terraform/main.tf (added Google Sheets API and Service Account)
-- infrastructure/terraform/README.md (new - setup documentation)
+- infrastructure/terraform/main.tf (added Google Sheets API and Service Account `aha-sicu-sheets-sa`)
+- infrastructure/terraform/variables.tf (added environment variable)
 - .gitignore (added credentials directory pattern)
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door on 2026-02-06
+**Outcome:** Changes Requested (10 issues found, all fixed)
+
+### Findings Summary
+
+| ID | Severity | Issue | Resolution |
+|----|----------|-------|------------|
+| H1 | HIGH | Story ACs/Dev Notes referenced stale `brands` table instead of `brand_vp_data`/`brand_meeting_data` | Updated story documentation to reflect two-sheet model |
+| H2 | HIGH | Task 2 claimed `upsert_brand()` but actual function is `upsert_brand_data()` | Updated task descriptions to match implementation |
+| H3 | HIGH | `sync_status` table lost VP/Meeting granularity on persistence | Added migration 005 with `sync_details` JSONB column; updated queries, service, and schemas |
+| H4 | HIGH | Terraform SA named `store-icu-gsheets-sync` instead of `aha-sicu-sheets-sa`; SA key in state without warning | Renamed SA, added security warning comments |
+| M1 | MEDIUM | Lambda closure in `sheets_client.py` `asyncio.to_thread()` could capture stale reference | Replaced lambda with explicit `request.execute` pattern |
+| M2 | MEDIUM | Integration tests use sync TestClient instead of async | Acknowledged as valid — FastAPI's sync TestClient is standard testing approach |
+| M3 | MEDIUM | File List missing migration 004 and variables.tf; migration filenames wrong | Updated File List with all files and correct names |
+| M4 | MEDIUM | f-string SQL in `brands.py` with per-function validation guards | Centralized validation into `_validate_table()` helper with `_VALID_TABLES` frozenset |
+| L1 | LOW | Terraform README showed single-sheet `.env` config | Updated README with two-sheet VP/Meeting config |
+| L2 | LOW | Unused `delete_all_brand_data()` function with no tests | Removed function |
+
+### Files Changed in Review
+
+- `backend/app/db/migrations/versions/005_add_sync_details_to_sync_status.py` (new)
+- `backend/app/db/queries/brands.py` (centralized validation, removed unused function)
+- `backend/app/db/queries/sync_status.py` (added sync_details parameter and column)
+- `backend/app/modules/sync/schemas.py` (added sync_details to SyncStatusResponse)
+- `backend/app/modules/sync/service.py` (persist per-sheet breakdown, include sync_details in response)
+- `backend/app/modules/sync/sheets_client.py` (replaced lambda with explicit request pattern)
+- `infrastructure/terraform/main.tf` (renamed SA to `aha-sicu-sheets-sa`, added security warnings)
+- `infrastructure/terraform/README.md` (updated to two-sheet config)
+- `_bmad-output/implementation-artifacts/2-1-google-sheets-sync-backend.md` (comprehensive documentation update)
 

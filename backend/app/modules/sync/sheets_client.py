@@ -66,16 +66,12 @@ class GoogleSheetsClient:
         for attempt in range(max_retries):
             try:
                 service = self._get_service()
-                # Run synchronous Google API call in thread pool
-                result = await asyncio.to_thread(
-                    lambda: service.spreadsheets()
-                    .values()
-                    .get(
-                        spreadsheetId=spreadsheet_id,
-                        range=range_name,
-                    )
-                    .execute()
+                # Build request object synchronously, execute in thread pool
+                request = service.spreadsheets().values().get(
+                    spreadsheetId=spreadsheet_id,
+                    range=range_name,
                 )
+                result = await asyncio.to_thread(request.execute)
 
                 rows = result.get("values", [])
                 if not rows:

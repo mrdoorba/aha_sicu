@@ -7,6 +7,15 @@ from asyncpg import Connection
 
 TableName = Literal["brand_vp_data", "brand_meeting_data"]
 
+_VALID_TABLES: frozenset[str] = frozenset({"brand_vp_data", "brand_meeting_data"})
+
+
+def _validate_table(table: str) -> str:
+    """Validate table name against allowlist to prevent SQL injection."""
+    if table not in _VALID_TABLES:
+        raise ValueError(f"Invalid table name: {table}")
+    return table
+
 
 async def upsert_brand_data(
     conn: Connection,
@@ -18,9 +27,7 @@ async def upsert_brand_data(
 
     Uses ON CONFLICT DO UPDATE to handle both insert and update cases.
     """
-    # Validate table name to prevent SQL injection
-    if table not in ("brand_vp_data", "brand_meeting_data"):
-        raise ValueError(f"Invalid table name: {table}")
+    table = _validate_table(table)
 
     row = await conn.fetchrow(
         f"""
@@ -44,8 +51,7 @@ async def get_brand_data(
     offset: int = 0,
 ) -> list[dict]:
     """Get brand data with pagination."""
-    if table not in ("brand_vp_data", "brand_meeting_data"):
-        raise ValueError(f"Invalid table name: {table}")
+    table = _validate_table(table)
 
     rows = await conn.fetch(
         f"""
@@ -66,8 +72,7 @@ async def get_brand_by_name(
     brand_name: str,
 ) -> dict | None:
     """Get brand data by brand name."""
-    if table not in ("brand_vp_data", "brand_meeting_data"):
-        raise ValueError(f"Invalid table name: {table}")
+    table = _validate_table(table)
 
     row = await conn.fetchrow(
         f"""
@@ -82,18 +87,7 @@ async def get_brand_by_name(
 
 async def get_brand_count(conn: Connection, table: TableName) -> int:
     """Get total count of brands in a table."""
-    if table not in ("brand_vp_data", "brand_meeting_data"):
-        raise ValueError(f"Invalid table name: {table}")
+    table = _validate_table(table)
 
     result = await conn.fetchval(f"SELECT COUNT(*) FROM {table}")
     return result or 0
-
-
-async def delete_all_brand_data(conn: Connection, table: TableName) -> int:
-    """Delete all data from a brand table. Returns count of deleted rows."""
-    if table not in ("brand_vp_data", "brand_meeting_data"):
-        raise ValueError(f"Invalid table name: {table}")
-
-    result = await conn.execute(f"DELETE FROM {table}")
-    # Result is like "DELETE 42"
-    return int(result.split()[-1]) if result else 0
