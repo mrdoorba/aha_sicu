@@ -18,6 +18,10 @@ vi.mock('../hooks/useSync', () => ({
   useTriggerSync: () => mockUseTriggerSync(),
 }));
 
+vi.mock('../hooks/useSSE', () => ({
+  useSSE: () => ({ connectionState: 'connected' }),
+}));
+
 vi.mock('../context/AuthContext', () => ({
   useAuth: () => ({
     user: { email: 'test@example.com' },

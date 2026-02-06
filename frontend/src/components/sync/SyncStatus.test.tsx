@@ -7,10 +7,15 @@ import { SyncStatus } from './SyncStatus';
 
 const mockUseSyncStatus = vi.fn();
 const mockUseTriggerSync = vi.fn();
+const mockUseSSE = vi.fn();
 
 vi.mock('../../hooks/useSync', () => ({
   useSyncStatus: () => mockUseSyncStatus(),
   useTriggerSync: () => mockUseTriggerSync(),
+}));
+
+vi.mock('../../hooks/useSSE', () => ({
+  useSSE: () => mockUseSSE(),
 }));
 
 vi.mock('../../context/AuthContext', () => ({
@@ -42,6 +47,9 @@ describe('SyncStatus', () => {
     mockUseTriggerSync.mockReturnValue({
       mutate: mockMutate,
       isPending: false,
+    });
+    mockUseSSE.mockReturnValue({
+      connectionState: 'connected',
     });
   });
 
@@ -175,5 +183,41 @@ describe('SyncStatus', () => {
 
     expect(screen.getByText(/unable to load sync status/i)).toBeInTheDocument();
     expect(screen.queryByText(/never synced/i)).not.toBeInTheDocument();
+  });
+
+  it('shows "Live" indicator when SSE is connected', () => {
+    mockUseSyncStatus.mockReturnValue({
+      data: null,
+      isLoading: false,
+    });
+    mockUseSSE.mockReturnValue({ connectionState: 'connected' });
+
+    renderSyncStatus();
+
+    expect(screen.getByText('Live')).toBeInTheDocument();
+  });
+
+  it('shows "Reconnecting..." indicator when SSE is reconnecting', () => {
+    mockUseSyncStatus.mockReturnValue({
+      data: null,
+      isLoading: false,
+    });
+    mockUseSSE.mockReturnValue({ connectionState: 'reconnecting' });
+
+    renderSyncStatus();
+
+    expect(screen.getByText('Reconnecting...')).toBeInTheDocument();
+  });
+
+  it('shows "Offline" indicator when SSE connection failed', () => {
+    mockUseSyncStatus.mockReturnValue({
+      data: null,
+      isLoading: false,
+    });
+    mockUseSSE.mockReturnValue({ connectionState: 'failed' });
+
+    renderSyncStatus();
+
+    expect(screen.getByText('Offline')).toBeInTheDocument();
   });
 });
