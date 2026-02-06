@@ -1,11 +1,10 @@
-import { useRef, useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
-import { RefreshCw, CheckCircle2, XCircle, Clock } from 'lucide-react';
+import { RefreshCw, CheckCircle2, XCircle, Clock, Wifi, WifiOff } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { useSyncStatus, useTriggerSync } from '../../hooks/useSync';
+import { useSSE } from '../../hooks/useSSE';
 
 /** Format ISO timestamp as relative time. Assumes server returns UTC timestamps. */
 function formatRelativeTime(dateString: string): string {
@@ -28,24 +27,7 @@ function formatRelativeTime(dateString: string): string {
 export const SyncStatus = () => {
   const { data: syncStatus, isLoading, isError } = useSyncStatus();
   const triggerSync = useTriggerSync();
-  const queryClient = useQueryClient();
-  const prevStatusRef = useRef<string | undefined>();
-
-  // Refresh brand list when sync completes (transitions from in_progress to success/failed).
-  // Intentionally starts as undefined so initial mount doesn't trigger invalidation.
-  useEffect(() => {
-    const currentStatus = syncStatus?.status;
-    const prevStatus = prevStatusRef.current;
-
-    if (
-      prevStatus === 'in_progress' &&
-      (currentStatus === 'success' || currentStatus === 'failed')
-    ) {
-      queryClient.invalidateQueries({ queryKey: ['brands'] });
-    }
-
-    prevStatusRef.current = currentStatus;
-  }, [syncStatus?.status, queryClient]);
+  const { connectionState } = useSSE();
 
   const handleSyncNow = () => {
     triggerSync.mutate(undefined, {
@@ -130,6 +112,27 @@ export const SyncStatus = () => {
               )}
             </div>
           )}
+
+          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+            {connectionState === 'connected' && (
+              <>
+                <Wifi className="size-3 text-green-500" />
+                <span>Live</span>
+              </>
+            )}
+            {(connectionState === 'connecting' || connectionState === 'reconnecting') && (
+              <>
+                <Wifi className="size-3 animate-pulse text-amber-500" />
+                <span>{connectionState === 'connecting' ? 'Connecting...' : 'Reconnecting...'}</span>
+              </>
+            )}
+            {connectionState === 'failed' && (
+              <>
+                <WifiOff className="size-3 text-destructive" />
+                <span>Offline</span>
+              </>
+            )}
+          </div>
         </div>
 
         <Button

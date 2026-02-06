@@ -25,7 +25,7 @@ export function useSyncStatus() {
       if (error) throw new Error('Failed to fetch sync status');
       return (data as SyncStatusData) ?? null;
     },
-    refetchInterval: 10_000,
+    refetchInterval: 60_000, // Fallback polling; SSE handles real-time updates
   });
 }
 

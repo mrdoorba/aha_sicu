@@ -77,6 +77,23 @@ interface paths {
       };
     };
   };
+  // SSE endpoint — consumed via native EventSource in useSSE.ts, not openapi-fetch
+  '/api/v1/events': {
+    get: {
+      parameters: {
+        query: {
+          token: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'text/event-stream': unknown;
+          };
+        };
+      };
+    };
+  };
   '/api/v1/sync': {
     post: {
       responses: {

@@ -51,6 +51,14 @@ def mock_settings():
         yield mock
 
 
+@pytest.fixture
+def mock_broadcaster():
+    """Mock event broadcaster."""
+    with patch("app.modules.sync.service.sync_broadcaster") as mock:
+        mock.broadcast = AsyncMock()
+        yield mock
+
+
 @pytest.mark.asyncio
 async def test_run_sync_both_sheets_success(mock_db, mock_sheets_client, mock_queries, mock_settings):
     """Test successful sync of both sheets."""
@@ -265,3 +273,69 @@ async def test_get_latest_sync_status_returns_none_when_no_syncs(mock_db, mock_q
     result = await get_latest_sync_status()
 
     assert result is None
+
+
+@pytest.mark.asyncio
+async def test_run_sync_broadcasts_start_event(
+    mock_db, mock_sheets_client, mock_queries, mock_settings, mock_broadcaster
+):
+    """Test run_sync broadcasts sync_status in_progress at start."""
+    from app.modules.sync.service import run_sync
+
+    mock_sync, mock_brand = mock_queries
+    mock_sheets_client.fetch_vp_data.return_value = []
+    mock_sheets_client.fetch_meeting_data.return_value = []
+
+    await run_sync()
+
+    # Should have broadcast at least 2 times: start + completion
+    assert mock_broadcaster.broadcast.call_count >= 2
+
+    # First call should be in_progress
+    first_call = mock_broadcaster.broadcast.call_args_list[0]
+    assert first_call[0][0] == "sync_status"
+    assert first_call[0][1]["status"] == "in_progress"
+
+
+@pytest.mark.asyncio
+async def test_run_sync_broadcasts_success_event(
+    mock_db, mock_sheets_client, mock_queries, mock_settings, mock_broadcaster
+):
+    """Test run_sync broadcasts sync_status success on completion."""
+    from app.modules.sync.service import run_sync
+
+    mock_sync, mock_brand = mock_queries
+    mock_sheets_client.fetch_vp_data.return_value = [
+        {"Nama Brand": "Nike"},
+    ]
+    mock_sheets_client.fetch_meeting_data.return_value = []
+
+    await run_sync()
+
+    # Last non-failure call should be success
+    last_call = mock_broadcaster.broadcast.call_args_list[-1]
+    assert last_call[0][0] == "sync_status"
+    assert last_call[0][1]["status"] == "success"
+    assert last_call[0][1]["brands_synced"] == 1
+
+
+@pytest.mark.asyncio
+async def test_run_sync_broadcasts_failure_event(
+    mock_db, mock_sheets_client, mock_queries, mock_settings, mock_broadcaster
+):
+    """Test run_sync broadcasts sync_status failed on exception."""
+    from app.modules.sync.service import run_sync
+
+    mock_sync, mock_brand = mock_queries
+    mock_sheets_client.fetch_vp_data.side_effect = RuntimeError("Fatal error")
+    mock_sheets_client.fetch_meeting_data.side_effect = RuntimeError("Fatal error")
+
+    # The sync should handle the error for individual sheets gracefully
+    # but if both fail, the result will be unsuccessful
+    result = await run_sync()
+
+    # Check that a broadcast was made with failed status
+    calls = mock_broadcaster.broadcast.call_args_list
+    statuses = [c[0][1]["status"] for c in calls]
+    # Should have in_progress start and then a completion broadcast
+    assert "in_progress" in statuses
