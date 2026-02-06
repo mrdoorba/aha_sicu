@@ -1,7 +1,9 @@
 ---
-name: workflow
-description: "Create structured standalone workflows using markdown-based step architecture (tri-modal: create, validate, edit)"
+name: create-workflow
+description: Create a new BMAD workflow with proper structure and best practices
 web_bundle: true
+createWorkflow: './steps-c/step-01-discovery.md'
+conversionWorkflow: './steps-c/step-00-conversion.md'
 ---
 
 # Create Workflow
@@ -58,29 +60,7 @@ Load and read full config from {project-root}/_bmad/bmb/config.yaml and resolve:
 - `project_name`, `output_folder`, `user_name`, `communication_language`, `document_output_language`, `bmb_creations_output_folder`
 - ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
-### 2. Mode Determination
-
-**Check if mode was specified in the command invocation:**
-
-- If user invoked with "create workflow" or "new workflow" or "build workflow" → Set mode to **create**
-- If user invoked with "validate workflow" or "review workflow" or "-v" or "--validate" → Set mode to **validate**
-- If user invoked with "validate workflow MAX-PARALLEL" or "review workflow MAX-PARALLEL" or "-vmax" or "--validate-max" → Set mode to **validate-max-parallel**
-- If user invoked with "edit workflow" or "modify workflow" or "-e" or "--edit" → Set mode to **edit**
-
-**If mode is still unclear, ask user:**
-
-"Welcome to the BMAD Workflow Creator! What would you like to do?
-
-**[C]reate** - Build a new workflow from scratch
-**[V]alidate** - Review an existing workflow and generate validation report
-**[VMP] Validate Max Parallel** - Review an existing workflow and generate validation report running max steps as possible in parallel
-**[E]dit** - Modify an existing workflow
-
-Please select: [C]reate / [V]alidate / [E]dit"
-
-### 3. Route to First Step
-
-**IF mode == create:**
+### 2. Create Mode Selection
 
 "**Creating a new workflow. How would you like to start?**
 
@@ -89,21 +69,11 @@ Please select: [C]reate / [V]alidate / [E]dit"
 
 Please select: [F]rom scratch / [C]onvert existing"
 
-#### Create Mode Routing:
+Wait for user selection.
 
-- **IF F:** Load, read completely, then execute `steps-c/step-01-discovery.md`
+### 3. Route to First Step
+
+- **IF F:** Load, read completely, then execute `{createWorkflow}` (steps-c/step-01-discovery.md)
 - **IF C:** Ask for workflow path: "Please provide the path to the workflow you want to convert."
-  Then load, read completely, then execute `steps-c/step-00-conversion.md`
+  Then load, read completely, then execute `{conversionWorkflow}` (steps-c/step-00-conversion.md)
 - **IF Any other:** help user respond, then redisplay create mode menu
-
-**IF mode == validate:**
-Prompt for workflow path: "Which workflow would you like to validate? Please provide the path to the workflow.md file."
-Then load, read completely, and execute `steps-v/step-01-validate.md`
-
-**IF mode == validate-max-parallel:**
-Prompt for workflow path: "Which workflow would you like to validate? Please provide the path to the workflow.md file." validate a subprocess or task agent tool or similar is available
-Then load, read completely, and execute `steps-v/step-01-validate-max-mode.md`
-
-**IF mode == edit:**
-Prompt for workflow path: "Which workflow would you like to edit? Please provide the path to the workflow.md file."
-Then load, read completely, and execute `steps-e/step-e-01-assess-workflow.md`
