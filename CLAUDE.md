@@ -44,3 +44,26 @@
 **Proactive Commits:** After completing any logical unit of work (file created, feature done, bug fixed), commit immediately. Don't wait for user to ask.
 
 **Branch Cleanup:** Always delete `feature/*` branches after merging. Keep the repository clean - no stale branches.
+
+## Protected Directories
+
+**NEVER delete these directories:**
+
+- `_bmad/` - BMAD framework configuration and workflows
+- `_bmad-output/` - BMAD workflow outputs and artifacts
+- `.agent/` - Agent configuration
+- `.claude/` - Claude configuration
+- `.cursor/` - Cursor configuration
+- `.gemini/` - Gemini configuration
+
+These directories contain critical project configuration.
+
+## Command Autonomy
+
+**Proceed without asking** for all commands EXCEPT the following, which require explicit user approval:
+
+- `git push` - Always ask before pushing to any remote
+- `git merge` - Always ask before merging branches
+- `gh pr create` / any PR creation - Always ask before opening pull requests
+
+Everything else (file edits, git add, git commit, running tests, installing dependencies, builds, etc.) can be executed freely.
