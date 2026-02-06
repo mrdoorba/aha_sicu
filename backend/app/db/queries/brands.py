@@ -91,3 +91,44 @@ async def get_brand_count(conn: Connection, table: TableName) -> int:
 
     result = await conn.fetchval(f"SELECT COUNT(*) FROM {table}")
     return result or 0
+
+
+async def get_brands_with_meeting(
+    conn: Connection,
+    limit: int = 20,
+    offset: int = 0,
+    search: str | None = None,
+) -> list[dict]:
+    """Get VP brands with LEFT JOIN to meeting data, with optional search."""
+    rows = await conn.fetch(
+        """
+        SELECT
+            v.id, v.brand_name, v.raw_data, v.updated_at,
+            m.raw_data AS meeting_raw_data
+        FROM brand_vp_data v
+        LEFT JOIN brand_meeting_data m ON v.brand_name = m.brand_name
+        WHERE ($1::text IS NULL OR v.brand_name ILIKE '%' || $1 || '%')
+        ORDER BY v.brand_name ASC
+        LIMIT $2 OFFSET $3
+        """,
+        search,
+        limit,
+        offset,
+    )
+    return [dict(row) for row in rows]
+
+
+async def get_brands_count_with_search(
+    conn: Connection,
+    search: str | None = None,
+) -> int:
+    """Get total count of VP brands with optional search filter."""
+    result = await conn.fetchval(
+        """
+        SELECT COUNT(*)
+        FROM brand_vp_data
+        WHERE ($1::text IS NULL OR brand_name ILIKE '%' || $1 || '%')
+        """,
+        search,
+    )
+    return result or 0
