@@ -58,6 +58,10 @@
 
 These directories contain critical project configuration.
 
+## Lessons Learned
+
+Read `_bmad-output/lessons-learned.md` for accumulated knowledge from code reviews, retrospectives, and implementation patterns. Consult it before writing new code.
+
 ## Command Autonomy
 
 **Proceed without asking** for all commands EXCEPT the following, which require explicit user approval:
