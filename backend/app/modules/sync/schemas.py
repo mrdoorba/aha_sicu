@@ -37,6 +37,13 @@ class SyncResult(BaseModel):
     success: bool
 
 
+class SyncTriggerResponse(BaseModel):
+    """Response model for POST /sync trigger endpoint."""
+
+    status: str
+    sync_id: int
+
+
 class SyncStatusResponse(BaseModel):
     """Response model for sync status endpoint."""
 
