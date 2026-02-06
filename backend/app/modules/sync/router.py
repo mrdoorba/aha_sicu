@@ -26,15 +26,18 @@ async def trigger_sync(
     Returns 409 if a sync is already in progress.
     """
     async with db.connection() as conn:
-        if await is_sync_in_progress(conn):
-            raise SyncException(
-                code="SYNC_IN_PROGRESS",
-                detail="A sync is already running",
-                status_code=409,
+        async with conn.transaction():
+            # Advisory lock prevents TOCTOU race between check and insert
+            await conn.execute("SELECT pg_advisory_xact_lock(1)")
+            if await is_sync_in_progress(conn):
+                raise SyncException(
+                    code="SYNC_IN_PROGRESS",
+                    detail="A sync is already running",
+                    status_code=409,
+                )
+            sync_id = await sync_queries.create_sync_status(
+                conn, started_at=datetime.now(timezone.utc)
             )
-        sync_id = await sync_queries.create_sync_status(
-            conn, started_at=datetime.now(timezone.utc)
-        )
 
     background_tasks.add_task(run_sync, sync_id=sync_id)
     return SyncTriggerResponse(status="started", sync_id=sync_id)

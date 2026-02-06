@@ -182,18 +182,18 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
         # Build per-sheet breakdown for persistence
         sync_details = {}
         if vp_result:
-            sync_details["vp"] = {
+            sync_details["vp_sheet"] = {
                 "rows_synced": vp_result.rows_synced,
                 "rows_skipped": vp_result.rows_skipped,
                 "errors": [e.model_dump() for e in vp_result.errors],
-                "success": vp_result.success,
+                "status": "success" if vp_result.success else "failed",
             }
         if meeting_result:
-            sync_details["meeting"] = {
+            sync_details["meeting_sheet"] = {
                 "rows_synced": meeting_result.rows_synced,
                 "rows_skipped": meeting_result.rows_skipped,
                 "errors": [e.model_dump() for e in meeting_result.errors],
-                "success": meeting_result.success,
+                "status": "success" if meeting_result.success else "failed",
             }
 
         # Update sync status
