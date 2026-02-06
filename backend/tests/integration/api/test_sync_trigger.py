@@ -1,7 +1,7 @@
 """Integration tests for POST /api/v1/sync trigger endpoint."""
 
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 import pytest
 
@@ -65,8 +65,9 @@ def test_post_sync_returns_202_with_sync_id(client):
         mock_user_queries.get_user_by_firebase_uid = AsyncMock(return_value=MOCK_USER)
         mock_user_queries.update_last_login = AsyncMock()
 
-        # Router db mock
+        # Router db mock (with transaction + advisory lock support)
         mock_router_conn = AsyncMock()
+        mock_router_conn.transaction = MagicMock(return_value=AsyncMock())
         mock_router_db.connection.return_value.__aenter__.return_value = mock_router_conn
 
         # Sync mocks
@@ -100,8 +101,9 @@ def test_post_sync_returns_409_when_sync_in_progress(client):
         mock_user_queries.get_user_by_firebase_uid = AsyncMock(return_value=MOCK_USER)
         mock_user_queries.update_last_login = AsyncMock()
 
-        # Router db mock
+        # Router db mock (with transaction + advisory lock support)
         mock_router_conn = AsyncMock()
+        mock_router_conn.transaction = MagicMock(return_value=AsyncMock())
         mock_router_db.connection.return_value.__aenter__.return_value = mock_router_conn
 
         # Sync in progress
@@ -177,4 +179,5 @@ def test_get_sync_status_after_trigger(client):
         data = response.json()
         assert data["id"] == 99
         assert data["completed_at"] is None
-        assert data["success"] is None
+        assert data["status"] == "in_progress"
+        assert data["last_sync"] is not None

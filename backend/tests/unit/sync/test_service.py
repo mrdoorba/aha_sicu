@@ -249,8 +249,9 @@ async def test_get_latest_sync_status_returns_status(mock_db, mock_queries):
 
     assert result is not None
     assert result.id == 1
-    assert result.success is True
+    assert result.status == "success"
     assert result.brands_synced == 100
+    assert result.last_sync is not None
 
 
 @pytest.mark.asyncio

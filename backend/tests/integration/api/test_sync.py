@@ -73,7 +73,8 @@ def test_sync_status_returns_latest_sync(client):
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == 5
-        assert data["success"] is True
+        assert data["status"] == "success"
+        assert data["last_sync"] is not None
         assert data["brands_synced"] == 150
         assert data["error_message"] is None
 
@@ -158,6 +159,7 @@ def test_sync_status_returns_failed_sync(client):
         assert response.status_code == 200
         data = response.json()
         assert data["id"] == 3
-        assert data["success"] is False
+        assert data["status"] == "failed"
+        assert data["last_sync"] is not None
         assert data["brands_synced"] == 0
         assert data["error_message"] == "Connection timeout"

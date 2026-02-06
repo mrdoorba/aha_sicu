@@ -1,6 +1,6 @@
 # Story 2.2: Manual Sync Trigger API
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -282,11 +282,12 @@ No debug issues encountered. All tasks implemented cleanly following red-green-r
 - **Task 2:** Added `SyncTriggerResponse` Pydantic schema with `status: str` and `sync_id: int` fields. `SYNC_IN_PROGRESS` error code handled via existing `SyncException` class (no changes to exceptions.py needed).
 - **Task 3:** Implemented `POST /api/v1/sync` endpoint in router.py — uses `get_current_user` for auth, `is_sync_in_progress()` for 409 guard, creates sync_status record, dispatches `run_sync` as `BackgroundTask`, returns 202 with sync_id. 6 integration tests added and passing.
 - **Task 4:** Refactored `run_sync()` to accept optional `sync_id: int | None = None`. When provided, skips creating a new sync_status record. Backward compatible — standalone calls still create their own record (for Story 2.5 scheduler). 2 unit tests added for both paths.
-- **Task 5:** All specified tests written inline with Tasks 1-4 using TDD. Total: 2 unit tests + 6 integration tests + 2 service tests = 10 new tests. Full suite: 44 tests, 0 failures, 0 regressions.
+- **Task 5:** All specified tests written inline with Tasks 1-4 using TDD. Total: 2 query unit tests + 1 schema unit test + 5 integration tests + 2 service unit tests = 10 new tests. Full suite: 44 tests, 0 failures, 0 regressions.
 
 ### Change Log
 
 - 2026-02-06: Implemented Story 2.2 — Manual Sync Trigger API. Added POST /sync endpoint (202/409), is_sync_in_progress() guard query, SyncTriggerResponse schema, run_sync() sync_id refactor. 10 new tests, 44 total passing.
+- 2026-02-06: Code review fixes (8 issues resolved). Fixed SyncStatusResponse to match AC #3 (added `last_sync`, `status` string enum). Fixed TOCTOU race condition with advisory lock. Fixed sync_details keys (`vp_sheet`/`meeting_sheet`). Updated all affected tests. 44 tests passing, 0 regressions.
 
 ### File List
 
@@ -296,6 +297,31 @@ No debug issues encountered. All tasks implemented cleanly following red-green-r
 - `backend/app/modules/sync/service.py` — Refactored `run_sync()` to accept optional `sync_id` parameter
 - `backend/app/db/queries/sync_status.py` — Added `is_sync_in_progress()` query function
 
+**Files Modified (by code review):**
+- `backend/tests/unit/sync/test_service.py` — Added unit tests for `run_sync()` with pre-created sync_id and backward-compatible standalone mode
+
 **Files Created:**
 - `backend/tests/unit/sync/test_sync_status_queries.py` — Unit tests for `is_sync_in_progress()`
 - `backend/tests/integration/api/test_sync_trigger.py` — Integration tests for `POST /sync` and schema validation
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door on 2026-02-06
+**Outcome:** Approved (after fixes)
+
+### Issues Found & Resolved
+
+| # | Severity | Issue | Fix Applied |
+|---|----------|-------|-------------|
+| 1 | HIGH | AC #3: `status` field was `bool\|None` instead of string enum | Added `model_validator` to compute `"success"\|"failed"\|"in_progress"` from raw `success` field |
+| 2 | HIGH | AC #3: `last_sync` field missing, had `started_at`/`completed_at` instead | Added computed `last_sync` field (= `completed_at` or `started_at`) |
+| 3 | HIGH | TOCTOU race condition — check + insert not atomic in `trigger_sync()` | Wrapped in `conn.transaction()` with `pg_advisory_xact_lock(1)` |
+| 4 | MEDIUM | `sync_details` keys `"vp"/"meeting"` don't match AC's `"vp_sheet"/"meeting_sheet"` | Renamed keys and changed inner `"success"` bool to `"status"` string |
+| 5 | MEDIUM | `test_service.py` modified but not in story File List | Added to File List |
+| 6 | MEDIUM | Test count categorization slightly inaccurate | Corrected in Completion Notes |
+| 7 | LOW | Extra `id` field in sync status response not in AC spec | Kept — additive, useful for correlation with sync trigger |
+| 8 | LOW | `SyncTriggerResponse.status` was untyped `str` | Changed to `Literal["started"]` |
+
+### Test Results After Fixes
+
+44 passed, 0 failed, 0 regressions (0.50s)
