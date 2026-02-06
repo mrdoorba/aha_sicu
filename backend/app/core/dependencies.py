@@ -5,6 +5,7 @@ import logging
 from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
+from app.config import settings
 from app.core.exceptions import AuthException
 from app.core.oidc import verify_oidc_token
 from app.core.security import verify_firebase_token
@@ -38,14 +39,25 @@ async def get_current_user(
         token_data = await verify_firebase_token(token)
     except AuthException:
         # Firebase failed — try OIDC (handles scheduler requests)
+        logger.debug("Firebase auth failed, attempting OIDC fallback")
         try:
             oidc_claims = await verify_oidc_token(token)
-        except AuthException:
+        except AuthException as oidc_exc:
             # Both failed — reject
             raise AuthException(
                 code="AUTH_TOKEN_INVALID",
                 detail="Token validation failed",
-            )
+            ) from oidc_exc
+
+        # Validate service account is in allowlist (when configured)
+        if settings.allowed_scheduler_emails:
+            allowed = [e.strip() for e in settings.allowed_scheduler_emails.split(",")]
+            if oidc_claims["email"] not in allowed:
+                logger.warning("OIDC auth rejected: %s not in allowlist", oidc_claims["email"])
+                raise AuthException(
+                    code="AUTH_TOKEN_INVALID",
+                    detail="Service account not authorized",
+                )
 
         logger.info("OIDC service account authenticated: %s", oidc_claims["email"])
 

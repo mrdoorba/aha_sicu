@@ -24,6 +24,10 @@ class Settings(BaseSettings):
     # Set in production; empty in local dev (disables audience check)
     cloud_run_url: str = ""
 
+    # Allowed service account emails for OIDC scheduler auth (comma-separated)
+    # When empty, any valid OIDC token with correct audience is accepted
+    allowed_scheduler_emails: str = ""
+
     # Google Sheets API - Credentials
     gsheets_credentials_path: str | None = None
 

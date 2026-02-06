@@ -185,6 +185,35 @@ def test_post_sync_with_oidc_token_returns_202(client):
         data = response.json()
         assert data["status"] == "started"
         assert data["sync_id"] == 100
+        mock_run_sync.assert_called_once()
+
+
+def test_post_sync_oidc_rejected_when_email_not_in_allowlist(client):
+    """POST /api/v1/sync returns 401 when OIDC email is not in scheduler allowlist."""
+    from app.core.exceptions import AuthException
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_firebase,
+        patch("app.core.dependencies.verify_oidc_token") as mock_oidc,
+        patch("app.core.dependencies.settings") as mock_settings,
+    ):
+        mock_firebase.side_effect = AuthException(
+            code="AUTH_TOKEN_INVALID", detail="Token validation failed"
+        )
+        mock_oidc.return_value = {
+            "email": "unauthorized-sa@project.iam.gserviceaccount.com",
+            "issuer": "https://accounts.google.com",
+        }
+        mock_settings.allowed_scheduler_emails = "aha-sicu-scheduler-sa@project.iam.gserviceaccount.com"
+
+        response = client.post(
+            "/api/v1/sync",
+            headers={"Authorization": "Bearer oidc-token"},
+        )
+        assert response.status_code == 401
+        data = response.json()
+        assert data["code"] == "AUTH_TOKEN_INVALID"
+        assert data["detail"] == "Service account not authorized"
 
 
 def test_post_sync_oidc_skips_db_user_lookup(client):

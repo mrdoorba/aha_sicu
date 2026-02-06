@@ -21,6 +21,11 @@ variable "cloud_run_url" {
   description = "Cloud Run service URL for the Store ICU API (e.g., https://aha-sicu-api-xxxx.a.run.app)"
   type        = string
   default     = ""
+
+  validation {
+    condition     = var.cloud_run_url == "" || can(regex("^https://", var.cloud_run_url))
+    error_message = "cloud_run_url must be empty or start with https://"
+  }
 }
 
 variable "cloud_run_service_name" {

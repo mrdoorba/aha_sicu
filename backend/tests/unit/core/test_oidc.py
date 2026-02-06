@@ -84,8 +84,8 @@ async def test_verify_oidc_token_passes_audience():
         mock_settings.cloud_run_url = "https://api.example.com"
         await verify_oidc_token("valid-token")
         mock_verify.assert_called_once()
-        # Audience is the third positional arg
         call_args = mock_verify.call_args
+        assert call_args[0][0] == "valid-token"
         assert call_args[0][2] == "https://api.example.com"
 
 
@@ -105,3 +105,16 @@ async def test_verify_oidc_token_no_audience_when_empty_url():
         mock_verify.assert_called_once()
         call_args = mock_verify.call_args
         assert call_args[0][2] is None
+
+
+@pytest.mark.asyncio
+async def test_verify_oidc_token_transport_error():
+    """Test OIDC token verification handles network/transport errors gracefully."""
+    with patch(
+        "app.core.oidc.id_token.verify_oauth2_token",
+        side_effect=ConnectionError("Connection refused"),
+    ):
+        with pytest.raises(AuthException) as exc_info:
+            await verify_oidc_token("valid-oidc-token")
+        assert exc_info.value.code == "AUTH_TOKEN_INVALID"
+        assert exc_info.value.detail == "OIDC token verification error"
