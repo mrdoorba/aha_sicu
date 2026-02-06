@@ -1,7 +1,8 @@
 import createClient, { type Middleware } from 'openapi-fetch';
 import { getCurrentUserToken } from '../firebase/auth';
+import { API_BASE_URL } from '../config';
 
-const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+const baseUrl = API_BASE_URL;
 
 // Define paths type (can be replaced with generated OpenAPI types).
 // Keep response shapes in sync with hook types in useBrands.ts and useSync.ts.

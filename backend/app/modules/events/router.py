@@ -15,7 +15,7 @@ logger = logging.getLogger(__name__)
 router = APIRouter(prefix="/api/v1", tags=["events"])
 
 
-async def _event_generator(request: Request, queue: asyncio.Queue):
+async def _event_generator(queue: asyncio.Queue, user_email: str):
     """Yield SSE events from the subscriber queue until client disconnects.
 
     sse-starlette cancels this generator on client disconnect, triggering the
@@ -30,24 +30,26 @@ async def _event_generator(request: Request, queue: asyncio.Queue):
             }
     finally:
         await sync_broadcaster.unsubscribe(queue)
-        logger.info("SSE client disconnected, unsubscribed")
+        logger.info("SSE client disconnected: %s", user_email)
 
 
 @router.get("/events")
 async def sse_events(
     request: Request,
-    token: str = Query(..., description="Firebase auth token"),
+    token: str = Query(..., min_length=1, description="Firebase auth token"),
 ):
     """Server-Sent Events endpoint for real-time sync status updates.
 
     Auth via query parameter since EventSource API cannot set custom headers.
     """
-    await verify_firebase_token(token)
+    claims = await verify_firebase_token(token)
+    user_email = claims.get("email", "unknown")
+    logger.info("SSE client connected: %s", user_email)
 
     queue = await sync_broadcaster.subscribe()
 
     response = EventSourceResponse(
-        _event_generator(request, queue),
+        _event_generator(queue, user_email),
         ping=15,
         headers={"X-Accel-Buffering": "no"},
     )
