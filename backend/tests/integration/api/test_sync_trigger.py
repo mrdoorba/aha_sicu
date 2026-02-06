@@ -51,18 +51,23 @@ def test_post_sync_returns_202_with_sync_id(client):
     """POST /api/v1/sync returns 202 Accepted with sync_id when no sync in progress."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
-        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.db") as mock_auth_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.sync.router.db") as mock_router_db,
         patch("app.modules.sync.router.is_sync_in_progress") as mock_in_progress,
         patch("app.modules.sync.router.sync_queries") as mock_sync_queries,
         patch("app.modules.sync.router.run_sync") as mock_run_sync,
     ):
         # Auth mocks
         mock_verify.return_value = {"uid": "test-uid", "email": "test@example.com"}
-        mock_conn = AsyncMock()
-        mock_db.connection.return_value.__aenter__.return_value = mock_conn
+        mock_auth_conn = AsyncMock()
+        mock_auth_db.connection.return_value.__aenter__.return_value = mock_auth_conn
         mock_user_queries.get_user_by_firebase_uid = AsyncMock(return_value=MOCK_USER)
         mock_user_queries.update_last_login = AsyncMock()
+
+        # Router db mock
+        mock_router_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_router_conn
 
         # Sync mocks
         mock_in_progress.return_value = False
@@ -83,16 +88,21 @@ def test_post_sync_returns_409_when_sync_in_progress(client):
     """POST /api/v1/sync returns 409 Conflict when a sync is already running."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
-        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.db") as mock_auth_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.sync.router.db") as mock_router_db,
         patch("app.modules.sync.router.is_sync_in_progress") as mock_in_progress,
     ):
         # Auth mocks
         mock_verify.return_value = {"uid": "test-uid", "email": "test@example.com"}
-        mock_conn = AsyncMock()
-        mock_db.connection.return_value.__aenter__.return_value = mock_conn
+        mock_auth_conn = AsyncMock()
+        mock_auth_db.connection.return_value.__aenter__.return_value = mock_auth_conn
         mock_user_queries.get_user_by_firebase_uid = AsyncMock(return_value=MOCK_USER)
         mock_user_queries.update_last_login = AsyncMock()
+
+        # Router db mock
+        mock_router_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_router_conn
 
         # Sync in progress
         mock_in_progress.return_value = True
