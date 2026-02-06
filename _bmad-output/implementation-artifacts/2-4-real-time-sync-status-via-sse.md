@@ -1,6 +1,6 @@
 # Story 2.4: Real-Time Sync Status via SSE
 
-Status: review
+Status: done
 
 ## Story
 
@@ -256,9 +256,31 @@ Claude Opus 4.6 (claude-opus-4-6)
 - **Task 6**: Wired `useSSE` into `SyncStatus.tsx`. Removed `useEffect`-based brand invalidation (SSE handles it). Added connection state indicator (Live/Connecting.../Reconnecting.../Offline). Reduced polling interval from 10s to 60s in `useSync.ts`. Added SSE path type to `apiClient.ts`.
 - **Task 7**: 7 unit tests for `useSSE` hook (connection states, token-based auth, query invalidation, max retries, cleanup). 3 tests for SSE connection indicators in SyncStatus. Updated BrandsPage tests with useSSE mock. All 58 frontend tests pass.
 
+### Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door | **Date:** 2026-02-06 | **Outcome:** Approved (after fixes)
+
+**Issues Found:** 3 High, 4 Medium, 3 Low — **7 fixed automatically**, 3 Low accepted as-is.
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| H1 | HIGH | No-op try/except re-raise in SSE endpoint (`events/router.py`) | **Fixed** — removed dead try/except, call verify_firebase_token directly |
+| H2 | HIGH | Redundant `is_disconnected()` polling loop (`events/router.py`) | **Fixed** — simplified generator to rely on sse-starlette's built-in cancellation |
+| H3 | HIGH | No UI for `disconnected` SSE state (`SyncStatus.tsx`) | **Fixed** — added Disconnected indicator with WifiOff icon + test |
+| M1 | MEDIUM | `uv.lock` missing from Story File List | **Fixed** — added to File List |
+| M2 | MEDIUM | Potential infinite render loop in `useSSE` from useCallback dep chain | **Fixed** — refactored to use refs + single useEffect, eliminated useCallback chain |
+| M3 | MEDIUM | Failure broadcast test didn't assert `"failed"` status | **Fixed** — added `assert "failed" in statuses` |
+| M4 | MEDIUM | Token in URL with no mitigation documentation | **Fixed** — added security comment in useSSE.ts |
+| L1 | LOW | No happy-path integration test for SSE streaming | **Accepted** — TestClient limitation for streaming responses; unit tests compensate |
+| L2 | LOW | Parsed SSE event data discarded | **Fixed** (via M2 refactor) — removed unnecessary JSON.parse, SSE is notification-only |
+| L3 | LOW | `useSSE` in SyncStatus vs BrandsPage placement | **Accepted** — SyncStatus placement is architecturally sound |
+
+**Post-fix verification:** 67 backend tests pass, 59 frontend tests pass (+1 new disconnected state test).
+
 ### Change Log
 
 - 2026-02-06: Implemented Story 2.4 — Real-Time Sync Status via SSE (all 7 tasks completed)
+- 2026-02-06: Code review fixes — resolved 7 issues (3 High, 4 Medium): simplified SSE generator, removed dead code, added disconnected UI state, fixed useSSE hook stability, strengthened test assertions
 
 ### File List
 
@@ -275,13 +297,14 @@ New files:
 
 Modified files:
 - backend/pyproject.toml (added sse-starlette dependency)
+- backend/uv.lock (regenerated for sse-starlette dependency)
 - backend/app/main.py (registered events router)
 - backend/app/modules/sync/service.py (added broadcaster imports and broadcast calls)
-- backend/tests/unit/sync/test_service.py (added broadcaster mock and 3 broadcast tests)
+- backend/tests/unit/sync/test_service.py (added broadcaster mock and 3 broadcast tests, fixed failure assertion)
 - frontend/src/hooks/useSync.ts (refetchInterval 10s -> 60s)
-- frontend/src/components/sync/SyncStatus.tsx (added useSSE, connection indicator, removed useEffect brand invalidation)
-- frontend/src/components/sync/SyncStatus.test.tsx (added useSSE mock and 3 connection state tests)
+- frontend/src/components/sync/SyncStatus.tsx (added useSSE, connection indicators for all 5 states)
+- frontend/src/components/sync/SyncStatus.test.tsx (added useSSE mock and 4 connection state tests)
 - frontend/src/pages/BrandsPage.test.tsx (added useSSE mock)
 - frontend/src/services/apiClient.ts (added SSE endpoint type)
-- _bmad-output/implementation-artifacts/sprint-status.yaml (2-4 status: in-progress -> review)
+- _bmad-output/implementation-artifacts/sprint-status.yaml (2-4 status: in-progress -> done)
 - _bmad-output/implementation-artifacts/2-4-real-time-sync-status-via-sse.md (story file updated)

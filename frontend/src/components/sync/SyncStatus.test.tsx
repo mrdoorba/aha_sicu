@@ -209,6 +209,18 @@ describe('SyncStatus', () => {
     expect(screen.getByText('Reconnecting...')).toBeInTheDocument();
   });
 
+  it('shows "Disconnected" indicator when SSE is disconnected', () => {
+    mockUseSyncStatus.mockReturnValue({
+      data: null,
+      isLoading: false,
+    });
+    mockUseSSE.mockReturnValue({ connectionState: 'disconnected' });
+
+    renderSyncStatus();
+
+    expect(screen.getByText('Disconnected')).toBeInTheDocument();
+  });
+
   it('shows "Offline" indicator when SSE connection failed', () => {
     mockUseSyncStatus.mockReturnValue({
       data: null,

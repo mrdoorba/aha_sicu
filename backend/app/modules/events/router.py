@@ -7,7 +7,6 @@ import logging
 from fastapi import APIRouter, Query, Request
 from sse_starlette.sse import EventSourceResponse
 
-from app.core.exceptions import AuthException
 from app.core.security import verify_firebase_token
 from app.services.event_broadcaster import sync_broadcaster
 
@@ -17,19 +16,18 @@ router = APIRouter(prefix="/api/v1", tags=["events"])
 
 
 async def _event_generator(request: Request, queue: asyncio.Queue):
-    """Yield SSE events from the subscriber queue until client disconnects."""
+    """Yield SSE events from the subscriber queue until client disconnects.
+
+    sse-starlette cancels this generator on client disconnect, triggering the
+    finally block for cleanup. No manual is_disconnected() polling needed.
+    """
     try:
         while True:
-            if await request.is_disconnected():
-                break
-            try:
-                message = await asyncio.wait_for(queue.get(), timeout=1.0)
-                yield {
-                    "event": message["event"],
-                    "data": json.dumps(message["data"]),
-                }
-            except asyncio.TimeoutError:
-                continue
+            message = await queue.get()
+            yield {
+                "event": message["event"],
+                "data": json.dumps(message["data"]),
+            }
     finally:
         await sync_broadcaster.unsubscribe(queue)
         logger.info("SSE client disconnected, unsubscribed")
@@ -44,11 +42,7 @@ async def sse_events(
 
     Auth via query parameter since EventSource API cannot set custom headers.
     """
-    # Validate Firebase token from query param
-    try:
-        await verify_firebase_token(token)
-    except AuthException:
-        raise
+    await verify_firebase_token(token)
 
     queue = await sync_broadcaster.subscribe()
 
