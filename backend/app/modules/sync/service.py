@@ -74,26 +74,31 @@ async def _sync_sheet_to_table(
     )
 
 
-async def run_sync() -> SyncResult:
+async def run_sync(sync_id: int | None = None) -> SyncResult:
     """Execute full brand sync from both Google Sheets.
 
     Orchestrates the sync process:
-    1. Create sync status record
+    1. Create sync status record (or use pre-created sync_id)
     2. Fetch and sync VP data
     3. Fetch and sync Meeting data
     4. Update sync status with results
+
+    Args:
+        sync_id: Optional pre-created sync_status ID. If provided, skips
+                 creating a new record. Used by POST /sync endpoint.
 
     Returns:
         SyncResult with results from both sheets.
     """
     sheets_client = GoogleSheetsClient()
 
-    # Create sync record
-    async with db.connection() as conn:
-        sync_id = await sync_queries.create_sync_status(
-            conn,
-            started_at=datetime.now(timezone.utc),
-        )
+    # Create sync record only if sync_id not provided
+    if sync_id is None:
+        async with db.connection() as conn:
+            sync_id = await sync_queries.create_sync_status(
+                conn,
+                started_at=datetime.now(timezone.utc),
+            )
 
     logger.info(f"Starting sync with ID: {sync_id}")
 

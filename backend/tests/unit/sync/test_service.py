@@ -190,6 +190,46 @@ async def test_run_sync_empty_sheets(mock_db, mock_sheets_client, mock_queries, 
 
 
 @pytest.mark.asyncio
+async def test_run_sync_with_pre_created_sync_id(mock_db, mock_sheets_client, mock_queries, mock_settings):
+    """Test run_sync with pre-created sync_id skips creating a new sync_status record."""
+    from app.modules.sync.service import run_sync
+
+    mock_sync, mock_brand = mock_queries
+
+    mock_sheets_client.fetch_vp_data.return_value = [
+        {"Nama Brand": "Nike"},
+    ]
+    mock_sheets_client.fetch_meeting_data.return_value = []
+
+    result = await run_sync(sync_id=42)
+
+    assert result.sync_id == 42
+    # Should NOT have created a new sync_status record
+    mock_sync.create_sync_status.assert_not_called()
+    # Should still update sync status at completion
+    mock_sync.update_sync_status.assert_called_once()
+    assert result.vp_result.rows_synced == 1
+    assert result.success is True
+
+
+@pytest.mark.asyncio
+async def test_run_sync_without_sync_id_creates_record(mock_db, mock_sheets_client, mock_queries, mock_settings):
+    """Test run_sync without sync_id still creates a sync_status record (backward compatible)."""
+    from app.modules.sync.service import run_sync
+
+    mock_sync, mock_brand = mock_queries
+
+    mock_sheets_client.fetch_vp_data.return_value = []
+    mock_sheets_client.fetch_meeting_data.return_value = []
+
+    result = await run_sync()
+
+    assert result.sync_id == 1  # From mock default return_value
+    # Should have created a new sync_status record
+    mock_sync.create_sync_status.assert_called_once()
+
+
+@pytest.mark.asyncio
 async def test_get_latest_sync_status_returns_status(mock_db, mock_queries):
     """Test get_latest_sync_status returns formatted response."""
     from app.modules.sync.service import get_latest_sync_status
