@@ -337,5 +337,6 @@ async def test_run_sync_broadcasts_failure_event(
     # Check that a broadcast was made with failed status
     calls = mock_broadcaster.broadcast.call_args_list
     statuses = [c[0][1]["status"] for c in calls]
-    # Should have in_progress start and then a completion broadcast
+    # Should have in_progress start and then a failed completion broadcast
     assert "in_progress" in statuses
+    assert "failed" in statuses

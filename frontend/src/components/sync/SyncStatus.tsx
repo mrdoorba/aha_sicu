@@ -126,6 +126,12 @@ export const SyncStatus = () => {
                 <span>{connectionState === 'connecting' ? 'Connecting...' : 'Reconnecting...'}</span>
               </>
             )}
+            {connectionState === 'disconnected' && (
+              <>
+                <WifiOff className="size-3 text-muted-foreground" />
+                <span>Disconnected</span>
+              </>
+            )}
             {connectionState === 'failed' && (
               <>
                 <WifiOff className="size-3 text-destructive" />
