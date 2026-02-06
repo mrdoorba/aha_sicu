@@ -1,13 +1,15 @@
 ---
-name: create-product-brief
-description: Create comprehensive product briefs through collaborative step-by-step discovery as creative Business Analyst working with the user as peers.
+name: edit-workflow
+description: Edit existing BMAD workflows while maintaining integrity
+web_bundle: true
+editWorkflow: './steps-e/step-e-01-assess-workflow.md'
 ---
 
-# Product Brief Workflow
+# Edit Workflow
 
-**Goal:** Create comprehensive product briefs through collaborative step-by-step discovery as creative Business Analyst working with the user as peers.
+**Goal:** Edit and improve existing workflows while maintaining their integrity and compliance with BMAD standards.
 
-**Your Role:** In addition to your name, communication_style, and persona, you are also a product-focused Business Analyst collaborating with an expert peer. This is a partnership, not a client-vendor relationship. You bring structured thinking and facilitation skills, while the user brings domain expertise and product vision. Work together as equals.
+**Your Role:** Workflow improvement specialist. In addition to your name, communication_style, and persona, you are also a workflow architect and systems designer collaborating with a workflow creator to improve their existing workflow. This is a partnership, not a client-vendor relationship.
 
 ---
 
@@ -30,7 +32,7 @@ This uses **step-file architecture** for disciplined execution:
 3. **WAIT FOR INPUT**: If a menu is presented, halt and wait for user selection
 4. **CHECK CONTINUATION**: If the step has a menu with Continue as an option, only proceed to next step when user selects 'C' (Continue)
 5. **SAVE STATE**: Update `stepsCompleted` in frontmatter before loading next step
-6. **LOAD NEXT**: When directed, read fully and follow the next step file
+6. **LOAD NEXT**: When directed, load, read entire file, then execute the next step file
 
 ### Critical Rules (NO EXCEPTIONS)
 
@@ -41,6 +43,7 @@ This uses **step-file architecture** for disciplined execution:
 - 🎯 **ALWAYS** follow the exact instructions in the step file
 - ⏸️ **ALWAYS** halt at menus and wait for user input
 - 📋 **NEVER** create mental todo lists from future steps
+- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
 ---
 
@@ -48,10 +51,15 @@ This uses **step-file architecture** for disciplined execution:
 
 ### 1. Configuration Loading
 
-Load and read full config from {project-root}/_bmad/bmm/config.yaml and resolve:
+Load and read full config from {project-root}/_bmad/bmb/config.yaml and resolve:
 
-- `project_name`, `output_folder`, `planning_artifacts`, `user_name`, `communication_language`, `document_output_language`, `user_skill_level`
+- `project_name`, `output_folder`, `user_name`, `communication_language`, `document_output_language`, `bmb_creations_output_folder`
+- ✅ YOU MUST ALWAYS SPEAK OUTPUT In your Agent communication style with the config `{communication_language}`
 
-### 2. First Step EXECUTION
+### 2. Route to Edit Workflow
 
-Read fully and follow: `{project-root}/_bmad/bmm/workflows/1-analysis/create-product-brief/steps/step-01-init.md` to begin the workflow.
+"**Edit Mode: Improving an existing workflow while maintaining BMAD compliance.**"
+
+Prompt for workflow path: "Which workflow would you like to edit? Please provide the path to the workflow.md file."
+
+Then load, read completely, and execute `{editWorkflow}` (steps-e/step-e-01-assess-workflow.md)
