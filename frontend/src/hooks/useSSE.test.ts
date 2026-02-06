@@ -173,6 +173,12 @@ describe('useSSE', () => {
   });
 
   it('transitions to failed after max retries', async () => {
+    // Retry counting logic:
+    //   onerror checks retryCount >= MAX_RETRIES(5) BEFORE incrementing.
+    //   Errors 1-5: retryCount 0→4, each schedules reconnect (increments to 1→5).
+    //   Error 6: retryCount=5, >= MAX_RETRIES, sets state to 'failed'.
+    //   Total: 5 reconnect attempts + 1 final failure = 6 onerror calls.
+
     const { result } = renderHook(() => useSSE(), {
       wrapper: createWrapper(),
     });
@@ -181,7 +187,7 @@ describe('useSSE', () => {
       await vi.runAllTimersAsync();
     });
 
-    // Simulate 5 consecutive errors (MAX_RETRIES = 5)
+    // Errors 1-5: each triggers reconnect with backoff
     for (let i = 0; i < 5; i++) {
       const es =
         MockEventSource.instances[MockEventSource.instances.length - 1];
@@ -192,7 +198,7 @@ describe('useSSE', () => {
       });
     }
 
-    // After the 5th error triggers reconnect, the 6th attempt (retryCount=5) should fail
+    // Error 6: retryCount has reached MAX_RETRIES — should transition to 'failed'
     const es =
       MockEventSource.instances[MockEventSource.instances.length - 1];
     await act(async () => {

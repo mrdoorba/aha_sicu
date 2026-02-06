@@ -320,23 +320,56 @@ async def test_run_sync_broadcasts_success_event(
 
 
 @pytest.mark.asyncio
-async def test_run_sync_broadcasts_failure_event(
+async def test_run_sync_broadcasts_failure_on_sheet_errors(
     mock_db, mock_sheets_client, mock_queries, mock_settings, mock_broadcaster
 ):
-    """Test run_sync broadcasts sync_status failed on exception."""
+    """Test run_sync broadcasts failed status when individual sheets fail (normal completion path)."""
     from app.modules.sync.service import run_sync
 
     mock_sync, mock_brand = mock_queries
     mock_sheets_client.fetch_vp_data.side_effect = RuntimeError("Fatal error")
     mock_sheets_client.fetch_meeting_data.side_effect = RuntimeError("Fatal error")
 
-    # The sync should handle the error for individual sheets gracefully
-    # but if both fail, the result will be unsuccessful
+    # Individual sheet errors are caught gracefully — sync completes with failed status
     result = await run_sync()
 
-    # Check that a broadcast was made with failed status
     calls = mock_broadcaster.broadcast.call_args_list
     statuses = [c[0][1]["status"] for c in calls]
-    # Should have in_progress start and then a failed completion broadcast
     assert "in_progress" in statuses
     assert "failed" in statuses
+
+
+@pytest.mark.asyncio
+async def test_run_sync_broadcasts_failure_on_outer_exception(
+    mock_db, mock_sheets_client, mock_queries, mock_settings, mock_broadcaster
+):
+    """Test run_sync broadcasts failure and re-raises when outer exception handler triggers.
+
+    This exercises the outer except block (service.py lines 241-264) which handles
+    unexpected errors during sync status update or result calculation. The individual
+    sheet try/except blocks handle sheet-level errors — this tests infrastructure failures.
+    """
+    from app.modules.sync.service import run_sync
+
+    mock_sync, mock_brand = mock_queries
+    mock_sheets_client.fetch_vp_data.return_value = [{"Nama Brand": "Nike"}]
+    mock_sheets_client.fetch_meeting_data.return_value = []
+
+    # First update_sync_status call (completion path) raises; second (error handler) succeeds
+    mock_sync.update_sync_status = AsyncMock(
+        side_effect=[RuntimeError("DB write failed"), None]
+    )
+
+    with pytest.raises(RuntimeError, match="DB write failed"):
+        await run_sync()
+
+    # Verify failure broadcast was sent from the outer exception handler
+    calls = mock_broadcaster.broadcast.call_args_list
+    statuses = [c[0][1]["status"] for c in calls]
+    assert "in_progress" in statuses
+    assert "failed" in statuses
+
+    # Last broadcast should be the failure from the outer exception handler
+    last_call = calls[-1]
+    assert last_call[0][1]["status"] == "failed"
+    assert "DB write failed" in last_call[0][1]["error_message"]

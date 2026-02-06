@@ -6,6 +6,9 @@ from typing import Any
 
 logger = logging.getLogger(__name__)
 
+# 5 users × 2 (tab refresh buffer) — warn if exceeded (possible connection leak)
+MAX_EXPECTED_SUBSCRIBERS = 10
+
 
 class EventBroadcaster:
     """Broadcasts events to multiple async subscribers via per-client queues.
@@ -27,7 +30,15 @@ class EventBroadcaster:
         )
         async with self._lock:
             self._subscribers.append(queue)
-        logger.info("SSE subscriber added (total: %d)", len(self._subscribers))
+            count = len(self._subscribers)
+        if count > MAX_EXPECTED_SUBSCRIBERS:
+            logger.warning(
+                "SSE subscriber count (%d) exceeds expected maximum (%d) — possible connection leak",
+                count,
+                MAX_EXPECTED_SUBSCRIBERS,
+            )
+        else:
+            logger.info("SSE subscriber added (total: %d)", count)
         return queue
 
     async def unsubscribe(self, queue: asyncio.Queue[dict[str, Any]]) -> None:

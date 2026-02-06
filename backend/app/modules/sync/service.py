@@ -204,11 +204,12 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
             }
 
         # Update sync status
+        completed_at = datetime.now(timezone.utc)
         async with db.connection() as conn:
             await sync_queries.update_sync_status(
                 conn,
                 sync_id=sync_id,
-                completed_at=datetime.now(timezone.utc),
+                completed_at=completed_at,
                 success=overall_success,
                 brands_synced=total_synced,
                 error_message=error_message,
@@ -217,13 +218,13 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
 
         logger.info(f"Sync completed: {total_synced} total synced, {total_errors} errors")
 
-        # Broadcast sync completion event
+        # Broadcast sync completion event (same timestamp as DB for consistency)
         await sync_broadcaster.broadcast(
             "sync_status",
             {
                 "status": "success" if overall_success else "failed",
                 "sync_id": sync_id,
-                "completed_at": datetime.now(timezone.utc).isoformat(),
+                "completed_at": completed_at.isoformat(),
                 "brands_synced": total_synced,
                 **({"error_message": error_message} if error_message else {}),
             },
@@ -240,11 +241,12 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
 
     except Exception as e:
         # Update sync status with failure
+        failed_at = datetime.now(timezone.utc)
         async with db.connection() as conn:
             await sync_queries.update_sync_status(
                 conn,
                 sync_id=sync_id,
-                completed_at=datetime.now(timezone.utc),
+                completed_at=failed_at,
                 success=False,
                 brands_synced=0,
                 error_message=str(e),

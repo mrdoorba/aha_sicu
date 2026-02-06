@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { getCurrentUserToken } from '../firebase/auth';
+import { API_BASE_URL } from '../config';
 
 export type SSEConnectionState =
   | 'connecting'
@@ -9,8 +10,7 @@ export type SSEConnectionState =
   | 'disconnected'
   | 'failed';
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
-const SSE_URL = `${BASE_URL}/api/v1/events`;
+const SSE_URL = `${API_BASE_URL}/api/v1/events`;
 const INITIAL_RETRY_DELAY = 1000;
 const MAX_RETRY_DELAY = 30000;
 const MAX_RETRIES = 5;
