@@ -9,10 +9,14 @@
 - [ ] Tech stack detected and documented
 - [ ] MCP doc search performed (or web fallback) and references captured
 - [ ] Acceptance Criteria cross-checked against implementation
-- [ ] File List reviewed and validated for completeness
+- [ ] Response schemas verified field-by-field against AC examples (names, types, structure)
+- [ ] File List reviewed and validated against `git diff` for completeness
 - [ ] Tests identified and mapped to ACs; gaps noted
 - [ ] Code quality review performed on changed files
 - [ ] Security review performed on changed files and dependencies
+- [ ] ILIKE queries verified: `_escape_like()` + `ESCAPE '\'` clause both present
+- [ ] Error handling verified: no swallowed errors, exception chaining preserved, visible error UI
+- [ ] Frontend hooks use `apiClient.ts` — no raw `fetch()` calls
 - [ ] Outcome decided (Approve/Changes Requested/Blocked)
 - [ ] Review notes appended under "Senior Developer Review (AI)"
 - [ ] Change Log updated with review entry
