@@ -17,11 +17,15 @@ def test_sync_status_without_token(client):
 
 
 def test_sync_status_with_invalid_token(client):
-    """Test /api/v1/sync/status returns 401 with invalid token."""
-    with patch("app.core.dependencies.verify_firebase_token") as mock_verify:
-        from app.core.exceptions import AuthException
+    """Test /api/v1/sync/status returns 401 with invalid token (both Firebase and OIDC fail)."""
+    from app.core.exceptions import AuthException
 
-        mock_verify.side_effect = AuthException(code="AUTH_TOKEN_INVALID", detail="Token validation failed")
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_firebase,
+        patch("app.core.dependencies.verify_oidc_token") as mock_oidc,
+    ):
+        mock_firebase.side_effect = AuthException(code="AUTH_TOKEN_INVALID", detail="Token validation failed")
+        mock_oidc.side_effect = AuthException(code="AUTH_TOKEN_INVALID", detail="OIDC token validation failed")
 
         response = client.get("/api/v1/sync/status", headers={"Authorization": "Bearer invalid-token"})
         assert response.status_code == 401

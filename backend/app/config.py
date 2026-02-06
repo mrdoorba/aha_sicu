@@ -20,6 +20,10 @@ class Settings(BaseSettings):
     firebase_credentials_path: str | None = None
     firebase_credentials_json: str | None = None
 
+    # Cloud Run service URL (for OIDC audience validation)
+    # Set in production; empty in local dev (disables audience check)
+    cloud_run_url: str = ""
+
     # Google Sheets API - Credentials
     gsheets_credentials_path: str | None = None
 

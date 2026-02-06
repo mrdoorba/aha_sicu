@@ -122,12 +122,18 @@ def test_post_sync_returns_409_when_sync_in_progress(client):
 
 
 def test_post_sync_with_invalid_token(client):
-    """POST /api/v1/sync returns 401 with invalid token."""
-    with patch("app.core.dependencies.verify_firebase_token") as mock_verify:
-        from app.core.exceptions import AuthException
+    """POST /api/v1/sync returns 401 with invalid token (both Firebase and OIDC fail)."""
+    from app.core.exceptions import AuthException
 
-        mock_verify.side_effect = AuthException(
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_firebase,
+        patch("app.core.dependencies.verify_oidc_token") as mock_oidc,
+    ):
+        mock_firebase.side_effect = AuthException(
             code="AUTH_TOKEN_INVALID", detail="Token validation failed"
+        )
+        mock_oidc.side_effect = AuthException(
+            code="AUTH_TOKEN_INVALID", detail="OIDC token validation failed"
         )
 
         response = client.post(
@@ -137,6 +143,90 @@ def test_post_sync_with_invalid_token(client):
         assert response.status_code == 401
         data = response.json()
         assert data["code"] == "AUTH_TOKEN_INVALID"
+
+
+def test_post_sync_with_oidc_token_returns_202(client):
+    """POST /api/v1/sync returns 202 when authenticated via OIDC (scheduler path)."""
+    from app.core.exceptions import AuthException
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_firebase,
+        patch("app.core.dependencies.verify_oidc_token") as mock_oidc,
+        patch("app.modules.sync.router.db") as mock_router_db,
+        patch("app.modules.sync.router.is_sync_in_progress") as mock_in_progress,
+        patch("app.modules.sync.router.sync_queries") as mock_sync_queries,
+        patch("app.modules.sync.router.run_sync") as mock_run_sync,
+    ):
+        # Firebase fails — this is a scheduler request
+        mock_firebase.side_effect = AuthException(
+            code="AUTH_TOKEN_INVALID", detail="Token validation failed"
+        )
+        # OIDC succeeds
+        mock_oidc.return_value = {
+            "email": "aha-sicu-scheduler-sa@project.iam.gserviceaccount.com",
+            "issuer": "https://accounts.google.com",
+        }
+
+        # Router db mock (with transaction + advisory lock support)
+        mock_router_conn = AsyncMock()
+        mock_router_conn.transaction = MagicMock(return_value=AsyncMock())
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_router_conn
+
+        # Sync mocks
+        mock_in_progress.return_value = False
+        mock_sync_queries.create_sync_status = AsyncMock(return_value=100)
+
+        response = client.post(
+            "/api/v1/sync",
+            headers={"Authorization": "Bearer oidc-scheduler-token"},
+        )
+
+        assert response.status_code == 202
+        data = response.json()
+        assert data["status"] == "started"
+        assert data["sync_id"] == 100
+
+
+def test_post_sync_oidc_skips_db_user_lookup(client):
+    """POST /api/v1/sync with OIDC token does NOT query the users table."""
+    from app.core.exceptions import AuthException
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_firebase,
+        patch("app.core.dependencies.verify_oidc_token") as mock_oidc,
+        patch("app.core.dependencies.db") as mock_auth_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.sync.router.db") as mock_router_db,
+        patch("app.modules.sync.router.is_sync_in_progress") as mock_in_progress,
+        patch("app.modules.sync.router.sync_queries") as mock_sync_queries,
+        patch("app.modules.sync.router.run_sync") as mock_run_sync,
+    ):
+        # Firebase fails, OIDC succeeds
+        mock_firebase.side_effect = AuthException(
+            code="AUTH_TOKEN_INVALID", detail="Token validation failed"
+        )
+        mock_oidc.return_value = {
+            "email": "aha-sicu-scheduler-sa@project.iam.gserviceaccount.com",
+            "issuer": "https://accounts.google.com",
+        }
+
+        # Router db mock
+        mock_router_conn = AsyncMock()
+        mock_router_conn.transaction = MagicMock(return_value=AsyncMock())
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_router_conn
+
+        mock_in_progress.return_value = False
+        mock_sync_queries.create_sync_status = AsyncMock(return_value=101)
+
+        response = client.post(
+            "/api/v1/sync",
+            headers={"Authorization": "Bearer oidc-scheduler-token"},
+        )
+
+        assert response.status_code == 202
+        # Verify no user DB queries were made
+        mock_user_queries.get_user_by_firebase_uid.assert_not_called()
+        mock_user_queries.create_user.assert_not_called()
 
 
 def test_get_sync_status_after_trigger(client):
