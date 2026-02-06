@@ -353,10 +353,12 @@ Patterns from tools like Airtable, Notion databases, and admin dashboards:
 
 ### Design System Choice
 
-**Selected:** shadcn/ui + Tailwind CSS
+**Selected:** shadcn/ui + Tailwind CSS v4
 
 **What is shadcn/ui?**
 A collection of reusable, accessible components built on Radix UI primitives and styled with Tailwind CSS. Unlike traditional component libraries, you copy the component code into your project and own it completely.
+
+**Tailwind v4 Note:** The project uses Tailwind CSS v4 (with `@tailwindcss/postcss` plugin), which has a different configuration paradigm than v3. shadcn/ui components should be initialized with Tailwind v4 compatibility mode.
 
 ### Rationale for Selection
 
@@ -374,10 +376,11 @@ A collection of reusable, accessible components built on Radix UI primitives and
 ### Implementation Approach
 
 **Component Installation Strategy:**
-1. Initialize shadcn/ui in the frontend project
+1. Initialize shadcn/ui in the frontend project (Tailwind v4 compatible setup)
 2. Install components as needed (not all at once)
 3. Components copied to `src/components/ui/` directory
 4. Customize to match Store ICU visual identity
+5. Setup to be completed as part of Story 2.3 (first UI story) or as a preceding setup task
 
 **Core Components Needed:**
 
@@ -508,7 +511,7 @@ Store ICU does NOT need novel UX patterns. The goal is to execute familiar patte
    └── User clicks "Evaluate" on a brand OR searches for brand
 
 2. DATA ENTRY (Core Loop)
-   ├── Brand info displayed at top (from Google Sheets sync)
+   ├── Brand info displayed at top (from VP sheet sync, enriched with Meeting data if available)
    ├── Form sections organized by data source:
    │   ├── Section: [Shopee Link A] → Fields 1-5
    │   ├── Section: [Shopee Link B] → Fields 6-12
@@ -795,7 +798,7 @@ flowchart TD
 
 | Step | Content | Shopee Link |
 |------|---------|-------------|
-| 1. Brand Info | Basic brand details (from sync) | — |
+| 1. Brand Info | Basic brand details (from VP sheet sync, Meeting data if available) | — |
 | 2. Store Performance | Revenue, orders, ratings | Yes |
 | 3. Product Metrics | SKUs, pricing, inventory | Yes |
 | 4. Excel Upload | Upload data file, view parsed results | — |

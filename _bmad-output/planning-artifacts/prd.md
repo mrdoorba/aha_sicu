@@ -41,7 +41,7 @@ The BD team evaluates and qualifies brands as candidates for company e-commerce 
 ### Solution
 
 Store ICU is a web application that:
-- Syncs brand data from the existing Brand Database Google Sheet (BD team keeps familiar data entry)
+- Syncs brand data from two existing Google Sheets — VP sheet (primary brand list) and 1st Meeting sheet (supplementary data) — BD team keeps familiar data entry
 - Accepts Excel file uploads and manual data input directly in the app
 - Replicates all calculator logic exactly (Ads Keyword, Discount Check, Top SKU, Scoring)
 - Stores all evaluations permanently in a searchable database
@@ -62,7 +62,7 @@ Store ICU is a web application that:
 | **Migration Fidelity** | Same trusted calculations, exact same results |
 | **Persistent History** | Every evaluation stored forever, fully searchable |
 | **Configurable Rules** | Scoring thresholds editable without code deployment |
-| **Unified Data Flow** | Brand Database syncs from Google Sheets; Excel uploads and manual input go directly to app |
+| **Unified Data Flow** | Brand data syncs from two Google Sheets (VP + Meeting); Excel uploads and manual input go directly to app |
 
 ## Success Criteria
 
@@ -112,7 +112,7 @@ Store ICU is a web application that:
 
 | Feature | Description |
 |---------|-------------|
-| Google Sheets Sync | One-way sync from Brand Database sheet (daily auto + on-demand) |
+| Google Sheets Sync | One-way sync from two Google Sheets — VP (primary brand list) and 1st Meeting (supplementary) — daily auto + on-demand |
 | Excel File Upload | Upload Excel files for calculator processing via Polars |
 | Ads Keyword Calculator | Replicate existing spreadsheet logic exactly |
 | Discount Check Calculator | Replicate existing spreadsheet logic exactly |
@@ -214,7 +214,7 @@ Store ICU is a web application that:
 
 | Layer | Technology | Rationale |
 |-------|------------|-----------|
-| **Frontend** | SPA (Firebase Hosting) | Modern UI, GCP ecosystem |
+| **Frontend** | React 19 + Vite 7 + Tailwind v4 + shadcn/ui (Firebase Hosting) | Modern UI, GCP ecosystem |
 | **Backend** | FastAPI on Cloud Run | Python-first for Polars integration |
 | **Database** | Neon (PostgreSQL) | Project constraint, persistent storage |
 | **Auth** | Firebase Auth | Token-based, decoupled |
@@ -241,7 +241,7 @@ Store ICU is a web application that:
 
 ### Brand Data Management
 
-- **FR1:** System can sync brand data from Google Sheets Brand Database automatically (daily)
+- **FR1:** System can sync brand data from two Google Sheets (VP and 1st Meeting) automatically (daily)
 - **FR2:** BD team member can trigger manual sync of brand data on-demand
 - **FR3:** BD team member can view current sync status (last synced timestamp)
 - **FR4:** System can display sync errors when sync fails
