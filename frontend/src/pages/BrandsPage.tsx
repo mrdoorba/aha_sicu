@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { Search, ChevronLeft, ChevronRight, RefreshCw } from 'lucide-react';
+import { Search, ChevronLeft, ChevronRight, RefreshCw, XCircle } from 'lucide-react';
 import { Header } from '../components/layout/Header';
 import { SyncStatus } from '../components/sync/SyncStatus';
 import { BrandTable } from '../components/brands/BrandTable';
@@ -23,12 +23,12 @@ export const BrandsPage = () => {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { data, isLoading } = useBrands(page, limit, debouncedSearch);
+  const { data, isLoading, isError } = useBrands(page, limit, debouncedSearch);
 
   const totalPages = data?.pages ?? 0;
   const hasBrands = (data?.total ?? 0) > 0;
-  const isEmpty = !isLoading && !hasBrands && !debouncedSearch;
-  const noResults = !isLoading && !hasBrands && !!debouncedSearch;
+  const isEmpty = !isLoading && !isError && !hasBrands && !debouncedSearch;
+  const noResults = !isLoading && !isError && !hasBrands && !!debouncedSearch;
 
   return (
     <div className="min-h-screen bg-muted">
@@ -55,7 +55,14 @@ export const BrandsPage = () => {
         {/* Brand Table */}
         <Card>
           <CardContent className="p-0">
-            {isEmpty ? (
+            {isError ? (
+              <div className="flex flex-col items-center gap-3 py-16 text-center">
+                <XCircle className="size-10 text-destructive" />
+                <p className="text-muted-foreground">
+                  Failed to load brands. Please try again later.
+                </p>
+              </div>
+            ) : isEmpty ? (
               <div className="flex flex-col items-center gap-3 py-16 text-center">
                 <RefreshCw className="size-10 text-muted-foreground" />
                 <p className="text-muted-foreground">

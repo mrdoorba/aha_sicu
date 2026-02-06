@@ -1,6 +1,6 @@
 # Story 2.3: Brand List UI with Sync Status
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -565,6 +565,27 @@ Claude Opus 4.6
 - frontend/src/App.tsx — added QueryClientProvider, Toaster, BrandsPage route
 - frontend/src/components/layout/Header.tsx — added navigation links with active state
 
+### Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door on 2026-02-06
+**Outcome:** Approved with fixes applied
+
+**Issues Found:** 3 High, 4 Medium, 3 Low — **All 10 fixed**
+
+| # | Severity | Issue | Fix Applied |
+|---|----------|-------|-------------|
+| H1 | HIGH | Hooks bypass openapi-fetch client (architecture violation) | Refactored useBrands.ts, useSync.ts to use apiClient.ts |
+| H2 | HIGH | Hooks send `Bearer null` when unauthenticated | Fixed by H1 — apiClient middleware skips header when no token |
+| H3 | HIGH | ILIKE search vulnerable to pattern injection (`%`, `_`) | Added `_escape_like()` helper in brands.py |
+| M1 | MEDIUM | baseUrl duplicated in 3 files | Fixed by H1 — single source in apiClient.ts |
+| M2 | MEDIUM | BrandsPage silently swallows API errors | Added isError state with error UI display |
+| M3 | MEDIUM | Backend tests don't verify query params reach database | Added mock call_args assertions for offset/limit/search |
+| M4 | MEDIUM | Brand list doesn't refresh after sync completes | Added useEffect in SyncStatus to detect status transition and invalidate brands query |
+| L1 | LOW | summarizeRawData shows arbitrary JSONB keys | Filtered meta keys, sorted alphabetically |
+| L2 | LOW | Skeleton shows 5 rows vs 20-per-page limit | Increased to 10 skeleton rows |
+| L3 | LOW | formatRelativeTime crashes on invalid/future dates | Added isNaN and negative diff guards |
+
 ### Change Log
 
 - 2026-02-06: Story 2.3 implemented — Brand List UI with Sync Status. Full-stack feature: backend brands API with pagination/search, frontend BrandsPage with SyncStatus, BrandTable, search, pagination. 52 backend tests + 47 frontend tests all passing.
+- 2026-02-06: Code review fixes applied — 10 issues resolved (3 HIGH, 4 MEDIUM, 3 LOW). Refactored hooks to use openapi-fetch apiClient, added LIKE escape, error handling, sync completion refresh, improved tests.

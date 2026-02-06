@@ -1,7 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { getCurrentUserToken } from '../firebase/auth';
-
-const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
+import client from '../services/apiClient';
 
 export interface SyncStatusData {
   id: number;
@@ -22,12 +20,9 @@ export function useSyncStatus() {
   return useQuery<SyncStatusData | null>({
     queryKey: ['syncStatus'],
     queryFn: async () => {
-      const token = await getCurrentUserToken();
-      const res = await fetch(`${baseUrl}/api/v1/sync/status`, {
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (!res.ok) throw new Error('Failed to fetch sync status');
-      return res.json();
+      const { data, error } = await client.GET('/api/v1/sync/status');
+      if (error) return null;
+      return data as SyncStatusData;
     },
     refetchInterval: 10_000,
   });
@@ -37,18 +32,15 @@ export function useTriggerSync() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const token = await getCurrentUserToken();
-      const res = await fetch(`${baseUrl}/api/v1/sync`, {
-        method: 'POST',
-        headers: { Authorization: `Bearer ${token}` },
-      });
-      if (res.status === 409) throw new Error('Sync already in progress');
-      if (!res.ok) throw new Error('Failed to trigger sync');
-      return res.json();
+      const { data, error, response } = await client.POST('/api/v1/sync');
+      if (error) {
+        if (response.status === 409) throw new Error('Sync already in progress');
+        throw new Error('Failed to trigger sync');
+      }
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['syncStatus'] });
-      queryClient.invalidateQueries({ queryKey: ['brands'] });
     },
   });
 }

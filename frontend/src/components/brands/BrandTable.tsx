@@ -26,7 +26,7 @@ export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {Array.from({ length: 5 }).map((_, i) => (
+          {Array.from({ length: 10 }).map((_, i) => (
             <TableRow key={i}>
               <TableCell>
                 <div className="h-4 w-32 animate-pulse rounded bg-muted" />
@@ -78,8 +78,12 @@ export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
   );
 };
 
+const META_KEYS = new Set(['id', 'created_at', 'updated_at', 'synced_at']);
+
 function summarizeRawData(rawData: Record<string, unknown>): string {
-  const entries = Object.entries(rawData);
+  const entries = Object.entries(rawData)
+    .filter(([key]) => !META_KEYS.has(key.toLowerCase()))
+    .sort(([a], [b]) => a.localeCompare(b));
   const summary = entries
     .slice(0, 3)
     .map(([key, value]) => `${key}: ${String(value ?? '')}`)

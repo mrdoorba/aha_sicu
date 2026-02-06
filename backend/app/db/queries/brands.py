@@ -10,6 +10,11 @@ TableName = Literal["brand_vp_data", "brand_meeting_data"]
 _VALID_TABLES: frozenset[str] = frozenset({"brand_vp_data", "brand_meeting_data"})
 
 
+def _escape_like(term: str) -> str:
+    """Escape special LIKE/ILIKE pattern characters in search terms."""
+    return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
+
+
 def _validate_table(table: str) -> str:
     """Validate table name against allowlist to prevent SQL injection."""
     if table not in _VALID_TABLES:
@@ -100,6 +105,7 @@ async def get_brands_with_meeting(
     search: str | None = None,
 ) -> list[dict]:
     """Get VP brands with LEFT JOIN to meeting data, with optional search."""
+    search_escaped = _escape_like(search) if search else None
     rows = await conn.fetch(
         """
         SELECT
@@ -111,7 +117,7 @@ async def get_brands_with_meeting(
         ORDER BY v.brand_name ASC
         LIMIT $2 OFFSET $3
         """,
-        search,
+        search_escaped,
         limit,
         offset,
     )
@@ -123,12 +129,13 @@ async def get_brands_count_with_search(
     search: str | None = None,
 ) -> int:
     """Get total count of VP brands with optional search filter."""
+    search_escaped = _escape_like(search) if search else None
     result = await conn.fetchval(
         """
         SELECT COUNT(*)
         FROM brand_vp_data
         WHERE ($1::text IS NULL OR brand_name ILIKE '%' || $1 || '%')
         """,
-        search,
+        search_escaped,
     )
     return result or 0

@@ -1,3 +1,5 @@
+import { useRef, useEffect } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { RefreshCw, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '../ui/card';
@@ -7,8 +9,10 @@ import { useSyncStatus, useTriggerSync } from '../../hooks/useSync';
 
 function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString);
+  if (isNaN(date.getTime())) return 'unknown';
   const now = new Date();
   const diffMs = now.getTime() - date.getTime();
+  if (diffMs < 0) return 'just now';
   const diffSec = Math.floor(diffMs / 1000);
   const diffMin = Math.floor(diffSec / 60);
   const diffHr = Math.floor(diffMin / 60);
@@ -23,6 +27,23 @@ function formatRelativeTime(dateString: string): string {
 export const SyncStatus = () => {
   const { data: syncStatus, isLoading } = useSyncStatus();
   const triggerSync = useTriggerSync();
+  const queryClient = useQueryClient();
+  const prevStatusRef = useRef<string | undefined>();
+
+  // Refresh brand list when sync completes (transitions from in_progress to success/failed)
+  useEffect(() => {
+    const currentStatus = syncStatus?.status;
+    const prevStatus = prevStatusRef.current;
+
+    if (
+      prevStatus === 'in_progress' &&
+      (currentStatus === 'success' || currentStatus === 'failed')
+    ) {
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
+    }
+
+    prevStatusRef.current = currentStatus;
+  }, [syncStatus?.status, queryClient]);
 
   const handleSyncNow = () => {
     triggerSync.mutate(undefined, {
