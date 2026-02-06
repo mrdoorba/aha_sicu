@@ -13,7 +13,7 @@ router = APIRouter(prefix="/api/v1/brands", tags=["brands"])
 async def list_brands(
     page: int = Query(1, ge=1, description="Page number"),
     limit: int = Query(20, ge=1, le=100, description="Items per page"),
-    search: str | None = Query(None, description="Search by brand name"),
+    search: str | None = Query(None, max_length=200, description="Search by brand name"),
     current_user: dict = Depends(get_current_user),
 ) -> BrandListResponse:
     """Get paginated list of brands with optional search.

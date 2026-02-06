@@ -1,6 +1,7 @@
 import { useQuery } from '@tanstack/react-query';
 import client from '../services/apiClient';
 
+// Keep in sync with apiClient.ts paths['/api/v1/brands'] response type
 export interface BrandListItem {
   id: number;
   brand_name: string;

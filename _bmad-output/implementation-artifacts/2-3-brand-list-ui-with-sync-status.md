@@ -548,8 +548,14 @@ Claude Opus 4.6
 - backend/tests/integration/api/test_brands.py
 
 **Modified (Backend):**
-- backend/app/db/queries/brands.py — added get_brands_with_meeting(), get_brands_count_with_search()
+- backend/app/db/queries/brands.py — added get_brands_with_meeting(), get_brands_count_with_search(), _escape_like(), ESCAPE clause
 - backend/app/main.py — registered brands_router
+- backend/app/modules/sync/router.py — added advisory lock transaction (code review 1 fix)
+- backend/app/modules/sync/schemas.py — added SyncStatusResponse model_validator, last_sync, status enum (code review 1 fix)
+- backend/app/modules/sync/service.py — renamed sync_details keys to vp_sheet/meeting_sheet (code review 1 fix)
+- backend/tests/integration/api/test_sync.py — updated assertions for status enum (code review 1 fix)
+- backend/tests/integration/api/test_sync_trigger.py — added transaction mock support (code review 1 fix)
+- backend/tests/unit/sync/test_service.py — updated status/last_sync assertions (code review 1 fix)
 
 **Created (Frontend):**
 - frontend/src/hooks/useSync.ts
@@ -564,6 +570,7 @@ Claude Opus 4.6
 **Modified (Frontend):**
 - frontend/src/App.tsx — added QueryClientProvider, Toaster, BrandsPage route
 - frontend/src/components/layout/Header.tsx — added navigation links with active state
+- frontend/src/services/apiClient.ts — added brands and sync path types for openapi-fetch
 
 ### Senior Developer Review (AI)
 
@@ -585,7 +592,28 @@ Claude Opus 4.6
 | L2 | LOW | Skeleton shows 5 rows vs 20-per-page limit | Increased to 10 skeleton rows |
 | L3 | LOW | formatRelativeTime crashes on invalid/future dates | Added isNaN and negative diff guards |
 
+#### Second Review (AI)
+
+**Reviewer:** Mr. Door on 2026-02-06
+**Outcome:** Approved with fixes applied
+
+**Issues Found:** 4 High, 3 Medium, 3 Low — **All 10 fixed**
+
+| # | Severity | Issue | Fix Applied |
+|---|----------|-------|-------------|
+| H1 | HIGH | ILIKE escape ineffective — missing `ESCAPE '\'` clause in SQL | Added `ESCAPE '\'` to both ILIKE clauses in brands.py |
+| H2 | HIGH | Backend tests don't exercise _escape_like or verify escaped search | Added _escape_like unit test + special char search integration test |
+| H3 | HIGH | useSyncStatus swallows errors silently (returns null) | Changed to throw on error, added isError handling + error UI in SyncStatus |
+| H4 | HIGH | Search parameter has no max_length validation | Added `max_length=200` to search Query param + validation test |
+| M1 | MEDIUM | Story File List missing 7 git-changed files | Updated File List with all sync module + apiClient changes |
+| M2 | MEDIUM | BrandTable duplicate table header/structure code | Merged into single Table with conditional body content |
+| M3 | MEDIUM | SyncStatus effect ref design intent unclear | Added comment clarifying intentional undefined initialization |
+| L1 | LOW | META_KEYS case-insensitive filter undocumented | Added comment explaining toLowerCase() handles JSONB key casing |
+| L2 | LOW | formatRelativeTime timezone assumption undocumented | Added JSDoc comment noting UTC timestamp assumption |
+| L3 | LOW | Frontend types duplicated across apiClient.ts and hooks | Added cross-reference comments to keep types in sync |
+
 ### Change Log
 
 - 2026-02-06: Story 2.3 implemented — Brand List UI with Sync Status. Full-stack feature: backend brands API with pagination/search, frontend BrandsPage with SyncStatus, BrandTable, search, pagination. 52 backend tests + 47 frontend tests all passing.
-- 2026-02-06: Code review fixes applied — 10 issues resolved (3 HIGH, 4 MEDIUM, 3 LOW). Refactored hooks to use openapi-fetch apiClient, added LIKE escape, error handling, sync completion refresh, improved tests.
+- 2026-02-06: Code review #1 fixes applied — 10 issues resolved (3 HIGH, 4 MEDIUM, 3 LOW). Refactored hooks to use openapi-fetch apiClient, added LIKE escape, error handling, sync completion refresh, improved tests.
+- 2026-02-06: Code review #2 fixes applied — 10 issues resolved (4 HIGH, 3 MEDIUM, 3 LOW). Fixed ILIKE ESCAPE clause, search max_length, sync error handling, BrandTable refactor, documentation. 55 backend + 48 frontend tests passing.

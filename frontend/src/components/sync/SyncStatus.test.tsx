@@ -163,4 +163,17 @@ describe('SyncStatus', () => {
     expect(screen.queryByText(/last synced/i)).not.toBeInTheDocument();
     expect(screen.queryByText(/never synced/i)).not.toBeInTheDocument();
   });
+
+  it('shows error state when sync status fetch fails', () => {
+    mockUseSyncStatus.mockReturnValue({
+      data: undefined,
+      isLoading: false,
+      isError: true,
+    });
+
+    renderSyncStatus();
+
+    expect(screen.getByText(/unable to load sync status/i)).toBeInTheDocument();
+    expect(screen.queryByText(/never synced/i)).not.toBeInTheDocument();
+  });
 });

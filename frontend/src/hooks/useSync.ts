@@ -1,6 +1,7 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client from '../services/apiClient';
 
+// Keep in sync with apiClient.ts paths['/api/v1/sync/status'] response type
 export interface SyncStatusData {
   id: number;
   last_sync: string;
@@ -21,8 +22,8 @@ export function useSyncStatus() {
     queryKey: ['syncStatus'],
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/sync/status');
-      if (error) return null;
-      return data as SyncStatusData;
+      if (error) throw new Error('Failed to fetch sync status');
+      return (data as SyncStatusData) ?? null;
     },
     refetchInterval: 10_000,
   });
