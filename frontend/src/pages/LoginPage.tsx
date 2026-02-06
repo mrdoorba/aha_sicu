@@ -53,30 +53,30 @@ export const LoginPage = () => {
   // Don't render form while redirecting (user is logged in)
   if (user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5]">
-        <div className="text-[#71717A]">Redirecting...</div>
+      <div className="min-h-screen flex items-center justify-center bg-muted">
+        <div className="text-muted-foreground">Redirecting...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-[#F4F4F5]">
+    <div className="min-h-screen flex items-center justify-center bg-muted">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-semibold text-[#18181B] mb-6 text-center">
+        <h1 className="text-2xl font-semibold text-foreground mb-6 text-center">
           Store ICU Login
         </h1>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
           {error && (
             <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-[#EF4444] text-sm">{error}</p>
+              <p className="text-destructive text-sm">{error}</p>
             </div>
           )}
 
           <div>
             <label
               htmlFor="email"
-              className="block text-sm font-medium text-[#18181B] mb-1"
+              className="block text-sm font-medium text-foreground mb-1"
             >
               Email
             </label>
@@ -86,7 +86,7 @@ export const LoginPage = () => {
               autoComplete="email"
               aria-describedby={errors.email ? 'email-error' : undefined}
               aria-invalid={errors.email ? 'true' : 'false'}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4361EE] focus:border-transparent text-[#18181B]"
+              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
               {...register('email', {
                 required: 'Email is required',
                 pattern: {
@@ -96,7 +96,7 @@ export const LoginPage = () => {
               })}
             />
             {errors.email && (
-              <p id="email-error" role="alert" className="mt-1 text-sm text-[#EF4444]">
+              <p id="email-error" role="alert" className="mt-1 text-sm text-destructive">
                 {errors.email.message}
               </p>
             )}
@@ -105,7 +105,7 @@ export const LoginPage = () => {
           <div>
             <label
               htmlFor="password"
-              className="block text-sm font-medium text-[#18181B] mb-1"
+              className="block text-sm font-medium text-foreground mb-1"
             >
               Password
             </label>
@@ -115,13 +115,13 @@ export const LoginPage = () => {
               autoComplete="current-password"
               aria-describedby={errors.password ? 'password-error' : undefined}
               aria-invalid={errors.password ? 'true' : 'false'}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-[#4361EE] focus:border-transparent text-[#18181B]"
+              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
               {...register('password', {
                 required: 'Password is required',
               })}
             />
             {errors.password && (
-              <p id="password-error" role="alert" className="mt-1 text-sm text-[#EF4444]">
+              <p id="password-error" role="alert" className="mt-1 text-sm text-destructive">
                 {errors.password.message}
               </p>
             )}
@@ -130,7 +130,7 @@ export const LoginPage = () => {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="w-full py-2 px-4 bg-[#4361EE] text-white font-medium rounded-lg hover:bg-[#3651DE] focus:outline-none focus:ring-2 focus:ring-[#4361EE] focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+            className="w-full py-2 px-4 bg-primary text-white font-medium rounded-lg hover:bg-primary/85 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
             {isSubmitting ? 'Logging in...' : 'Login'}
           </button>
