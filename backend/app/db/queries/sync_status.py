@@ -63,6 +63,14 @@ async def get_latest_sync_status(conn: Connection) -> dict | None:
     return dict(row) if row else None
 
 
+async def is_sync_in_progress(conn: Connection) -> bool:
+    """Check if any sync is currently running (started but not completed)."""
+    row = await conn.fetchrow(
+        "SELECT id FROM sync_status WHERE completed_at IS NULL LIMIT 1"
+    )
+    return row is not None
+
+
 async def get_sync_status_by_id(conn: Connection, sync_id: int) -> dict | None:
     """Get sync status by ID."""
     row = await conn.fetchrow(

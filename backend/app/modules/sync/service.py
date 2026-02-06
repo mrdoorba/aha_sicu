@@ -15,6 +15,7 @@ from app.modules.sync.schemas import (
     SyncStatusResponse,
 )
 from app.modules.sync.sheets_client import GoogleSheetsClient
+from app.services.event_broadcaster import sync_broadcaster
 
 logger = logging.getLogger(__name__)
 
@@ -74,28 +75,39 @@ async def _sync_sheet_to_table(
     )
 
 
-async def run_sync() -> SyncResult:
+async def run_sync(sync_id: int | None = None) -> SyncResult:
     """Execute full brand sync from both Google Sheets.
 
     Orchestrates the sync process:
-    1. Create sync status record
+    1. Create sync status record (or use pre-created sync_id)
     2. Fetch and sync VP data
     3. Fetch and sync Meeting data
     4. Update sync status with results
+
+    Args:
+        sync_id: Optional pre-created sync_status ID. If provided, skips
+                 creating a new record. Used by POST /sync endpoint.
 
     Returns:
         SyncResult with results from both sheets.
     """
     sheets_client = GoogleSheetsClient()
 
-    # Create sync record
-    async with db.connection() as conn:
-        sync_id = await sync_queries.create_sync_status(
-            conn,
-            started_at=datetime.now(timezone.utc),
-        )
+    # Create sync record only if sync_id not provided
+    if sync_id is None:
+        async with db.connection() as conn:
+            sync_id = await sync_queries.create_sync_status(
+                conn,
+                started_at=datetime.now(timezone.utc),
+            )
 
     logger.info(f"Starting sync with ID: {sync_id}")
+
+    # Broadcast sync start event
+    await sync_broadcaster.broadcast(
+        "sync_status",
+        {"status": "in_progress", "sync_id": sync_id, "started_at": datetime.now(timezone.utc).isoformat()},
+    )
 
     vp_result: SheetSyncResult | None = None
     meeting_result: SheetSyncResult | None = None
@@ -177,26 +189,27 @@ async def run_sync() -> SyncResult:
         # Build per-sheet breakdown for persistence
         sync_details = {}
         if vp_result:
-            sync_details["vp"] = {
+            sync_details["vp_sheet"] = {
                 "rows_synced": vp_result.rows_synced,
                 "rows_skipped": vp_result.rows_skipped,
                 "errors": [e.model_dump() for e in vp_result.errors],
-                "success": vp_result.success,
+                "status": "success" if vp_result.success else "failed",
             }
         if meeting_result:
-            sync_details["meeting"] = {
+            sync_details["meeting_sheet"] = {
                 "rows_synced": meeting_result.rows_synced,
                 "rows_skipped": meeting_result.rows_skipped,
                 "errors": [e.model_dump() for e in meeting_result.errors],
-                "success": meeting_result.success,
+                "status": "success" if meeting_result.success else "failed",
             }
 
         # Update sync status
+        completed_at = datetime.now(timezone.utc)
         async with db.connection() as conn:
             await sync_queries.update_sync_status(
                 conn,
                 sync_id=sync_id,
-                completed_at=datetime.now(timezone.utc),
+                completed_at=completed_at,
                 success=overall_success,
                 brands_synced=total_synced,
                 error_message=error_message,
@@ -204,6 +217,18 @@ async def run_sync() -> SyncResult:
             )
 
         logger.info(f"Sync completed: {total_synced} total synced, {total_errors} errors")
+
+        # Broadcast sync completion event (same timestamp as DB for consistency)
+        await sync_broadcaster.broadcast(
+            "sync_status",
+            {
+                "status": "success" if overall_success else "failed",
+                "sync_id": sync_id,
+                "completed_at": completed_at.isoformat(),
+                "brands_synced": total_synced,
+                **({"error_message": error_message} if error_message else {}),
+            },
+        )
 
         return SyncResult(
             sync_id=sync_id,
@@ -216,16 +241,28 @@ async def run_sync() -> SyncResult:
 
     except Exception as e:
         # Update sync status with failure
+        failed_at = datetime.now(timezone.utc)
         async with db.connection() as conn:
             await sync_queries.update_sync_status(
                 conn,
                 sync_id=sync_id,
-                completed_at=datetime.now(timezone.utc),
+                completed_at=failed_at,
                 success=False,
                 brands_synced=0,
                 error_message=str(e),
             )
         logger.error(f"SYNC_FAILED: {e}")
+
+        # Broadcast sync failure event
+        await sync_broadcaster.broadcast(
+            "sync_status",
+            {
+                "status": "failed",
+                "sync_id": sync_id,
+                "error_message": str(e),
+            },
+        )
+
         raise
 
 

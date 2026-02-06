@@ -16,3 +16,15 @@ variable "environment" {
   type        = string
   default     = "dev"
 }
+
+variable "cloud_run_url" {
+  description = "Cloud Run service URL for the Store ICU API (e.g., https://aha-sicu-api-xxxx.a.run.app)"
+  type        = string
+  default     = ""
+}
+
+variable "cloud_run_service_name" {
+  description = "Cloud Run service name for IAM binding (e.g., aha-sicu-api)"
+  type        = string
+  default     = "aha-sicu-api"
+}

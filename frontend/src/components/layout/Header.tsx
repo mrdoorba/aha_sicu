@@ -1,10 +1,11 @@
 import { useState, useEffect, useRef } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link, useLocation } from 'react-router-dom';
 
 export const Header = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
   const modalRef = useRef<HTMLDivElement>(null);
@@ -62,7 +63,31 @@ export const Header = () => {
       <header className="bg-foreground text-white">
         <div className="mx-auto max-w-7xl px-4 py-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
-            <h1 className="text-xl font-semibold">Store ICU</h1>
+            <div className="flex items-center gap-6">
+              <h1 className="text-xl font-semibold">Store ICU</h1>
+              <nav className="flex items-center gap-1">
+                <Link
+                  to="/dashboard"
+                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    location.pathname === '/dashboard'
+                      ? 'bg-white/20 text-white'
+                      : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  to="/brands"
+                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    location.pathname === '/brands'
+                      ? 'bg-white/20 text-white'
+                      : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  Brands
+                </Link>
+              </nav>
+            </div>
             <div className="flex items-center gap-4">
               <span className="text-sm text-gray-300">{user?.email}</span>
               <button
