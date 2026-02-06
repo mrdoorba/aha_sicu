@@ -66,7 +66,7 @@ _This document builds collaboratively through step-by-step discovery. Sections a
 | File Storage | Google Cloud Storage | Large file uploads (>32MB Cloud Run limit) |
 
 **External Dependencies:**
-- Google Sheets API (Brand Database sync)
+- Google Sheets API (VP sheet + 1st Meeting sheet sync)
 - Firebase Auth SDK
 - Neon connection pooling
 - Google Cloud Storage (file uploads)
@@ -120,7 +120,8 @@ backend/
 │   │   ├── __init__.py
 │   │   ├── connection.py          # Neon connection pool
 │   │   ├── queries/               # Raw SQL or query builders
-│   │   │   ├── brands.py
+│   │   │   ├── brand_vp_data.py   # VP sheet brand queries
+│   │   │   ├── brand_meeting_data.py # Meeting sheet brand queries
 │   │   │   ├── evaluations.py
 │   │   │   └── rules.py
 │   │   └── migrations/            # Schema migrations
@@ -132,11 +133,12 @@ backend/
 │   │   │   ├── router.py
 │   │   │   ├── schemas.py
 │   │   │   └── service.py
-│   │   ├── sync/                  # Google Sheets sync module
+│   │   ├── sync/                  # Google Sheets sync module (VP + Meeting sheets)
 │   │   │   ├── __init__.py
 │   │   │   ├── router.py
-│   │   │   ├── schemas.py
-│   │   │   └── service.py
+│   │   │   ├── schemas.py         # SyncStatus, SyncRequest, SyncDetails
+│   │   │   ├── service.py         # sync_from_sheets(), get_status()
+│   │   │   └── sheets_client.py   # Google Sheets API client (dual-sheet fetch)
 │   │   ├── evaluations/           # Evaluation storage module
 │   │   │   ├── __init__.py
 │   │   │   ├── router.py
@@ -219,7 +221,7 @@ infrastructure/
 
 **Language & Runtime:**
 - Backend: Python 3.14 with type hints (latest)
-- Frontend: TypeScript (strict mode)
+- Frontend: TypeScript 5.9 (strict mode)
 
 **Modularity Principles:**
 - Each feature module is self-contained (router, schemas, service)
@@ -228,15 +230,16 @@ infrastructure/
 - Clear dependency injection through FastAPI's Depends()
 
 **Styling Solution:**
-- Tailwind CSS (utility-first, rapid development)
+- Tailwind CSS v4 (utility-first, rapid development)
+- shadcn/ui (accessible component library built on Radix UI + Tailwind)
 
 **Build Tooling:**
-- Frontend: Vite (fast HMR, optimized builds)
+- Frontend: Vite 7 (fast HMR, optimized builds)
 - Backend: UV (fast Python package/project manager) + Docker for Cloud Run deployment
 
 **Package Management:**
 - Backend: UV (replaces pip, pip-tools, virtualenv - single tool for dependency resolution, virtual environments, and project management)
-- Frontend: npm or pnpm
+- Frontend: npm
 
 **Testing Framework:**
 - Backend: pytest (unit tests for calculators, integration for API)
@@ -287,6 +290,34 @@ infrastructure/
 - Version-controlled schema changes
 - Rollback support
 - No ORM dependency
+
+**Database Schema — Brand Data (Dual-Sheet Model):**
+
+The brand data comes from two separate Google Sheets (VP and 1st Meeting). Each sheet is stored in its own table with raw JSONB data:
+
+| Table | Source | Purpose | Key Columns |
+|-------|--------|---------|-------------|
+| `brand_vp_data` | VP Sheet | Primary brand list | `id`, `brand_name`, `raw_data` (JSONB), `synced_at` |
+| `brand_meeting_data` | 1st Meeting Sheet | Supplementary data | `id`, `brand_name`, `raw_data` (JSONB), `synced_at` |
+
+- `brand_vp_data` is the **primary brand reference** — all downstream FKs (`brand_uploads`, `evaluation_inputs`, `calculator_results`, `evaluations`) reference `brand_vp_data(id)`
+- `brand_meeting_data` enriches brand info when available (joined by `brand_name`)
+- Both tables store raw sheet data as JSONB in `raw_data` to accommodate schema changes without migrations
+
+**Database Schema — Sync Status:**
+
+| Table | Purpose | Key Columns |
+|-------|---------|-------------|
+| `sync_log` | Track sync operations | `id`, `status`, `started_at`, `completed_at`, `sync_details` (JSONB) |
+
+The `sync_details` JSONB column stores per-sheet results:
+```json
+{
+  "vp_sheet": { "rows_synced": 150, "status": "success" },
+  "meeting_sheet": { "rows_synced": 48, "status": "success" }
+}
+```
+This enables partial failure tracking — one sheet can fail without blocking the other.
 
 **Authorization for Rules:**
 - Only `leader`/`admin` roles can modify scoring rules
@@ -440,9 +471,14 @@ def process_zip(zip_bytes: bytes) -> pl.DataFrame:
 - Built-in validation
 - TypeScript-native
 
-**API Client:** openapi-fetch
+**API Client:** openapi-fetch 0.15
 - Auto-generated from FastAPI OpenAPI spec
 - Full type safety frontend ↔ backend
+
+**UI Component Library:** shadcn/ui
+- Accessible components built on Radix UI primitives
+- Installed into src/components/ui/ (code ownership, no dependency lock-in)
+- Tailwind v4 compatible
 
 ### Infrastructure & Deployment
 
@@ -608,6 +644,12 @@ jobs:
 | One SA for everything | Blast radius if compromised | Isolated per purpose |
 | Project-wide storage access | Can access any bucket | Bucket-level IAM only |
 
+**Google Sheets Configuration:**
+- VP Sheet: configurable spreadsheet ID, range (`VP!A:Y`), brand column (`Nama Brand`)
+- 1st Meeting Sheet: configurable spreadsheet ID, range (`ZAP: 1st Meeting!A:D`), brand column (`Brand`)
+- Each sheet syncs independently with per-sheet error tracking
+- Sync service handles partial failures (one sheet can fail without blocking the other)
+
 **Naming Convention:**
 - Resource prefix: `aha_sicu_`
 - Examples: `aha_sicu_api`, `aha_sicu_registry`, `aha_sicu_db_url`
@@ -656,10 +698,10 @@ These patterns ensure that when multiple AI agents implement different parts of 
 
 | Element | Pattern | Example |
 |---------|---------|---------|
-| Tables | `snake_case` plural | `brands`, `evaluations`, `scoring_rules` |
+| Tables | `snake_case` plural | `brand_vp_data`, `brand_meeting_data`, `evaluations`, `scoring_rules` |
 | Columns | `snake_case` | `brand_id`, `created_at`, `is_active` |
-| Foreign keys | `{table}_id` | `brand_id`, `user_id` |
-| Indexes | `idx_{table}_{column}` | `idx_brands_name`, `idx_evaluations_created_at` |
+| Foreign keys | `{table}_id` | `brand_id` (references `brand_vp_data`), `user_id` |
+| Indexes | `idx_{table}_{column}` | `idx_brand_vp_data_brand_name`, `idx_evaluations_created_at` |
 | Primary keys | `id` | Always `id`, never `brand_id` for PK |
 
 #### API Naming
@@ -881,7 +923,8 @@ store-icu/
 │   │   │   ├── connection.py         # asyncpg pool to Neon
 │   │   │   ├── queries/
 │   │   │   │   ├── __init__.py
-│   │   │   │   ├── brands.py         # Brand CRUD queries
+│   │   │   │   ├── brand_vp_data.py   # VP sheet brand queries
+│   │   │   │   ├── brand_meeting_data.py # Meeting sheet brand queries
 │   │   │   │   ├── evaluations.py    # Evaluation queries
 │   │   │   │   ├── rules.py          # Rule config queries
 │   │   │   │   └── users.py          # User/role queries
@@ -905,8 +948,9 @@ store-icu/
 │   │   │   ├── sync/
 │   │   │   │   ├── __init__.py
 │   │   │   │   ├── router.py         # POST /sync, GET /sync-status
-│   │   │   │   ├── schemas.py        # SyncStatus, SyncRequest
-│   │   │   │   └── service.py        # sync_from_sheets(), get_status()
+│   │   │   │   ├── schemas.py        # SyncStatus, SyncRequest, SyncDetails
+│   │   │   │   ├── service.py        # sync_from_sheets(), get_status()
+│   │   │   │   └── sheets_client.py  # Google Sheets API client (dual-sheet fetch)
 │   │   │   │
 │   │   │   ├── evaluations/
 │   │   │   │   ├── __init__.py
@@ -1107,8 +1151,8 @@ store-icu/
 │  FastAPI App (main.py)                                      │
 │  └── Mounts all module routers under /api/v1/               │
 ├─────────────────────────────────────────────────────────────┤
-│  modules/brands     ← DB queries only, no calculator logic  │
-│  modules/sync       ← Google Sheets API only                │
+│  modules/brands     ← DB queries (brand_vp_data + brand_meeting_data) │
+│  modules/sync       ← Google Sheets API (VP + Meeting sheets)│
 │  modules/upload     ← Polars processing only                │
 │  modules/evaluations ← Orchestrates calculators + storage   │
 │  modules/rules      ← Rule config CRUD only                 │
@@ -1143,7 +1187,8 @@ SSE Event (if applicable) → useSSE hook → Other users' UI
 **FR1-FR5 (Brand Data Management):**
 - `modules/sync/` - Google Sheets sync
 - `modules/brands/` - Brand listing and selection
-- `db/queries/brands.py` - Brand data queries
+- `db/queries/brand_vp_data.py` - VP brand data queries
+- `db/queries/brand_meeting_data.py` - Meeting brand data queries
 - `components/brands/` - Brand UI components
 - `hooks/useBrands.ts`, `hooks/useSync.ts`
 
@@ -1200,7 +1245,7 @@ SSE Event (if applicable) → useSSE hook → Other users' UI
 
 | Service | Integration Point | Purpose |
 |---------|-------------------|---------|
-| Google Sheets API | `modules/sync/service.py` | Brand Database sync |
+| Google Sheets API | `modules/sync/service.py`, `sheets_client.py` | VP sheet + 1st Meeting sheet sync |
 | Firebase Auth | `core/security.py`, `firebase/` | User authentication |
 | Neon PostgreSQL | `db/connection.py` | Data persistence |
 | Google Cloud Storage | `modules/upload/gcs_client.py` | Large file uploads (Excel/ZIP) |
