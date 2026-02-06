@@ -1,6 +1,8 @@
 """Sync status database queries using parameterized SQL."""
 
+import json
 from datetime import datetime
+from typing import Any
 
 from asyncpg import Connection
 
@@ -25,6 +27,7 @@ async def update_sync_status(
     success: bool,
     brands_synced: int,
     error_message: str | None = None,
+    sync_details: dict[str, Any] | None = None,
 ) -> None:
     """Update sync status with completion details."""
     await conn.execute(
@@ -33,7 +36,8 @@ async def update_sync_status(
         SET completed_at = $2,
             success = $3,
             brands_synced = $4,
-            error_message = $5
+            error_message = $5,
+            sync_details = $6
         WHERE id = $1
         """,
         sync_id,
@@ -41,6 +45,7 @@ async def update_sync_status(
         success,
         brands_synced,
         error_message,
+        json.dumps(sync_details) if sync_details else None,
     )
 
 
@@ -48,7 +53,8 @@ async def get_latest_sync_status(conn: Connection) -> dict | None:
     """Get the most recent sync status record."""
     row = await conn.fetchrow(
         """
-        SELECT id, started_at, completed_at, success, brands_synced, error_message
+        SELECT id, started_at, completed_at, success, brands_synced,
+               error_message, sync_details
         FROM sync_status
         ORDER BY started_at DESC
         LIMIT 1
@@ -61,7 +67,8 @@ async def get_sync_status_by_id(conn: Connection, sync_id: int) -> dict | None:
     """Get sync status by ID."""
     row = await conn.fetchrow(
         """
-        SELECT id, started_at, completed_at, success, brands_synced, error_message
+        SELECT id, started_at, completed_at, success, brands_synced,
+               error_message, sync_details
         FROM sync_status
         WHERE id = $1
         """,

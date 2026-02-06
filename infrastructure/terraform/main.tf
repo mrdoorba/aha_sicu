@@ -29,15 +29,17 @@ resource "google_project_service" "sheets_api" {
 }
 
 # Service Account for Google Sheets access
+# Naming follows architecture convention: aha-sicu-{purpose}-sa
 resource "google_service_account" "gsheets_sync" {
-  account_id   = "store-icu-gsheets-sync"
+  account_id   = "aha-sicu-sheets-sa"
   display_name = "Store ICU Google Sheets Sync"
   description  = "Service account for syncing brand data from Google Sheets"
   project      = var.project_id
 }
 
-# Service Account Key (for local development)
-# NOTE: For production, use Workload Identity instead
+# Service Account Key (for local development ONLY)
+# WARNING: This key is stored in Terraform state in plaintext.
+# For production, use Workload Identity or Secret Manager instead.
 resource "google_service_account_key" "gsheets_sync_key" {
   service_account_id = google_service_account.gsheets_sync.name
 }
@@ -49,6 +51,7 @@ output "gsheets_service_account_email" {
 }
 
 # Output the service account key (base64 encoded JSON)
+# WARNING: Sensitive value stored in Terraform state. Use only for local dev.
 output "gsheets_service_account_key" {
   description = "Service account key (base64 encoded) - decode and save to credentials file"
   value       = google_service_account_key.gsheets_sync_key.private_key

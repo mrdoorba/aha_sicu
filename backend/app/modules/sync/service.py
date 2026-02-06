@@ -174,6 +174,23 @@ async def run_sync() -> SyncResult:
                 error_parts.append(f"Meeting: {len(meeting_result.errors)} row errors")
             error_message = "; ".join(error_parts)
 
+        # Build per-sheet breakdown for persistence
+        sync_details = {}
+        if vp_result:
+            sync_details["vp"] = {
+                "rows_synced": vp_result.rows_synced,
+                "rows_skipped": vp_result.rows_skipped,
+                "errors": [e.model_dump() for e in vp_result.errors],
+                "success": vp_result.success,
+            }
+        if meeting_result:
+            sync_details["meeting"] = {
+                "rows_synced": meeting_result.rows_synced,
+                "rows_skipped": meeting_result.rows_skipped,
+                "errors": [e.model_dump() for e in meeting_result.errors],
+                "success": meeting_result.success,
+            }
+
         # Update sync status
         async with db.connection() as conn:
             await sync_queries.update_sync_status(
@@ -183,6 +200,7 @@ async def run_sync() -> SyncResult:
                 success=overall_success,
                 brands_synced=total_synced,
                 error_message=error_message,
+                sync_details=sync_details if sync_details else None,
             )
 
         logger.info(f"Sync completed: {total_synced} total synced, {total_errors} errors")
@@ -230,4 +248,5 @@ async def get_latest_sync_status() -> SyncStatusResponse | None:
         success=status["success"],
         brands_synced=status["brands_synced"],
         error_message=status["error_message"],
+        sync_details=status.get("sync_details"),
     )
