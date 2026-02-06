@@ -37,6 +37,7 @@ async def _sync_sheet_to_table(
         SheetSyncResult with counts and errors.
     """
     synced_count = 0
+    skipped_count = 0
     errors: list[SyncError] = []
 
     async with db.connection() as conn:
@@ -45,12 +46,7 @@ async def _sync_sheet_to_table(
                 brand_name = row_data.get(brand_column, "").strip()
 
                 if not brand_name:
-                    errors.append(
-                        SyncError(
-                            brand="(empty)",
-                            error=f"Missing required column: {brand_column}",
-                        )
-                    )
+                    skipped_count += 1
                     continue
 
                 await brand_queries.upsert_brand_data(
@@ -66,9 +62,13 @@ async def _sync_sheet_to_table(
                 errors.append(SyncError(brand=brand_name, error=str(e)))
                 logger.warning(f"Failed to sync {sheet_type} brand '{brand_name}': {e}")
 
+    if skipped_count > 0:
+        logger.info(f"Skipped {skipped_count} empty rows in {sheet_type} sheet")
+
     return SheetSyncResult(
         sheet_type=sheet_type,
         rows_synced=synced_count,
+        rows_skipped=skipped_count,
         errors=errors,
         success=len(errors) == 0,
     )

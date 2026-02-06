@@ -145,7 +145,8 @@ async def test_run_sync_skips_empty_brand_names(mock_db, mock_sheets_client, moc
     result = await run_sync()
 
     assert result.vp_result.rows_synced == 1
-    assert len(result.vp_result.errors) == 2  # Two rows skipped
+    assert result.vp_result.rows_skipped == 2  # Two empty rows silently skipped
+    assert len(result.vp_result.errors) == 0  # Not counted as errors
 
 
 @pytest.mark.asyncio

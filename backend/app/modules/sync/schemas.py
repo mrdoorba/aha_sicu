@@ -21,6 +21,7 @@ class SheetSyncResult(BaseModel):
 
     sheet_type: SheetType
     rows_synced: int
+    rows_skipped: int = 0
     errors: list[SyncError]
     success: bool
 
