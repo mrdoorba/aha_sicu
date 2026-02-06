@@ -7,6 +7,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { useSyncStatus, useTriggerSync } from '../../hooks/useSync';
 
+/** Format ISO timestamp as relative time. Assumes server returns UTC timestamps. */
 function formatRelativeTime(dateString: string): string {
   const date = new Date(dateString);
   if (isNaN(date.getTime())) return 'unknown';
@@ -25,12 +26,13 @@ function formatRelativeTime(dateString: string): string {
 }
 
 export const SyncStatus = () => {
-  const { data: syncStatus, isLoading } = useSyncStatus();
+  const { data: syncStatus, isLoading, isError } = useSyncStatus();
   const triggerSync = useTriggerSync();
   const queryClient = useQueryClient();
   const prevStatusRef = useRef<string | undefined>();
 
-  // Refresh brand list when sync completes (transitions from in_progress to success/failed)
+  // Refresh brand list when sync completes (transitions from in_progress to success/failed).
+  // Intentionally starts as undefined so initial mount doesn't trigger invalidation.
   useEffect(() => {
     const currentStatus = syncStatus?.status;
     const prevStatus = prevStatusRef.current;
@@ -75,7 +77,13 @@ export const SyncStatus = () => {
       <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-2">
           <div className="flex items-center gap-2">
-            {!syncStatus && (
+            {isError && (
+              <Badge variant="destructive">
+                <XCircle className="size-3" />
+                Unable to load sync status
+              </Badge>
+            )}
+            {!isError && !syncStatus && (
               <Badge variant="outline">
                 <Clock className="size-3" />
                 Never synced

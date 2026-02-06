@@ -3,7 +3,8 @@ import { getCurrentUserToken } from '../firebase/auth';
 
 const baseUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8000';
 
-// Define paths type (can be replaced with generated OpenAPI types)
+// Define paths type (can be replaced with generated OpenAPI types).
+// Keep response shapes in sync with hook types in useBrands.ts and useSync.ts.
 interface paths {
   '/api/v1/me': {
     get: {

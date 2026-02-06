@@ -3,6 +3,8 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
+from app.db.queries.brands import _escape_like
+
 
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
 
@@ -271,3 +273,65 @@ def test_brands_without_meeting_data(client):
         assert response.status_code == 200
         data = response.json()
         assert data["items"][0]["meeting_raw_data"] is None
+
+
+def test_escape_like_special_characters():
+    """Test _escape_like escapes %, _, and \\ for ILIKE patterns."""
+    assert _escape_like("test%value") == "test\\%value"
+    assert _escape_like("test_value") == "test\\_value"
+    assert _escape_like("test\\value") == "test\\\\value"
+    assert _escape_like("normal") == "normal"
+    assert _escape_like("%_\\") == "\\%\\_\\\\"
+    assert _escape_like("") == ""
+
+
+def test_brands_search_special_chars_escaped(client):
+    """Test search with LIKE special chars passes escaped value to DB."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.brands.service.db") as mock_brands_db,
+    ):
+        mock_verify.return_value = {"uid": "test-uid", "email": "test@example.com"}
+        mock_conn = AsyncMock()
+        mock_db.connection.return_value.__aenter__.return_value = mock_conn
+        mock_user_queries.get_user_by_firebase_uid = AsyncMock(return_value=MOCK_USER)
+        mock_user_queries.update_last_login = AsyncMock()
+
+        mock_brands_conn = AsyncMock()
+        mock_brands_db.connection.return_value.__aenter__.return_value = mock_brands_conn
+        mock_brands_conn.fetch = AsyncMock(return_value=[])
+        mock_brands_conn.fetchval = AsyncMock(return_value=0)
+
+        response = client.get(
+            "/api/v1/brands",
+            params={"search": "brand_test"},
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        # Verify the escaped search term reached the database
+        fetch_args = mock_brands_conn.fetch.call_args[0]
+        assert fetch_args[1] == "brand\\_test"  # _ should be escaped
+
+
+def test_brands_search_max_length(client):
+    """Test search parameter rejects values exceeding max_length."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        mock_verify.return_value = {"uid": "test-uid", "email": "test@example.com"}
+        mock_conn = AsyncMock()
+        mock_db.connection.return_value.__aenter__.return_value = mock_conn
+        mock_user_queries.get_user_by_firebase_uid = AsyncMock(return_value=MOCK_USER)
+        mock_user_queries.update_last_login = AsyncMock()
+
+        response = client.get(
+            "/api/v1/brands",
+            params={"search": "a" * 201},
+            headers=AUTH_HEADERS,
+        )
+        assert response.status_code == 422  # validation error

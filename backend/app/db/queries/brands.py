@@ -113,7 +113,7 @@ async def get_brands_with_meeting(
             m.raw_data AS meeting_raw_data
         FROM brand_vp_data v
         LEFT JOIN brand_meeting_data m ON v.brand_name = m.brand_name
-        WHERE ($1::text IS NULL OR v.brand_name ILIKE '%' || $1 || '%')
+        WHERE ($1::text IS NULL OR v.brand_name ILIKE '%' || $1 || '%' ESCAPE '\')
         ORDER BY v.brand_name ASC
         LIMIT $2 OFFSET $3
         """,
@@ -134,7 +134,7 @@ async def get_brands_count_with_search(
         """
         SELECT COUNT(*)
         FROM brand_vp_data
-        WHERE ($1::text IS NULL OR brand_name ILIKE '%' || $1 || '%')
+        WHERE ($1::text IS NULL OR brand_name ILIKE '%' || $1 || '%' ESCAPE '\')
         """,
         search_escaped,
     )
