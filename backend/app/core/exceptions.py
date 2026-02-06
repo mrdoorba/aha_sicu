@@ -16,3 +16,10 @@ class AuthException(AppException):
 
     def __init__(self, code: str, detail: str) -> None:
         super().__init__(code=code, detail=detail, status_code=401)
+
+
+class SyncException(AppException):
+    """Sync-related exceptions."""
+
+    def __init__(self, code: str, detail: str, status_code: int = 500) -> None:
+        super().__init__(code=code, detail=detail, status_code=status_code)
