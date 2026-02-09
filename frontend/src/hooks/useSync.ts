@@ -33,8 +33,8 @@ export function useTriggerSync() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async () => {
-      const { data, error, response } = await client.POST('/api/v1/sync');
-      if (error) {
+      const { data, response } = await client.POST('/api/v1/sync');
+      if (!response.ok) {
         if (response.status === 409) throw new Error('Sync already in progress');
         throw new Error('Failed to trigger sync');
       }
