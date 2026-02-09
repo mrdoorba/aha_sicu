@@ -156,13 +156,13 @@ backend/
 │   │       ├── schemas.py
 │   │       └── service.py
 │   │
-│   └── calculators/               # Calculation engine (isolated)
+│   └── calculators/               # Calculation engine (isolated, polymorphic results)
 │       ├── __init__.py
 │       ├── base.py                # Abstract calculator interface
-│       ├── ads_keyword.py
-│       ├── discount.py
-│       ├── top_sku.py
-│       ├── scoring.py             # Final scoring (Fashion/Non-Fashion)
+│       ├── ads_keyword.py         # Returns text blocks (not numeric scores)
+│       ├── discount.py            # Returns text values and flags
+│       ├── top_sku.py             # Returns ranked tables and average stock integer
+│       ├── scoring.py             # 75-row scoring system (Fashion/Non-Fashion templates)
 │       └── engine.py              # Calculator orchestration
 │
 ├── tests/
@@ -370,7 +370,17 @@ Cloud Run has a 32MB request body limit. Seller Center exports can reach 100MB+ 
 | Type | Extension | Description |
 |------|-----------|-------------|
 | Single Excel | `.xlsx`, `.xls` | Standard single-file upload |
+| CSV Data | `.csv` | Shopee ad report exports |
 | ZIP Archive | `.zip` | Seller Center multi-part export |
+
+**Calculator Input File Types:**
+
+| File Type ID | Format | Source | Used By |
+|-------------|--------|--------|---------|
+| `cpc_ad_report` | CSV | Shopee CPC Ad Report (Data Keseluruhan Iklan) | Calculator 1 (Sheet 1) |
+| `keyword_report` | CSV | Shopee Keyword/Placement Report (Laporan Penempatan Kata Pencarian) | Calculator 1 (Sheet 2) |
+| `order_export` | Excel | Shopee Order Export (Order_all_*.xlsx) | Calculator 2, Calculator 3 |
+| `mass_update` | Excel | Shopee Mass Update (mass_update_sales_info_*.xlsx) | Calculator 2 |
 
 **ZIP Archive Structure (Seller Center Export):**
 ```
@@ -412,7 +422,8 @@ seller_export.zip
 │    b. Detect file type (Excel or ZIP)                                       │
 │    c. If ZIP: Extract → Sort parts → Merge into single DataFrame            │
 │    d. If Excel: Parse directly with Polars                                  │
-│    e. Run calculators                                                       │
+│    e. Route to target calculator(s) based on file type                      │
+│    e2. Run calculator if all required input files are available              │
 │    f. Store evaluation in database                                          │
 │    g. Delete file from GCS                                                  │
 │    h. Broadcast SSE event: `new_evaluation`                                 │
@@ -1176,7 +1187,7 @@ store-icu/
 ├─────────────────────────────────────────────────────────────┤
 │  modules/brands     ← DB queries (brand_vp_data + brand_meeting_data) │
 │  modules/sync       ← Google Sheets API (VP + Meeting sheets)│
-│  modules/upload     ← Polars processing only                │
+│  modules/upload     ← CSV + Excel processing via Polars      │
 │  modules/evaluations ← Orchestrates calculators + storage   │
 │  modules/rules      ← Rule config CRUD only                 │
 │  modules/auth       ← Firebase token verification only      │
@@ -1184,6 +1195,8 @@ store-icu/
 ├─────────────────────────────────────────────────────────────┤
 │  calculators/       ← PURE FUNCTIONS, no I/O                │
 │  └── Called by modules/evaluations, never directly by API   │
+│  Each calculator accepts DataFrames and returns structured   │
+│  results (text blocks, tables, or scored breakdowns)         │
 ├─────────────────────────────────────────────────────────────┤
 │  core/              ← Shared infrastructure                 │
 │  └── Used by all modules via Depends()                      │
@@ -1203,6 +1216,23 @@ FastAPI Router → Service → DB Queries / Calculators
 Response → TanStack Query Cache → UI Update
     ↓
 SSE Event (if applicable) → useSSE hook → Other users' UI
+```
+
+**Calculator Data Flow (Epic 3):**
+```
+Multiple File Uploads (2 CSV + 2 Excel)
+    ↓
+Per-calculator file routing (by file_type)
+    ↓
+Calculator execution (when all required files available)
+    ↓
+Structured results: text blocks (Calc 1), tables + avg stock (Calc 2), text values + flag (Calc 3)
+    ↓
+Manual input (~40+ fields by scoring category)
+    ↓
+Scoring system template (75 rows, Fashion/Non-Fashion)
+    ↓
+Final score + email/WA output → Save evaluation
 ```
 
 ### Requirements to Structure Mapping
