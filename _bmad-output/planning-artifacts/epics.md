@@ -501,6 +501,82 @@ So that **the BD team always has fresh data without manual intervention**.
 
 ---
 
+### Story 2.6: Retrofit Accessibility Basics
+
+As a **BD team member using assistive technology**,
+I want **core UI elements to have proper ARIA annotations and keyboard patterns**,
+So that **I can navigate and operate Store ICU with a screen reader or keyboard alone**.
+
+> **Context:** Accessibility audit found ~50% compliance. Good foundation exists (Radix UI primitives, semantic HTML, proper form labels on LoginPage). This story addresses high-impact, low-effort gaps across existing Epic 2 components.
+
+**Acceptance Criteria:**
+
+**AC1 — Icon-only buttons have accessible names**
+
+**Given** the app renders icon-only buttons (e.g., sync, logout, search clear, pagination arrows)
+**When** a screen reader focuses any icon-only button
+**Then** it announces a meaningful label (via `aria-label`)
+**And** the following components are updated:
+  - `Header.tsx` — logout button, any icon-only actions
+  - `BrandTable.tsx` — pagination arrows, sort toggles
+  - `SyncStatus.tsx` — sync trigger button (if icon-only variant)
+  - `BrandsPage.tsx` — search clear button, any icon-only filter controls
+
+**AC2 — Live regions announce sync state changes**
+
+**Given** the sync status changes (idle → syncing → success/failure)
+**When** `SyncStatus.tsx` renders the updated state
+**Then** the status text is wrapped in an `aria-live="polite"` region
+**And** sync completion or failure is announced to screen readers without requiring focus change
+
+**AC3 — Skip-to-content link exists**
+
+**Given** I land on any page using keyboard navigation
+**When** I press Tab as the first action
+**Then** a "Skip to main content" link becomes visible
+**And** activating it moves focus to the `<main>` landmark (or primary content area)
+**And** the link is implemented in `App.tsx` or the top-level layout component
+
+**AC4 — Search input has an accessible label**
+
+**Given** the brand search input on `BrandsPage.tsx`
+**When** a screen reader focuses the input
+**Then** it announces a descriptive label (e.g., "Search brands")
+**And** the label is either a visually-hidden `<label>` element or an `aria-label` attribute
+
+**AC5 — Logout confirmation uses accessible Dialog**
+
+**Given** I click the logout button in `Header.tsx`
+**When** the confirmation prompt appears
+**Then** it uses the shadcn `Dialog` component (Radix-based, already installed)
+**And** focus is trapped inside the dialog while open
+**And** pressing Escape closes the dialog
+**And** the dialog has an accessible title (`aria-labelledby` or Dialog.Title)
+
+**AC6 — Loading skeleton has aria-busy**
+
+**Given** the brand table in `BrandTable.tsx` is loading data
+**When** a skeleton/loading state is displayed
+**Then** the table or its container has `aria-busy="true"`
+**And** when loading completes, `aria-busy` is removed or set to `"false"`
+
+**Out of scope (deferred):**
+- Hardcoded color classes → design tokens (cosmetic, low impact)
+- Keyboard shortcuts (Ctrl+K search, etc.)
+- Automated a11y testing setup (jest-axe / vitest-axe)
+- `aria-current` on nav links (single-page app with one active view)
+
+**NFR mapping:** Cross-cutting accessibility concern — no specific FR; supports NFR usability expectations.
+
+**Files to modify:**
+- `frontend/src/App.tsx` — skip-to-content link
+- `frontend/src/components/Header.tsx` — aria-labels on icon buttons, Dialog for logout
+- `frontend/src/components/brands/BrandTable.tsx` — aria-labels on pagination/sort, aria-busy on loading
+- `frontend/src/components/brands/SyncStatus.tsx` — aria-live region
+- `frontend/src/pages/BrandsPage.tsx` — search input label, aria-labels on icon controls
+
+---
+
 ## Epic 3: Brand Evaluation Workflow
 
 BD team can complete a full brand evaluation — upload data files, run calculators, enter manual inputs, generate final score using the 75-row scoring system, and save the evaluation.
