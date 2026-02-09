@@ -42,7 +42,7 @@ The BD team evaluates and qualifies brands as candidates for company e-commerce 
 
 Store ICU is a web application that:
 - Syncs brand data from two existing Google Sheets — VP sheet (primary brand list) and 1st Meeting sheet (supplementary data) — BD team keeps familiar data entry
-- Accepts Excel file uploads and manual data input directly in the app
+- Accepts CSV and Excel file uploads and manual data input directly in the app
 - Replicates all calculator logic exactly (Ads Keyword, Discount Check, Top SKU, Scoring)
 - Stores all evaluations permanently in a searchable database
 - Provides configurable scoring rules without code changes
@@ -113,7 +113,7 @@ Store ICU is a web application that:
 | Feature | Description |
 |---------|-------------|
 | Google Sheets Sync | One-way sync from two Google Sheets — VP (primary brand list) and 1st Meeting (supplementary) — daily auto + on-demand |
-| Excel File Upload | Upload Excel files for calculator processing via Polars |
+| Excel File Upload | Upload data files (CSV and Excel) for calculator processing via Polars |
 | Ads Keyword Calculator | Replicate existing spreadsheet logic exactly |
 | Discount Check Calculator | Replicate existing spreadsheet logic exactly |
 | Top SKU Calculator | Replicate existing spreadsheet logic exactly |
@@ -249,21 +249,21 @@ Store ICU is a web application that:
 
 ### Data Input & Upload (Per Brand)
 
-- **FR6:** BD team member can upload Excel files for a specific brand's calculator processing
-- **FR7:** System can parse uploaded Excel files using Polars
-- **FR8:** BD team member can enter manual data values for a specific brand
-- **FR9:** System can validate uploaded file format before processing
+- **FR6:** BD team member can upload data files (CSV and Excel) for a specific brand's calculator processing — multiple files per evaluation, each routed to its target calculator
+- **FR7:** System can parse uploaded data files (CSV and Excel) using Polars
+- **FR8:** BD team member can enter manual data values for a specific brand, organized by scoring system categories (~40+ fields across operational, business, content, visitors, promo, ads, campaign, competition, stock, and discount sections)
+- **FR9:** System can validate uploaded file format and per-calculator column schema before processing
 - **FR10:** BD team member can re-upload Excel files for a brand (upsert — replaces previous upload)
 - **FR11:** BD team member can edit previously entered manual data for a brand
 
 ### Calculators (Per Brand)
 
-- **FR12:** System can execute Ads Keyword Calculator on a brand's uploaded data
-- **FR13:** System can execute Discount Check Calculator on a brand's uploaded data
-- **FR14:** System can execute Top SKU Calculator on a brand's uploaded data
-- **FR15:** System can execute all calculators automatically after file upload for a brand
-- **FR16:** BD team member can view individual calculator results for a brand
-- **FR17:** System can combine calculator results with manual input data for a brand
+- **FR12:** System can execute Ads Keyword Calculator using CPC Ad Report CSV and Keyword Placement Report CSV, producing text-based ad analysis with overview, type breakdown, recommendations, top/bottom performers, and flags
+- **FR13:** System can execute Discount Check Calculator using Order Export data, producing discount percentage analysis, range, voucher/bundle percentages, and fake discount detection flag
+- **FR14:** System can execute Top SKU Calculator using Order Export and Mass Update data, producing top 20% selling SKU tables (with revenue and stock) and average stock metric
+- **FR15:** System can execute applicable calculators when their required input files become available for a brand
+- **FR16:** BD team member can view individual calculator results for a brand — text summaries with flags (Ads Keyword), ranked product tables (Top SKU), and discount analysis text (Discount Check)
+- **FR17:** System can combine calculator results with manual input data for a brand using the 75-row scoring system template (Fashion/Non-Fashion variants) to produce final score, category breakdowns, and output messages
 - **FR18:** System can recalculate results when data is updated for a brand
 
 ### Final Scoring (Per Brand)
