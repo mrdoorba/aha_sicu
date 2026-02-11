@@ -1,6 +1,6 @@
 # Story 3.4: Ads Keyword Calculator
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -479,12 +479,36 @@ Claude Opus 4.6 (claude-opus-4-6)
 - ✅ Task 6: 6 integration tests — success, missing data (3 variants), upsert, auth
 - ✅ Task 7: useRunCalculator hook + CalculatorResult/AdsKeywordDetails types + apiClient paths
 
+### Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door | **Date:** 2026-02-11 | **Model:** Claude Opus 4.6
+
+**Result:** APPROVED after fixes
+
+**Issues Found:** 3 High, 3 Medium, 3 Low — all 9 fixed in commit `3312646`
+
+| # | Severity | Issue | Fix |
+|---|----------|-------|-----|
+| H1 | HIGH | No error wrapping around calculator execution | Added try/except with CALC_EXECUTION_FAILED |
+| H2 | HIGH | No validation of parsed_data structure | Added `_extract_parsed_data()` validator |
+| H3 | HIGH | AC #7 threshold validation missing from tests | Added spec-value threshold test |
+| M4 | MEDIUM | AL8 substring check may not trigger (spec ambiguity) | Added comment + test documenting behavior |
+| M5 | MEDIUM | No dedicated CalculatorException class | Added to exceptions.py |
+| M6 | MEDIUM | Frontend error discarded in useCalculator | Propagate actual API error |
+| L7 | LOW | MND fixtures approximate | Addressed by H3 focused test |
+| L8 | LOW | Redundant runtime type guard | Removed dead code |
+| L9 | LOW | No AL8 trigger test | Added conditional trigger test |
+
+**Post-fix test count:** 194 passing (was 192)
+
 ### Change Log
 
+- 2026-02-11: Code review fixes — 9 issues (3H/3M/3L) all resolved, 194 tests passing
 - 2026-02-11: Story 3.4 implementation complete — all 7 tasks done, 63 new tests (57 unit + 6 integration), all 192 backend tests passing
 
 ### File List
 
+- backend/app/core/exceptions.py (modified — added CalculatorException)
 - backend/app/db/migrations/versions/008_create_calculator_results_table.py (new)
 - backend/app/db/queries/calculator_results.py (new)
 - backend/app/calculators/ads_keyword.py (new)
