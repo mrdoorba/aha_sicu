@@ -63,6 +63,7 @@ override.tf.json
 .claude/
 .cursor/
 .gemini/
+_bmad/
 
 # Firebase
 .firebase/
