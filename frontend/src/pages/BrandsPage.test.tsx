@@ -194,4 +194,31 @@ describe('BrandsPage', () => {
 
     expect(screen.queryByText(/page \d+ of/i)).not.toBeInTheDocument();
   });
+
+  it('search input has accessible label "Search brands" and searchbox role', () => {
+    mockUseBrands.mockReturnValue({
+      data: BRANDS_RESPONSE,
+      isLoading: false,
+    });
+
+    renderBrandsPage();
+
+    const searchInput = screen.getByRole('searchbox', { name: /search brands/i });
+    expect(searchInput).toBeInTheDocument();
+  });
+
+  it('decorative icons have aria-hidden="true"', () => {
+    mockUseBrands.mockReturnValue({
+      data: { items: [], total: 0, page: 1, limit: 20, pages: 0 },
+      isLoading: false,
+    });
+
+    renderBrandsPage();
+
+    // The search icon near the search input should be aria-hidden
+    const searchInput = screen.getByRole('searchbox', { name: /search brands/i });
+    const searchContainer = searchInput.closest('.relative');
+    const searchIcon = searchContainer?.querySelector('svg');
+    expect(searchIcon).toHaveAttribute('aria-hidden', 'true');
+  });
 });

@@ -63,4 +63,25 @@ describe('BrandTable', () => {
     // But should have the table structure
     expect(screen.getByText('Brand Name')).toBeInTheDocument();
   });
+
+  it('has aria-busy="true" when loading', () => {
+    render(<BrandTable brands={[]} isLoading={true} />);
+
+    const table = screen.getByRole('table', { name: /brand list/i });
+    expect(table).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('has aria-busy="false" when loaded', () => {
+    render(<BrandTable brands={SAMPLE_BRANDS} isLoading={false} />);
+
+    const table = screen.getByRole('table', { name: /brand list/i });
+    expect(table).toHaveAttribute('aria-busy', 'false');
+  });
+
+  it('has aria-label="Brand list"', () => {
+    render(<BrandTable brands={SAMPLE_BRANDS} isLoading={false} />);
+
+    const table = screen.getByRole('table', { name: /brand list/i });
+    expect(table).toBeInTheDocument();
+  });
 });

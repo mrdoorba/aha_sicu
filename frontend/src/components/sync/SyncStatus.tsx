@@ -58,34 +58,34 @@ export const SyncStatus = () => {
     <Card>
       <CardContent className="flex flex-col gap-3 py-4 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex flex-col gap-2">
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" aria-live="polite" aria-atomic="true">
             {isError && (
               <Badge variant="destructive">
-                <XCircle className="size-3" />
+                <XCircle className="size-3" aria-hidden="true" />
                 Unable to load sync status
               </Badge>
             )}
             {!isError && !syncStatus && (
               <Badge variant="outline">
-                <Clock className="size-3" />
+                <Clock className="size-3" aria-hidden="true" />
                 Never synced
               </Badge>
             )}
             {syncStatus?.status === 'success' && (
               <Badge className="bg-green-500 text-white hover:bg-green-500/90">
-                <CheckCircle2 className="size-3" />
+                <CheckCircle2 className="size-3" aria-hidden="true" />
                 Last synced: {formatRelativeTime(syncStatus.last_sync)}
               </Badge>
             )}
             {syncStatus?.status === 'in_progress' && (
               <Badge className="bg-amber-500 text-white hover:bg-amber-500/90">
-                <RefreshCw className="size-3 animate-spin" />
+                <RefreshCw className="size-3 animate-spin" aria-hidden="true" />
                 Syncing...
               </Badge>
             )}
             {syncStatus?.status === 'failed' && (
               <Badge variant="destructive">
-                <XCircle className="size-3" />
+                <XCircle className="size-3" aria-hidden="true" />
                 Last sync failed: {syncStatus.error_message}
               </Badge>
             )}
@@ -113,28 +113,28 @@ export const SyncStatus = () => {
             </div>
           )}
 
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground" aria-live="polite">
             {connectionState === 'connected' && (
               <>
-                <Wifi className="size-3 text-green-500" />
+                <Wifi className="size-3 text-green-500" aria-hidden="true" />
                 <span>Live</span>
               </>
             )}
             {(connectionState === 'connecting' || connectionState === 'reconnecting') && (
               <>
-                <Wifi className="size-3 animate-pulse text-amber-500" />
+                <Wifi className="size-3 animate-pulse text-amber-500" aria-hidden="true" />
                 <span>{connectionState === 'connecting' ? 'Connecting...' : 'Reconnecting...'}</span>
               </>
             )}
             {connectionState === 'disconnected' && (
               <>
-                <WifiOff className="size-3 text-muted-foreground" />
+                <WifiOff className="size-3 text-muted-foreground" aria-hidden="true" />
                 <span>Disconnected</span>
               </>
             )}
             {connectionState === 'failed' && (
               <>
-                <WifiOff className="size-3 text-destructive" />
+                <WifiOff className="size-3 text-destructive" aria-hidden="true" />
                 <span>Offline</span>
               </>
             )}
@@ -148,12 +148,12 @@ export const SyncStatus = () => {
         >
           {isSyncing ? (
             <>
-              <RefreshCw className="size-4 animate-spin" />
+              <RefreshCw className="size-4 animate-spin" aria-hidden="true" />
               Syncing...
             </>
           ) : (
             <>
-              <RefreshCw className="size-4" />
+              <RefreshCw className="size-4" aria-hidden="true" />
               Sync Now
             </>
           )}

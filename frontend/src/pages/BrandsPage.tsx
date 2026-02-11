@@ -33,7 +33,7 @@ export const BrandsPage = () => {
   return (
     <div className="min-h-screen bg-muted">
       <Header />
-      <main className="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8">
         <h2 className="mb-6 text-2xl font-semibold text-foreground">Brands</h2>
 
         {/* Sync Status */}
@@ -43,9 +43,11 @@ export const BrandsPage = () => {
 
         {/* Search */}
         <div className="relative mb-4">
-          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" />
+          <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
+            type="search"
             placeholder="Search brands..."
+            aria-label="Search brands"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -57,14 +59,14 @@ export const BrandsPage = () => {
           <CardContent className="p-0">
             {isError ? (
               <div className="flex flex-col items-center gap-3 py-16 text-center">
-                <XCircle className="size-10 text-destructive" />
+                <XCircle className="size-10 text-destructive" aria-hidden="true" />
                 <p className="text-muted-foreground">
                   Failed to load brands. Please try again later.
                 </p>
               </div>
             ) : isEmpty ? (
               <div className="flex flex-col items-center gap-3 py-16 text-center">
-                <RefreshCw className="size-10 text-muted-foreground" />
+                <RefreshCw className="size-10 text-muted-foreground" aria-hidden="true" />
                 <p className="text-muted-foreground">
                   No brands synced yet. Click &quot;Sync Now&quot; to get
                   started.
@@ -94,7 +96,7 @@ export const BrandsPage = () => {
               onClick={() => setPage((p) => Math.max(1, p - 1))}
               disabled={page <= 1}
             >
-              <ChevronLeft className="size-4" />
+              <ChevronLeft className="size-4" aria-hidden="true" />
               Previous
             </Button>
             <span className="text-sm text-muted-foreground">
@@ -107,7 +109,7 @@ export const BrandsPage = () => {
               disabled={page >= totalPages}
             >
               Next
-              <ChevronRight className="size-4" />
+              <ChevronRight className="size-4" aria-hidden="true" />
             </Button>
           </div>
         )}

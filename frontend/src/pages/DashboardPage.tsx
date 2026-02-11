@@ -7,7 +7,7 @@ export const DashboardPage = () => {
   return (
     <div className="min-h-screen bg-muted">
       <Header />
-      <main className="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8">
         <div className="bg-white rounded-lg shadow p-6">
           <h2 className="text-xl font-semibold text-foreground mb-4">
             Welcome to Store ICU
