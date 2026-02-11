@@ -44,19 +44,20 @@ async def save_evaluation_inputs(
         AppException: If brand not found (404).
     """
     async with db.connection() as conn:
-        brand = await brand_queries.get_brand_by_id(conn, brand_id)
-        if not brand:
-            raise AppException(
-                code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
-            )
+        async with conn.transaction():
+            brand = await brand_queries.get_brand_by_id(conn, brand_id)
+            if not brand:
+                raise AppException(
+                    code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
+                )
 
-        row = await eval_queries.upsert_evaluation_inputs(
-            conn,
-            brand_id=brand_id,
-            user_id=user_id,
-            category_type=category_type,
-            manual_data=manual_data,
-        )
+            row = await eval_queries.upsert_evaluation_inputs(
+                conn,
+                brand_id=brand_id,
+                user_id=user_id,
+                category_type=category_type,
+                manual_data=manual_data,
+            )
 
     return EvaluationStateResponse(
         brand_id=row["brand_id"],

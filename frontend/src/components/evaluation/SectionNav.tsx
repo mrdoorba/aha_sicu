@@ -6,7 +6,7 @@ const SECTIONS: Array<{ id: string; label: string; icon: ReactNode }> = [
   { id: 'section-2', label: 'Business, Content & Visitors', icon: <BarChart3 className="size-4" aria-hidden="true" /> },
   { id: 'section-3', label: 'Promo Tools & Products/Status', icon: <Tag className="size-4" aria-hidden="true" /> },
   { id: 'section-4', label: 'File Upload', icon: <Upload className="size-4" aria-hidden="true" /> },
-  { id: 'section-5', label: 'Ads, Campaign, Competition & Review', icon: <Calculator className="size-4" aria-hidden="true" /> },
+  { id: 'section-5', label: 'Ads, Campaign, Competition, Stock, Discount & Review', icon: <Calculator className="size-4" aria-hidden="true" /> },
 ];
 
 interface SectionNavProps {

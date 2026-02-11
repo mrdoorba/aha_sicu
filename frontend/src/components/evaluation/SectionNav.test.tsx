@@ -21,7 +21,7 @@ describe('SectionNav', () => {
     expect(screen.getByText(/business, content & visitors/i)).toBeInTheDocument();
     expect(screen.getByText(/promo tools & products\/status/i)).toBeInTheDocument();
     expect(screen.getByText(/file upload/i)).toBeInTheDocument();
-    expect(screen.getByText(/ads, campaign, competition & review/i)).toBeInTheDocument();
+    expect(screen.getByText(/ads, campaign, competition, stock, discount & review/i)).toBeInTheDocument();
   });
 
   it('calls onSectionClick when a section is clicked', async () => {
