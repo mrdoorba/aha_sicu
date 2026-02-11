@@ -9,6 +9,7 @@ const mockUseBrandDetail = vi.fn();
 const mockUseEvaluationState = vi.fn();
 const mockUseSaveEvaluationInputs = vi.fn();
 const mockUseAutoSaveForm = vi.fn();
+const mockUseScoring = vi.fn();
 
 vi.mock('../hooks/useBrandDetail', () => ({
   useBrandDetail: (...args: unknown[]) => mockUseBrandDetail(...args),
@@ -21,6 +22,10 @@ vi.mock('../hooks/useEvaluation', () => ({
 
 vi.mock('../hooks/useAutoSaveForm', () => ({
   useAutoSaveForm: (...args: unknown[]) => mockUseAutoSaveForm(...args),
+}));
+
+vi.mock('../hooks/useScoring', () => ({
+  useScoring: (...args: unknown[]) => mockUseScoring(...args),
 }));
 
 vi.mock('../firebase/config', () => ({
@@ -71,6 +76,14 @@ function setupMocks() {
     saveStatus: 'idle',
     lastSaved: null,
   });
+  mockUseScoring.mockReturnValue({
+    generateScore: vi.fn(),
+    scoringResult: null,
+    isStale: false,
+    markStale: vi.fn(),
+    isGenerating: false,
+    error: null,
+  });
 }
 
 const renderEvaluationPage = (brandId = '1') => {
@@ -92,13 +105,13 @@ describe('EvaluationPage', () => {
     expect(screen.getByText('Test Brand')).toBeInTheDocument();
   });
 
-  it('renders all 5 section navigation items', () => {
+  it('renders all 6 section navigation items', () => {
     setupMocks();
     renderEvaluationPage();
     const nav = screen.getByRole('navigation', { name: /evaluation sections/i });
     expect(nav).toBeInTheDocument();
     const navButtons = nav.querySelectorAll('button');
-    expect(navButtons).toHaveLength(5);
+    expect(navButtons).toHaveLength(6);
   });
 
   it('renders file upload slot placeholders', () => {

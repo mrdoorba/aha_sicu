@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 CategoryType = Literal["fashion", "non_fashion"]
 
@@ -82,3 +82,61 @@ class RunAllResponse(BaseModel):
     """Response for run-all calculators endpoint."""
 
     results: list[RunCalculatorItem]
+
+
+# ---------------------------------------------------------------------------
+# Scoring schemas
+# ---------------------------------------------------------------------------
+
+
+VerdictType = Literal["✔️", "❌", "❌ Non Mall", "❌ No Brand", "❌ Opex", "⭕️", ""]
+
+
+class ScoringRequest(BaseModel):
+    """Request body for generating a final score."""
+
+    template: CategoryType
+    verdict: VerdictType
+    store_name: str = Field(max_length=200)
+    period: str = Field(max_length=50)
+    brand_name: str = Field(max_length=200)
+    email: str | None = Field(default=None, max_length=254)
+
+
+class RowScoreItem(BaseModel):
+    """A single metric row score."""
+
+    row: int
+    metric: str
+    value: Any
+    benchmark: str
+    verdict: str
+    message: str
+    score: float
+
+
+class CategoryScoreItem(BaseModel):
+    """Per-category score breakdown."""
+
+    category: str
+    score: float
+    max_score: float
+    rows: list[RowScoreItem]
+    available: bool = True
+
+
+class ScoringResponse(BaseModel):
+    """Response for scoring endpoint — complete scoring result."""
+
+    total_score: float
+    category_scores: list[CategoryScoreItem]
+    verdict: str
+    conclusion: str
+    marketing_estimation: str
+    marketing_percentage: str
+    marketing_budget: str
+    closing_message: str
+    email_subject: str
+    email_body: str
+    whatsapp_link: str
+    template: str

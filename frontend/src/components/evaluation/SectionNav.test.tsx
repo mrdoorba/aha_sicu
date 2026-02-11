@@ -4,7 +4,7 @@ import { describe, it, expect, vi } from 'vitest';
 import { SectionNav } from './SectionNav';
 
 describe('SectionNav', () => {
-  it('renders all 5 section navigation items', () => {
+  it('renders all 6 section navigation items', () => {
     render(<SectionNav activeSection="section-1" onSectionClick={vi.fn()} />);
 
     expect(screen.getByText(/step 1/i)).toBeInTheDocument();
@@ -12,6 +12,7 @@ describe('SectionNav', () => {
     expect(screen.getByText(/step 3/i)).toBeInTheDocument();
     expect(screen.getByText(/step 4/i)).toBeInTheDocument();
     expect(screen.getByText(/step 5/i)).toBeInTheDocument();
+    expect(screen.getByText(/step 6/i)).toBeInTheDocument();
   });
 
   it('renders section labels', () => {
@@ -22,6 +23,7 @@ describe('SectionNav', () => {
     expect(screen.getByText(/promo tools & products\/status/i)).toBeInTheDocument();
     expect(screen.getByText(/file upload/i)).toBeInTheDocument();
     expect(screen.getByText(/ads, campaign, competition, stock, discount & review/i)).toBeInTheDocument();
+    expect(screen.getByText(/final score/i)).toBeInTheDocument();
   });
 
   it('calls onSectionClick when a section is clicked', async () => {
