@@ -2,7 +2,9 @@
 
 from fastapi import APIRouter, Depends
 
+from app.calculators.engine import check_calculator_readiness, run_ready_calculators
 from app.core.dependencies import get_current_user
+from app.db.connection import db
 from app.modules.evaluations.calculator_service import (
     run_ads_keyword_calculator as _run_ads_keyword,
     run_discount_calculator as _run_discount,
@@ -10,8 +12,12 @@ from app.modules.evaluations.calculator_service import (
 )
 from app.modules.evaluations.schemas import (
     CalculatorResultResponse,
+    CalculatorStatusResponse,
     EvaluationInputsUpdate,
     EvaluationStateResponse,
+    RunAllResponse,
+    RunCalculatorItem,
+    SingleCalculatorStatus,
 )
 from app.modules.evaluations.service import get_evaluation_state, save_evaluation_inputs
 
@@ -104,3 +110,51 @@ async def run_top_sku_calculator(
     return await _run_top_sku(
         brand_id=brand_id, user_id=current_user["id"]
     )
+
+
+@router.post(
+    "/brands/{brand_id}/calculators/run-all",
+    response_model=RunAllResponse,
+)
+async def run_all_calculators(
+    brand_id: int,
+    current_user: dict = Depends(get_current_user),
+) -> RunAllResponse:
+    """Run all calculators whose required files are available for a brand.
+
+    Returns per-calculator results (success, skipped, or error).
+    """
+    async with db.connection() as conn:
+        raw_results = await run_ready_calculators(
+            brand_id=brand_id, user_id=current_user["id"], conn=conn
+        )
+
+    results = [
+        RunCalculatorItem(
+            calculator_type=item["calculator_type"],
+            status=item["status"],
+            result=item.get("result"),
+            reason=item.get("reason"),
+        )
+        for item in raw_results
+    ]
+    return RunAllResponse(results=results)
+
+
+@router.get(
+    "/brands/{brand_id}/calculators/status",
+    response_model=CalculatorStatusResponse,
+)
+async def get_calculator_status(
+    brand_id: int,
+    current_user: dict = Depends(get_current_user),
+) -> CalculatorStatusResponse:
+    """Return the readiness status of each calculator for a brand."""
+    async with db.connection() as conn:
+        readiness = await check_calculator_readiness(brand_id=brand_id, conn=conn)
+
+    calculators = {
+        calc_type: SingleCalculatorStatus(**status_info)
+        for calc_type, status_info in readiness.items()
+    }
+    return CalculatorStatusResponse(brand_id=brand_id, calculators=calculators)
