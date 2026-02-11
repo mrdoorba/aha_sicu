@@ -10,6 +10,8 @@ const mockUseEvaluationState = vi.fn();
 const mockUseSaveEvaluationInputs = vi.fn();
 const mockUseAutoSaveForm = vi.fn();
 const mockUseScoring = vi.fn();
+const mockUseSaveEvaluation = vi.fn();
+const mockUseCalculatorResults = vi.fn();
 
 vi.mock('../hooks/useBrandDetail', () => ({
   useBrandDetail: (...args: unknown[]) => mockUseBrandDetail(...args),
@@ -26,6 +28,17 @@ vi.mock('../hooks/useAutoSaveForm', () => ({
 
 vi.mock('../hooks/useScoring', () => ({
   useScoring: (...args: unknown[]) => mockUseScoring(...args),
+}));
+
+vi.mock('../hooks/useSaveEvaluation', () => ({
+  useSaveEvaluation: (...args: unknown[]) => mockUseSaveEvaluation(...args),
+}));
+
+vi.mock('../hooks/useCalculator', () => ({
+  useCalculatorResults: (...args: unknown[]) => mockUseCalculatorResults(...args),
+  useCalculatorStatus: () => ({ data: null }),
+  useRunCalculator: () => ({ mutate: vi.fn(), isPending: false }),
+  useRunAllCalculators: () => ({ mutate: vi.fn(), isPending: false }),
 }));
 
 vi.mock('../firebase/config', () => ({
@@ -83,6 +96,16 @@ function setupMocks() {
     markStale: vi.fn(),
     isGenerating: false,
     error: null,
+  });
+  mockUseSaveEvaluation.mockReturnValue({
+    saveEvaluation: vi.fn(),
+    isSaving: false,
+    isSaved: false,
+    error: null,
+    reset: vi.fn(),
+  });
+  mockUseCalculatorResults.mockReturnValue({
+    data: { brand_id: 1, results: [] },
   });
 }
 
