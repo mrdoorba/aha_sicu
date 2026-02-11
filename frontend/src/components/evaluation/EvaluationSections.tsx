@@ -264,7 +264,7 @@ export const EvaluationSections = ({
           )}
           {saveError && (
             <p className="mt-1 text-center text-sm text-destructive">
-              Failed to save. Please try again.
+              Failed to save evaluation. Please try again.
             </p>
           )}
         </div>

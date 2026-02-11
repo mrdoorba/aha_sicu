@@ -42,10 +42,11 @@ export function useSaveEvaluation(brandId: number) {
     },
   });
 
+  const resetMutation = mutation.reset;
   const reset = useCallback(() => {
     setIsSaved(false);
-    mutation.reset();
-  }, [mutation]);
+    resetMutation();
+  }, [resetMutation]);
 
   return {
     saveEvaluation: mutation.mutate,

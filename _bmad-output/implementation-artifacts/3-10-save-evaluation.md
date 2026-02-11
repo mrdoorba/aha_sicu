@@ -1,6 +1,6 @@
 # Story 3.10: Save Evaluation
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -451,9 +451,31 @@ No blocking issues encountered during implementation.
 - Task 6: Wired save button with 3 states (default/loading/saved), helper text when no scoring result, error display, toast notifications via sonner, data assembly from scoringResult + calculatorResults + manualData
 - Task 7: 7 frontend component tests for save button states; updated EvaluationPage.test.tsx mocks for new hooks
 
+### Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door (Claude Opus 4.6)
+**Date:** 2026-02-11
+**Outcome:** Approved (after fixes)
+
+**Issues Found:** 1 High, 2 Medium, 4 Low — 5 fixed, 2 deferred (L2 test naming, L3 verdict type)
+
+| # | Severity | Finding | Fix Applied |
+|---|----------|---------|-------------|
+| H1 | HIGH | `onResetSave` wired but never invoked — save button stuck on "Saved ✓" after first save, breaking multi-save workflow (AC #2) | Added `useEffect` in EvaluationPage.tsx that calls `resetSave()` when `manualData` or `scoringResult` changes after a save |
+| M1 | MEDIUM | `save_evaluation` service lacks explicit transaction (inconsistent with `save_evaluation_inputs` in same file) | Wrapped queries in `async with conn.transaction():` |
+| M2 | MEDIUM | No test for save request payload assembly logic in `handleSaveEvaluation` | Added `assembles correct save payload` test in EvaluationPage.test.tsx |
+| L1 | LOW | Inline error "Failed to save." differs from toast "Failed to save evaluation." | Fixed inline text to match AC: "Failed to save evaluation. Please try again." |
+| L2 | LOW | `SaveButton.test.tsx` naming doesn't follow co-located convention | Deferred — cosmetic, no functional impact |
+| L3 | LOW | Frontend `verdict` type is `string` instead of VerdictType union | Deferred — would cascade into ScoringResult type; backend Pydantic validates |
+| L4 | LOW | `useSaveEvaluation.reset` callback unstable due to `[mutation]` dependency | Extracted `mutation.reset` to stable ref `resetMutation` |
+
+**Backend tests:** 7/7 passed (updated mocks for new transaction pattern)
+**Frontend tests:** 15/15 passed (7 SaveButton + 8 EvaluationPage including new payload test)
+
 ### Change Log
 
 - 2026-02-11: Implemented Story 3.10 — Save Evaluation feature (all 7 tasks)
+- 2026-02-11: Code review — fixed 5 issues (1H, 2M, 2L), deferred 2 LOW, all tests passing
 
 ### File List
 
