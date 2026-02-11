@@ -1,0 +1,366 @@
+"""Integration tests for upload API endpoints."""
+
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from unittest.mock import AsyncMock, MagicMock, patch
+
+import polars as pl
+import pytest
+
+AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
+
+MOCK_USER = {
+    "id": 1,
+    "firebase_uid": "test-uid",
+    "email": "test@example.com",
+    "role": "member",
+    "created_at": datetime(2026, 2, 5, tzinfo=timezone.utc),
+    "last_login": datetime(2026, 2, 5, tzinfo=timezone.utc),
+}
+
+SAMPLE_BRAND = {
+    "id": 123,
+    "brand_name": "Brand ABC",
+    "raw_data": {},
+    "updated_at": datetime(2026, 2, 5, tzinfo=timezone.utc),
+    "meeting_raw_data": None,
+}
+
+SAMPLE_UPLOAD = {
+    "id": 1,
+    "brand_id": 123,
+    "file_type": "cpc_ad_report",
+    "calculator_target": "ads_keyword",
+    "filename": "report.csv",
+    "file_size": 1024,
+    "row_count": 50,
+    "uploaded_at": datetime(2026, 2, 11, 10, 0, 0, tzinfo=timezone.utc),
+}
+
+
+def _make_transactional_conn(fetchrow_side_effect=None, fetch_return=None):
+    """Create a mock connection with transaction support."""
+    mock_conn = AsyncMock()
+    if fetchrow_side_effect is not None:
+        mock_conn.fetchrow = AsyncMock(side_effect=fetchrow_side_effect)
+    if fetch_return is not None:
+        mock_conn.fetch = AsyncMock(return_value=fetch_return)
+
+    @asynccontextmanager
+    async def mock_transaction():
+        yield
+
+    mock_conn.transaction = mock_transaction
+    return mock_conn
+
+
+def _setup_auth_mocks(mock_verify, mock_db, mock_user_queries):
+    """Shared auth mock setup."""
+    mock_verify.return_value = {"uid": "test-uid", "email": "test@example.com"}
+    mock_conn = AsyncMock()
+    mock_db.connection.return_value.__aenter__.return_value = mock_conn
+    mock_user_queries.get_user_by_firebase_uid = AsyncMock(return_value=MOCK_USER)
+    mock_user_queries.update_last_login = AsyncMock()
+
+
+# ---------------------------------------------------------------------------
+# POST /api/v1/upload/signed-url
+# ---------------------------------------------------------------------------
+
+def test_signed_url_without_token(client):
+    response = client.post("/api/v1/upload/signed-url", json={
+        "filename": "report.csv",
+        "content_type": "text/csv",
+        "file_type": "cpc_ad_report",
+        "brand_id": 123,
+    })
+    assert response.status_code == 401
+
+
+def test_signed_url_valid(client):
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.get_storage_client") as mock_storage_fn,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        # Brand lookup
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(return_value=SAMPLE_BRAND)
+
+        # Storage mock
+        mock_storage = MagicMock()
+        mock_storage.generate_signed_upload_url.return_value = "https://storage.googleapis.com/test-signed-url"
+        mock_storage_fn.return_value = mock_storage
+
+        response = client.post("/api/v1/upload/signed-url", json={
+            "filename": "report.csv",
+            "content_type": "text/csv",
+            "file_type": "cpc_ad_report",
+            "brand_id": 123,
+        }, headers=AUTH_HEADERS)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert "upload_url" in data
+        assert "upload_id" in data
+        assert "expires_at" in data
+
+
+def test_signed_url_invalid_file_type(client):
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        response = client.post("/api/v1/upload/signed-url", json={
+            "filename": "file.txt",
+            "content_type": "text/plain",
+            "file_type": "invalid_type",
+            "brand_id": 123,
+        }, headers=AUTH_HEADERS)
+
+        assert response.status_code == 400
+        assert response.json()["code"] == "UPLOAD_INVALID_FORMAT"
+
+
+def test_signed_url_brand_not_found(client):
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(return_value=None)
+
+        response = client.post("/api/v1/upload/signed-url", json={
+            "filename": "report.csv",
+            "content_type": "text/csv",
+            "file_type": "cpc_ad_report",
+            "brand_id": 999,
+        }, headers=AUTH_HEADERS)
+
+        assert response.status_code == 404
+        assert response.json()["code"] == "BRAND_NOT_FOUND"
+
+
+# ---------------------------------------------------------------------------
+# POST /api/v1/upload/process
+# ---------------------------------------------------------------------------
+
+def _make_csv_bytes():
+    """Create valid CPC Ad Report CSV."""
+    cols = [
+        "Nama Produk", "Nama Iklan", "Tipe Iklan",
+        "Penempatan", "Tipe Biaya", "Biaya",
+    ]
+    rows = [",".join(cols), ",".join(["val"] * len(cols))]
+    return "\n".join(rows).encode()
+
+
+def test_process_valid_csv(client):
+    """Test processing a valid CSV upload."""
+    from app.modules.upload.service import _pending_uploads, PendingUpload
+
+    upload_id = "test-uuid-1234"
+    _pending_uploads[upload_id] = PendingUpload(
+        upload_id=upload_id,
+        brand_id=123,
+        file_type="cpc_ad_report",
+        filename="report.csv",
+        content_type="text/csv",
+        object_name=f"uploads/{upload_id}/report.csv",
+        expires_at=datetime(2099, 1, 1, tzinfo=timezone.utc),
+    )
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.get_storage_client") as mock_storage_fn,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        # Storage mock
+        mock_storage = MagicMock()
+        mock_storage.download_file.return_value = _make_csv_bytes()
+        mock_storage.delete_file.return_value = None
+        mock_storage_fn.return_value = mock_storage
+
+        # DB mock for upsert
+        mock_svc_conn = _make_transactional_conn(fetchrow_side_effect=[SAMPLE_UPLOAD])
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+
+        response = client.post("/api/v1/upload/process", json={
+            "upload_id": upload_id,
+            "brand_id": 123,
+            "file_type": "cpc_ad_report",
+        }, headers=AUTH_HEADERS)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["brand_id"] == 123
+        assert data["file_type"] == "cpc_ad_report"
+        assert data["row_count"] == 50
+
+    # Clean up
+    _pending_uploads.pop(upload_id, None)
+
+
+def test_process_missing_columns(client):
+    """Test processing a CSV with missing required columns."""
+    from app.modules.upload.service import _pending_uploads, PendingUpload
+
+    upload_id = "test-uuid-missing-cols"
+    _pending_uploads[upload_id] = PendingUpload(
+        upload_id=upload_id,
+        brand_id=123,
+        file_type="cpc_ad_report",
+        filename="bad_report.csv",
+        content_type="text/csv",
+        object_name=f"uploads/{upload_id}/bad_report.csv",
+        expires_at=datetime(2099, 1, 1, tzinfo=timezone.utc),
+    )
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.service.get_storage_client") as mock_storage_fn,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        # CSV with wrong columns
+        mock_storage = MagicMock()
+        mock_storage.download_file.return_value = b"wrong_col_a,wrong_col_b\n1,2"
+        mock_storage_fn.return_value = mock_storage
+
+        response = client.post("/api/v1/upload/process", json={
+            "upload_id": upload_id,
+            "brand_id": 123,
+            "file_type": "cpc_ad_report",
+        }, headers=AUTH_HEADERS)
+
+        assert response.status_code == 400
+        assert response.json()["code"] == "UPLOAD_MISSING_COLUMNS"
+
+    _pending_uploads.pop(upload_id, None)
+
+
+def test_process_expired_upload(client):
+    """Test processing with expired upload ID."""
+    from app.modules.upload.service import _pending_uploads, PendingUpload
+
+    upload_id = "test-uuid-expired"
+    _pending_uploads[upload_id] = PendingUpload(
+        upload_id=upload_id,
+        brand_id=123,
+        file_type="cpc_ad_report",
+        filename="report.csv",
+        content_type="text/csv",
+        object_name=f"uploads/{upload_id}/report.csv",
+        expires_at=datetime(2020, 1, 1, tzinfo=timezone.utc),  # expired
+    )
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        response = client.post("/api/v1/upload/process", json={
+            "upload_id": upload_id,
+            "brand_id": 123,
+            "file_type": "cpc_ad_report",
+        }, headers=AUTH_HEADERS)
+
+        assert response.status_code == 400
+        assert response.json()["code"] == "UPLOAD_SIGNED_URL_EXPIRED"
+
+    _pending_uploads.pop(upload_id, None)
+
+
+def test_process_unknown_upload_id(client):
+    """Test processing with unknown upload ID."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        response = client.post("/api/v1/upload/process", json={
+            "upload_id": "nonexistent-id",
+            "brand_id": 123,
+            "file_type": "cpc_ad_report",
+        }, headers=AUTH_HEADERS)
+
+        assert response.status_code == 400
+        assert response.json()["code"] == "UPLOAD_SIGNED_URL_EXPIRED"
+
+
+# ---------------------------------------------------------------------------
+# GET /api/v1/upload/brands/{brand_id}
+# ---------------------------------------------------------------------------
+
+def test_get_uploads_empty(client):
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetch = AsyncMock(return_value=[])
+
+        response = client.get("/api/v1/upload/brands/123", headers=AUTH_HEADERS)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["brand_id"] == 123
+        assert data["uploads"] == []
+
+
+def test_get_uploads_with_data(client):
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetch = AsyncMock(return_value=[SAMPLE_UPLOAD])
+
+        response = client.get("/api/v1/upload/brands/123", headers=AUTH_HEADERS)
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["brand_id"] == 123
+        assert len(data["uploads"]) == 1
+        upload = data["uploads"][0]
+        assert upload["file_type"] == "cpc_ad_report"
+        assert upload["filename"] == "report.csv"
+        assert upload["row_count"] == 50
+
+
+def test_get_uploads_without_token(client):
+    response = client.get("/api/v1/upload/brands/123")
+    assert response.status_code == 401
