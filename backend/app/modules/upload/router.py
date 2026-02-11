@@ -8,9 +8,9 @@ from app.core.dependencies import get_current_user
 from app.modules.upload.schemas import (
     BrandUploadsResponse,
     ProcessRequest,
+    ProcessUploadResponse,
     SignedUrlRequest,
     SignedUrlResponse,
-    UploadResponse,
 )
 from app.modules.upload.service import (
     get_brand_uploads,
@@ -35,12 +35,12 @@ async def create_signed_url(
     )
 
 
-@router.post("/process", response_model=UploadResponse)
+@router.post("/process", response_model=ProcessUploadResponse)
 async def trigger_processing(
     body: ProcessRequest,
     current_user: dict = Depends(get_current_user),
-) -> UploadResponse:
-    """Process an uploaded file: download from GCS, parse, validate, store."""
+) -> ProcessUploadResponse:
+    """Process an uploaded file: download, parse, validate, store, auto-execute calculators."""
     return await process_upload(
         upload_id=body.upload_id,
         brand_id=body.brand_id,
