@@ -1,0 +1,303 @@
+"""Integration tests for calculator API endpoints."""
+
+from contextlib import asynccontextmanager
+from datetime import datetime, timezone
+from unittest.mock import AsyncMock, patch
+
+
+AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
+
+MOCK_USER = {
+    "id": 1,
+    "firebase_uid": "test-uid",
+    "email": "test@example.com",
+    "role": "member",
+    "created_at": datetime(2026, 2, 5, tzinfo=timezone.utc),
+    "last_login": datetime(2026, 2, 5, tzinfo=timezone.utc),
+}
+
+SAMPLE_BRAND = {
+    "id": 1,
+    "brand_name": "Brand ABC",
+    "raw_data": {"category": "Electronics"},
+    "updated_at": datetime(2026, 2, 5, 10, 0, 0, tzinfo=timezone.utc),
+    "meeting_raw_data": None,
+}
+
+SAMPLE_CPC_UPLOAD = {
+    "id": 1,
+    "brand_id": 1,
+    "file_type": "cpc_ad_report",
+    "calculator_target": "ads_keyword",
+    "filename": "cpc_report.csv",
+    "file_size": 1024,
+    "row_count": 5,
+    "parsed_data": {
+        "columns": ["Nama Iklan", "Status", "Jenis Iklan", "Kode Produk",
+                     "Tampilan Iklan", "Mode Bidding", "Penempatan Iklan",
+                     "Biaya", "Omzet Penjualan", "Efektifitas Iklan"],
+        "data": [
+            {
+                "Nama Iklan": "Product Ad [1]",
+                "Status": "Berjalan",
+                "Jenis Iklan": "Iklan Produk",
+                "Kode Produk": "123",
+                "Tampilan Iklan": "-",
+                "Mode Bidding": "GMV Max ROAS",
+                "Penempatan Iklan": "Semua Penempatan",
+                "Biaya": 10000,
+                "Omzet Penjualan": 50000,
+                "Efektifitas Iklan": 5.0,
+            },
+        ],
+        "row_count": 1,
+    },
+    "uploaded_at": datetime(2026, 2, 10, tzinfo=timezone.utc),
+}
+
+SAMPLE_KEYWORD_UPLOAD = {
+    "id": 2,
+    "brand_id": 1,
+    "file_type": "keyword_report",
+    "calculator_target": "ads_keyword",
+    "filename": "keyword_report.csv",
+    "file_size": 2048,
+    "row_count": 5,
+    "parsed_data": {
+        "columns": ["Nama Iklan", "Status", "Jenis Iklan", "Kode Produk",
+                     "Tampilan Iklan", "Mode Bidding", "Penempatan Iklan",
+                     "Kata Pencarian/Penempatan", "Biaya", "Omzet Penjualan",
+                     "Efektifitas Iklan"],
+        "data": [
+            {
+                "Nama Iklan": "Product Ad [1]",
+                "Status": "Berjalan",
+                "Jenis Iklan": "Iklan Produk",
+                "Kode Produk": "123",
+                "Tampilan Iklan": "-",
+                "Mode Bidding": "GMV Max ROAS",
+                "Penempatan Iklan": "Semua Penempatan",
+                "Kata Pencarian/Penempatan": "Pilih Otomatis",
+                "Biaya": 10000,
+                "Omzet Penjualan": 50000,
+                "Efektifitas Iklan": 5.0,
+            },
+        ],
+        "row_count": 1,
+    },
+    "uploaded_at": datetime(2026, 2, 10, tzinfo=timezone.utc),
+}
+
+SAMPLE_EVAL_INPUTS = {
+    "id": 1,
+    "brand_id": 1,
+    "user_id": 1,
+    "category_type": "fashion",
+    "manual_data": {
+        "products": {"productCount": 80},
+    },
+    "created_at": datetime(2026, 2, 5, 10, 0, 0, tzinfo=timezone.utc),
+    "updated_at": datetime(2026, 2, 5, 10, 0, 0, tzinfo=timezone.utc),
+}
+
+SAMPLE_CALC_RESULT = {
+    "id": 1,
+    "brand_id": 1,
+    "calculator_type": "ads_keyword",
+    "details": {"ak2": "text", "thresholds": {}},
+    "output_text": "combined text",
+    "calculated_at": datetime(2026, 2, 11, 10, 0, 0, tzinfo=timezone.utc),
+}
+
+
+def _make_transactional_conn(fetchrow_side_effect):
+    """Create a mock connection that supports conn.transaction()."""
+    mock_conn = AsyncMock()
+    mock_conn.fetchrow = AsyncMock(side_effect=fetchrow_side_effect)
+
+    @asynccontextmanager
+    async def mock_transaction():
+        yield
+
+    mock_conn.transaction = mock_transaction
+    return mock_conn
+
+
+def _setup_auth_mocks(mock_verify, mock_db, mock_user_queries):
+    """Shared auth mock setup for all tests."""
+    mock_verify.return_value = {"uid": "test-uid", "email": "test@example.com"}
+    mock_conn = AsyncMock()
+    mock_db.connection.return_value.__aenter__.return_value = mock_conn
+    mock_user_queries.get_user_by_firebase_uid = AsyncMock(return_value=MOCK_USER)
+    mock_user_queries.update_last_login = AsyncMock()
+
+
+def test_run_ads_keyword_calculator_without_token(client):
+    """POST calculator endpoint returns 401 without token."""
+    response = client.post("/api/v1/evaluations/brands/1/calculators/ads_keyword")
+    assert response.status_code == 401
+
+
+def test_run_ads_keyword_calculator_success(client):
+    """POST returns calculator result when all data present."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.calculator_service.db") as mock_calc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        # Service DB: brand → cpc_upload → keyword_upload → eval_inputs → upsert
+        mock_calc_conn = _make_transactional_conn([
+            SAMPLE_BRAND,           # get_brand_by_id
+            SAMPLE_CPC_UPLOAD,      # get_upload_by_type (cpc_ad_report)
+            SAMPLE_KEYWORD_UPLOAD,  # get_upload_by_type (keyword_report)
+            SAMPLE_EVAL_INPUTS,     # get_evaluation_inputs
+            SAMPLE_CALC_RESULT,     # upsert_result
+        ])
+        mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/calculators/ads_keyword",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["calculator_type"] == "ads_keyword"
+        assert "output_text" in data
+        assert "details" in data
+        assert "calculated_at" in data
+
+
+def test_run_ads_keyword_missing_cpc_report(client):
+    """POST returns 400 when CPC Ad Report not uploaded."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.calculator_service.db") as mock_calc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_calc_conn = _make_transactional_conn([
+            SAMPLE_BRAND,  # get_brand_by_id
+            None,          # get_upload_by_type (cpc_ad_report) → missing
+        ])
+        mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/calculators/ads_keyword",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["code"] == "CALC_MISSING_DATA"
+        assert "cpc_ad_report" in data["detail"]
+
+
+def test_run_ads_keyword_missing_keyword_report(client):
+    """POST returns 400 when Keyword Report not uploaded."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.calculator_service.db") as mock_calc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_calc_conn = _make_transactional_conn([
+            SAMPLE_BRAND,           # get_brand_by_id
+            SAMPLE_CPC_UPLOAD,      # get_upload_by_type (cpc_ad_report)
+            None,                   # get_upload_by_type (keyword_report) → missing
+        ])
+        mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/calculators/ads_keyword",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["code"] == "CALC_MISSING_DATA"
+        assert "keyword_report" in data["detail"]
+
+
+def test_run_ads_keyword_missing_total_products(client):
+    """POST returns 400 when total_products not set in manual data."""
+    eval_inputs_no_products = {
+        **SAMPLE_EVAL_INPUTS,
+        "manual_data": {"someOtherData": "value"},
+    }
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.calculator_service.db") as mock_calc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_calc_conn = _make_transactional_conn([
+            SAMPLE_BRAND,               # get_brand_by_id
+            SAMPLE_CPC_UPLOAD,           # cpc_ad_report
+            SAMPLE_KEYWORD_UPLOAD,       # keyword_report
+            eval_inputs_no_products,     # eval_inputs without products
+        ])
+        mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/calculators/ads_keyword",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["code"] == "CALC_MISSING_DATA"
+        assert "productCount" in data["detail"]
+
+
+def test_run_ads_keyword_upsert_on_recalculation(client):
+    """Running calculator twice should update (upsert) existing result."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.calculator_service.db") as mock_calc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        # First run
+        mock_calc_conn = _make_transactional_conn([
+            SAMPLE_BRAND, SAMPLE_CPC_UPLOAD, SAMPLE_KEYWORD_UPLOAD,
+            SAMPLE_EVAL_INPUTS, SAMPLE_CALC_RESULT,
+        ])
+        mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
+
+        resp1 = client.post(
+            "/api/v1/evaluations/brands/1/calculators/ads_keyword",
+            headers=AUTH_HEADERS,
+        )
+        assert resp1.status_code == 200
+
+        # Second run (same data, should upsert)
+        updated_result = {
+            **SAMPLE_CALC_RESULT,
+            "calculated_at": datetime(2026, 2, 11, 11, 0, 0, tzinfo=timezone.utc),
+        }
+        mock_calc_conn2 = _make_transactional_conn([
+            SAMPLE_BRAND, SAMPLE_CPC_UPLOAD, SAMPLE_KEYWORD_UPLOAD,
+            SAMPLE_EVAL_INPUTS, updated_result,
+        ])
+        mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn2
+
+        resp2 = client.post(
+            "/api/v1/evaluations/brands/1/calculators/ads_keyword",
+            headers=AUTH_HEADERS,
+        )
+        assert resp2.status_code == 200
+        data2 = resp2.json()
+        assert data2["calculator_type"] == "ads_keyword"

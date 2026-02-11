@@ -22,3 +22,12 @@ class EvaluationInputsUpdate(BaseModel):
 
     category_type: CategoryType | None = None
     manual_data: dict[str, Any] | None = None
+
+
+class CalculatorResultResponse(BaseModel):
+    """Response for calculator execution."""
+
+    calculator_type: str
+    output_text: str
+    details: dict[str, Any]
+    calculated_at: datetime
