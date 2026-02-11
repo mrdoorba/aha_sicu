@@ -100,6 +100,7 @@ export function useRunCalculator(brandId: number, calculatorType: CalculatorType
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });
+      queryClient.invalidateQueries({ queryKey: ['calculatorStatus', brandId] });
     },
   });
 }

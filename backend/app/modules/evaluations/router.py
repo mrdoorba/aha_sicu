@@ -69,7 +69,12 @@ async def get_calculator_results(
     brand_id: int,
     current_user: dict = Depends(get_current_user),
 ) -> CalculatorResultsListResponse:
-    """Return all stored calculator results for a brand."""
+    """Return all stored calculator results for a brand.
+
+    Returns an empty list if brand_id doesn't exist or has no results.
+    This is intentional for read-only list endpoints (vs POST endpoints
+    which validate brand existence and return 400).
+    """
     async with db.connection() as conn:
         rows = await get_results_by_brand(conn=conn, brand_id=brand_id)
 

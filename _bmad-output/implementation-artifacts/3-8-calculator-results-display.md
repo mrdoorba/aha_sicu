@@ -1,6 +1,6 @@
 # Story 3.8: Calculator Results Display
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -484,11 +484,27 @@ No blocking issues encountered during implementation.
 - **Task 5:** Created `DiscountResults.tsx` — displays 5 text values (discount_pct, range, voucher, paket_pct) plus destructive Badge for fake discount flag when true.
 - **Task 6:** Created `CalculatorResultsSection.tsx` — orchestrator fetching results + status, rendering per-calculator cards with pending (missing files list), error (with Retry button), and loaded states. "Recalculate All" button triggers `useRunAllCalculators`.
 - **Task 7:** Replaced `CALCULATOR_CARDS` placeholder in `EvaluationSections.tsx` with `<CalculatorResultsSection brandId={brandId} />`. Removed unused `Calculator` icon import.
-- **Task 8:** 13 frontend tests across 4 test files covering all components and states.
+- **Task 8:** 14 frontend tests across 4 test files covering all components and states (including error/retry flow).
+
+### Senior Developer Review (AI)
+
+**Reviewed by:** Mr. Door (2026-02-11)
+**Issues Found:** 0 High, 3 Medium, 3 Low — **all fixed**
+
+**Fixes Applied:**
+- [M1] Added missing error state + Retry button test for CalculatorResultsSection (AC #5 coverage)
+- [M2] Replaced array index `key={i}` with `key={row.kode_variasi}` in TopSkuResults sorted tables
+- [M3] Documented intentional empty-list behavior for GET results endpoint (vs POST 400)
+- [L1] Added space in IDR formatting ("Rp 500.000" instead of "Rp500.000")
+- [L2] Replaced fragile `data-slot` test selectors with stable `data-testid` + `tbody tr`
+- [L3] Added `calculatorStatus` cache invalidation to `useRunCalculator` onSuccess
+
+**Test Results After Fixes:** 14/14 frontend tests pass, 30/30 backend tests pass
 
 ### Change Log
 
 - 2026-02-11: Implemented Story 3.8 — Calculator Results Display (all 8 tasks)
+- 2026-02-11: Code review fixes — 3M/3L issues resolved (React keys, test coverage, IDR formatting, cache invalidation)
 
 ### File List
 
