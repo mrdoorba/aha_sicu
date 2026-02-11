@@ -127,7 +127,7 @@ export function useCalculatorStatus(brandId: number) {
         '/api/v1/evaluations/brands/{brand_id}/calculators/status',
         { params: { path: { brand_id: brandId } } },
       );
-      if (error) throw new Error('Failed to fetch calculator status');
+      if (error) throw error;
       return data as CalculatorStatusResponse;
     },
     enabled: brandId > 0,

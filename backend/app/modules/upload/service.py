@@ -226,13 +226,19 @@ async def process_upload(
                 uploaded_by=user_id,
             )
 
-        # Clear dependent calculator results (outside transaction — already committed)
-        await clear_dependent_results(brand_id, file_type, conn)
-
-        # Auto-execute applicable calculators
-        auto_calc_raw = await run_calculators_for_upload(
-            brand_id, file_type, user_id, conn
-        )
+        # Clear dependent calculator results + auto-execute (outside transaction — already committed)
+        # Wrapped in try/except so upload success is preserved even if auto-execute fails
+        try:
+            await clear_dependent_results(brand_id, file_type, conn)
+            auto_calc_raw = await run_calculators_for_upload(
+                brand_id, file_type, user_id, conn
+            )
+        except Exception as e:
+            logger.warning(
+                "Auto-execute failed after upload for brand %d, file_type %s: %s",
+                brand_id, file_type, e, exc_info=True,
+            )
+            auto_calc_raw = []
 
     # Delete from storage (best-effort cleanup)
     try:

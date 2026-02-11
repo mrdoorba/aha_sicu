@@ -300,6 +300,55 @@ class TestCheckCalculatorReadiness:
         assert result["ads_keyword"]["status"] == "pending"
         assert "total_products" in result["ads_keyword"]["missing_manual"]
 
+    @pytest.mark.anyio
+    async def test_user_id_uses_specific_user_inputs(self):
+        """When user_id is provided, use get_evaluation_inputs (not get_any)."""
+        mock_conn = AsyncMock()
+
+        with (
+            patch("app.calculators.engine.upload_queries") as mock_uq,
+            patch("app.calculators.engine.eval_queries") as mock_eq,
+            patch("app.calculators.engine.calc_queries") as mock_cq,
+        ):
+            mock_uq.get_uploads_by_brand = AsyncMock(return_value=[
+                _make_upload("cpc_ad_report"),
+                _make_upload("keyword_report"),
+            ])
+            mock_eq.get_evaluation_inputs = AsyncMock(
+                return_value=_make_eval_inputs(has_products=True)
+            )
+            mock_eq.get_any_evaluation_inputs = AsyncMock()
+            mock_cq.get_results_by_brand = AsyncMock(return_value=[])
+
+            result = await check_calculator_readiness(1, mock_conn, user_id=42)
+
+        # Should call user-specific query, not any-user query
+        mock_eq.get_evaluation_inputs.assert_called_once_with(mock_conn, 1, 42)
+        mock_eq.get_any_evaluation_inputs.assert_not_called()
+        assert result["ads_keyword"]["status"] == "ready"
+
+    @pytest.mark.anyio
+    async def test_user_id_missing_manual_data(self):
+        """When user_id provided but user lacks manual data → ads_keyword pending."""
+        mock_conn = AsyncMock()
+
+        with (
+            patch("app.calculators.engine.upload_queries") as mock_uq,
+            patch("app.calculators.engine.eval_queries") as mock_eq,
+            patch("app.calculators.engine.calc_queries") as mock_cq,
+        ):
+            mock_uq.get_uploads_by_brand = AsyncMock(return_value=[
+                _make_upload("cpc_ad_report"),
+                _make_upload("keyword_report"),
+            ])
+            mock_eq.get_evaluation_inputs = AsyncMock(return_value=None)
+            mock_cq.get_results_by_brand = AsyncMock(return_value=[])
+
+            result = await check_calculator_readiness(1, mock_conn, user_id=42)
+
+        assert result["ads_keyword"]["status"] == "pending"
+        assert "total_products" in result["ads_keyword"]["missing_manual"]
+
 
 # ---------------------------------------------------------------------------
 # run_ready_calculators tests

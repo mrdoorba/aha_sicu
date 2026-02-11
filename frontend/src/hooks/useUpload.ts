@@ -4,6 +4,7 @@ import client from '../services/apiClient';
 
 export interface UploadInfo {
   id: number;
+  brand_id: number;
   file_type: string;
   filename: string;
   file_size: number;

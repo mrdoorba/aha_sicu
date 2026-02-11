@@ -595,8 +595,8 @@ None — all issues resolved inline.
 
 ### Completion Notes List
 
-- All 7 tasks implemented across 15 files (1 new, 14 modified)
-- 44 new tests added (36 unit + 8 integration), baseline 324 → 368 total, all pass
+- All 7 tasks implemented across 16 files (1 new, 15 modified)
+- 47 new tests added (38 unit + 9 integration), baseline 324 → 371 total, all pass
 - Engine architecture: `calculators/engine.py` orchestrates via existing `run_*_calculator()` service functions — no duplication of data-loading logic
 - `get_any_evaluation_inputs()` query added to check manual_data without user_id context (needed for readiness checks)
 - Upload process response changed from flat `UploadResponse` to nested `ProcessUploadResponse { upload, auto_calculated }` — existing test `test_process_valid_csv` updated
@@ -605,12 +605,15 @@ None — all issues resolved inline.
 ### File List
 
 **New files:**
-- `backend/app/calculators/engine.py` — Calculator orchestration engine (dependency maps, readiness checks, auto-execute, clear-dependent)
+- `backend/app/calculators/engine.py` — Calculator orchestration engine (dependency maps, readiness checks with user-specific manual data, auto-execute, clear-dependent)
 - `backend/tests/unit/calculators/test_engine.py` — 36 unit tests for engine
+
+**Modified non-code files:**
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` — Updated story status
 
 **Modified backend files:**
 - `backend/app/db/queries/calculator_results.py` — Added `delete_results_by_types()` query
-- `backend/app/db/queries/evaluations.py` — Added `get_any_evaluation_inputs()` query
+- `backend/app/db/queries/evaluations.py` — Added `get_any_evaluation_inputs()` query with `ORDER BY updated_at DESC`
 - `backend/app/modules/upload/schemas.py` — Added `AutoCalculatedItem`, `ProcessUploadResponse` schemas
 - `backend/app/modules/upload/service.py` — Integrated auto-execute into `process_upload()` flow
 - `backend/app/modules/upload/router.py` — Updated response_model to `ProcessUploadResponse`
@@ -634,3 +637,4 @@ None — all issues resolved inline.
 | 2026-02-11 | Task 5: 36 unit tests | `57efcb8` |
 | 2026-02-11 | Task 6: 8 integration tests + fix regression | `902f666` |
 | 2026-02-11 | Task 7: Frontend hooks + API types | `0aadc0c` |
+| 2026-02-11 | Fix 9 code review issues (2H/4M/3L) | — |
