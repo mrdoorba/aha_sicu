@@ -9,12 +9,14 @@ const SAMPLE_SCORES: CategoryScore[] = [
     score: 5,
     max_score: 5,
     rows: [],
+    available: true,
   },
   {
     category: 'Business',
     score: -3,
     max_score: 10,
     rows: [],
+    available: true,
   },
 ];
 
@@ -42,11 +44,27 @@ describe('ScoreBreakdown', () => {
 
   it('filters out zero-score categories', () => {
     const scores: CategoryScore[] = [
-      { category: 'Active', score: 5, max_score: 10, rows: [] },
-      { category: 'Empty', score: 0, max_score: 0, rows: [] },
+      { category: 'Active', score: 5, max_score: 10, rows: [], available: true },
+      { category: 'Empty', score: 0, max_score: 0, rows: [], available: true },
     ];
     render(<ScoreBreakdown categoryScores={scores} />);
     expect(screen.getByText('Active')).toBeInTheDocument();
     expect(screen.queryByText('Empty')).not.toBeInTheDocument();
+  });
+
+  it('applies destructive styling to negative scores', () => {
+    render(<ScoreBreakdown categoryScores={SAMPLE_SCORES} />);
+    const negativeCell = screen.getByText('-3');
+    expect(negativeCell).toHaveClass('text-destructive');
+    expect(negativeCell).toHaveClass('font-semibold');
+  });
+
+  it('does not apply destructive styling to positive scores', () => {
+    render(<ScoreBreakdown categoryScores={SAMPLE_SCORES} />);
+    // Get all cells with text "5" — score and max for Operational
+    const fiveCells = screen.getAllByText('5');
+    for (const cell of fiveCells) {
+      expect(cell).not.toHaveClass('text-destructive');
+    }
   });
 });

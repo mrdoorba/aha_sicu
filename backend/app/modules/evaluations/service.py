@@ -123,6 +123,7 @@ async def generate_score(
                 )
                 for r in cat.rows
             ],
+            available=cat.available,
         )
         for cat in result.category_scores
     ]

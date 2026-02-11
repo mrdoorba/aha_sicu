@@ -413,6 +413,7 @@ interface paths {
                   message: string;
                   score: number;
                 }>;
+                available: boolean;
               }>;
               verdict: string;
               conclusion: string;

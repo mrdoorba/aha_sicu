@@ -17,6 +17,7 @@ export interface CategoryScore {
   score: number;
   max_score: number;
   rows: RowScore[];
+  available: boolean;
 }
 
 export interface ScoringResult {
@@ -75,24 +76,12 @@ export function useScoring(brandId: number) {
 
   // Mark stale when manual data or calculator results change
   useEffect(() => {
-    const unsubManual = queryClient.getQueryCache().subscribe((event) => {
-      if (
-        event.type === 'updated' &&
-        event.query.queryKey[0] === 'evaluationState' &&
-        scoringResult
-      ) {
-        setIsStale(true);
-      }
-    });
-    return () => unsubManual();
-  }, [queryClient, scoringResult]);
-
-  useEffect(() => {
     const unsub = queryClient.getQueryCache().subscribe((event) => {
       if (
         event.type === 'updated' &&
-        event.query.queryKey[0] === 'calculatorResults' &&
-        scoringResult
+        scoringResult &&
+        (event.query.queryKey[0] === 'evaluationState' ||
+          event.query.queryKey[0] === 'calculatorResults')
       ) {
         setIsStale(true);
       }
