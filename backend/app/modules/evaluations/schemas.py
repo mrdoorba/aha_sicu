@@ -53,6 +53,22 @@ class CalculatorStatusResponse(BaseModel):
     calculators: dict[str, SingleCalculatorStatus]
 
 
+class CalculatorResultItem(BaseModel):
+    """A single stored calculator result."""
+
+    calculator_type: str
+    output_text: str
+    details: dict[str, Any]
+    calculated_at: datetime
+
+
+class CalculatorResultsListResponse(BaseModel):
+    """Response for fetching all stored calculator results for a brand."""
+
+    brand_id: int
+    results: list[CalculatorResultItem]
+
+
 class RunCalculatorItem(BaseModel):
     """Result of running a single calculator."""
 
