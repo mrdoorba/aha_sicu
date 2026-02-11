@@ -109,6 +109,76 @@ interface paths {
       };
     };
   };
+  '/api/v1/brands/{brand_id}': {
+    get: {
+      parameters: {
+        path: {
+          brand_id: number;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              id: number;
+              brand_name: string;
+              raw_data: Record<string, unknown>;
+              updated_at: string;
+              meeting_raw_data: Record<string, unknown> | null;
+            };
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/evaluations/brands/{brand_id}': {
+    get: {
+      parameters: {
+        path: {
+          brand_id: number;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              brand_id: number;
+              category_type: string | null;
+              manual_data: Record<string, unknown> | null;
+              updated_at: string | null;
+            };
+          };
+        };
+      };
+    };
+    put: {
+      parameters: {
+        path: {
+          brand_id: number;
+        };
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            category_type?: string | null;
+            manual_data?: Record<string, unknown> | null;
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              brand_id: number;
+              category_type: string | null;
+              manual_data: Record<string, unknown> | null;
+              updated_at: string | null;
+            };
+          };
+        };
+      };
+    };
+  };
 }
 
 const authMiddleware: Middleware = {
