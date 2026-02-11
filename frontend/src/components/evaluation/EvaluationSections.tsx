@@ -5,12 +5,30 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
 import { FileUploadSection } from './FileUploadSection';
+import { OperationalForm } from './forms/OperationalForm';
+import { BusinessForm } from './forms/BusinessForm';
+import { ContentForm } from './forms/ContentForm';
+import { VisitorsForm } from './forms/VisitorsForm';
+import { PromoToolsForm } from './forms/PromoToolsForm';
+import { ProductsStatusForm } from './forms/ProductsStatusForm';
+import { AdsForm } from './forms/AdsForm';
+import { CampaignForm } from './forms/CampaignForm';
+import { CompetitionForm } from './forms/CompetitionForm';
+import { SaveIndicator } from './forms/SaveIndicator';
+import type { ManualData } from './forms/formConfig';
+import type { SaveStatus } from '../../hooks/useAutoSaveForm';
 
 interface EvaluationSectionsProps {
   brandId: number;
   categoryType: string | null;
   onCategoryChange: (value: string) => void;
   onActiveSection: (sectionId: string) => void;
+  manualData: ManualData;
+  onFieldChange: (category: string, key: string, value: number | string | null) => void;
+  onFieldBlur: () => void;
+  saveStatus: SaveStatus;
+  lastSaved: Date | null;
+  onRetrySave: () => void;
 }
 
 const CALCULATOR_CARDS = [
@@ -24,6 +42,12 @@ export const EvaluationSections = ({
   categoryType,
   onCategoryChange,
   onActiveSection,
+  manualData,
+  onFieldChange,
+  onFieldBlur,
+  saveStatus,
+  lastSaved,
+  onRetrySave,
 }: EvaluationSectionsProps) => {
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
 
@@ -54,6 +78,11 @@ export const EvaluationSections = ({
 
   return (
     <div className="space-y-8">
+      {/* Save status indicator */}
+      <div className="flex justify-end">
+        <SaveIndicator status={saveStatus} lastSaved={lastSaved} onRetry={onRetrySave} />
+      </div>
+
       {/* Section 1: Brand Info & Operational */}
       <section id="section-1" ref={setSectionRef('section-1')}>
         <h3 className="mb-4 text-lg font-semibold text-foreground">
@@ -81,7 +110,11 @@ export const EvaluationSections = ({
           </CardContent>
         </Card>
 
-        <SectionPlaceholder title="Operational" fieldCount={5} />
+        <OperationalForm
+          data={manualData.operational}
+          onChange={onFieldChange}
+          onBlur={onFieldBlur}
+        />
       </section>
 
       {/* Section 2: Business, Content & Visitors */}
@@ -89,9 +122,22 @@ export const EvaluationSections = ({
         <h3 className="mb-4 text-lg font-semibold text-foreground">
           Step 2. Business, Content &amp; Visitors
         </h3>
-        <SectionPlaceholder title="Business" fieldCount={8} />
-        <SectionPlaceholder title="Content" fieldCount={2} />
-        <SectionPlaceholder title="Visitors" fieldCount={4} />
+        <BusinessForm
+          data={manualData.business}
+          categoryType={categoryType}
+          onChange={onFieldChange}
+          onBlur={onFieldBlur}
+        />
+        <ContentForm
+          data={manualData.content}
+          onChange={onFieldChange}
+          onBlur={onFieldBlur}
+        />
+        <VisitorsForm
+          data={manualData.visitors}
+          onChange={onFieldChange}
+          onBlur={onFieldBlur}
+        />
       </section>
 
       {/* Section 3: Promo Tools & Products/Status */}
@@ -99,8 +145,16 @@ export const EvaluationSections = ({
         <h3 className="mb-4 text-lg font-semibold text-foreground">
           Step 3. Promo Tools &amp; Products/Status
         </h3>
-        <SectionPlaceholder title="Promo Tools" fieldCount={11} />
-        <SectionPlaceholder title="Products/Status" fieldCount={2} />
+        <PromoToolsForm
+          data={manualData.promoTools}
+          onChange={onFieldChange}
+          onBlur={onFieldBlur}
+        />
+        <ProductsStatusForm
+          data={manualData.products}
+          onChange={onFieldChange}
+          onBlur={onFieldBlur}
+        />
       </section>
 
       {/* Section 4: File Upload */}
@@ -116,9 +170,21 @@ export const EvaluationSections = ({
         <h3 className="mb-4 text-lg font-semibold text-foreground">
           Step 5. Ads, Campaign, Competition &amp; Review
         </h3>
-        <SectionPlaceholder title="Ads" fieldCount={5} />
-        <SectionPlaceholder title="Campaign" fieldCount={3} />
-        <SectionPlaceholder title="Competition" fieldCount={3} subtitle="products" />
+        <AdsForm
+          data={manualData.ads}
+          onChange={onFieldChange}
+          onBlur={onFieldBlur}
+        />
+        <CampaignForm
+          data={manualData.campaign}
+          onChange={onFieldChange}
+          onBlur={onFieldBlur}
+        />
+        <CompetitionForm
+          data={manualData.competition}
+          onChange={onFieldChange}
+          onBlur={onFieldBlur}
+        />
 
         {/* Calculator Results */}
         <div className="mt-4">
@@ -173,26 +239,3 @@ export const EvaluationSections = ({
     </div>
   );
 };
-
-function SectionPlaceholder({
-  title,
-  fieldCount,
-  subtitle = 'fields',
-}: {
-  title: string;
-  fieldCount: number;
-  subtitle?: string;
-}) {
-  return (
-    <Card className="mb-4">
-      <CardContent className="pt-4">
-        <p className="text-sm font-medium text-muted-foreground">
-          {title} &mdash; {fieldCount} {subtitle}
-        </p>
-        <div className="mt-2 rounded border border-dashed border-muted-foreground/25 p-4 text-center text-sm text-muted-foreground">
-          Form fields will be added in Story 3.3
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
