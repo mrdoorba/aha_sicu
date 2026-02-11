@@ -266,6 +266,30 @@ interface paths {
       };
     };
   };
+  '/api/v1/evaluations/brands/{brand_id}/calculators/results': {
+    get: {
+      parameters: {
+        path: {
+          brand_id: number;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              brand_id: number;
+              results: Array<{
+                calculator_type: string;
+                output_text: string;
+                details: Record<string, unknown>;
+                calculated_at: string;
+              }>;
+            };
+          };
+        };
+      };
+    };
+  };
   '/api/v1/evaluations/brands/{brand_id}/calculators/ads_keyword': {
     post: {
       parameters: {

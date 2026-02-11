@@ -73,6 +73,11 @@ export interface CalculatorResult {
   calculated_at: string;
 }
 
+export interface CalculatorResultsListResponse {
+  brand_id: number;
+  results: CalculatorResult[];
+}
+
 type CalculatorType = 'ads_keyword' | 'discount' | 'top_sku';
 
 const CALCULATOR_PATHS = {
@@ -95,7 +100,27 @@ export function useRunCalculator(brandId: number, calculatorType: CalculatorType
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });
+      queryClient.invalidateQueries({ queryKey: ['calculatorStatus', brandId] });
     },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Fetch stored calculator results hook
+// ---------------------------------------------------------------------------
+
+export function useCalculatorResults(brandId: number) {
+  return useQuery<CalculatorResultsListResponse>({
+    queryKey: ['calculatorResults', brandId],
+    queryFn: async () => {
+      const { data, error } = await client.GET(
+        '/api/v1/evaluations/brands/{brand_id}/calculators/results',
+        { params: { path: { brand_id: brandId } } },
+      );
+      if (error) throw error;
+      return data as CalculatorResultsListResponse;
+    },
+    enabled: brandId > 0,
   });
 }
 

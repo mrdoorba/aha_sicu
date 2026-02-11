@@ -1060,6 +1060,96 @@ def test_calculator_status_reflects_existing_results(client):
 # ---------------------------------------------------------------------------
 
 
+# ---------------------------------------------------------------------------
+# GET calculator results endpoint integration tests
+# ---------------------------------------------------------------------------
+
+
+def test_get_calculator_results_auth_required(client):
+    """GET calculator results returns 401 without token."""
+    response = client.get("/api/v1/evaluations/brands/1/calculators/results")
+    assert response.status_code == 401
+
+
+def test_get_calculator_results_returns_all_results(client):
+    """GET returns all stored calculator results for a brand."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.router.db") as mock_router_db,
+        patch("app.modules.evaluations.router.get_results_by_brand") as mock_get_results,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
+
+        mock_get_results.return_value = [
+            {
+                "id": 1,
+                "brand_id": 1,
+                "calculator_type": "ads_keyword",
+                "output_text": "34 dari 80 produk (42.5%) sudah beriklan",
+                "details": {"ak2": "text", "thresholds": {}},
+                "calculated_at": datetime(2026, 2, 11, 10, 0, 0, tzinfo=timezone.utc),
+            },
+            {
+                "id": 2,
+                "brand_id": 1,
+                "calculator_type": "discount",
+                "output_text": "% Diskon TOP SKU: 2.7%",
+                "details": {"discount_pct": "2.7%", "fake_discount_flag": False},
+                "calculated_at": datetime(2026, 2, 11, 10, 30, 0, tzinfo=timezone.utc),
+            },
+        ]
+
+        response = client.get(
+            "/api/v1/evaluations/brands/1/calculators/results",
+            headers=AUTH_HEADERS,
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["brand_id"] == 1
+    assert len(data["results"]) == 2
+
+    ads = next(r for r in data["results"] if r["calculator_type"] == "ads_keyword")
+    assert ads["output_text"] == "34 dari 80 produk (42.5%) sudah beriklan"
+    assert "details" in ads
+    assert "calculated_at" in ads
+
+    disc = next(r for r in data["results"] if r["calculator_type"] == "discount")
+    assert disc["output_text"] == "% Diskon TOP SKU: 2.7%"
+
+
+def test_get_calculator_results_empty_when_none(client):
+    """GET returns empty results list when no calculator results exist."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.router.db") as mock_router_db,
+        patch("app.modules.evaluations.router.get_results_by_brand") as mock_get_results,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
+
+        mock_get_results.return_value = []
+
+        response = client.get(
+            "/api/v1/evaluations/brands/1/calculators/results",
+            headers=AUTH_HEADERS,
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["brand_id"] == 1
+    assert data["results"] == []
+
+
 def test_upload_reupload_clears_and_reruns(client):
     """Re-uploading a file clears dependent results and re-runs calculators."""
     with (
