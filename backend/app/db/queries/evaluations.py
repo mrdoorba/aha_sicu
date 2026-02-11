@@ -1,0 +1,54 @@
+"""Evaluation inputs database queries using parameterized SQL."""
+
+import json
+from typing import Any
+
+from asyncpg import Connection
+
+
+async def get_evaluation_inputs(
+    conn: Connection,
+    brand_id: int,
+    user_id: int,
+) -> dict | None:
+    """Get evaluation inputs for a specific brand and user."""
+    row = await conn.fetchrow(
+        """
+        SELECT id, brand_id, user_id, category_type, manual_data,
+               created_at, updated_at
+        FROM evaluation_inputs
+        WHERE brand_id = $1 AND user_id = $2
+        """,
+        brand_id,
+        user_id,
+    )
+    return dict(row) if row else None
+
+
+async def upsert_evaluation_inputs(
+    conn: Connection,
+    brand_id: int,
+    user_id: int,
+    category_type: str | None,
+    manual_data: dict[str, Any] | None,
+) -> dict:
+    """Insert or update evaluation inputs for a brand+user pair.
+
+    Uses COALESCE to preserve existing values when new values are None.
+    """
+    row = await conn.fetchrow(
+        """
+        INSERT INTO evaluation_inputs (brand_id, user_id, category_type, manual_data, updated_at)
+        VALUES ($1, $2, $3, $4, NOW())
+        ON CONFLICT (brand_id, user_id) DO UPDATE SET
+            category_type = COALESCE(EXCLUDED.category_type, evaluation_inputs.category_type),
+            manual_data = COALESCE(EXCLUDED.manual_data, evaluation_inputs.manual_data),
+            updated_at = NOW()
+        RETURNING id, brand_id, user_id, category_type, manual_data, created_at, updated_at
+        """,
+        brand_id,
+        user_id,
+        category_type,
+        json.dumps(manual_data) if manual_data is not None else None,
+    )
+    return dict(row)

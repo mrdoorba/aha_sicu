@@ -3,8 +3,8 @@
 from fastapi import APIRouter, Depends, Query
 
 from app.core.dependencies import get_current_user
-from app.modules.brands.schemas import BrandListResponse
-from app.modules.brands.service import get_brands_paginated
+from app.modules.brands.schemas import BrandDetailResponse, BrandListResponse
+from app.modules.brands.service import get_brand_detail, get_brands_paginated
 
 router = APIRouter(prefix="/api/v1/brands", tags=["brands"])
 
@@ -22,3 +22,12 @@ async def list_brands(
     Supports pagination and case-insensitive brand name search.
     """
     return await get_brands_paginated(page=page, limit=limit, search=search)
+
+
+@router.get("/{brand_id}", response_model=BrandDetailResponse)
+async def get_brand(
+    brand_id: int,
+    current_user: dict = Depends(get_current_user),
+) -> BrandDetailResponse:
+    """Get a single brand by ID with meeting data enrichment."""
+    return await get_brand_detail(brand_id=brand_id)
