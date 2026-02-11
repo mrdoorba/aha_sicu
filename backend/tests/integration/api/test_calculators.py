@@ -466,3 +466,42 @@ def test_run_discount_upsert_on_recalculation(client):
         assert resp2.status_code == 200
         data2 = resp2.json()
         assert data2["calculator_type"] == "discount"
+
+
+def test_run_discount_missing_columns(client):
+    """POST returns 400 when order_export is missing required columns."""
+    upload_missing_cols = {
+        **SAMPLE_ORDER_UPLOAD,
+        "parsed_data": {
+            "columns": ["No. Pesanan", "Nama Produk"],  # Missing 5 required columns
+            "data": [{"No. Pesanan": "ORD001", "Nama Produk": "Product A"}],
+            "row_count": 1,
+        },
+    }
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.calculator_service.db") as mock_calc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_calc_conn = _make_transactional_conn([
+            SAMPLE_BRAND,           # get_brand_by_id
+            upload_missing_cols,    # get_upload_by_type (order_export)
+        ])
+        mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/calculators/discount",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["code"] == "CALC_MISSING_DATA"
+        assert "missing required columns" in data["detail"]
+        # Verify specific missing columns are listed
+        assert "Harga Awal" in data["detail"]
+        assert "Jumlah" in data["detail"]

@@ -117,6 +117,49 @@ def _extract_parsed_data(upload: dict, file_type: str) -> list[dict[str, Any]]:
     return data
 
 
+# Required columns per calculator file type
+_REQUIRED_COLUMNS: dict[str, frozenset[str]] = {
+    "order_export": frozenset({
+        "No. Pesanan",
+        "Nama Produk",
+        "Harga Awal",
+        "Harga Setelah Diskon",
+        "Jumlah",
+        "Voucher Ditanggung Penjual",
+        "Paket Diskon",
+    }),
+}
+
+
+def _validate_columns(
+    parsed_data: dict, file_type: str
+) -> None:
+    """Validate that parsed_data contains all required columns for the file type.
+
+    Raises:
+        CalculatorException: CALC_MISSING_DATA if required columns are missing.
+    """
+    required = _REQUIRED_COLUMNS.get(file_type)
+    if not required:
+        return
+
+    columns = parsed_data.get("columns")
+    if not isinstance(columns, list):
+        raise CalculatorException(
+            code="CALC_MISSING_DATA",
+            detail=f"Upload '{file_type}' has no column metadata",
+        )
+
+    available = set(columns)
+    missing = required - available
+    if missing:
+        missing_sorted = sorted(missing)
+        raise CalculatorException(
+            code="CALC_MISSING_DATA",
+            detail=f"Upload '{file_type}' is missing required columns: {', '.join(missing_sorted)}",
+        )
+
+
 def _extract_total_products(eval_inputs: dict | None) -> int:
     """Extract total_products from evaluation_inputs.manual_data.
 
@@ -166,16 +209,20 @@ def _extract_total_products(eval_inputs: dict | None) -> int:
 
 
 async def run_discount_calculator(
-    brand_id: int, user_id: int
+    brand_id: int, user_id: int  # noqa: ARG001 — kept for API consistency with other calculators
 ) -> CalculatorResultResponse:
     """Execute the Discount Check Calculator for a brand.
 
     Loads order_export parsed data from brand_uploads,
     runs the pure calculator function, and stores the result.
 
+    Args:
+        brand_id: The brand to run the calculator for.
+        user_id: Unused — kept for consistent interface with run_ads_keyword_calculator.
+
     Raises:
         CalculatorException: BRAND_NOT_FOUND if brand doesn't exist.
-        CalculatorException: CALC_MISSING_DATA if order_export not uploaded.
+        CalculatorException: CALC_MISSING_DATA if order_export not uploaded or missing columns.
         CalculatorException: CALC_EXECUTION_FAILED if calculator raises an unexpected error.
     """
     async with db.connection() as conn:
@@ -199,7 +246,8 @@ async def run_discount_calculator(
                     detail="Order Export (order_export) has not been uploaded for this brand",
                 )
 
-            # Extract and validate parsed data structure
+            # Extract and validate parsed data structure + required columns
+            _validate_columns(order_upload.get("parsed_data", {}), "order_export")
             order_data = _extract_parsed_data(order_upload, "order_export")
 
             # Run pure calculator
