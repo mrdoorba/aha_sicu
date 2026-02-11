@@ -48,6 +48,18 @@ export function useRequestSignedUrl() {
   });
 }
 
+export interface AutoCalculatedItem {
+  calculator_type: string;
+  status: 'success' | 'skipped' | 'error';
+  result?: Record<string, unknown>;
+  reason?: string;
+}
+
+export interface ProcessUploadResponse {
+  upload: UploadInfo;
+  auto_calculated: AutoCalculatedItem[];
+}
+
 export function useProcessUpload() {
   return useMutation({
     mutationFn: async (body: {
@@ -59,7 +71,7 @@ export function useProcessUpload() {
         body,
       });
       if (error) throw new Error('Failed to process upload');
-      return data as UploadInfo;
+      return data as ProcessUploadResponse;
     },
   });
 }
@@ -119,8 +131,12 @@ export function useUploadFile(brandId: number) {
           file_type: fileType,
         });
 
-        // 4. Invalidate query cache
+        // 4. Invalidate query caches (uploads + calculator results/status if auto-calculated)
         queryClient.invalidateQueries({ queryKey: ['brandUploads', brandId] });
+        if (result.auto_calculated && result.auto_calculated.length > 0) {
+          queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });
+          queryClient.invalidateQueries({ queryKey: ['calculatorStatus', brandId] });
+        }
 
         setStatus('done');
         setProgress(100);
