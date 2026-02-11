@@ -1,6 +1,16 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
+import { Button } from '../ui/button';
+import {
+  Dialog,
+  DialogClose,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogDescription,
+  DialogFooter,
+} from '../ui/dialog';
 
 export const Header = () => {
   const { user, logout } = useAuth();
@@ -8,8 +18,6 @@ export const Header = () => {
   const location = useLocation();
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
-  const modalRef = useRef<HTMLDivElement>(null);
-  const cancelButtonRef = useRef<HTMLButtonElement>(null);
 
   const handleLogoutClick = () => {
     setShowConfirm(true);
@@ -27,36 +35,6 @@ export const Header = () => {
       setShowConfirm(false);
     }
   };
-
-  const handleCancelLogout = () => {
-    setShowConfirm(false);
-  };
-
-  const handleBackdropClick = (e: React.MouseEvent) => {
-    // Close modal when clicking backdrop (not modal content)
-    if (e.target === e.currentTarget) {
-      setShowConfirm(false);
-    }
-  };
-
-  // Handle Escape key to close modal
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (showConfirm && e.key === 'Escape') {
-        setShowConfirm(false);
-      }
-    };
-
-    if (showConfirm) {
-      document.addEventListener('keydown', handleKeyDown);
-      // Focus the cancel button when modal opens
-      cancelButtonRef.current?.focus();
-    }
-
-    return () => {
-      document.removeEventListener('keydown', handleKeyDown);
-    };
-  }, [showConfirm]);
 
   return (
     <>
@@ -101,49 +79,25 @@ export const Header = () => {
         </div>
       </header>
 
-      {/* Logout Confirmation Modal */}
-      {showConfirm && (
-        <div
-          className="fixed inset-0 z-50 flex items-center justify-center bg-black/50"
-          onClick={handleBackdropClick}
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="logout-modal-title"
-          aria-describedby="logout-modal-description"
-        >
-          <div
-            ref={modalRef}
-            className="bg-white rounded-lg shadow-lg p-6 max-w-sm w-full mx-4"
-          >
-            <h2
-              id="logout-modal-title"
-              className="text-lg font-semibold text-foreground mb-2"
-            >
-              Confirm Logout
-            </h2>
-            <p id="logout-modal-description" className="text-muted-foreground mb-4">
-              Are you sure you want to log out?
-            </p>
-            <div className="flex gap-3 justify-end">
-              <button
-                ref={cancelButtonRef}
-                onClick={handleCancelLogout}
-                disabled={isLoggingOut}
-                className="px-4 py-2 text-sm font-medium text-muted-foreground hover:text-foreground transition-colors"
-              >
+      {/* Logout Confirmation Dialog */}
+      <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
+        <DialogContent showCloseButton={false}>
+          <DialogHeader>
+            <DialogTitle>Confirm Logout</DialogTitle>
+            <DialogDescription>Are you sure you want to log out?</DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={isLoggingOut}>
                 Cancel
-              </button>
-              <button
-                onClick={handleConfirmLogout}
-                disabled={isLoggingOut}
-                className="px-4 py-2 text-sm font-medium bg-destructive text-white rounded-lg hover:bg-destructive/85 disabled:opacity-50 transition-colors"
-              >
-                {isLoggingOut ? 'Logging out...' : 'Logout'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+              </Button>
+            </DialogClose>
+            <Button variant="destructive" onClick={handleConfirmLogout} disabled={isLoggingOut}>
+              {isLoggingOut ? 'Logging out...' : 'Logout'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </>
   );
 };

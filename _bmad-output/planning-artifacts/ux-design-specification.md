@@ -515,7 +515,7 @@ Store ICU does NOT need novel UX patterns. The goal is to execute familiar patte
    ├── Form sections organized by data source:
    │   ├── Section: [Shopee Link A] → Fields 1-5
    │   ├── Section: [Shopee Link B] → Fields 6-12
-   │   ├── Section: [Excel Upload] → Upload button + parsed preview
+   │   ├── Section: [File Upload] → Drag-drop with 4 file upload slots: CPC Ad Report (.csv), Keyword Report (.csv), Order Export (.xlsx), Mass Update (.xlsx). Per-slot status indicators show upload and calculator processing state.
    │   └── Section: [Manual Notes] → Free-form fields
    ├── Each section has "View in Shopee" link at header
    ├── User enters values → auto-save on blur
@@ -537,7 +537,7 @@ Store ICU does NOT need novel UX patterns. The goal is to execute familiar patte
 
 **Error Recovery:**
 - Sync fails → "Last synced 2 hours ago. Sync now?" (not blocking)
-- Upload fails → "File format not supported. Try .xlsx" (specific, actionable)
+- Upload fails → "File format not supported. Try .xlsx or .csv" (specific, actionable)
 - Save fails → "Couldn't save. Your data is safe locally. Retry?" (reassuring)
 
 ## Visual Design Foundation
@@ -763,7 +763,7 @@ flowchart TD
     H --> I[Step 1: Brand Info]
     I --> J[Step 2: Store Performance]
     J --> K[Step 3: Product Metrics]
-    K --> L[Step 4: Excel Upload]
+    K --> L[Step 4: File Upload]
     L --> M[Step 5: Review & Submit]
 
     subgraph "Each Step"
@@ -798,11 +798,11 @@ flowchart TD
 
 | Step | Content | Shopee Link |
 |------|---------|-------------|
-| 1. Brand Info | Basic brand details (from VP sheet sync, Meeting data if available) | — |
-| 2. Store Performance | Revenue, orders, ratings | Yes |
-| 3. Product Metrics | SKUs, pricing, inventory | Yes |
-| 4. Excel Upload | Upload data file, view parsed results | — |
-| 5. Review & Submit | Final score, breakdown, submit button | — |
+| 1. Brand Info + Operational | Basic brand details (from VP/Meeting sync), operational metrics (order completion, shipping, packaging, chat, rating) | Yes |
+| 2. Business + Content + Visitors | Monthly sales (6 months), conversion rate, content quality, visitor metrics, followers | Yes |
+| 3. Promo Tools + Products/Status | 11 promo tool revenues, product count, store status (Mall/Star+) | Yes |
+| 4. File Upload | Multi-file upload: CPC Ad Report CSV, Keyword Report CSV, Order Export Excel, Mass Update Excel — with per-calculator file slots | — |
+| 5. Ads + Campaign + Competition + Stock + Discount + Review | Ad metrics, campaign participation, top product competition, calculator results display, final score, verdict, submit | Yes |
 
 ### Journey 2: Historical Lookup & Review
 
@@ -1005,9 +1005,14 @@ flowchart TD
 │      └───────┘          │
 │   Final Score (Fashion) │  ← Label + Template type
 ├─────────────────────────┤
-│  Ads Keyword      78    │  ← Calculator result rows
-│  Discount Check   85    │
-│  Top SKU          72    │
+│  Operational      10/10 │  ← Per-category score rows
+│  Business         20/20 │
+│  Promo           -15    │  ← Penalty scores (opportunity)
+│  Products         15/15 │
+│  Ads              5/10  │
+│  Campaign        -10    │
+│  Stock            10/10 │
+│  Discount          5/5  │
 ├─────────────────────────┤
 │  ▼ View Breakdown       │  ← Expandable detail (Collapsible)
 └─────────────────────────┘
@@ -1020,13 +1025,15 @@ flowchart TD
 | **Calculating** | Score shows "—", subtle pulse animation |
 | **Complete** | Score displayed in primary blue |
 | **Incomplete** | Score shows "—", muted text, "Enter more data" hint |
-| **High Score (≥80)** | Green accent on score |
-| **Low Score (<60)** | Amber accent on score |
+| **High Score (≥70)** | Green accent on score |
+| **Low Score (<40)** | Amber accent on score (adjusted for actual 0-100 range that can go negative) |
 
 **Variants:**
 - **Compact:** Score only (for brand cards)
-- **Full:** Score + breakdown (for score panel)
-- **Expanded:** Full breakdown with all contributing factors
+- **Full:** Score + per-category breakdown (for score panel). Shows per-CATEGORY scores (Operational, Business, Promo, Products, Ads, Campaign, Stock, Discount), not per-calculator scores.
+- **Expanded:** Full breakdown with all contributing factors. Calculator outputs are NOT numeric scores — they are text blocks (Calc 1: Ads Keyword), tables (Calc 2: Top SKU), and text values (Calc 3: Discount Check). Only the scoring system produces the final numeric score.
+
+**Note:** Individual calculator results (Ads Keyword, Top SKU, Discount Check) produce text-based analysis, not numeric scores. The Score Panel displays per-category scores from the 75-row scoring system template, which incorporates calculator outputs alongside manual inputs.
 
 **Accessibility:**
 - `aria-live="polite"` for score updates (announces changes)
@@ -1098,7 +1105,7 @@ flowchart TD
 │  ● 1. Brand Info     ✓   │  ← Completed step (green dot, checkmark)
 │  ● 2. Store Data     ●   │  ← Active step (blue dot, highlighted bg)
 │  ○ 3. Products           │  ← Pending step (gray empty circle)
-│  ○ 4. Excel Upload       │
+│  ○ 4. File Upload        │
 │  ○ 5. Review             │
 └──────────────────────────┘
 ```
@@ -1388,7 +1395,7 @@ flowchart TD
 | Go to previous step | Secondary | "Back" |
 | Cancel current action | Ghost | "Cancel" |
 | Trigger manual sync | Secondary | "Sync Now" |
-| Upload data file | Secondary | "Upload Excel" |
+| Upload data files | Secondary | "Upload Files" |
 | Open external resource | Ghost | "Open in Shopee →" |
 | Start new evaluation | Primary | "+ New Evaluation" |
 

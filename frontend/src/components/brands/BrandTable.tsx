@@ -16,7 +16,7 @@ interface BrandTableProps {
 
 export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
   return (
-    <Table>
+    <Table aria-label="Brand list" aria-busy={isLoading}>
       <TableHeader>
         <TableRow>
           <TableHead className="text-xs uppercase">Brand Name</TableHead>
