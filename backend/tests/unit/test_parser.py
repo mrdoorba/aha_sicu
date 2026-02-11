@@ -6,6 +6,7 @@ import pytest
 from app.core.exceptions import UploadException
 from app.modules.upload.parser import (
     REQUIRED_COLUMNS,
+    SHOPEE_CSV_SKIP_ROWS,
     dataframe_to_json,
     parse_csv,
     parse_excel,
@@ -14,18 +15,38 @@ from app.modules.upload.parser import (
 
 
 # ---------------------------------------------------------------------------
+# Helpers — Shopee CSV format
+# ---------------------------------------------------------------------------
+
+def _shopee_csv(header_line: str, data_lines: list[str] | None = None) -> bytes:
+    """Build a Shopee-style CSV with 7 metadata rows before the real headers."""
+    metadata = [
+        "Semua Laporan Iklan CPC - Shopee Indonesia",
+        "Username,testuser",
+        "Nama Toko,Test Store",
+        "ID Toko,123456",
+        "Waktu Laporan Dibuat,01/01/2026 00:00",
+        "Periode,01/01/2026 - 31/01/2026",
+        "",  # blank line
+    ]
+    assert len(metadata) == SHOPEE_CSV_SKIP_ROWS
+    lines = metadata + [header_line] + (data_lines or [])
+    return "\n".join(lines).encode()
+
+
+# ---------------------------------------------------------------------------
 # CSV parsing
 # ---------------------------------------------------------------------------
 
 def test_parse_csv_valid():
-    csv_bytes = b"col_a,col_b\n1,hello\n2,world"
+    csv_bytes = _shopee_csv("col_a,col_b", ["1,hello", "2,world"])
     df = parse_csv(csv_bytes)
     assert df.shape == (2, 2)
     assert df.columns == ["col_a", "col_b"]
 
 
 def test_parse_csv_empty():
-    csv_bytes = b"col_a,col_b\n"
+    csv_bytes = _shopee_csv("col_a,col_b")
     df = parse_csv(csv_bytes)
     assert len(df) == 0
     assert df.columns == ["col_a", "col_b"]
@@ -105,11 +126,11 @@ def test_validate_columns_cpc_ad_report_success():
 
 
 def test_validate_columns_cpc_ad_report_missing():
-    df = pl.DataFrame({"Nama Produk": ["x"], "Biaya": [1]})
+    df = pl.DataFrame({"Nama Iklan": ["x"], "Biaya": [1]})
     with pytest.raises(UploadException) as exc:
         validate_columns(df, "cpc_ad_report")
     assert exc.value.code == "UPLOAD_MISSING_COLUMNS"
-    assert "Nama Iklan" in exc.value.detail
+    assert "Jenis Iklan" in exc.value.detail
 
 
 def test_validate_columns_keyword_report_success():

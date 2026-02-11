@@ -35,10 +35,10 @@ so that **the system can parse and validate them for calculator processing**.
    **Given** a file is uploaded and processing is triggered
    **When** the backend parses the file with Polars
    **Then** validate required columns based on file type:
-     - **CPC Ad Report**: requires columns including Nama Produk, Nama Iklan, Tipe Iklan, Penempatan, Tipe Biaya, Biaya
-     - **Keyword Report**: requires columns including Kata Kunci Pencarian, Klik, Kunjungan, Pesanan, Pendapatan, Biaya Iklan, ROAS
-     - **Order Export**: requires columns including No. Pesanan, Nama Produk, Harga Awal, Harga Setelah Diskon, Jumlah, Voucher Ditanggung Penjual, Paket Diskon, Nomor Referensi SKU, Nama Variasi, Jumlah Produk di Pesan, Cashback Koin, Diskon dari Shopee
-     - **Mass Update**: requires columns including Kode Variasi, Nama Produk, Nama Variasi, SKU, Stok (note: headers start at row 3)
+     - **CPC Ad Report**: requires columns including Nama Iklan, Jenis Iklan, Kode Produk, Penempatan Iklan, Biaya (note: CSV has 7 metadata rows to skip)
+     - **Keyword Report**: requires columns including Kata Pencarian/Penempatan, Jenis Iklan, Kode Produk, Penempatan Iklan, Biaya, Omzet Penjualan, Efektifitas Iklan (note: CSV has 7 metadata rows to skip)
+     - **Order Export**: requires columns including No. Pesanan, Nama Produk, Harga Awal, Harga Setelah Diskon, Jumlah, Voucher Ditanggung Penjual, Paket Diskon, Nomor Referensi SKU, Nama Variasi, Jumlah Produk di Pesan, Cashback Koin, Diskon Dari Shopee
+     - **Mass Update**: requires columns including Kode Produk, Nama Produk, Kode Variasi, Nama Variasi, SKU, Harga, Stok (note: headers start at row 3)
 
 4. **ZIP archive handling**
    **Given** I upload a `.zip` file to the Order Export or Mass Update slot
@@ -343,7 +343,7 @@ ZIP is accepted for **Order Export** and **Mass Update** slots (the Excel-based 
 ### Polars for Parsing
 
 Polars is chosen over pandas per architecture (faster, no GIL). Key considerations:
-- CSV: `pl.read_csv(BytesIO(file_bytes))`
+- CSV: `pl.read_csv(BytesIO(file_bytes), skip_rows=7, truncate_ragged_lines=True)` — Shopee CSV exports have 7 metadata rows (report title, username, shop name, shop ID, creation date, period, blank line)
 - Excel: `pl.read_excel(BytesIO(file_bytes), engine="calamine")` — uses `fastexcel` (calamine-backed)
 - Mass Update Excel: headers start at row 3 — use `pl.read_excel(source, engine="calamine", read_options={"header_row": 2})`
 - ZIP: extract parts → parse each → `pl.concat(dfs)`
@@ -424,26 +424,27 @@ Recommendation: use an in-memory dict (`_pending_uploads: dict[str, PendingUploa
 
 ### Column Validation Details
 
-**CPC Ad Report CSV** — required columns (case-sensitive):
+**CPC Ad Report CSV** — Shopee export with 7 metadata rows to skip. Required columns (case-sensitive):
 ```
-Nama Produk, Nama Iklan, Tipe Iklan, Penempatan, Tipe Biaya, Biaya
+Nama Iklan, Jenis Iklan, Kode Produk, Penempatan Iklan, Biaya
 ```
 
-**Keyword Placement Report CSV** — required columns:
+**Keyword Placement Report CSV** — Shopee export with 7 metadata rows to skip. Required columns:
 ```
-Kata Kunci Pencarian, Klik, Kunjungan, Pesanan, Pendapatan, Biaya Iklan, ROAS
+Kata Pencarian/Penempatan, Jenis Iklan, Kode Produk, Penempatan Iklan,
+Biaya, Omzet Penjualan, Efektifitas Iklan
 ```
 
 **Order Export Excel** — required columns:
 ```
 No. Pesanan, Nama Produk, Harga Awal, Harga Setelah Diskon, Jumlah,
 Voucher Ditanggung Penjual, Paket Diskon, Nomor Referensi SKU,
-Nama Variasi, Jumlah Produk di Pesan, Cashback Koin, Diskon dari Shopee
+Nama Variasi, Jumlah Produk di Pesan, Cashback Koin, Diskon Dari Shopee
 ```
 
 **Mass Update Excel** — headers at row 3 (0-indexed row 2). Required columns:
 ```
-Kode Variasi, Nama Produk, Nama Variasi, SKU, Stok
+Kode Produk, Nama Produk, Kode Variasi, Nama Variasi, SKU, Harga, Stok
 ```
 
 ### Previous Story Intelligence
