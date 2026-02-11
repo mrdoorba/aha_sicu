@@ -54,6 +54,48 @@ async def upsert_evaluation_inputs(
     return dict(row)
 
 
+async def insert_evaluation(
+    conn: Connection,
+    brand_id: int,
+    user_id: int,
+    template: str,
+    final_score: float,
+    verdict: str,
+    score_breakdown: list[dict[str, Any]],
+    calculator_results: dict[str, Any],
+    manual_inputs: dict[str, Any],
+    rule_version: int = 1,
+    email_output: str | None = None,
+) -> dict:
+    """Insert a new evaluation record (immutable snapshot).
+
+    Always creates a new record — never upserts.
+    Returns the new record's id, brand_id, final_score, verdict, template, created_at.
+    """
+    row = await conn.fetchrow(
+        """
+        INSERT INTO evaluations (
+            brand_id, user_id, template, final_score, verdict,
+            score_breakdown, calculator_results, manual_inputs,
+            rule_version, email_output
+        )
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
+        RETURNING id, brand_id, final_score, verdict, template, created_at
+        """,
+        brand_id,
+        user_id,
+        template,
+        final_score,
+        verdict,
+        json.dumps(score_breakdown),
+        json.dumps(calculator_results),
+        json.dumps(manual_inputs),
+        rule_version,
+        email_output,
+    )
+    return dict(row)
+
+
 async def get_any_evaluation_inputs(
     conn: Connection,
     brand_id: int,

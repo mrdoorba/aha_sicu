@@ -12,6 +12,7 @@ from app.modules.evaluations.schemas import (
     CategoryScoreItem,
     EvaluationStateResponse,
     RowScoreItem,
+    SaveEvaluationResponse,
     ScoringResponse,
 )
 
@@ -141,6 +142,58 @@ async def generate_score(
         email_body=result.email_body,
         whatsapp_link=result.whatsapp_link,
         template=result.template,
+    )
+
+
+async def save_evaluation(
+    brand_id: int,
+    user_id: int,
+    template: str,
+    final_score: float,
+    verdict: str,
+    score_breakdown: list[dict],
+    calculator_results: dict,
+    manual_inputs: dict,
+    rule_version: int = 1,
+    email_output: str | None = None,
+) -> SaveEvaluationResponse:
+    """Save a completed evaluation as a permanent, immutable record.
+
+    Validates that the brand exists, then inserts a new evaluation record.
+    Each call creates a NEW record (INSERT-only, no upsert).
+
+    Raises:
+        AppException: If brand not found (404).
+    """
+    async with db.connection() as conn:
+        async with conn.transaction():
+            brand = await brand_queries.get_brand_by_id(conn, brand_id)
+            if not brand:
+                raise AppException(
+                    code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
+                )
+
+            row = await eval_queries.insert_evaluation(
+                conn,
+                brand_id=brand_id,
+                user_id=user_id,
+                template=template,
+                final_score=final_score,
+                verdict=verdict,
+                score_breakdown=score_breakdown,
+                calculator_results=calculator_results,
+                manual_inputs=manual_inputs,
+                rule_version=rule_version,
+                email_output=email_output,
+            )
+
+    return SaveEvaluationResponse(
+        id=row["id"],
+        brand_id=row["brand_id"],
+        final_score=float(row["final_score"]),
+        verdict=row["verdict"],
+        template=row["template"],
+        created_at=row["created_at"],
     )
 
 

@@ -20,6 +20,8 @@ from app.modules.evaluations.schemas import (
     EvaluationStateResponse,
     RunAllResponse,
     RunCalculatorItem,
+    SaveEvaluationRequest,
+    SaveEvaluationResponse,
     ScoringRequest,
     ScoringResponse,
     SingleCalculatorStatus,
@@ -27,6 +29,7 @@ from app.modules.evaluations.schemas import (
 from app.modules.evaluations.service import (
     generate_score,
     get_evaluation_state,
+    save_evaluation,
     save_evaluation_inputs,
 )
 
@@ -222,4 +225,33 @@ async def score_evaluation(
         period=body.period,
         brand_name=body.brand_name,
         email=body.email,
+    )
+
+
+@router.post(
+    "/brands/{brand_id}/save",
+    response_model=SaveEvaluationResponse,
+)
+async def save_evaluation_endpoint(
+    brand_id: int,
+    body: SaveEvaluationRequest,
+    current_user: dict = Depends(get_current_user),
+) -> SaveEvaluationResponse:
+    """Save a completed evaluation as a permanent record.
+
+    Creates a new immutable evaluation record (INSERT-only).
+    Multiple saves for the same brand create separate records (history).
+    Returns 404 if brand doesn't exist, 422 if required fields are missing.
+    """
+    return await save_evaluation(
+        brand_id=brand_id,
+        user_id=current_user["id"],
+        template=body.template,
+        final_score=body.final_score,
+        verdict=body.verdict,
+        score_breakdown=body.score_breakdown,
+        calculator_results=body.calculator_results,
+        manual_inputs=body.manual_inputs,
+        rule_version=body.rule_version,
+        email_output=body.email_output,
     )

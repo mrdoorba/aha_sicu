@@ -140,3 +140,32 @@ class ScoringResponse(BaseModel):
     email_body: str
     whatsapp_link: str
     template: str
+
+
+# ---------------------------------------------------------------------------
+# Save evaluation schemas
+# ---------------------------------------------------------------------------
+
+
+class SaveEvaluationRequest(BaseModel):
+    """Request body for saving a completed evaluation as a permanent record."""
+
+    template: CategoryType
+    final_score: float
+    verdict: VerdictType
+    score_breakdown: list[dict[str, Any]]
+    calculator_results: dict[str, Any]
+    manual_inputs: dict[str, Any]
+    rule_version: int = 1
+    email_output: str | None = None
+
+
+class SaveEvaluationResponse(BaseModel):
+    """Response after successfully saving an evaluation."""
+
+    id: int
+    brand_id: int
+    final_score: float
+    verdict: str
+    template: str
+    created_at: datetime
