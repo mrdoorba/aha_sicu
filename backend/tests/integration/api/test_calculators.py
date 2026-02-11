@@ -2,7 +2,7 @@
 
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
@@ -801,3 +801,327 @@ def test_run_top_sku_upsert_on_recalculation(client):
         assert resp2.status_code == 200
         data2 = resp2.json()
         assert data2["calculator_type"] == "top_sku"
+
+
+# ---------------------------------------------------------------------------
+# Calculator Orchestration: run-all endpoint integration tests
+# ---------------------------------------------------------------------------
+
+
+def test_run_all_auth_required(client):
+    """POST run-all returns 401 without token."""
+    response = client.post("/api/v1/evaluations/brands/1/calculators/run-all")
+    assert response.status_code == 401
+
+
+def test_run_all_returns_ready_calculator_results(client):
+    """POST run-all returns results for ready calculators, skips pending."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.router.db") as mock_router_db,
+        patch("app.modules.evaluations.router.run_ready_calculators") as mock_run,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
+
+        mock_run.return_value = [
+            {
+                "calculator_type": "discount",
+                "status": "success",
+                "result": {
+                    "calculator_type": "discount",
+                    "output_text": "test",
+                    "details": {},
+                    "calculated_at": "2026-02-11T10:00:00+00:00",
+                },
+            },
+            {
+                "calculator_type": "top_sku",
+                "status": "skipped",
+                "reason": "Missing required files: mass_update",
+            },
+        ]
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/calculators/run-all",
+            headers=AUTH_HEADERS,
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert len(data["results"]) == 2
+
+    discount_r = next(r for r in data["results"] if r["calculator_type"] == "discount")
+    top_sku_r = next(r for r in data["results"] if r["calculator_type"] == "top_sku")
+
+    assert discount_r["status"] == "success"
+    assert discount_r["result"]["calculator_type"] == "discount"
+    assert top_sku_r["status"] == "skipped"
+    assert "mass_update" in top_sku_r["reason"]
+
+
+def test_run_all_skips_calculators_missing_files(client):
+    """POST run-all skips all calculators when no files uploaded."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.router.db") as mock_router_db,
+        patch("app.modules.evaluations.router.run_ready_calculators") as mock_run,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
+
+        mock_run.return_value = [
+            {"calculator_type": "ads_keyword", "status": "skipped", "reason": "Missing required files: cpc_ad_report, keyword_report"},
+            {"calculator_type": "discount", "status": "skipped", "reason": "Missing required files: order_export"},
+            {"calculator_type": "top_sku", "status": "skipped", "reason": "Missing required files: order_export, mass_update"},
+        ]
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/calculators/run-all",
+            headers=AUTH_HEADERS,
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert all(r["status"] == "skipped" for r in data["results"])
+
+
+def test_run_all_isolates_failures(client):
+    """POST run-all returns error for failed calculator, success for others."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.router.db") as mock_router_db,
+        patch("app.modules.evaluations.router.run_ready_calculators") as mock_run,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
+
+        mock_run.return_value = [
+            {"calculator_type": "discount", "status": "error", "reason": "Calculator execution failed"},
+            {
+                "calculator_type": "top_sku",
+                "status": "success",
+                "result": {
+                    "calculator_type": "top_sku",
+                    "output_text": "",
+                    "details": {},
+                    "calculated_at": "2026-02-11T10:00:00+00:00",
+                },
+            },
+        ]
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/calculators/run-all",
+            headers=AUTH_HEADERS,
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    statuses = {r["calculator_type"]: r["status"] for r in data["results"]}
+    assert statuses["discount"] == "error"
+    assert statuses["top_sku"] == "success"
+
+
+# ---------------------------------------------------------------------------
+# Calculator Orchestration: status endpoint integration tests
+# ---------------------------------------------------------------------------
+
+
+def test_calculator_status_auth_required(client):
+    """GET calculator status returns 401 without token."""
+    response = client.get("/api/v1/evaluations/brands/1/calculators/status")
+    assert response.status_code == 401
+
+
+def test_calculator_status_correct_readiness(client):
+    """GET status returns correct readiness per calculator."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.router.db") as mock_router_db,
+        patch("app.modules.evaluations.router.check_calculator_readiness") as mock_check,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
+
+        mock_check.return_value = {
+            "ads_keyword": {
+                "status": "pending",
+                "has_result": False,
+                "required_files": ["cpc_ad_report", "keyword_report"],
+                "required_manual": ["total_products"],
+                "available_files": ["cpc_ad_report"],
+                "missing_files": ["keyword_report"],
+                "missing_manual": ["total_products"],
+                "calculated_at": None,
+            },
+            "discount": {
+                "status": "ready",
+                "has_result": True,
+                "required_files": ["order_export"],
+                "required_manual": [],
+                "available_files": ["order_export"],
+                "missing_files": [],
+                "missing_manual": [],
+                "calculated_at": "2026-02-11T10:30:00+00:00",
+            },
+            "top_sku": {
+                "status": "ready",
+                "has_result": True,
+                "required_files": ["order_export", "mass_update"],
+                "required_manual": [],
+                "available_files": ["order_export", "mass_update"],
+                "missing_files": [],
+                "missing_manual": [],
+                "calculated_at": "2026-02-11T10:31:00+00:00",
+            },
+        }
+
+        response = client.get(
+            "/api/v1/evaluations/brands/1/calculators/status",
+            headers=AUTH_HEADERS,
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["brand_id"] == 1
+
+    ads = data["calculators"]["ads_keyword"]
+    assert ads["status"] == "pending"
+    assert ads["has_result"] is False
+    assert "keyword_report" in ads["missing_files"]
+    assert "total_products" in ads["missing_manual"]
+
+    disc = data["calculators"]["discount"]
+    assert disc["status"] == "ready"
+    assert disc["has_result"] is True
+    assert disc["calculated_at"] is not None
+
+    top = data["calculators"]["top_sku"]
+    assert top["status"] == "ready"
+    assert top["has_result"] is True
+
+
+def test_calculator_status_reflects_existing_results(client):
+    """GET status has_result=True and calculated_at when results exist."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.router.db") as mock_router_db,
+        patch("app.modules.evaluations.router.check_calculator_readiness") as mock_check,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
+
+        mock_check.return_value = {
+            "discount": {
+                "status": "ready",
+                "has_result": True,
+                "required_files": ["order_export"],
+                "required_manual": [],
+                "available_files": ["order_export"],
+                "missing_files": [],
+                "missing_manual": [],
+                "calculated_at": "2026-02-11T10:30:00+00:00",
+            },
+        }
+
+        response = client.get(
+            "/api/v1/evaluations/brands/1/calculators/status",
+            headers=AUTH_HEADERS,
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+    assert data["calculators"]["discount"]["has_result"] is True
+    assert data["calculators"]["discount"]["calculated_at"] is not None
+
+
+# ---------------------------------------------------------------------------
+# Upload auto-execute integration tests
+# ---------------------------------------------------------------------------
+
+
+def test_upload_process_includes_auto_calculated(client):
+    """POST upload process response includes auto_calculated results."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.router.process_upload") as mock_process,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        # Mock the full ProcessUploadResponse
+        from app.modules.upload.schemas import (
+            AutoCalculatedItem,
+            ProcessUploadResponse,
+            UploadResponse,
+        )
+
+        mock_process.return_value = ProcessUploadResponse(
+            upload=UploadResponse(
+                id=1,
+                brand_id=1,
+                file_type="order_export",
+                filename="order.xlsx",
+                file_size=4096,
+                row_count=100,
+                uploaded_at=datetime(2026, 2, 11, 10, 0, tzinfo=timezone.utc),
+            ),
+            auto_calculated=[
+                AutoCalculatedItem(
+                    calculator_type="discount",
+                    status="success",
+                    result={
+                        "calculator_type": "discount",
+                        "output_text": "test",
+                        "details": {},
+                        "calculated_at": "2026-02-11T10:00:00+00:00",
+                    },
+                ),
+                AutoCalculatedItem(
+                    calculator_type="top_sku",
+                    status="skipped",
+                    reason="Missing required files: mass_update",
+                ),
+            ],
+        )
+
+        response = client.post(
+            "/api/v1/upload/process",
+            json={"upload_id": "test-id", "brand_id": 1, "file_type": "order_export"},
+            headers=AUTH_HEADERS,
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Verify upload field present
+    assert data["upload"]["id"] == 1
+    assert data["upload"]["file_type"] == "order_export"
+
+    # Verify auto_calculated field
+    assert len(data["auto_calculated"]) == 2
+    discount_r = next(r for r in data["auto_calculated"] if r["calculator_type"] == "discount")
+    top_sku_r = next(r for r in data["auto_calculated"] if r["calculator_type"] == "top_sku")
+    assert discount_r["status"] == "success"
+    assert top_sku_r["status"] == "skipped"
