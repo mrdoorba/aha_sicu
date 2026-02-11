@@ -1,6 +1,6 @@
 # Story 3.2: Data File Upload and Parsing
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -154,16 +154,16 @@ so that **the system can parse and validate them for calculator processing**.
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add backend dependencies (AC: #2, #3, #4)
-  - [ ] 1.1 Add `polars` to `backend/pyproject.toml` dependencies
-  - [ ] 1.2 Add `fastexcel` to `backend/pyproject.toml` dependencies (calamine-backed Excel engine for Polars)
-  - [ ] 1.3 Add `python-multipart` to `backend/pyproject.toml` dependencies (FastAPI file handling)
-  - [ ] 1.4 Add `google-cloud-storage` to `backend/pyproject.toml` dependencies (GCS signed URLs + file ops)
-  - [ ] 1.5 Run `uv sync` to install
+- [x] Task 1: Add backend dependencies (AC: #2, #3, #4)
+  - [x] 1.1 Add `polars` to `backend/pyproject.toml` dependencies
+  - [x] 1.2 Add `fastexcel` to `backend/pyproject.toml` dependencies (calamine-backed Excel engine for Polars)
+  - [x] 1.3 Add `python-multipart` to `backend/pyproject.toml` dependencies (FastAPI file handling)
+  - [x] 1.4 Add `google-cloud-storage` to `backend/pyproject.toml` dependencies (GCS signed URLs + file ops)
+  - [x] 1.5 Run `uv sync` to install
 
-- [ ] Task 2: Create database migration for `brand_uploads` table (AC: #6, #7, #9, #10)
-  - [ ] 2.1 Create migration `007_create_brand_uploads_table.py` in `backend/app/db/migrations/versions/`
-  - [ ] 2.2 Table schema:
+- [x] Task 2: Create database migration for `brand_uploads` table (AC: #6, #7, #9, #10)
+  - [x] 2.1 Create migration `007_create_brand_uploads_table.py` in `backend/app/db/migrations/versions/`
+  - [x] 2.2 Table schema:
     - `id` SERIAL PRIMARY KEY
     - `brand_id` INTEGER NOT NULL REFERENCES brand_vp_data(id)
     - `file_type` VARCHAR(50) NOT NULL — one of: `cpc_ad_report`, `keyword_report`, `order_export`, `mass_update`
@@ -175,36 +175,36 @@ so that **the system can parse and validate them for calculator processing**.
     - `uploaded_by` INTEGER NOT NULL REFERENCES users(id)
     - `uploaded_at` TIMESTAMPTZ DEFAULT NOW()
     - UNIQUE(brand_id, file_type) — one file per type per brand
-  - [ ] 2.3 Add indexes: `idx_brand_uploads_brand_id`, `idx_brand_uploads_file_type`
+  - [x] 2.3 Add indexes: `idx_brand_uploads_brand_id`, `idx_brand_uploads_file_type`
 
-- [ ] Task 3: Create upload query functions (AC: #9, #10)
-  - [ ] 3.1 Create `backend/app/db/queries/uploads.py` with:
+- [x] Task 3: Create upload query functions (AC: #9, #10)
+  - [x] 3.1 Create `backend/app/db/queries/uploads.py` with:
     - `get_uploads_by_brand(conn, brand_id)` — returns all uploads for a brand
     - `get_upload_by_type(conn, brand_id, file_type)` — returns single upload or None
     - `upsert_upload(conn, brand_id, file_type, calculator_target, filename, file_size, row_count, parsed_data, uploaded_by)` — INSERT ON CONFLICT(brand_id, file_type) DO UPDATE
     - `delete_upload(conn, brand_id, file_type)` — for cleanup if needed
 
-- [ ] Task 4: Create GCS client module (AC: #2, #8, #9)
-  - [ ] 4.1 Create `backend/app/modules/upload/gcs_client.py`:
+- [x] Task 4: Create GCS client module (AC: #2, #8, #9)
+  - [x] 4.1 Create `backend/app/modules/upload/gcs_client.py`:
     - `generate_signed_upload_url(bucket, object_name, content_type, expiry_minutes=15)` → signed URL string
     - `download_file(bucket, object_name)` → bytes
     - `delete_file(bucket, object_name)` → None
     - Use `google-cloud-storage` library
     - Object naming convention: `uploads/{upload_id}/{filename}`
-  - [ ] 4.2 Add GCS config to `config.py`:
+  - [x] 4.2 Add GCS config to `config.py`:
     - `gcs_upload_bucket: str = "aha_sicu_uploads"`
     - `gcs_credentials_path: str | None = None` (reuse service account or application default credentials)
-  - [ ] 4.3 For local dev without GCS: implement a `LocalStorageClient` fallback that saves to a temp directory. Service layer picks client based on config.
+  - [x] 4.3 For local dev without GCS: implement a `LocalStorageClient` fallback that saves to a temp directory. Service layer picks client based on config.
 
-- [ ] Task 5: Create file parser module (AC: #3, #4, #5)
-  - [ ] 5.1 Create `backend/app/modules/upload/__init__.py`
-  - [ ] 5.2 Create `backend/app/modules/upload/parser.py`:
+- [x] Task 5: Create file parser module (AC: #3, #4, #5)
+  - [x] 5.1 Create `backend/app/modules/upload/__init__.py`
+  - [x] 5.2 Create `backend/app/modules/upload/parser.py`:
     - `parse_csv(file_bytes)` → `pl.DataFrame`
     - `parse_excel(file_bytes, header_row=0)` → `pl.DataFrame` — Mass Update uses `header_row=2`
     - `validate_columns(df, file_type)` → raises `AppException` with `UPLOAD_MISSING_COLUMNS` if required columns missing
     - `dataframe_to_json(df)` → serializable dict for JSONB storage
     - Column requirements defined as constants per file_type
-  - [ ] 5.3 Create `backend/app/modules/upload/zip_handler.py`:
+  - [x] 5.3 Create `backend/app/modules/upload/zip_handler.py`:
     - `process_zip(zip_bytes, file_type)` → `pl.DataFrame`
     - Extract Excel files, filter out `__MACOSX` and temp files
     - Sort by part number (extract "part X of Y" pattern)
@@ -212,37 +212,37 @@ so that **the system can parse and validate them for calculator processing**.
     - Validate all parts have the same columns — raise `UPLOAD_ZIP_STRUCTURE_MISMATCH` if not
     - Raise `UPLOAD_ZIP_NO_EXCEL` if no Excel files found in ZIP
 
-- [ ] Task 6: Create upload service (AC: #2, #3, #4, #5, #6, #8, #9, #10)
-  - [ ] 6.1 Create `backend/app/modules/upload/service.py`:
+- [x] Task 6: Create upload service (AC: #2, #3, #4, #5, #6, #8, #9, #10)
+  - [x] 6.1 Create `backend/app/modules/upload/service.py`:
     - `request_signed_url(brand_id, file_type, filename, content_type)` — validates brand + file_type, generates signed URL via GCS client, stores upload_id mapping, returns URL + upload_id
     - `process_upload(upload_id, brand_id, file_type, user_id)` — downloads from GCS → detects file type → parses (CSV/Excel/ZIP) → validates columns → stores parsed data → deletes from GCS → returns response
     - `get_brand_uploads(brand_id)` — returns all uploads for a brand
     - Validate `file_type` is one of allowed values (`_VALID_FILE_TYPES` frozenset)
     - Validate file extension matches expected format for file_type
-  - [ ] 6.2 Create `backend/app/modules/upload/schemas.py`:
+  - [x] 6.2 Create `backend/app/modules/upload/schemas.py`:
     - `SignedUrlRequest`: filename, content_type, file_type, brand_id
     - `SignedUrlResponse`: upload_url, upload_id, expires_at
     - `ProcessRequest`: upload_id, brand_id, file_type
     - `UploadResponse`: id, brand_id, file_type, filename, file_size, row_count, uploaded_at
     - `BrandUploadsResponse`: brand_id, uploads (list of UploadResponse)
 
-- [ ] Task 7: Create upload router (AC: #8, #9, #10)
-  - [ ] 7.1 Create `backend/app/modules/upload/router.py`:
+- [x] Task 7: Create upload router (AC: #8, #9, #10)
+  - [x] 7.1 Create `backend/app/modules/upload/router.py`:
     - `POST /api/v1/upload/signed-url` — generates signed upload URL
     - `POST /api/v1/upload/process` — triggers file processing after GCS upload
     - `GET /api/v1/upload/brands/{brand_id}` — returns all uploads for brand
-  - [ ] 7.2 Register upload router in `main.py`
-  - [ ] 7.3 Use `Depends(get_current_user)` on all endpoints
+  - [x] 7.2 Register upload router in `main.py`
+  - [x] 7.3 Use `Depends(get_current_user)` on all endpoints
 
-- [ ] Task 8: Add `UploadException` to exceptions (AC: #5)
-  - [ ] 8.1 Add `UploadException` class to `core/exceptions.py` (like SyncException pattern)
+- [x] Task 8: Add `UploadException` to exceptions (AC: #5)
+  - [x] 8.1 Add `UploadException` class to `core/exceptions.py` (like SyncException pattern)
 
-- [ ] Task 9: Add frontend API types and hooks (AC: #1, #2, #7, #8, #9, #10)
-  - [ ] 9.1 Add upload endpoint path types to `apiClient.ts`:
+- [x] Task 9: Add frontend API types and hooks (AC: #1, #2, #7, #8, #9, #10)
+  - [x] 9.1 Add upload endpoint path types to `apiClient.ts`:
     - `POST /api/v1/upload/signed-url`
     - `POST /api/v1/upload/process`
     - `GET /api/v1/upload/brands/{brand_id}`
-  - [ ] 9.2 Create `hooks/useUpload.ts`:
+  - [x] 9.2 Create `hooks/useUpload.ts`:
     - `useBrandUploads(brandId)` — TanStack Query for GET upload status
     - `useRequestSignedUrl()` — mutation for POST signed-url
     - `useProcessUpload()` — mutation for POST process
@@ -253,43 +253,43 @@ so that **the system can parse and validate them for calculator processing**.
       4. Invalidates `brandUploads` query on success
       5. Tracks progress via XHR `upload.onprogress`
 
-- [ ] Task 10: Build file upload components (AC: #1, #2, #4, #5, #6, #7)
-  - [ ] 10.1 Create `components/evaluation/FileUploadSlot.tsx`:
+- [x] Task 10: Build file upload components (AC: #1, #2, #4, #5, #6, #7)
+  - [x] 10.1 Create `components/evaluation/FileUploadSlot.tsx`:
     - Single file slot component with: label, accepted format(s), calculator routing info
     - States: empty (upload button), uploading (progress bar), uploaded (filename + timestamp + row count + re-upload), error (message + retry)
     - File input accepts only the allowed formats for the slot (`.csv` or `.xlsx,.zip`)
     - Shows row count after successful processing
-  - [ ] 10.2 Create `components/evaluation/FileUploadSection.tsx`:
+  - [x] 10.2 Create `components/evaluation/FileUploadSection.tsx`:
     - Renders 4 `FileUploadSlot` components in a grid
     - Uses `useBrandUploads` to fetch current upload state
     - Passes `useUploadFile` orchestration to each slot
-  - [ ] 10.3 Update `EvaluationSections.tsx` Section 4 to use `FileUploadSection` instead of static placeholder cards
+  - [x] 10.3 Update `EvaluationSections.tsx` Section 4 to use `FileUploadSection` instead of static placeholder cards
 
-- [ ] Task 11: Write backend tests (AC: #2, #3, #4, #5, #6, #8, #9, #10)
-  - [ ] 11.1 Unit test `parser.py`: CSV parsing, Excel parsing, column validation success/failure, Mass Update header row 3 handling
-  - [ ] 11.2 Unit test `zip_handler.py`: extract + merge multi-part Excel, filter __MACOSX, sort by part number, mismatch columns error, no Excel error
-  - [ ] 11.3 Integration test `POST /api/v1/upload/signed-url`:
+- [x] Task 11: Write backend tests (AC: #2, #3, #4, #5, #6, #8, #9, #10)
+  - [x] 11.1 Unit test `parser.py`: CSV parsing, Excel parsing, column validation success/failure, Mass Update header row 3 handling
+  - [x] 11.2 Unit test `zip_handler.py`: extract + merge multi-part Excel, filter __MACOSX, sort by part number, mismatch columns error, no Excel error
+  - [x] 11.3 Integration test `POST /api/v1/upload/signed-url`:
     - Valid request → 200 with signed URL
     - Invalid file_type → 400
     - Non-existent brand → 404
-  - [ ] 11.4 Integration test `POST /api/v1/upload/process`:
+  - [x] 11.4 Integration test `POST /api/v1/upload/process`:
     - Valid CSV → 200 with response (mock GCS download)
     - Valid Excel → 200 with response
     - Valid ZIP → 200 with merged data
     - Missing columns → 400 with UPLOAD_MISSING_COLUMNS
     - Bad ZIP → 400 with UPLOAD_ZIP_NO_EXCEL
     - Re-upload same file_type → 200, replaces old data
-  - [ ] 11.5 Integration test `GET /api/v1/upload/brands/{brand_id}`:
+  - [x] 11.5 Integration test `GET /api/v1/upload/brands/{brand_id}`:
     - Empty uploads → 200 with empty array
     - After upload → 200 with uploads
 
-- [ ] Task 12: Write frontend tests (AC: #1, #2, #5, #7)
-  - [ ] 12.1 Test FileUploadSlot renders empty state with upload button
-  - [ ] 12.2 Test FileUploadSlot renders uploaded state with filename, timestamp, row count
-  - [ ] 12.3 Test FileUploadSlot renders error state with message
-  - [ ] 12.4 Test FileUploadSlot renders uploading state with progress
-  - [ ] 12.5 Test FileUploadSection renders 4 upload slots with correct labels
-  - [ ] 12.6 Test file input accept attribute matches slot formats (csv for CSV slots, xlsx+zip for Excel slots)
+- [x] Task 12: Write frontend tests (AC: #1, #2, #5, #7)
+  - [x] 12.1 Test FileUploadSlot renders empty state with upload button
+  - [x] 12.2 Test FileUploadSlot renders uploaded state with filename, timestamp, row count
+  - [x] 12.3 Test FileUploadSlot renders error state with message
+  - [x] 12.4 Test FileUploadSlot renders uploading state with progress
+  - [x] 12.5 Test FileUploadSection renders 4 upload slots with correct labels
+  - [x] 12.6 Test file input accept attribute matches slot formats (csv for CSV slots, xlsx+zip for Excel slots)
 
 ## Dev Notes
 
@@ -563,3 +563,56 @@ frontend/src/components/evaluation/EvaluationSections.tsx ← MODIFY: replace fi
 - [Source: logic/calculator-1-kata-kunci-iklan-shopee.md — CPC Ad Report + Keyword Report column requirements]
 - [Source: logic/calculator-2-penjualan.md — Order Export + Mass Update column requirements]
 - [Source: logic/calculator-3-discount-checkup.md — Order Export column requirements]
+
+## File List
+
+### New Files
+
+- `backend/app/db/migrations/versions/007_create_brand_uploads_table.py` — Migration for brand_uploads table
+- `backend/app/db/queries/uploads.py` — Upload DB queries (get, upsert, delete)
+- `backend/app/modules/upload/__init__.py` — Upload module init
+- `backend/app/modules/upload/gcs_client.py` — GCS storage client + local dev fallback
+- `backend/app/modules/upload/parser.py` — Polars CSV/Excel parsing + column validation
+- `backend/app/modules/upload/zip_handler.py` — ZIP extraction, sort, merge Excel parts
+- `backend/app/modules/upload/schemas.py` — Pydantic request/response schemas
+- `backend/app/modules/upload/service.py` — Upload service (signed URL, process, get)
+- `backend/app/modules/upload/router.py` — Upload API router (3 endpoints + local dev PUT)
+- `backend/tests/unit/test_parser.py` — Unit tests for parser (13 tests)
+- `backend/tests/unit/test_zip_handler.py` — Unit tests for zip_handler (11 tests)
+- `backend/tests/integration/api/test_upload.py` — Integration tests for upload API (11 tests)
+- `frontend/src/hooks/useUpload.ts` — Upload hooks (useBrandUploads, useRequestSignedUrl, useProcessUpload, useUploadFile)
+- `frontend/src/components/evaluation/FileUploadSlot.tsx` — Single file upload slot component
+- `frontend/src/components/evaluation/FileUploadSlot.test.tsx` — FileUploadSlot tests (7 tests)
+- `frontend/src/components/evaluation/FileUploadSection.tsx` — 4-slot file upload grid
+- `frontend/src/components/evaluation/FileUploadSection.test.tsx` — FileUploadSection tests (3 tests)
+
+### Modified Files
+
+- `backend/pyproject.toml` — Added polars, fastexcel, python-multipart, google-cloud-storage deps + xlsxwriter dev dep
+- `backend/app/config.py` — Added `gcs_upload_bucket` setting
+- `backend/app/core/exceptions.py` — Added `UploadException` class
+- `backend/app/main.py` — Registered upload router
+- `frontend/src/services/apiClient.ts` — Added upload endpoint path types
+- `frontend/src/components/evaluation/EvaluationSections.tsx` — Replaced static file upload placeholders with FileUploadSection; added brandId prop
+- `frontend/src/pages/EvaluationPage.tsx` — Pass brandId to EvaluationSections
+
+## Dev Agent Record
+
+### Implementation Notes
+
+- **GCS signed URL flow** implemented with local dev fallback via `LocalStorageClient`. Local mode returns `http://localhost:8000/api/v1/upload/local/{upload_id}/{filename}` as the "signed URL", allowing the frontend to PUT files via the same XHR flow.
+- **Polars parsing** uses `calamine` engine (via `fastexcel`) for Excel. Mass Update files parsed with `header_row=2` per AC.
+- **ZIP handler** extracts Excel parts, filters `__MACOSX` and temp files, sorts by `part_X_of_Y` regex, validates column structure consistency, concatenates vertically.
+- **Column validation** implemented as constants per file_type. Raises `UPLOAD_MISSING_COLUMNS` with a list of which columns are absent.
+- **Upload ID tracking** uses in-memory dict (`_pending_uploads`) as recommended in Dev Notes. Sufficient for single Cloud Run instance.
+- **Frontend upload orchestration** uses XHR (not fetch) for `upload.onprogress` tracking. States: idle → signing → uploading → processing → done/error.
+- **Re-upload (upsert)** handled via `ON CONFLICT(brand_id, file_type) DO UPDATE` in SQL. Note: calculator_results clearing deferred to Story 3.4/3.7 per Dev Notes.
+
+### Test Results
+
+- **Backend**: 128 tests passed (35 new + 93 existing), 0 regressions
+- **Frontend**: 89 tests passed (10 new + 79 existing), 2 pre-existing failures (Firebase API key config in App.test.tsx and EvaluationPage.test.tsx — not related to this story)
+
+## Change Log
+
+- **2026-02-11**: Story 3.2 implemented — Full-stack file upload with GCS signed URL flow, Polars parsing, ZIP handling, column validation, 4-slot frontend UI (Tasks 1-12 complete)
