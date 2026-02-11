@@ -1354,3 +1354,66 @@ So that **scoring reflects the latest business thresholds**.
 **And** optionally show "Rules have been updated since this evaluation"
 
 **Implementation:** Scoring calculator reads rules from DB (via service layer, not inside pure function)
+
+---
+
+## Epic 6: Production Deployment & Launch
+
+> **Goal:** Deploy the application to production and validate with real users.
+> **Depends on:** Epic 5 completion
+> **Estimated stories:** 3–4
+
+### Story 6.1: Infrastructure Provisioning
+
+As a **DevOps engineer**,
+I want **to provision production infrastructure using Terraform**,
+So that **the application has a secure, scalable production environment**.
+
+**Scope:**
+- Terraform apply for Cloud Run, Cloud SQL (or Neon prod), GCS buckets, IAM roles
+- Secrets management (Firebase credentials, database URL, GCS keys)
+- Network and security configuration
+- Environment-specific configuration (prod vs dev)
+
+---
+
+### Story 6.2: CI/CD Pipeline Activation
+
+As a **DevOps engineer**,
+I want **to activate the CI/CD pipeline for automated deployments**,
+So that **code merged to main is automatically tested and deployed**.
+
+**Scope:**
+- GitHub Actions workflow for build, test, deploy
+- Workload Identity Federation for keyless GCP authentication
+- Staging environment deployment (optional, if budget allows)
+- Rollback strategy and deployment gates
+
+---
+
+### Story 6.3: Production Smoke Testing
+
+As a **QA engineer**,
+I want **to run end-to-end smoke tests against the production environment**,
+So that **we verify the full workflow works in production before user onboarding**.
+
+**Scope:**
+- Full evaluation workflow: login → brand selection → file upload → calculators → scoring → save
+- Verify GCS signed URL uploads work in production
+- Verify database connectivity and data persistence
+- Verify SSE sync status in production environment
+
+---
+
+### Story 6.4: BD Team Onboarding & Real-Data Validation
+
+As a **BD team member**,
+I want **to evaluate 1-2 real brands using the production app**,
+So that **we validate calculator accuracy with actual client data before wider rollout**.
+
+**Scope:**
+- BD team account provisioning and access setup
+- Guided walkthrough of evaluation workflow
+- Real brand evaluation with actual Shopee export data
+- Calculator result validation against manual calculations
+- Bug/fix fast-track process for any discrepancies found
