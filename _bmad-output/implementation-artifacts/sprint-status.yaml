@@ -87,3 +87,11 @@ development_status:
   5-2-edit-scoring-rules-with-password-confirmation: backlog
   5-3-apply-configured-rules-in-scoring: backlog
   epic-5-retrospective: optional
+
+  # Epic 6: Production Deployment & Launch
+  epic-6: backlog
+  6-1-infrastructure-provisioning: backlog
+  6-2-cicd-pipeline-activation: backlog
+  6-3-production-smoke-testing: backlog
+  6-4-bd-team-onboarding-and-real-data-validation: backlog
+  epic-6-retrospective: optional
