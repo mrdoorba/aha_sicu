@@ -70,6 +70,7 @@ export const EvaluationPage = () => {
               {/* Main content: scrollable sections */}
               <div className="min-w-0 flex-1">
                 <EvaluationSections
+                  brandId={safeBrandId}
                   categoryType={evaluationState?.category_type ?? null}
                   onCategoryChange={handleCategoryChange}
                   onActiveSection={setActiveSection}

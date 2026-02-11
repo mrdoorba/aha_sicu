@@ -131,6 +131,85 @@ interface paths {
       };
     };
   };
+  '/api/v1/upload/signed-url': {
+    post: {
+      requestBody: {
+        content: {
+          'application/json': {
+            filename: string;
+            content_type: string;
+            file_type: string;
+            brand_id: number;
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              upload_url: string;
+              upload_id: string;
+              expires_at: string;
+            };
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/upload/process': {
+    post: {
+      requestBody: {
+        content: {
+          'application/json': {
+            upload_id: string;
+            brand_id: number;
+            file_type: string;
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              id: number;
+              brand_id: number;
+              file_type: string;
+              filename: string;
+              file_size: number;
+              row_count: number;
+              uploaded_at: string;
+            };
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/upload/brands/{brand_id}': {
+    get: {
+      parameters: {
+        path: {
+          brand_id: number;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              brand_id: number;
+              uploads: Array<{
+                id: number;
+                file_type: string;
+                filename: string;
+                file_size: number;
+                row_count: number;
+                uploaded_at: string;
+              }>;
+            };
+          };
+        };
+      };
+    };
+  };
   '/api/v1/evaluations/brands/{brand_id}': {
     get: {
       parameters: {
