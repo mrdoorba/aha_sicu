@@ -232,4 +232,40 @@ describe('SyncStatus', () => {
 
     expect(screen.getByText('Offline')).toBeInTheDocument();
   });
+
+  it('has aria-live="polite" region for sync status announcements', () => {
+    mockUseSyncStatus.mockReturnValue({
+      data: null,
+      isLoading: false,
+    });
+
+    const { container } = renderSyncStatus();
+
+    const liveRegion = container.querySelector('[aria-live="polite"]');
+    expect(liveRegion).toBeInTheDocument();
+    expect(liveRegion).toHaveAttribute('aria-atomic', 'true');
+  });
+
+  it('decorative icons inside badges have aria-hidden="true"', () => {
+    mockUseSyncStatus.mockReturnValue({
+      data: {
+        id: 1,
+        status: 'success',
+        last_sync: new Date().toISOString(),
+        brands_synced: 100,
+        error_message: null,
+        sync_details: null,
+      },
+      isLoading: false,
+    });
+
+    const { container } = renderSyncStatus();
+
+    // All SVG icons within the aria-live region should be aria-hidden
+    const liveRegion = container.querySelector('[aria-live="polite"]');
+    const icons = liveRegion?.querySelectorAll('svg');
+    icons?.forEach((icon) => {
+      expect(icon).toHaveAttribute('aria-hidden', 'true');
+    });
+  });
 });

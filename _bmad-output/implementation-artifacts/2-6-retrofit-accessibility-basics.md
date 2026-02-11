@@ -1,6 +1,6 @@
 # Story 2.6: Retrofit Accessibility Basics
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -55,55 +55,55 @@ so that **I can navigate and operate Store ICU with a screen reader or keyboard 
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Add skip-to-content link in App.tsx (AC: #3)
-  - [ ] 1.1 Add a visually-hidden anchor `<a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 ...">Skip to main content</a>` as the first child inside `<BrowserRouter>`, before `<AuthProvider>`
-  - [ ] 1.2 In `BrandsPage.tsx`, add `id="main-content"` and `tabIndex={-1}` to the existing `<main>` element (it already uses `<main>`)
-  - [ ] 1.3 In `DashboardPage.tsx`, ensure the primary content area has `id="main-content"` and `tabIndex={-1}` (check current structure first)
-  - [ ] 1.4 Style: visually hidden by default, appears top-left on focus with high-contrast background
+- [x] Task 1: Add skip-to-content link in App.tsx (AC: #3)
+  - [x] 1.1 Add a visually-hidden anchor `<a href="#main-content" className="sr-only focus:not-sr-only focus:absolute focus:z-50 ...">Skip to main content</a>` as the first child inside `<BrowserRouter>`, before `<AuthProvider>`
+  - [x] 1.2 In `BrandsPage.tsx`, add `id="main-content"` and `tabIndex={-1}` to the existing `<main>` element (it already uses `<main>`)
+  - [x] 1.3 In `DashboardPage.tsx`, ensure the primary content area has `id="main-content"` and `tabIndex={-1}` (check current structure first)
+  - [x] 1.4 Style: visually hidden by default, appears top-left on focus with high-contrast background
 
-- [ ] Task 2: Add aria-labels and aria-hidden to BrandsPage icons (AC: #1, #4)
-  - [ ] 2.1 Search input: Add `aria-label="Search brands"` to the `<Input>` element
-  - [ ] 2.2 Search icon: Add `aria-hidden="true"` to the decorative `<Search>` icon (it's a visual affordance only — the input has its own label)
-  - [ ] 2.3 Pagination buttons: The "Previous" and "Next" buttons already have visible text alongside icons — add `aria-hidden="true"` to `<ChevronLeft>` and `<ChevronRight>` icons to prevent duplicate announcements
-  - [ ] 2.4 Error state icon: Add `aria-hidden="true"` to the `<XCircle>` in the error empty state (message text is sufficient)
-  - [ ] 2.5 Empty state icon: Add `aria-hidden="true"` to the `<RefreshCw>` in the "no brands" empty state
+- [x] Task 2: Add aria-labels and aria-hidden to BrandsPage icons (AC: #1, #4)
+  - [x] 2.1 Search input: Add `aria-label="Search brands"` to the `<Input>` element
+  - [x] 2.2 Search icon: Add `aria-hidden="true"` to the decorative `<Search>` icon (it's a visual affordance only — the input has its own label)
+  - [x] 2.3 Pagination buttons: The "Previous" and "Next" buttons already have visible text alongside icons — add `aria-hidden="true"` to `<ChevronLeft>` and `<ChevronRight>` icons to prevent duplicate announcements
+  - [x] 2.4 Error state icon: Add `aria-hidden="true"` to the `<XCircle>` in the error empty state (message text is sufficient)
+  - [x] 2.5 Empty state icon: Add `aria-hidden="true"` to the `<RefreshCw>` in the "no brands" empty state
 
-- [ ] Task 3: Add aria-live region to SyncStatus (AC: #2)
-  - [ ] 3.1 Wrap the sync status badge area (the `<div>` containing the status Badge) with `aria-live="polite"` and `aria-atomic="true"` so screen readers announce status transitions
-  - [ ] 3.2 Add `aria-hidden="true"` to all decorative icons inside Badges (`<CheckCircle2>`, `<XCircle>`, `<Clock>`, `<RefreshCw>`) — the Badge text provides meaning
-  - [ ] 3.3 Add `aria-hidden="true"` to connection state icons (`<Wifi>`, `<WifiOff>`) — the adjacent text label provides meaning
-  - [ ] 3.4 Confirm "Sync Now" button already has visible text label ("Sync Now" / "Syncing...") — add `aria-hidden="true"` to the `<RefreshCw>` icon inside the button to prevent duplicate announcement
+- [x] Task 3: Add aria-live region to SyncStatus (AC: #2)
+  - [x] 3.1 Wrap the sync status badge area (the `<div>` containing the status Badge) with `aria-live="polite"` and `aria-atomic="true"` so screen readers announce status transitions
+  - [x] 3.2 Add `aria-hidden="true"` to all decorative icons inside Badges (`<CheckCircle2>`, `<XCircle>`, `<Clock>`, `<RefreshCw>`) — the Badge text provides meaning
+  - [x] 3.3 Add `aria-hidden="true"` to connection state icons (`<Wifi>`, `<WifiOff>`) — the adjacent text label provides meaning
+  - [x] 3.4 Confirm "Sync Now" button already has visible text label ("Sync Now" / "Syncing...") — add `aria-hidden="true"` to the `<RefreshCw>` icon inside the button to prevent duplicate announcement
 
-- [ ] Task 4: Replace custom logout modal with shadcn Dialog (AC: #5)
-  - [ ] 4.1 Import `Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose` from `../ui/dialog`
-  - [ ] 4.2 Replace the custom `{showConfirm && (<div className="fixed inset-0 ...">...`  modal with shadcn Dialog components:
+- [x] Task 4: Replace custom logout modal with shadcn Dialog (AC: #5)
+  - [x] 4.1 Import `Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose` from `../ui/dialog`
+  - [x] 4.2 Replace the custom `{showConfirm && (<div className="fixed inset-0 ...">...`  modal with shadcn Dialog components:
     - `<Dialog open={showConfirm} onOpenChange={setShowConfirm}>`
     - `<DialogContent showCloseButton={false}>` (no X close button — use Cancel/Logout buttons only)
     - `<DialogHeader>` + `<DialogTitle>Confirm Logout</DialogTitle>` + `<DialogDescription>Are you sure you want to log out?</DialogDescription>`
     - `<DialogFooter>` with Cancel and Logout buttons
-  - [ ] 4.3 Remove the manual `useEffect` for Escape key handling — Radix Dialog handles this natively
-  - [ ] 4.4 Remove `handleBackdropClick` — Radix Dialog handles backdrop dismiss via `onOpenChange`
-  - [ ] 4.5 Remove `modalRef` — no longer needed
-  - [ ] 4.6 Keep `cancelButtonRef` for initial focus — or use Dialog's `autoFocus` on the cancel button (Radix focuses first focusable by default; if you want Cancel focused instead of Logout, add `autoFocus` to Cancel button)
-  - [ ] 4.7 Retain existing logout logic (`handleConfirmLogout`, `isLoggingOut` state) — only the modal shell changes
+  - [x] 4.3 Remove the manual `useEffect` for Escape key handling — Radix Dialog handles this natively
+  - [x] 4.4 Remove `handleBackdropClick` — Radix Dialog handles backdrop dismiss via `onOpenChange`
+  - [x] 4.5 Remove `modalRef` — no longer needed
+  - [x] 4.6 Keep `cancelButtonRef` for initial focus — or use Dialog's `autoFocus` on the cancel button (Radix focuses first focusable by default; if you want Cancel focused instead of Logout, add `autoFocus` to Cancel button)
+  - [x] 4.7 Retain existing logout logic (`handleConfirmLogout`, `isLoggingOut` state) — only the modal shell changes
 
-- [ ] Task 5: Add aria-busy to BrandTable loading state (AC: #6)
-  - [ ] 5.1 Add `aria-busy={isLoading}` to the `<Table>` element (or its wrapping container)
-  - [ ] 5.2 Add `aria-label="Brand list"` to the `<Table>` for screen reader identification
-  - [ ] 5.3 Add `role="status"` and an `sr-only` span like `<span className="sr-only">Loading brands...</span>` inside the skeleton state (optional — `aria-busy` is the primary mechanism)
+- [x] Task 5: Add aria-busy to BrandTable loading state (AC: #6)
+  - [x] 5.1 Add `aria-busy={isLoading}` to the `<Table>` element (or its wrapping container)
+  - [x] 5.2 Add `aria-label="Brand list"` to the `<Table>` for screen reader identification
+  - [x] 5.3 Add `role="status"` and an `sr-only` span like `<span className="sr-only">Loading brands...</span>` inside the skeleton state (optional — `aria-busy` is the primary mechanism)
 
-- [ ] Task 6: Add aria-labels to Header icon elements (AC: #1)
-  - [ ] 6.1 The logout button already has visible "Logout" text — no change needed
-  - [ ] 6.2 Verify nav links (Dashboard, Brands) are accessible — they use `<Link>` with visible text, which is correct
-  - [ ] 6.3 No icon-only buttons found in Header currently — this task is a verification pass
+- [x] Task 6: Add aria-labels to Header icon elements (AC: #1)
+  - [x] 6.1 The logout button already has visible "Logout" text — no change needed
+  - [x] 6.2 Verify nav links (Dashboard, Brands) are accessible — they use `<Link>` with visible text, which is correct
+  - [x] 6.3 No icon-only buttons found in Header currently — this task is a verification pass
 
-- [ ] Task 7: Write frontend tests for accessibility attributes (AC: all)
-  - [ ] 7.1 Test skip-to-content link: verify link exists, is focusable, has correct href `#main-content`
-  - [ ] 7.2 Test BrandsPage search input has accessible label (query by role + accessible name)
-  - [ ] 7.3 Test SyncStatus has `aria-live="polite"` region
-  - [ ] 7.4 Test BrandTable has `aria-busy="true"` when loading, `aria-busy="false"` when loaded
-  - [ ] 7.5 Test Header Dialog renders with accessible title when open (query by role "dialog")
-  - [ ] 7.6 Test decorative icons have `aria-hidden="true"`
+- [x] Task 7: Write frontend tests for accessibility attributes (AC: all)
+  - [x] 7.1 Test skip-to-content link: verify link exists, is focusable, has correct href `#main-content`
+  - [x] 7.2 Test BrandsPage search input has accessible label (query by role + accessible name)
+  - [x] 7.3 Test SyncStatus has `aria-live="polite"` region
+  - [x] 7.4 Test BrandTable has `aria-busy="true"` when loading, `aria-busy="false"` when loaded
+  - [x] 7.5 Test Header Dialog renders with accessible title when open (query by role "dialog")
+  - [x] 7.6 Test decorative icons have `aria-hidden="true"`
 
 ## Dev Notes
 
@@ -315,8 +315,40 @@ frontend/src/pages/BrandsPage.test.tsx            ← EXTEND: search label, icon
 
 ### Agent Model Used
 
+Claude Opus 4.6
+
 ### Debug Log References
+
+- Initial test run: 3 failures (App.test.tsx mock incomplete, Header test button selector fragile, BrandsPage CSS selector wrong for SVG)
+- Fixed all 3: added Toaster mock, used data-variant selector for dialog button, corrected SVG class selector
+- Final run: 66/66 tests passing, 0 regressions
 
 ### Completion Notes List
 
+- Task 1: Added skip-to-content link in App.tsx before AuthProvider; added `id="main-content"` and `tabIndex={-1}` to `<main>` in BrandsPage and DashboardPage; styled with sr-only + focus:not-sr-only pattern
+- Task 2: Added `aria-label="Search brands"` to search input; added `aria-hidden="true"` to all decorative icons (Search, XCircle, RefreshCw, ChevronLeft, ChevronRight)
+- Task 3: Added `aria-live="polite"` and `aria-atomic="true"` to sync status badge area; added `aria-hidden="true"` to all decorative icons in SyncStatus (Badge icons, connection state icons, Sync Now button icon)
+- Task 4: Replaced custom logout modal with shadcn Dialog (Radix-based); removed manual Escape handler, backdrop click handler, modalRef, cancelButtonRef; Dialog provides native focus trap, Escape dismiss, aria-modal, auto focus restoration
+- Task 5: Added `aria-busy={isLoading}` and `aria-label="Brand list"` to BrandTable `<Table>` element; subtask 5.3 (sr-only loading text) was optional and skipped since aria-busy is the primary mechanism
+- Task 6: Verification pass — confirmed logout button has visible text, nav links use accessible `<Link>` with visible text, no icon-only buttons in Header
+- Task 7: Created App.test.tsx for skip-to-content test; extended BrandTable, SyncStatus, BrandsPage, Header test files with a11y attribute tests; all 66 tests passing
+
+### Change Log
+
+- 2026-02-11: Implemented Story 2.6 — Retrofit Accessibility Basics. Added skip-to-content link, aria-labels, aria-hidden on decorative icons, aria-live region for sync status, replaced custom modal with shadcn Dialog, added aria-busy to loading table, and wrote comprehensive a11y tests.
+
 ### File List
+
+- frontend/src/App.tsx (modified — added skip-to-content link)
+- frontend/src/App.test.tsx (created — skip-to-content test)
+- frontend/src/pages/BrandsPage.tsx (modified — aria-label on search, aria-hidden on icons, id on main)
+- frontend/src/pages/BrandsPage.test.tsx (modified — added a11y tests)
+- frontend/src/pages/DashboardPage.tsx (modified — id and tabIndex on main)
+- frontend/src/components/layout/Header.tsx (modified — replaced custom modal with shadcn Dialog, removed manual a11y handling)
+- frontend/src/components/layout/Header.test.tsx (modified — updated tests for Radix Dialog, added a11y title test)
+- frontend/src/components/brands/BrandTable.tsx (modified — added aria-busy, aria-label on Table)
+- frontend/src/components/brands/BrandTable.test.tsx (modified — added aria-busy and aria-label tests)
+- frontend/src/components/sync/SyncStatus.tsx (modified — added aria-live region, aria-hidden on decorative icons)
+- frontend/src/components/sync/SyncStatus.test.tsx (modified — added aria-live and icon aria-hidden tests)
+- _bmad-output/implementation-artifacts/sprint-status.yaml (modified — status updated to review)
+- _bmad-output/implementation-artifacts/2-6-retrofit-accessibility-basics.md (modified — tasks marked complete, dev agent record updated)

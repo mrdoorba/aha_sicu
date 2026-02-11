@@ -194,4 +194,29 @@ describe('BrandsPage', () => {
 
     expect(screen.queryByText(/page \d+ of/i)).not.toBeInTheDocument();
   });
+
+  it('search input has accessible label "Search brands"', () => {
+    mockUseBrands.mockReturnValue({
+      data: BRANDS_RESPONSE,
+      isLoading: false,
+    });
+
+    renderBrandsPage();
+
+    const searchInput = screen.getByRole('textbox', { name: /search brands/i });
+    expect(searchInput).toBeInTheDocument();
+  });
+
+  it('decorative icons have aria-hidden="true"', () => {
+    mockUseBrands.mockReturnValue({
+      data: { items: [], total: 0, page: 1, limit: 20, pages: 0 },
+      isLoading: false,
+    });
+
+    const { container } = renderBrandsPage();
+
+    // The search icon (SVG with absolute positioning) should be aria-hidden
+    const searchIcon = container.querySelector('svg.absolute.left-3');
+    expect(searchIcon).toHaveAttribute('aria-hidden', 'true');
+  });
 });
