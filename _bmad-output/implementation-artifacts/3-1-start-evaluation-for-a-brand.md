@@ -1,6 +1,6 @@
 # Story 3.1: Start Evaluation for a Brand
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -109,9 +109,9 @@ so that **I can begin the evaluation workflow with brand info displayed and sect
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create database migration for `evaluation_inputs` table (AC: #6, #9, #10)
-  - [ ] 1.1 Create migration `006_create_evaluation_inputs_table.py` in `backend/app/db/migrations/versions/`
-  - [ ] 1.2 Table schema:
+- [x] Task 1: Create database migration for `evaluation_inputs` table (AC: #6, #9, #10)
+  - [x] 1.1 Create migration `006_create_evaluation_inputs_table.py` in `backend/app/db/migrations/versions/`
+  - [x] 1.2 Table schema:
     - `id` SERIAL PRIMARY KEY
     - `brand_id` INTEGER NOT NULL REFERENCES brand_vp_data(id)
     - `user_id` INTEGER NOT NULL REFERENCES users(id)
@@ -120,62 +120,62 @@ so that **I can begin the evaluation workflow with brand info displayed and sect
     - `created_at` TIMESTAMPTZ DEFAULT NOW()
     - `updated_at` TIMESTAMPTZ DEFAULT NOW()
     - UNIQUE(brand_id, user_id) — one input set per user per brand
-  - [ ] 1.3 Add indexes: `idx_evaluation_inputs_brand_id`, `idx_evaluation_inputs_user_id`
+  - [x] 1.3 Add indexes: `idx_evaluation_inputs_brand_id`, `idx_evaluation_inputs_user_id`
 
-- [ ] Task 2: Add backend query functions (AC: #8, #9, #10)
-  - [ ] 2.1 Add `get_brand_by_id(conn, brand_id)` to `db/queries/brands.py` — returns VP data LEFT JOIN Meeting data for a single brand by ID
-  - [ ] 2.2 Create `db/queries/evaluations.py` with:
+- [x] Task 2: Add backend query functions (AC: #8, #9, #10)
+  - [x] 2.1 Add `get_brand_by_id(conn, brand_id)` to `db/queries/brands.py` — returns VP data LEFT JOIN Meeting data for a single brand by ID
+  - [x] 2.2 Create `db/queries/evaluations.py` with:
     - `get_evaluation_inputs(conn, brand_id, user_id)` — returns evaluation_inputs row or None
     - `upsert_evaluation_inputs(conn, brand_id, user_id, category_type, manual_data)` — INSERT ON CONFLICT DO UPDATE
-  - [ ] 2.3 Ensure `ESCAPE '\'` on any ILIKE queries (if applicable) per lessons learned
+  - [x] 2.3 Ensure `ESCAPE '\'` on any ILIKE queries (if applicable) per lessons learned
 
-- [ ] Task 3: Add backend brand detail endpoint (AC: #8)
-  - [ ] 3.1 Add `GET /api/v1/brands/{brand_id}` to `modules/brands/router.py`
-  - [ ] 3.2 Add `BrandDetailResponse` schema to `modules/brands/schemas.py` (same shape as BrandListItem)
-  - [ ] 3.3 Add `get_brand_detail(brand_id)` to `modules/brands/service.py`
-  - [ ] 3.4 Return 404 with `BRAND_NOT_FOUND` code if brand doesn't exist
+- [x] Task 3: Add backend brand detail endpoint (AC: #8)
+  - [x] 3.1 Add `GET /api/v1/brands/{brand_id}` to `modules/brands/router.py`
+  - [x] 3.2 Add `BrandDetailResponse` schema to `modules/brands/schemas.py` (same shape as BrandListItem)
+  - [x] 3.3 Add `get_brand_detail(brand_id)` to `modules/brands/service.py`
+  - [x] 3.4 Return 404 with `BRAND_NOT_FOUND` code if brand doesn't exist
 
-- [ ] Task 4: Create evaluations module backend (AC: #9, #10)
-  - [ ] 4.1 Create `modules/evaluations/__init__.py`
-  - [ ] 4.2 Create `modules/evaluations/schemas.py`:
+- [x] Task 4: Create evaluations module backend (AC: #9, #10)
+  - [x] 4.1 Create `modules/evaluations/__init__.py`
+  - [x] 4.2 Create `modules/evaluations/schemas.py`:
     - `EvaluationStateResponse`: brand_id, category_type (str|None), manual_data (dict|None), updated_at (datetime|None)
     - `EvaluationInputsUpdate`: category_type (str|None), manual_data (dict|None)
-  - [ ] 4.3 Create `modules/evaluations/service.py`:
+  - [x] 4.3 Create `modules/evaluations/service.py`:
     - `get_evaluation_state(brand_id, user_id)` — fetches evaluation_inputs, returns response
     - `save_evaluation_inputs(brand_id, user_id, data)` — upserts evaluation_inputs, validates brand exists
-  - [ ] 4.4 Create `modules/evaluations/router.py`:
+  - [x] 4.4 Create `modules/evaluations/router.py`:
     - `GET /api/v1/evaluations/brands/{brand_id}` — calls `get_evaluation_state`
     - `PUT /api/v1/evaluations/brands/{brand_id}` — calls `save_evaluation_inputs`
-  - [ ] 4.5 Register evaluations router in `main.py`
+  - [x] 4.5 Register evaluations router in `main.py`
 
-- [ ] Task 5: Add frontend route and page scaffold (AC: #1, #3)
-  - [ ] 5.1 Create `pages/EvaluationPage.tsx` — main evaluation page with Header, section nav, and content area
-  - [ ] 5.2 Add route `/evaluation/:brandId` to `App.tsx` wrapped in `ProtectedRoute`
-  - [ ] 5.3 Page layout: Header at top, left sidebar (section nav ~200px), main content area, right side score panel placeholder
+- [x] Task 5: Add frontend route and page scaffold (AC: #1, #3)
+  - [x] 5.1 Create `pages/EvaluationPage.tsx` — main evaluation page with Header, section nav, and content area
+  - [x] 5.2 Add route `/evaluation/:brandId` to `App.tsx` wrapped in `ProtectedRoute`
+  - [x] 5.3 Page layout: Header at top, left sidebar (section nav ~200px), main content area, right side score panel placeholder
 
-- [ ] Task 6: Add "Evaluate" button to brand table (AC: #1)
-  - [ ] 6.1 Add "Evaluate" button column to `BrandTable.tsx` — uses `useNavigate` to go to `/evaluation/{brand.id}`
-  - [ ] 6.2 Button style: Primary variant, compact size
-  - [ ] 6.3 Add `TableHead` for the "Action" column
+- [x] Task 6: Add "Evaluate" button to brand table (AC: #1)
+  - [x] 6.1 Add "Evaluate" button column to `BrandTable.tsx` — uses `useNavigate` to go to `/evaluation/{brand.id}`
+  - [x] 6.2 Button style: Primary variant, compact size
+  - [x] 6.3 Add `TableHead` for the "Action" column
 
-- [ ] Task 7: Add frontend API types and hooks (AC: #2, #6, #8, #9, #10)
-  - [ ] 7.1 Add `/api/v1/brands/{brand_id}` path type to `apiClient.ts`
-  - [ ] 7.2 Add `/api/v1/evaluations/brands/{brand_id}` GET and PUT path types to `apiClient.ts`
-  - [ ] 7.3 Create `hooks/useBrandDetail.ts` — `useBrandDetail(brandId)` using TanStack Query
-  - [ ] 7.4 Create `hooks/useEvaluation.ts`:
+- [x] Task 7: Add frontend API types and hooks (AC: #2, #6, #8, #9, #10)
+  - [x] 7.1 Add `/api/v1/brands/{brand_id}` path type to `apiClient.ts`
+  - [x] 7.2 Add `/api/v1/evaluations/brands/{brand_id}` GET and PUT path types to `apiClient.ts`
+  - [x] 7.3 Create `hooks/useBrandDetail.ts` — `useBrandDetail(brandId)` using TanStack Query
+  - [x] 7.4 Create `hooks/useEvaluation.ts`:
     - `useEvaluationState(brandId)` — fetches GET evaluation state
     - `useSaveEvaluationInputs(brandId)` — mutation for PUT evaluation inputs
 
-- [ ] Task 8: Build brand info header component (AC: #2, #7)
-  - [ ] 8.1 Create `components/evaluation/EvaluationHeader.tsx`:
+- [x] Task 8: Build brand info header component (AC: #2, #7)
+  - [x] 8.1 Create `components/evaluation/EvaluationHeader.tsx`:
     - Displays brand name prominently (large heading)
     - Shows key VP data fields from `raw_data` (brand name, marketplace fields, etc.)
     - Shows Meeting data enrichment if available, or "No meeting data available" label
     - Back button to navigate to `/brands`
-  - [ ] 8.2 Handle loading state (skeleton) and error state
+  - [x] 8.2 Handle loading state (skeleton) and error state
 
-- [ ] Task 9: Build section navigation sidebar (AC: #3)
-  - [ ] 9.1 Create `components/evaluation/SectionNav.tsx`:
+- [x] Task 9: Build section navigation sidebar (AC: #3)
+  - [x] 9.1 Create `components/evaluation/SectionNav.tsx`:
     - 5 step sections matching the UX workflow:
       1. Brand Info & Operational
       2. Business, Content & Visitors
@@ -184,25 +184,25 @@ so that **I can begin the evaluation workflow with brand info displayed and sect
       5. Ads, Campaign, Competition & Review
     - Each item is a button that scrolls to the corresponding section
     - Active section is highlighted based on scroll position (Intersection Observer)
-  - [ ] 9.2 Sticky positioning so nav stays visible while scrolling
+  - [x] 9.2 Sticky positioning so nav stays visible while scrolling
 
-- [ ] Task 10: Build section placeholder content (AC: #4, #5)
-  - [ ] 10.1 Create `components/evaluation/EvaluationSections.tsx` — renders all 5 sections with `id` attributes for scroll targeting
-  - [ ] 10.2 Section 1 (Brand Info & Operational):
+- [x] Task 10: Build section placeholder content (AC: #4, #5)
+  - [x] 10.1 Create `components/evaluation/EvaluationSections.tsx` — renders all 5 sections with `id` attributes for scroll targeting
+  - [x] 10.2 Section 1 (Brand Info & Operational):
     - Brand info read-only display (from EvaluationHeader)
     - Fashion/Non-Fashion radio selector (auto-saves via `useSaveEvaluationInputs`)
     - "Operational — 5 fields" placeholder
-  - [ ] 10.3 Section 2 (Business, Content & Visitors):
+  - [x] 10.3 Section 2 (Business, Content & Visitors):
     - "Business — 8 fields" placeholder
     - "Content — 2 fields" placeholder
     - "Visitors — 4 fields" placeholder
-  - [ ] 10.4 Section 3 (Promo Tools & Products/Status):
+  - [x] 10.4 Section 3 (Promo Tools & Products/Status):
     - "Promo Tools — 11 fields" placeholder
     - "Products/Status — 2 fields" placeholder
-  - [ ] 10.5 Section 4 (File Upload):
+  - [x] 10.5 Section 4 (File Upload):
     - 4 upload slot cards: CPC Ad Report (.csv), Keyword Placement Report (.csv), Order Export (.xlsx), Mass Update (.xlsx)
     - Each shows: file type label, accepted format, calculator routing info, "No file uploaded" status
-  - [ ] 10.6 Section 5 (Ads, Campaign, Competition & Review):
+  - [x] 10.6 Section 5 (Ads, Campaign, Competition & Review):
     - "Ads — 5 fields" placeholder
     - "Campaign — 3 fields" placeholder
     - "Competition — 3 products" placeholder
@@ -210,19 +210,19 @@ so that **I can begin the evaluation workflow with brand info displayed and sect
     - Final Score: "Not yet calculated" with category breakdown skeleton
     - "Save Evaluation" button (disabled — enabled in Story 3.10)
 
-- [ ] Task 11: Write backend tests (AC: #8, #9, #10)
-  - [ ] 11.1 Test `GET /api/v1/brands/{brand_id}` — returns brand with meeting data, returns 404 for unknown ID
-  - [ ] 11.2 Test `GET /api/v1/evaluations/brands/{brand_id}` — returns null state for new evaluation, returns saved state for existing
-  - [ ] 11.3 Test `PUT /api/v1/evaluations/brands/{brand_id}` — creates new inputs, updates existing inputs, validates brand exists (404)
-  - [ ] 11.4 Test evaluation_inputs unique constraint (brand_id, user_id)
+- [x] Task 11: Write backend tests (AC: #8, #9, #10)
+  - [x] 11.1 Test `GET /api/v1/brands/{brand_id}` — returns brand with meeting data, returns 404 for unknown ID
+  - [x] 11.2 Test `GET /api/v1/evaluations/brands/{brand_id}` — returns null state for new evaluation, returns saved state for existing
+  - [x] 11.3 Test `PUT /api/v1/evaluations/brands/{brand_id}` — creates new inputs, updates existing inputs, validates brand exists (404)
+  - [x] 11.4 Test evaluation_inputs unique constraint (brand_id, user_id)
 
-- [ ] Task 12: Write frontend tests (AC: #1, #2, #3, #4, #5, #6)
-  - [ ] 12.1 Test BrandTable renders "Evaluate" button for each brand row
-  - [ ] 12.2 Test EvaluationPage renders brand info header with brand name
-  - [ ] 12.3 Test EvaluationPage renders section navigation with 5 steps
-  - [ ] 12.4 Test section placeholders render file upload slots and category placeholders
-  - [ ] 12.5 Test Fashion/Non-Fashion selector renders and calls save mutation on change
-  - [ ] 12.6 Test back button navigates to `/brands`
+- [x] Task 12: Write frontend tests (AC: #1, #2, #3, #4, #5, #6)
+  - [x] 12.1 Test BrandTable renders "Evaluate" button for each brand row
+  - [x] 12.2 Test EvaluationPage renders brand info header with brand name
+  - [x] 12.3 Test EvaluationPage renders section navigation with 5 steps
+  - [x] 12.4 Test section placeholders render file upload slots and category placeholders
+  - [x] 12.5 Test Fashion/Non-Fashion selector renders and calls save mutation on change
+  - [x] 12.6 Test back button navigates to `/brands`
 
 ## Dev Notes
 
@@ -532,20 +532,64 @@ frontend/src/components/brands/BrandTable.test.tsx ← MODIFY: test Evaluate but
 
 ### Agent Model Used
 
-(to be filled by dev agent)
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
-(to be filled by dev agent)
+- IntersectionObserver not available in jsdom — fixed by adding mock in test/setup.ts
+- "Meeting Data" text and "Step N." text matched multiple elements in full-page tests — fixed by using `getAllByText`, `getByRole` with scoping, and `querySelectorAll` within nav landmark
 
 ### Completion Notes List
 
-(to be filled by dev agent)
+- All 12 tasks completed across backend + frontend
+- Backend: 93 tests passing (10 new tests added)
+- Frontend: 85 tests passing (18 new tests added, 1 pre-existing App.test.tsx failure due to Firebase API key — not related to this story)
+- Fashion/Non-Fashion selector auto-saves via `useSaveEvaluationInputs` mutation
+- File upload slots are placeholder cards (actual upload in Story 3.2)
+- Calculator result cards show "Pending: upload required files" state
+- Final Score shows "Not yet calculated" skeleton
+- "Save Evaluation" button rendered but disabled (enabled in Story 3.10)
+- Score Summary panel placeholder visible on lg screens
+- shadcn RadioGroup + Label installed for category selector
 
 ### Change Log
 
-(to be filled by dev agent)
+1. `b7dea38` — Backend foundation: migration 006, queries, brand detail endpoint, evaluations module
+2. `6182d19` — Frontend: evaluation page, components, hooks, route, Evaluate button
+3. `8d5e9f6` — Backend + frontend tests
 
 ### File List
 
-(to be filled by dev agent — must include ALL files changed on the feature branch)
+**New files:**
+- `backend/app/db/migrations/versions/006_create_evaluation_inputs_table.py`
+- `backend/app/db/queries/evaluations.py`
+- `backend/app/modules/evaluations/__init__.py`
+- `backend/app/modules/evaluations/router.py`
+- `backend/app/modules/evaluations/schemas.py`
+- `backend/app/modules/evaluations/service.py`
+- `backend/tests/unit/test_evaluation_queries.py`
+- `backend/tests/integration/api/test_brands_detail.py`
+- `backend/tests/integration/api/test_evaluations.py`
+- `frontend/src/pages/EvaluationPage.tsx`
+- `frontend/src/pages/EvaluationPage.test.tsx`
+- `frontend/src/components/evaluation/EvaluationHeader.tsx`
+- `frontend/src/components/evaluation/EvaluationHeader.test.tsx`
+- `frontend/src/components/evaluation/SectionNav.tsx`
+- `frontend/src/components/evaluation/SectionNav.test.tsx`
+- `frontend/src/components/evaluation/EvaluationSections.tsx`
+- `frontend/src/components/ui/radio-group.tsx`
+- `frontend/src/components/ui/label.tsx`
+- `frontend/src/hooks/useBrandDetail.ts`
+- `frontend/src/hooks/useEvaluation.ts`
+
+**Modified files:**
+- `backend/app/main.py` — registered evaluations router
+- `backend/app/modules/brands/router.py` — added GET /{brand_id}
+- `backend/app/modules/brands/schemas.py` — added BrandDetailResponse
+- `backend/app/modules/brands/service.py` — added get_brand_detail()
+- `backend/app/db/queries/brands.py` — added get_brand_by_id()
+- `frontend/src/App.tsx` — added /evaluation/:brandId route
+- `frontend/src/services/apiClient.ts` — added brand detail + evaluation path types
+- `frontend/src/components/brands/BrandTable.tsx` — added Evaluate button + Action column
+- `frontend/src/components/brands/BrandTable.test.tsx` — wrapped in BrowserRouter, added Evaluate test
+- `frontend/src/test/setup.ts` — added IntersectionObserver mock
