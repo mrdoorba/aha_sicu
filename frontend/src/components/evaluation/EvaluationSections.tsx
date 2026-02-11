@@ -15,8 +15,10 @@ import { CampaignForm } from './forms/CampaignForm';
 import { CompetitionForm } from './forms/CompetitionForm';
 import { SaveIndicator } from './forms/SaveIndicator';
 import { CalculatorResultsSection } from './calculators';
+import { ScoringSection } from './scoring';
 import type { ManualData } from './forms/formConfig';
 import type { SaveStatus } from '../../hooks/useAutoSaveForm';
+import type { ScoringResult } from '../../hooks/useScoring';
 
 interface EvaluationSectionsProps {
   brandId: number;
@@ -29,6 +31,19 @@ interface EvaluationSectionsProps {
   saveStatus: SaveStatus;
   lastSaved: Date | null;
   onRetrySave: () => void;
+  storeName: string;
+  brandName: string;
+  onGenerateScore: (request: {
+    template: 'fashion' | 'non_fashion';
+    verdict: string;
+    store_name: string;
+    period: string;
+    brand_name: string;
+  }) => void;
+  scoringResult: ScoringResult | null;
+  isGenerating: boolean;
+  isStale: boolean;
+  scoringError: Error | null;
 }
 
 export const EvaluationSections = ({
@@ -42,6 +57,13 @@ export const EvaluationSections = ({
   saveStatus,
   lastSaved,
   onRetrySave,
+  storeName,
+  brandName,
+  onGenerateScore,
+  scoringResult,
+  isGenerating,
+  isStale,
+  scoringError,
 }: EvaluationSectionsProps) => {
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
 
@@ -184,24 +206,21 @@ export const EvaluationSections = ({
         <CalculatorResultsSection brandId={brandId} />
 
         {/* Final Score */}
-        <div className="mt-4">
-          <Card>
-            <CardContent className="pt-4">
-              <p className="mb-2 font-semibold">Final Score</p>
-              <p className="text-sm text-muted-foreground">Not yet calculated</p>
-              <div className="mt-3 space-y-1 text-sm text-muted-foreground">
-                {['Operational', 'Business', 'Content', 'Visitors', 'Promo Tools', 'Products/Status', 'Ads', 'Campaign', 'Stock', 'Discount'].map(
-                  (category) => (
-                    <div key={category} className="flex justify-between">
-                      <span>{category}</span>
-                      <span>&mdash;</span>
-                    </div>
-                  ),
-                )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
+        <section id="section-6" ref={setSectionRef('section-6')} className="mt-4">
+          <h3 className="mb-4 text-lg font-semibold text-foreground">
+            Step 6. Final Score
+          </h3>
+          <ScoringSection
+            onGenerate={onGenerateScore}
+            scoringResult={scoringResult}
+            isGenerating={isGenerating}
+            isStale={isStale}
+            error={scoringError}
+            categoryType={categoryType}
+            storeName={storeName}
+            brandName={brandName}
+          />
+        </section>
 
         {/* Save Button */}
         <div className="mt-6">

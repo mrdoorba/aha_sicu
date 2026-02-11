@@ -10,6 +10,8 @@ import { useState, useCallback, useMemo } from 'react';
 import { Button } from '../components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { computeSectionProgress } from '../components/evaluation/forms/formConfig';
+import { useScoring } from '../hooks/useScoring';
+import { ScorePanel } from '../components/evaluation/scoring';
 
 export const EvaluationPage = () => {
   const { brandId } = useParams<{ brandId: string }>();
@@ -38,6 +40,14 @@ export const EvaluationPage = () => {
   });
 
   const sectionProgress = useMemo(() => computeSectionProgress(manualData), [manualData]);
+
+  const {
+    generateScore,
+    scoringResult,
+    isStale,
+    isGenerating,
+    error: scoringError,
+  } = useScoring(safeBrandId);
 
   const handleCategoryChange = useCallback(
     (value: string) => {
@@ -98,62 +108,19 @@ export const EvaluationPage = () => {
                   saveStatus={saveStatus}
                   lastSaved={lastSaved}
                   onRetrySave={retrySave}
+                  storeName={brand?.store_name ?? ''}
+                  brandName={brand?.name ?? ''}
+                  onGenerateScore={generateScore}
+                  scoringResult={scoringResult}
+                  isGenerating={isGenerating}
+                  isStale={isStale}
+                  scoringError={scoringError}
                 />
               </div>
 
-              {/* Right panel: score summary placeholder */}
+              {/* Right panel: score summary */}
               <aside className="hidden w-56 shrink-0 lg:block">
-                <div className="sticky top-6 rounded-lg border bg-card p-4">
-                  <h3 className="mb-3 text-sm font-semibold uppercase text-muted-foreground">
-                    Score Summary
-                  </h3>
-                  <div className="space-y-2 text-sm text-muted-foreground">
-                    <div className="flex justify-between">
-                      <span>Final</span>
-                      <span>&mdash;</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Operational</span>
-                      <span>&mdash;</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Business</span>
-                      <span>&mdash;</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Content</span>
-                      <span>&mdash;</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Visitors</span>
-                      <span>&mdash;</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Promo Tools</span>
-                      <span>&mdash;</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Products</span>
-                      <span>&mdash;</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Ads</span>
-                      <span>&mdash;</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Campaign</span>
-                      <span>&mdash;</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Stock</span>
-                      <span>&mdash;</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span>Discount</span>
-                      <span>&mdash;</span>
-                    </div>
-                  </div>
-                </div>
+                <ScorePanel scoringResult={scoringResult} />
               </aside>
             </div>
           </>
