@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect } from 'vitest';
 import { BrandTable } from './BrandTable';
 import type { BrandListItem } from '../../hooks/useBrands';
@@ -20,43 +21,52 @@ const SAMPLE_BRANDS: BrandListItem[] = [
   },
 ];
 
+const renderBrandTable = (props: { brands: BrandListItem[]; isLoading: boolean }) => {
+  return render(
+    <BrowserRouter>
+      <BrandTable {...props} />
+    </BrowserRouter>
+  );
+};
+
 describe('BrandTable', () => {
   it('renders brand rows from data', () => {
-    render(<BrandTable brands={SAMPLE_BRANDS} isLoading={false} />);
+    renderBrandTable({ brands: SAMPLE_BRANDS, isLoading: false });
 
     expect(screen.getByText('Brand ABC')).toBeInTheDocument();
     expect(screen.getByText('Brand DEF')).toBeInTheDocument();
   });
 
-  it('renders table headers', () => {
-    render(<BrandTable brands={SAMPLE_BRANDS} isLoading={false} />);
+  it('renders table headers including Action column', () => {
+    renderBrandTable({ brands: SAMPLE_BRANDS, isLoading: false });
 
     expect(screen.getByText('Brand Name')).toBeInTheDocument();
     expect(screen.getByText('Key Info')).toBeInTheDocument();
     expect(screen.getByText('Meeting Data')).toBeInTheDocument();
+    expect(screen.getByText('Action')).toBeInTheDocument();
   });
 
   it('shows "Available" badge when meeting data exists', () => {
-    render(<BrandTable brands={SAMPLE_BRANDS} isLoading={false} />);
+    renderBrandTable({ brands: SAMPLE_BRANDS, isLoading: false });
 
     expect(screen.getByText('Available')).toBeInTheDocument();
   });
 
   it('shows "Not available" when meeting data is null', () => {
-    render(<BrandTable brands={SAMPLE_BRANDS} isLoading={false} />);
+    renderBrandTable({ brands: SAMPLE_BRANDS, isLoading: false });
 
     expect(screen.getByText(/not available/i)).toBeInTheDocument();
   });
 
   it('displays raw_data summary for each brand', () => {
-    render(<BrandTable brands={SAMPLE_BRANDS} isLoading={false} />);
+    renderBrandTable({ brands: SAMPLE_BRANDS, isLoading: false });
 
     expect(screen.getByText(/category: electronics/i)).toBeInTheDocument();
     expect(screen.getByText(/category: fashion/i)).toBeInTheDocument();
   });
 
   it('shows skeleton loading state', () => {
-    render(<BrandTable brands={[]} isLoading={true} />);
+    renderBrandTable({ brands: [], isLoading: true });
 
     // Should show skeleton rows, not brand data
     expect(screen.queryByText('Brand ABC')).not.toBeInTheDocument();
@@ -65,23 +75,30 @@ describe('BrandTable', () => {
   });
 
   it('has aria-busy="true" when loading', () => {
-    render(<BrandTable brands={[]} isLoading={true} />);
+    renderBrandTable({ brands: [], isLoading: true });
 
     const table = screen.getByRole('table', { name: /brand list/i });
     expect(table).toHaveAttribute('aria-busy', 'true');
   });
 
   it('has aria-busy="false" when loaded', () => {
-    render(<BrandTable brands={SAMPLE_BRANDS} isLoading={false} />);
+    renderBrandTable({ brands: SAMPLE_BRANDS, isLoading: false });
 
     const table = screen.getByRole('table', { name: /brand list/i });
     expect(table).toHaveAttribute('aria-busy', 'false');
   });
 
   it('has aria-label="Brand list"', () => {
-    render(<BrandTable brands={SAMPLE_BRANDS} isLoading={false} />);
+    renderBrandTable({ brands: SAMPLE_BRANDS, isLoading: false });
 
     const table = screen.getByRole('table', { name: /brand list/i });
     expect(table).toBeInTheDocument();
+  });
+
+  it('renders "Evaluate" button for each brand row', () => {
+    renderBrandTable({ brands: SAMPLE_BRANDS, isLoading: false });
+
+    const evaluateButtons = screen.getAllByRole('button', { name: /evaluate/i });
+    expect(evaluateButtons).toHaveLength(2);
   });
 });
