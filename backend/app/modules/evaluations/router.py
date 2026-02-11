@@ -20,9 +20,15 @@ from app.modules.evaluations.schemas import (
     EvaluationStateResponse,
     RunAllResponse,
     RunCalculatorItem,
+    ScoringRequest,
+    ScoringResponse,
     SingleCalculatorStatus,
 )
-from app.modules.evaluations.service import get_evaluation_state, save_evaluation_inputs
+from app.modules.evaluations.service import (
+    generate_score,
+    get_evaluation_state,
+    save_evaluation_inputs,
+)
 
 router = APIRouter(prefix="/api/v1/evaluations", tags=["evaluations"])
 
@@ -190,3 +196,30 @@ async def get_calculator_status(
         for calc_type, status_info in readiness.items()
     }
     return CalculatorStatusResponse(brand_id=brand_id, calculators=calculators)
+
+
+@router.post(
+    "/brands/{brand_id}/score",
+    response_model=ScoringResponse,
+)
+async def score_evaluation(
+    brand_id: int,
+    body: ScoringRequest,
+    current_user: dict = Depends(get_current_user),
+) -> ScoringResponse:
+    """Generate the final score for a brand evaluation.
+
+    Runs the scoring calculator with current manual inputs + calculator results.
+    Returns the complete scoring result (scores, messages, email, whatsapp).
+    Returns 400 if required data is missing.
+    """
+    return await generate_score(
+        brand_id=brand_id,
+        user_id=current_user["id"],
+        template=body.template,
+        verdict=body.verdict,
+        store_name=body.store_name,
+        period=body.period,
+        brand_name=body.brand_name,
+        email=body.email,
+    )
