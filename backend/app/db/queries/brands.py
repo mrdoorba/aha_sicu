@@ -124,6 +124,22 @@ async def get_brands_with_meeting(
     return [dict(row) for row in rows]
 
 
+async def get_brand_by_id(conn: Connection, brand_id: int) -> dict | None:
+    """Get a single brand by ID with LEFT JOIN to meeting data."""
+    row = await conn.fetchrow(
+        """
+        SELECT
+            v.id, v.brand_name, v.raw_data, v.updated_at,
+            m.raw_data AS meeting_raw_data
+        FROM brand_vp_data v
+        LEFT JOIN brand_meeting_data m ON v.brand_name = m.brand_name
+        WHERE v.id = $1
+        """,
+        brand_id,
+    )
+    return dict(row) if row else None
+
+
 async def get_brands_count_with_search(
     conn: Connection,
     search: str | None = None,

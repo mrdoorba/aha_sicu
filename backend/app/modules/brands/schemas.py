@@ -16,6 +16,16 @@ class BrandListItem(BaseModel):
     meeting_raw_data: dict[str, Any] | None = None
 
 
+class BrandDetailResponse(BaseModel):
+    """Single brand detail response."""
+
+    id: int
+    brand_name: str
+    raw_data: dict[str, Any]
+    updated_at: datetime
+    meeting_raw_data: dict[str, Any] | None = None
+
+
 class BrandListResponse(BaseModel):
     """Paginated response for brand list."""
 
