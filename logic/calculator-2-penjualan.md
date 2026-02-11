@@ -268,9 +268,14 @@ Tidak ditemukan     |                                           |               
 
 ---
 
-## How Outputs Feed into the Scoring System
+## How Outputs Feed into the Scoring System (Template SICU)
 
-Both outputs are used in the final scoring system sheet. The key data points passed forward are:
+- **D70** = Average Stock number (from Output 2 header "Average Stok [X]"). This integer is pasted into cell D70 of the scoring system.
+  - D70 >= 24 → score 10
+  - D70 >= 12 → score 5
+  - D70 < 12 → score -5
+
+Both outputs are also used for reference in the final scoring system sheet. The key data points passed forward are:
 
 - **Top 20% product list** with Kode Variasi identifiers
 - **Total Omzet per product** for revenue analysis
