@@ -1,0 +1,589 @@
+"""Ads Keyword Calculator — pure function, no I/O.
+
+Processes CPC Ad Report (Sheet 1) and Keyword/Placement Report (Sheet 2)
+to produce the combined ads keyword analysis text for the scoring system.
+
+Spec: logic/calculator-1-kata-kunci-iklan-shopee.md
+"""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from typing import Any
+
+
+# ---------------------------------------------------------------------------
+# Result type
+# ---------------------------------------------------------------------------
+
+@dataclass
+class AdsKeywordResult:
+    """Structured result from the ads keyword calculator."""
+
+    output_text: str
+    details: dict[str, Any]
+
+
+# ---------------------------------------------------------------------------
+# Helpers
+# ---------------------------------------------------------------------------
+
+def clean_name(ad_name: str) -> str:
+    """Remove text from first ``[`` onward (strip trailing whitespace)."""
+    if not ad_name:
+        return ""
+    idx = ad_name.find("[")
+    if idx == -1:
+        return ad_name.strip()
+    return ad_name[:idx].strip()
+
+
+def _format_idr(value: int | float) -> str:
+    """Format number as ``IDR 26,433,781``."""
+    return f"IDR {int(value):,}"
+
+
+def _format_roas(value: float | int) -> str:
+    """Format ROAS stripping trailing zeros: 5.68, 6, 5.9."""
+    return f"{float(value):g}"
+
+
+def _format_pct(fraction: float) -> str:
+    """Format fraction as percentage: 0.05 → '5.0%'."""
+    return f"{fraction * 100:.1f}%"
+
+
+def _safe_num(value: Any) -> float:
+    """Coerce a value to float, treating None/'-'/'' as 0."""
+    if value is None:
+        return 0.0
+    if isinstance(value, (int, float)):
+        return float(value)
+    if isinstance(value, str):
+        value = value.strip()
+        if value in ("", "-"):
+            return 0.0
+        try:
+            return float(value)
+        except ValueError:
+            return 0.0
+    return 0.0
+
+
+def _safe_str(value: Any) -> str:
+    """Coerce a value to string, treating None as empty string."""
+    if value is None:
+        return ""
+    return str(value).strip()
+
+
+# ---------------------------------------------------------------------------
+# Sheet 1 — CPC Ad Report
+# ---------------------------------------------------------------------------
+
+def calculate_sheet1(rows: list[dict], total_products: int) -> dict[str, str]:
+    """Calculate AK2, AK3, AK4 from CPC Ad Report data.
+
+    Args:
+        rows: Parsed CPC ad report rows (list of dicts with CSV column names).
+        total_products: AK1 — total products in the store.
+
+    Returns:
+        Dict with keys ``ak2``, ``ak3``, ``ak4`` containing formatted text.
+    """
+    # --- AK2: Ad Overview Summary ---
+    count_active = 0
+    count_paused = 0
+    count_ended = 0
+    total_ads = len(rows)
+
+    # For unique product counting (non-ended, Iklan Produk, CleanName dedup)
+    unique_products: set[str] = set()
+
+    for row in rows:
+        status = _safe_str(row.get("Status"))
+        jenis = _safe_str(row.get("Jenis Iklan"))
+        nama = _safe_str(row.get("Nama Iklan"))
+
+        if status == "Berjalan":
+            count_active += 1
+        elif status == "Dijeda":
+            count_paused += 1
+        elif status == "Berakhir":
+            count_ended += 1
+
+        # Unique products: non-ended + Iklan Produk + CleanName dedup
+        if status != "Berakhir" and jenis == "Iklan Produk" and nama:
+            unique_products.add(clean_name(nama))
+
+    unique_count = len(unique_products)
+    product_pct = unique_count / total_products if total_products > 0 else 0.0
+
+    ak2 = (
+        f"• Total Iklan: {count_active} Aktif, {count_paused} Dijeda "
+        f"dan {count_ended} Berakhir.\n"
+        f"• Melibatkan {unique_count} ({_format_pct(product_pct)}) "
+        f"produk dari total jumlah produk: {total_products}."
+    )
+
+    # --- AK3: Ad Type Breakdown (non-ended only) ---
+    # Search Page: D="Iklan Produk", C<>"Berakhir", I="Halaman Pencarian"
+    search_total = 0
+    search_auto = 0
+    search_manual = 0
+    # Recommendation Page: D="Iklan Produk", C<>"Berakhir", I="Halaman Rekomendasi"
+    reco_total = 0
+    reco_auto = 0
+    reco_manual = 0
+    # All Placements: I="Semua Penempatan", C<>"Berakhir" (NO Jenis filter)
+    semua_total = 0
+    # Shop Ads: D="Iklan Toko", C<>"Berakhir"
+    toko_total = 0
+    toko_auto = 0
+    toko_manual = 0
+
+    for row in rows:
+        status = _safe_str(row.get("Status"))
+        if status == "Berakhir":
+            continue
+
+        jenis = _safe_str(row.get("Jenis Iklan"))
+        penempatan = _safe_str(row.get("Penempatan Iklan"))
+        bidding = _safe_str(row.get("Mode Bidding"))
+
+        # Search Page
+        if jenis == "Iklan Produk" and penempatan == "Halaman Pencarian":
+            search_total += 1
+            if bidding == "Bidding Otomatis":
+                search_auto += 1
+            elif bidding == "Bidding Manual":
+                search_manual += 1
+
+        # Recommendation Page
+        if jenis == "Iklan Produk" and penempatan == "Halaman Rekomendasi":
+            reco_total += 1
+            if bidding == "Bidding Otomatis":
+                reco_auto += 1
+            elif bidding == "Bidding Manual":
+                reco_manual += 1
+
+        # Semua Penempatan (no Jenis filter — includes shop-level)
+        if penempatan == "Semua Penempatan":
+            semua_total += 1
+
+        # Iklan Toko
+        if jenis == "Iklan Toko":
+            toko_total += 1
+            if bidding == "Bidding Otomatis":
+                toko_auto += 1
+            elif bidding == "Bidding Manual":
+                toko_manual += 1
+
+    ak3 = (
+        "• Jenis Iklan yang aktif digunakan:\n"
+        f"  {search_total} Iklan Produk Halaman Pencarian "
+        f"({search_auto} Otomatis & {search_manual} Manual).\n"
+        f"  {reco_total} Iklan Produk Halaman Rekomendasi "
+        f"({reco_auto} Otomatis & {reco_manual} Manual).\n"
+        f"  {semua_total} Iklan Produk Otomatis Semua Halaman.\n"
+        f"  {toko_total} Iklan Toko "
+        f"({toko_auto} Otomatis & {toko_manual} Manual)."
+    )
+
+    # --- AK4: 7 Recommendation Flags ---
+    flags: list[str] = []
+
+    # active_ratio uses ALL ads
+    active_ratio = count_active / total_ads if total_ads > 0 else 0.0
+
+    # Flag 1: Product participation
+    if product_pct < 0.5:
+        flags.append(
+            "📌 Jumlah produk yang dipartisipasikan ke dalam iklan "
+            "kurang maksimal (saran >50%)."
+        )
+    else:
+        flags.append(
+            "📌 Jumlah produk yang dipartisipasikan ke dalam iklan "
+            "sudah cukup baik."
+        )
+
+    # Flag 2: Active ad ratio
+    if active_ratio < 0.5:
+        flags.append(
+            "📌 Jumlah iklan dengan status aktif "
+            "kurang maksimal (saran >50%)."
+        )
+    elif product_pct >= 0.5:
+        flags.append(
+            "📌 Jumlah iklan dengan status aktif sudah cukup baik."
+        )
+    # else: suppressed
+
+    # Flags 3-7: Check ALL ads (including ended)
+    all_penempatan = [_safe_str(r.get("Penempatan Iklan")) for r in rows]
+    all_bidding = [_safe_str(r.get("Mode Bidding")) for r in rows]
+    all_jenis = [_safe_str(r.get("Jenis Iklan")) for r in rows]
+
+    # Flag 3: No Halaman Pencarian ads
+    if not any(p == "Halaman Pencarian" for p in all_penempatan):
+        flags.append(
+            "📌 Iklan Produk Halaman Pencarian belum dimanfaatkan."
+        )
+
+    # Flag 4: No Halaman Pencarian + Bidding Manual
+    has_search_manual = any(
+        p == "Halaman Pencarian" and b == "Bidding Manual"
+        for p, b in zip(all_penempatan, all_bidding)
+    )
+    if not has_search_manual:
+        flags.append(
+            "📌 Iklan Produk Halaman Pencarian (Bidding Manual) "
+            "belum dimanfaatkan."
+        )
+
+    # Flag 5: No Halaman Rekomendasi ads
+    if not any(p == "Halaman Rekomendasi" for p in all_penempatan):
+        flags.append(
+            "📌 Iklan Produk Halaman Rekomendasi belum dimanfaatkan."
+        )
+
+    # Flag 6: No Halaman Rekomendasi + Bidding Manual
+    has_reco_manual = any(
+        p == "Halaman Rekomendasi" and b == "Bidding Manual"
+        for p, b in zip(all_penempatan, all_bidding)
+    )
+    if not has_reco_manual:
+        flags.append(
+            "📌 Iklan Produk Halaman Rekomendasi (Bidding Manual) "
+            "belum dimanfaatkan."
+        )
+
+    # Flag 7: No Iklan Toko ads
+    if not any(j == "Iklan Toko" for j in all_jenis):
+        flags.append("📌 Iklan Toko belum dimanfaatkan.")
+
+    ak4 = "\n".join(flags)
+
+    return {"ak2": ak2, "ak3": ak3, "ak4": ak4}
+
+
+# ---------------------------------------------------------------------------
+# Sheet 2 — Keyword/Placement Report
+# ---------------------------------------------------------------------------
+
+def _calculate_thresholds(rows: list[dict]) -> dict[str, int]:
+    """Calculate AM6, AM7, AM9, AM10 from ALL rows (including shop-level).
+
+    AM6 = ROUND(AVERAGEIF(GMV > 0))
+    AM7 = MIN(ROUND(AVERAGEIF(ROAS > 0)), 10)
+    AM9 = ROUND(AVERAGEIF(Cost > 0))
+    AM10 = MIN(ROUND(AVERAGEIF(ROAS > 0)), 3)
+    """
+    gmv_values = [
+        _safe_num(r.get("Omzet Penjualan"))
+        for r in rows
+        if _safe_num(r.get("Omzet Penjualan")) > 0
+    ]
+    roas_values = [
+        _safe_num(r.get("Efektifitas Iklan"))
+        for r in rows
+        if _safe_num(r.get("Efektifitas Iklan")) > 0
+    ]
+    cost_values = [
+        _safe_num(r.get("Biaya"))
+        for r in rows
+        if _safe_num(r.get("Biaya")) > 0
+    ]
+
+    avg_gmv = round(sum(gmv_values) / len(gmv_values)) if gmv_values else 0
+    avg_roas = round(sum(roas_values) / len(roas_values)) if roas_values else 0
+    avg_cost = round(sum(cost_values) / len(cost_values)) if cost_values else 0
+
+    return {
+        "am6": avg_gmv,
+        "am7": min(avg_roas, 10),
+        "am9": avg_cost,
+        "am10": min(avg_roas, 3),
+    }
+
+
+def _format_top_ad(row: dict) -> str:
+    """Format a single TOP ad entry (4-line format)."""
+    name = clean_name(_safe_str(row.get("Nama Iklan")))
+    gmv = _safe_num(row.get("Omzet Penjualan"))
+    roas = _safe_num(row.get("Efektifitas Iklan"))
+    bidding = _safe_str(row.get("Mode Bidding"))
+    jenis = _safe_str(row.get("Jenis Iklan"))
+    penempatan = _safe_str(row.get("Penempatan Iklan"))
+    kata = _safe_str(row.get("Kata Pencarian/Penempatan"))
+
+    return (
+        f"  ▶ {name}\n"
+        f"    GMV: {_format_idr(gmv)} {{ROAS: {_format_roas(roas)}}}\n"
+        f"    {bidding}\n"
+        f"    {jenis} {penempatan}: {kata}"
+    )
+
+
+def _format_bottom_ad(row: dict, is_fallback: bool) -> str:
+    """Format a single BOTTOM ad entry.
+
+    Primary: 4-line format (Mode Bidding on separate line).
+    Fallback: 3-line format (Mode Bidding merged with Jenis line).
+    """
+    name = clean_name(_safe_str(row.get("Nama Iklan")))
+    cost = _safe_num(row.get("Biaya"))
+    roas = _safe_num(row.get("Efektifitas Iklan"))
+    bidding = _safe_str(row.get("Mode Bidding"))
+    jenis = _safe_str(row.get("Jenis Iklan"))
+    penempatan = _safe_str(row.get("Penempatan Iklan"))
+    kata = _safe_str(row.get("Kata Pencarian/Penempatan"))
+
+    if is_fallback:
+        return (
+            f"  ▶ {name}\n"
+            f"    Biaya: {_format_idr(cost)} {{ROAS: {_format_roas(roas)}}}\n"
+            f"    {bidding} {jenis} {penempatan}: {kata}"
+        )
+    return (
+        f"  ▶ {name}\n"
+        f"    Biaya: {_format_idr(cost)} {{ROAS: {_format_roas(roas)}}}\n"
+        f"    {bidding}\n"
+        f"    {jenis} {penempatan}: {kata}"
+    )
+
+
+def calculate_sheet2(rows: list[dict]) -> dict[str, Any]:
+    """Calculate AL2, AL3, AL5, AL6-AL9 and thresholds from Keyword Report.
+
+    Args:
+        rows: Parsed keyword/placement report rows (list of dicts).
+
+    Returns:
+        Dict with keys ``al2``, ``al3``, ``al5``, ``al6``-``al9``,
+        ``thresholds``, and ``is_top_fallback``, ``is_bottom_fallback``.
+    """
+    thresholds = _calculate_thresholds(rows)
+    am6 = thresholds["am6"]
+    am7 = thresholds["am7"]
+    am9 = thresholds["am9"]
+    am10 = thresholds["am10"]
+
+    # Filter rows with non-empty Jenis Iklan (D<>'')
+    product_rows = [
+        r for r in rows if _safe_str(r.get("Jenis Iklan")) != ""
+    ]
+
+    # --- AL2: TOP Ads ---
+    # Primary: D<>'' AND GMV > AM6 AND ROAS > AM7, order by GMV desc, limit 5
+    top_primary = sorted(
+        [
+            r for r in product_rows
+            if _safe_num(r.get("Omzet Penjualan")) > am6
+            and _safe_num(r.get("Efektifitas Iklan")) > am7
+        ],
+        key=lambda r: _safe_num(r.get("Omzet Penjualan")),
+        reverse=True,
+    )[:5]
+
+    is_top_fallback = False
+    if top_primary:
+        top_ads = top_primary
+    else:
+        # Fallback: D<>'' AND GMV > AM6/2 AND ROAS > MAX(AM7/2, 6)
+        fallback_roas_threshold = max(am7 / 2, 6)
+        top_ads = sorted(
+            [
+                r for r in product_rows
+                if _safe_num(r.get("Omzet Penjualan")) > am6 / 2
+                and _safe_num(r.get("Efektifitas Iklan")) > fallback_roas_threshold
+            ],
+            key=lambda r: _safe_num(r.get("Omzet Penjualan")),
+            reverse=True,
+        )[:5]
+        is_top_fallback = True
+
+    if top_ads:
+        header = "• TOP Iklan (GMV tertinggi dengan ROAS terbaik):"
+        if is_top_fallback:
+            header = "• TOP Iklan [fallback] (GMV tertinggi dengan ROAS terbaik):"
+        ad_texts = [_format_top_ad(ad) for ad in top_ads]
+        al2 = header + "\n" + "\n".join(ad_texts)
+    else:
+        al2 = ""
+
+    # --- AL3: Top Ads Recommendation ---
+    auto_count = al2.count("Bidding Otomatis")
+    gmv_max_count = al2.count("GMV Max")
+
+    if auto_count >= 3:
+        al3 = (
+            "📌 Iklan dengan performa terbaik mengandalkan pengaturan "
+            "otomatis (pengaturan manual berpotensi belum dimanfaatkan "
+            "secara maksimal)."
+        )
+    elif gmv_max_count >= 3:
+        al3 = (
+            "📌 Iklan dengan performa terbaik mengandalkan pengaturan "
+            "otomatis (pengaturan manual berpotensi belum dimanfaatkan "
+            "secara maksimal)."
+        )
+    else:
+        al3 = "📌 Iklan dengan performa terbaik sudah mengandalkan pengaturan manual."
+
+    # --- AL5: BOTTOM Ads ---
+    # Primary: D<>'' AND Cost > 100000 AND Cost > AM9 AND ROAS < AM10 AND ROAS < 5
+    bottom_primary = sorted(
+        [
+            r for r in product_rows
+            if _safe_num(r.get("Biaya")) > 100000
+            and _safe_num(r.get("Biaya")) > am9
+            and _safe_num(r.get("Efektifitas Iklan")) < am10
+            and _safe_num(r.get("Efektifitas Iklan")) < 5
+        ],
+        key=lambda r: _safe_num(r.get("Biaya")),
+        reverse=True,
+    )[:5]
+
+    is_bottom_fallback = False
+    if bottom_primary:
+        bottom_ads = bottom_primary
+    else:
+        # Fallback: D<>'' AND Cost > 100000 AND Cost > AM9
+        #   AND ROAS < MIN(ROUND(AM10*2), 5) AND ROAS < 5
+        fallback_roas_cap = min(round(am10 * 2), 5)
+        bottom_ads = sorted(
+            [
+                r for r in product_rows
+                if _safe_num(r.get("Biaya")) > 100000
+                and _safe_num(r.get("Biaya")) > am9
+                and _safe_num(r.get("Efektifitas Iklan")) < fallback_roas_cap
+                and _safe_num(r.get("Efektifitas Iklan")) < 5
+            ],
+            key=lambda r: _safe_num(r.get("Biaya")),
+            reverse=True,
+        )[:5]
+        is_bottom_fallback = True
+
+    if bottom_ads:
+        if is_bottom_fallback:
+            header = "• BOTTOM Iklan [fallback] (biaya tertinggi dengan ROAS terendah):"
+        else:
+            header = "• BOTTOM Iklan (biaya tertinggi dengan ROAS terendah):"
+        ad_texts = [_format_bottom_ad(ad, is_bottom_fallback) for ad in bottom_ads]
+        al5 = header + "\n" + "\n".join(ad_texts)
+    else:
+        al5 = ""
+
+    # --- AL6-AL9: Bottom Flags (substring checks on AL5 text) ---
+    al6 = ""
+    if al5.count("Otomatis") >= 1:
+        al6 = (
+            "📌 Terdapat iklan dengan pengaturan otomatis yang tidak "
+            "terkontrol biayanya (disarankan dimonitor 1-2x setiap hari)."
+        )
+
+    al7 = ""
+    if al5.count("Bidding Manual") >= 1:
+        al7 = (
+            "📌 Terdapat iklan dengan pengaturan manual yang tidak "
+            "terkontrol biayanya (disarankan dimonitor 1-2x setiap hari)."
+        )
+
+    # NOTE: AL8 triggers on "Iklan Pencarian Produk: " — this substring appears
+    # when the keyword report has Jenis Iklan = "Iklan Pencarian Produk" (a more
+    # specific ad type that Shopee uses in keyword reports for search product ads).
+    # The CPC report uses "Iklan Produk" but keyword report may use this variant.
+    al8 = ""
+    if al5.count("Iklan Pencarian Produk: ") >= 3:
+        al8 = (
+            "📌 Terdapat kata kunci dengan pengaturan manual yang tidak "
+            "terkontrol biayanya (disarankan dipantau 1-2x setiap hari)."
+        )
+
+    al9 = ""
+    if al5.count("Auto Bidding") >= 1:
+        al9 = (
+            "📌 Terdapat iklan dengan pengaturan otomatis yang tidak "
+            "terkontrol biayanya (disarankan dimonitor 1-2x setiap hari)."
+        )
+
+    return {
+        "al2": al2,
+        "al3": al3,
+        "al5": al5,
+        "al6": al6,
+        "al7": al7,
+        "al8": al8,
+        "al9": al9,
+        "thresholds": thresholds,
+        "is_top_fallback": is_top_fallback,
+        "is_bottom_fallback": is_bottom_fallback,
+    }
+
+
+# ---------------------------------------------------------------------------
+# Combine output
+# ---------------------------------------------------------------------------
+
+def combine_output(sheet1: dict[str, str], sheet2: dict[str, Any]) -> str:
+    """Combine Sheet 1 and Sheet 2 results in correct order for G53.
+
+    Order: AK2, AK3, AK4, AL2, AL3, AL5, AL6, AL7, AL8, AL9
+    """
+    sections: list[str] = []
+
+    for key in ("ak2", "ak3", "ak4"):
+        text = sheet1.get(key, "")
+        if text:
+            sections.append(text)
+
+    for key in ("al2", "al3", "al5", "al6", "al7", "al8", "al9"):
+        text = sheet2.get(key, "")
+        if text:
+            sections.append(text)
+
+    return "\n\n".join(sections)
+
+
+# ---------------------------------------------------------------------------
+# Main calculator entry point
+# ---------------------------------------------------------------------------
+
+def calculate_ads_keyword(
+    cpc_data: list[dict],
+    keyword_data: list[dict],
+    total_products: int,
+) -> AdsKeywordResult:
+    """Execute the Ads Keyword Calculator.
+
+    Pure function — no I/O, no database access.
+
+    Args:
+        cpc_data: Parsed rows from cpc_ad_report (list of dicts).
+        keyword_data: Parsed rows from keyword_report (list of dicts).
+        total_products: AK1 — total products in the store.
+
+    Returns:
+        AdsKeywordResult with output_text and details.
+    """
+    sheet1 = calculate_sheet1(cpc_data, total_products)
+    sheet2 = calculate_sheet2(keyword_data)
+    output_text = combine_output(sheet1, sheet2)
+
+    details = {
+        "ak2": sheet1["ak2"],
+        "ak3": sheet1["ak3"],
+        "ak4": sheet1["ak4"],
+        "al2": sheet2["al2"],
+        "al3": sheet2["al3"],
+        "al5": sheet2["al5"],
+        "al6": sheet2["al6"],
+        "al7": sheet2["al7"],
+        "al8": sheet2["al8"],
+        "al9": sheet2["al9"],
+        "thresholds": sheet2["thresholds"],
+    }
+
+    return AdsKeywordResult(output_text=output_text, details=details)
