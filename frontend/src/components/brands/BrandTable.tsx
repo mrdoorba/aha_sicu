@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import {
   Table,
   TableHeader,
@@ -7,6 +8,7 @@ import {
   TableCell,
 } from '../ui/table';
 import { Badge } from '../ui/badge';
+import { Button } from '../ui/button';
 import type { BrandListItem } from '../../hooks/useBrands';
 
 interface BrandTableProps {
@@ -15,6 +17,8 @@ interface BrandTableProps {
 }
 
 export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
+  const navigate = useNavigate();
+
   return (
     <Table aria-label="Brand list" aria-busy={isLoading}>
       <TableHeader>
@@ -22,6 +26,7 @@ export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
           <TableHead className="text-xs uppercase">Brand Name</TableHead>
           <TableHead className="text-xs uppercase">Key Info</TableHead>
           <TableHead className="text-xs uppercase">Meeting Data</TableHead>
+          <TableHead className="text-xs uppercase">Action</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -36,6 +41,9 @@ export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
                 </TableCell>
                 <TableCell>
                   <div className="h-4 w-20 animate-pulse rounded bg-muted" />
+                </TableCell>
+                <TableCell>
+                  <div className="h-8 w-20 animate-pulse rounded bg-muted" />
                 </TableCell>
               </TableRow>
             ))
@@ -55,6 +63,14 @@ export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
                       &mdash; Not available
                     </span>
                   )}
+                </TableCell>
+                <TableCell>
+                  <Button
+                    size="sm"
+                    onClick={() => navigate(`/evaluation/${brand.id}`)}
+                  >
+                    Evaluate
+                  </Button>
                 </TableCell>
               </TableRow>
             ))}
