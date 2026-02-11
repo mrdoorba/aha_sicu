@@ -63,32 +63,7 @@ def test_parse_csv_invalid():
 # Excel parsing
 # ---------------------------------------------------------------------------
 
-def _make_excel_bytes(df: pl.DataFrame, *, header_row: int = 0) -> bytes:
-    """Helper: write a DataFrame to in-memory Excel bytes.
-
-    For header_row > 0 we prepend blank rows so the real headers land
-    at the expected row index using xlsxwriter directly.
-    """
-    from io import BytesIO
-
-    import xlsxwriter
-
-    buf = BytesIO()
-    if header_row > 0:
-        workbook = xlsxwriter.Workbook(buf)
-        worksheet = workbook.add_worksheet()
-        # Write headers at the header_row index
-        for col_idx, col_name in enumerate(df.columns):
-            worksheet.write(header_row, col_idx, col_name)
-        # Write data starting from header_row + 1
-        for row_idx, row_data in enumerate(df.to_dicts()):
-            for col_idx, col_name in enumerate(df.columns):
-                worksheet.write(header_row + 1 + row_idx, col_idx, row_data[col_name])
-        workbook.close()
-        return buf.getvalue()
-
-    df.write_excel(buf)
-    return buf.getvalue()
+from tests.unit.conftest import make_excel_bytes as _make_excel_bytes
 
 
 def test_parse_excel_valid():

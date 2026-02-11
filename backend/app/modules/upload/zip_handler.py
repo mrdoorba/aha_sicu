@@ -51,38 +51,39 @@ def process_zip(zip_bytes: bytes, file_type: str) -> pl.DataFrame:
             detail="Uploaded ZIP file is corrupted or invalid",
         ) from e
 
-    # Filter to valid Excel entries
-    excel_entries = [name for name in zf.namelist() if _is_valid_excel(name)]
+    with zf:
+        # Filter to valid Excel entries
+        excel_entries = [name for name in zf.namelist() if _is_valid_excel(name)]
 
-    if not excel_entries:
-        raise UploadException(
-            code="UPLOAD_ZIP_NO_EXCEL",
-            detail="ZIP archive contains no Excel files",
-        )
-
-    # Sort by part number
-    excel_entries.sort(key=_extract_part_number)
-
-    header_row = 2 if file_type == "mass_update" else 0
-    dataframes: list[pl.DataFrame] = []
-    reference_columns: list[str] | None = None
-
-    for entry_name in excel_entries:
-        entry_bytes = zf.read(entry_name)
-        df = parse_excel(entry_bytes, header_row=header_row)
-
-        if reference_columns is None:
-            reference_columns = df.columns
-        elif df.columns != reference_columns:
+        if not excel_entries:
             raise UploadException(
-                code="UPLOAD_ZIP_STRUCTURE_MISMATCH",
-                detail=(
-                    f"Excel parts have different column structures. "
-                    f"Expected columns from first part: {reference_columns}, "
-                    f"but '{entry_name}' has: {df.columns}"
-                ),
+                code="UPLOAD_ZIP_NO_EXCEL",
+                detail="ZIP archive contains no Excel files",
             )
 
-        dataframes.append(df)
+        # Sort by part number
+        excel_entries.sort(key=_extract_part_number)
 
-    return pl.concat(dataframes)
+        header_row = 2 if file_type == "mass_update" else 0
+        dataframes: list[pl.DataFrame] = []
+        reference_columns: list[str] | None = None
+
+        for entry_name in excel_entries:
+            entry_bytes = zf.read(entry_name)
+            df = parse_excel(entry_bytes, header_row=header_row)
+
+            if reference_columns is None:
+                reference_columns = df.columns
+            elif df.columns != reference_columns:
+                raise UploadException(
+                    code="UPLOAD_ZIP_STRUCTURE_MISMATCH",
+                    detail=(
+                        f"Excel parts have different column structures. "
+                        f"Expected columns from first part: {reference_columns}, "
+                        f"but '{entry_name}' has: {df.columns}"
+                    ),
+                )
+
+            dataframes.append(df)
+
+        return pl.concat(dataframes)
