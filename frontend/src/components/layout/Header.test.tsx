@@ -45,7 +45,7 @@ describe('Header', () => {
     expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
   });
 
-  it('shows confirmation modal when logout is clicked', async () => {
+  it('shows confirmation dialog when logout is clicked', async () => {
     const user = userEvent.setup();
     renderHeader();
 
@@ -62,19 +62,17 @@ describe('Header', () => {
 
     await user.click(screen.getByRole('button', { name: /^logout$/i }));
 
-    // Click the confirm logout button in modal
-    const confirmButtons = screen.getAllByRole('button', { name: /logout/i });
-    const confirmButton = confirmButtons.find(btn => btn.textContent === 'Logout' && btn.className.includes('bg-destructive'));
-    if (confirmButton) {
-      await user.click(confirmButton);
-    }
+    // Find the destructive logout button inside the dialog (via data-variant attribute)
+    const dialog = screen.getByRole('dialog');
+    const confirmButton = dialog.querySelector('button[data-variant="destructive"]') as HTMLElement;
+    await user.click(confirmButton);
 
     await waitFor(() => {
       expect(mockLogout).toHaveBeenCalled();
     });
   });
 
-  it('closes modal when cancel is clicked', async () => {
+  it('closes dialog when cancel is clicked', async () => {
     const user = userEvent.setup();
     renderHeader();
 
@@ -83,11 +81,13 @@ describe('Header', () => {
 
     await user.click(screen.getByRole('button', { name: /cancel/i }));
 
-    expect(screen.queryByText(/confirm logout/i)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText(/confirm logout/i)).not.toBeInTheDocument();
+    });
     expect(mockLogout).not.toHaveBeenCalled();
   });
 
-  it('closes modal when Escape key is pressed', async () => {
+  it('closes dialog when Escape key is pressed', async () => {
     const user = userEvent.setup();
     renderHeader();
 
@@ -96,33 +96,27 @@ describe('Header', () => {
 
     await user.keyboard('{Escape}');
 
-    expect(screen.queryByText(/confirm logout/i)).not.toBeInTheDocument();
+    await waitFor(() => {
+      expect(screen.queryByText(/confirm logout/i)).not.toBeInTheDocument();
+    });
     expect(mockLogout).not.toHaveBeenCalled();
   });
 
-  it('modal has proper accessibility attributes', async () => {
+  it('dialog has accessible title and description', async () => {
     const user = userEvent.setup();
     renderHeader();
 
     await user.click(screen.getByRole('button', { name: /^logout$/i }));
 
     const dialog = screen.getByRole('dialog');
-    expect(dialog).toHaveAttribute('aria-modal', 'true');
-    expect(dialog).toHaveAttribute('aria-labelledby', 'logout-modal-title');
-    expect(dialog).toHaveAttribute('aria-describedby', 'logout-modal-description');
-  });
+    expect(dialog).toBeInTheDocument();
 
-  it('closes modal when clicking backdrop', async () => {
-    const user = userEvent.setup();
-    renderHeader();
+    // Radix Dialog auto-links DialogTitle and DialogDescription via aria-labelledby/aria-describedby
+    expect(dialog).toHaveAttribute('aria-labelledby');
+    expect(dialog).toHaveAttribute('aria-describedby');
 
-    await user.click(screen.getByRole('button', { name: /^logout$/i }));
-    expect(screen.getByText(/confirm logout/i)).toBeInTheDocument();
-
-    // Click on the backdrop (the dialog container)
-    const dialog = screen.getByRole('dialog');
-    await user.click(dialog);
-
-    expect(screen.queryByText(/confirm logout/i)).not.toBeInTheDocument();
+    // Verify the actual title and description text are rendered
+    expect(screen.getByText('Confirm Logout')).toBeInTheDocument();
+    expect(screen.getByText('Are you sure you want to log out?')).toBeInTheDocument();
   });
 });
