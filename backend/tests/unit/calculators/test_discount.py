@@ -25,6 +25,43 @@ from app.calculators.discount import (
 
 
 # ---------------------------------------------------------------------------
+# _safe_num tests
+# ---------------------------------------------------------------------------
+
+
+class TestSafeNum:
+    def test_none_returns_zero(self):
+        assert _safe_num(None) == 0.0
+
+    def test_integer_input(self):
+        assert _safe_num(5) == 5.0
+
+    def test_float_input(self):
+        assert _safe_num(3.14) == 3.14
+
+    def test_empty_string(self):
+        assert _safe_num("") == 0.0
+
+    def test_dash_string(self):
+        assert _safe_num("-") == 0.0
+
+    def test_numeric_string(self):
+        assert _safe_num("42") == 42.0
+
+    def test_float_string(self):
+        assert _safe_num("3.14") == 3.14
+
+    def test_non_numeric_string(self):
+        assert _safe_num("abc") == 0.0
+
+    def test_whitespace_string(self):
+        assert _safe_num("  ") == 0.0
+
+    def test_whitespace_dash(self):
+        assert _safe_num(" - ") == 0.0
+
+
+# ---------------------------------------------------------------------------
 # _clean_price tests
 # ---------------------------------------------------------------------------
 
@@ -547,13 +584,8 @@ def _make_order_row(
     }
 
 
-# SUKA sample — expected output: 2.7%, Range 0.0% ~ 6.7%, Voucher 0.3%, Paket 0.0%, no flag
-# To produce these exact values, we construct data that matches the spec:
-# - % Diskon TOP SKU: 2.7% → SUMIF(P>0,N)/SUM(P) = 0.027
-# - Range: 0.0% ~ 6.7% → ROUNDUP(min_avg_disc, 3) ~ ROUNDUP(max_avg_disc, 3)
-# - Voucher 0.3% → SUM(voucher)/SUM(hsd) = 0.003
-# - Paket Diskon 0.0%
-# - No fake discount (2.7% < 20%)
+# SUKA-pattern sample — synthetic data that exercises the no-flag path.
+# Produces low discount ratios without fake discount trigger.
 
 SUKA_DATA = [
     # Order 1: 2 items
@@ -581,8 +613,8 @@ SUKA_DATA = [
 ]
 
 
-# KYPSO sample — expected output: 217.3%, flag triggered
-# Heavy discounts, fake discount pattern
+# KYPSO-pattern sample — synthetic data that exercises the fake discount flag path.
+# Heavy discounts trigger the >20% threshold.
 KYPSO_DATA = [
     # Order 1: heavily discounted (70% off + voucher)
     _make_order_row("KYP001", "Cream Wajah Premium", "500.000", "150.000", "1", "50.000", "0"),
@@ -605,7 +637,7 @@ KYPSO_DATA = [
 ]
 
 
-# MND sample — expected output: 102.9%, flag triggered
+# MND-pattern sample — synthetic data with voucher + paket + fake discount flag.
 MND_DISCOUNT_DATA = [
     # Order 1: big discount + voucher + paket
     _make_order_row("MND001", "MOON DAE Nami Bag", "250.000", "125.000", "1", "20.000", "5.000"),
@@ -633,24 +665,26 @@ MND_DISCOUNT_DATA = [
 # ---------------------------------------------------------------------------
 
 
-class TestSukaSampleOutput:
-    def test_suka_no_fake_discount(self):
-        """SUKA: no fake discount flag (discount ratio < 20%)."""
+class TestNoFlagPattern:
+    """Synthetic low-discount data — exercises the no-flag output path."""
+
+    def test_no_fake_discount_flag(self):
+        """Low discount ratio → no fake discount flag."""
         result = calculate_discount(SUKA_DATA)
         assert "📌" not in result.output_text
 
-    def test_suka_output_format(self):
-        """SUKA output has correct structure."""
+    def test_output_format_4_lines(self):
+        """Output has exactly 4 lines (no flag line)."""
         result = calculate_discount(SUKA_DATA)
         lines = result.output_text.split("\n")
         assert lines[0].startswith("% Diskon TOP SKU:")
         assert lines[1].startswith("Range:")
         assert lines[2].startswith("Voucher ")
         assert lines[3].startswith("Paket Diskon ")
-        assert len(lines) == 4  # No fake discount line
+        assert len(lines) == 4
 
-    def test_suka_details_structure(self):
-        """SUKA details contain required fields."""
+    def test_details_structure(self):
+        """Details contain all required fields with correct types."""
         result = calculate_discount(SUKA_DATA)
         assert "discount_pct" in result.details
         assert "range_min" in result.details
@@ -664,33 +698,74 @@ class TestSukaSampleOutput:
         assert result.details["fake_discount_flag"] is False
 
 
-class TestKypsoSampleOutput:
-    def test_kypso_fake_discount_triggered(self):
-        """KYPSO: fake discount flag triggered (discount ratio > 20%)."""
+class TestFakeDiscountFlagPattern:
+    """Synthetic heavy-discount data — exercises the fake discount flag path."""
+
+    def test_kypso_pattern_flag_triggered(self):
+        """Heavy discounts trigger fake discount flag."""
         result = calculate_discount(KYPSO_DATA)
         assert "📌" in result.output_text
         assert result.details["fake_discount_flag"] is True
 
-    def test_kypso_output_has_5_lines(self):
-        """KYPSO output has 5 lines (including flag)."""
+    def test_kypso_pattern_has_5_lines(self):
+        """Flag output has 5 lines."""
         result = calculate_discount(KYPSO_DATA)
         lines = result.output_text.split("\n")
         assert len(lines) == 5
         assert "Berpotensi menggunakan 'fake discount'" in lines[4]
 
 
-class TestMndSampleOutput:
-    def test_mnd_fake_discount_triggered(self):
-        """MND: fake discount flag triggered (discount ratio > 20%)."""
+class TestMndEndToEndExactValues:
+    """End-to-end regression test with exact value assertions.
+
+    Uses MND-pattern synthetic data to verify all formulas integrate
+    correctly and produce deterministic output.
+    """
+
+    def test_mnd_exact_output_text(self):
+        """MND synthetic data produces exact expected output text."""
         result = calculate_discount(MND_DISCOUNT_DATA)
-        assert "📌" in result.output_text
+        expected = (
+            "% Diskon TOP SKU: 137.3%\n"
+            "Range: 59.5% ~ 59.5%\n"
+            "Voucher 11.4%\n"
+            "Paket Diskon 2.3%\n"
+            "📌 Berpotensi menggunakan 'fake discount'"
+        )
+        assert result.output_text == expected
+
+    def test_mnd_exact_detail_values(self):
+        """MND synthetic data produces exact detail values."""
+        result = calculate_discount(MND_DISCOUNT_DATA)
+        assert result.details["discount_pct"] == "137.3%"
+        assert result.details["range_min"] == "59.5%"
+        assert result.details["range_max"] == "59.5%"
+        assert result.details["voucher_pct"] == "11.4%"
+        assert result.details["paket_pct"] == "2.3%"
         assert result.details["fake_discount_flag"] is True
 
-    def test_mnd_output_has_5_lines(self):
-        """MND output has 5 lines (including flag)."""
+    def test_mnd_exact_totals(self):
+        """MND synthetic data produces exact totals."""
         result = calculate_discount(MND_DISCOUNT_DATA)
-        lines = result.output_text.split("\n")
-        assert len(lines) == 5
+        totals = result.details["totals"]
+        assert totals["sum_n"] == pytest.approx(1273000.0)
+        assert totals["sum_p"] == pytest.approx(927000.0)
+        assert totals["sum_voucher"] == pytest.approx(123000.0)
+        assert totals["sum_paket"] == pytest.approx(25000.0)
+        assert totals["sum_harga_setelah_diskon"] == pytest.approx(1075000.0)
+
+    def test_mnd_product_summary_count(self):
+        """MND has 4 unique products."""
+        result = calculate_discount(MND_DISCOUNT_DATA)
+        assert len(result.details["product_summary"]) == 4
+
+    def test_mnd_top_sku_selection(self):
+        """MND top SKU is MOON DAE Nami Bag (highest qty above average)."""
+        result = calculate_discount(MND_DISCOUNT_DATA)
+        top = result.details["top_sku"]
+        assert len(top) == 1
+        assert top[0]["product_name"] == "MOON DAE Nami Bag"
+        assert top[0]["qty"] == 7.0
 
 
 # ---------------------------------------------------------------------------

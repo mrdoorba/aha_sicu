@@ -204,9 +204,10 @@ so that **the BD team gets the discount analysis as part of the brand evaluation
     - Test edge cases: single order, all same product, zero prices, empty data
 
 - [x] Task 4: Write backend integration tests (AC: #6, #7)
-  - [x] 4.1 Create `backend/tests/integration/api/test_discount_calculator.py`:
+  - [x] 4.1 Add discount tests to `backend/tests/integration/api/test_calculators.py`:
     - Test POST endpoint returns calculator result when order_export present
     - Test 400 error when order_export missing
+    - Test 400 error when required columns missing (AC #7)
     - Test upsert: running calculator twice updates existing result
     - Test authentication required
 
@@ -491,6 +492,7 @@ No blocking issues encountered during implementation.
 ### Change Log
 
 - 2026-02-11: Story 3.5 implementation complete — discount calculator pure function, API endpoint, service layer, 60 tests (56 unit + 4 integration), frontend type additions.
+- 2026-02-11: Code review fixes — added column validation (H1), exact MND value assertions (M1), _safe_num tests (M2), unused param docs (L1), task description fix (L3). Tests: 69 unit + 11 integration = 80 total.
 
 ### File List
 
