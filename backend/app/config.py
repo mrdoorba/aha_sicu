@@ -28,6 +28,9 @@ class Settings(BaseSettings):
     # When empty, any valid OIDC token with correct audience is accepted
     allowed_scheduler_emails: str = ""
 
+    # GCS Upload Bucket (empty = local dev fallback)
+    gcs_upload_bucket: str = ""
+
     # Google Sheets API - Credentials
     gsheets_credentials_path: str | None = None
 
