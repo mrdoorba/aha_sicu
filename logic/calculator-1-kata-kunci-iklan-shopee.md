@@ -251,7 +251,7 @@ IF count("Auto Bidding" in AL5) >= 1:
 
 ## Final Output: Combined Results for Scoring System
 
-All results are stacked into **one cell** in the scoring system sheet, in this order:
+All results are stacked into **one cell** in the scoring system sheet (Template SICU), specifically **cell G53**, in this order:
 
 ```
 [Sheet 1] AK2 — Ad Overview Summary

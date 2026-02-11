@@ -228,3 +228,23 @@ Paket Diskon 0.2%
 | Grouping | Nama Produk + Variasi (BP) | Nama Produk only |
 | Voucher handling | Divided by Jumlah Produk di Pesan | Applied only to Urutan=1 |
 | Purpose | Identify top revenue products | Analyze discount health |
+
+---
+
+## How Output Feeds into the Scoring System (Template SICU)
+
+The full text output (all 5 cells) is pasted into **cell D73** of the scoring system.
+
+Example of what goes into D73:
+```
+% Diskon TOP SKU: 102.9%
+Range: 42.2% ~ 50.4%
+Voucher 3.9%
+Paket Diskon 0.2%
+📌 Berpotensi menggunakan 'fake discount'
+```
+
+The scoring system then:
+- **H73**: If D73 contains "Berpotensi menggunakan 'fake discount'" → score 0, else score 5
+- **G68**: Parses D73 using REGEXEXTRACT to calculate marketing cost estimation
+- **G72/G73**: Uses parsed D73 values to calculate recommended marketing budget
