@@ -58,7 +58,7 @@ development_status:
   epic-2-retrospective: done
 
   # Epic 3: Brand Evaluation Workflow
-  epic-3: in-progress
+  epic-3: done
   3-1-start-evaluation-for-a-brand: done
   3-2-data-file-upload-and-parsing: done
   3-3-manual-data-input-form: done
@@ -68,7 +68,7 @@ development_status:
   3-7-calculator-orchestration-and-auto-execute: done
   3-8-calculator-results-display: done
   3-9-final-scoring-with-template-selection: done
-  3-10-save-evaluation: backlog
+  3-10-save-evaluation: done
   epic-3-retrospective: optional
 
   # Epic 4: Evaluation History & Search
