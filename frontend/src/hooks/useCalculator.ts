@@ -1,4 +1,4 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import client from '../services/apiClient';
 
 export interface AdsKeywordDetails {
@@ -95,6 +95,75 @@ export function useRunCalculator(brandId: number, calculatorType: CalculatorType
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });
+    },
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Calculator status types and hook
+// ---------------------------------------------------------------------------
+
+export interface SingleCalculatorStatus {
+  status: 'ready' | 'pending';
+  has_result: boolean;
+  required_files: string[];
+  required_manual: string[];
+  available_files: string[];
+  missing_files: string[];
+  missing_manual: string[];
+  calculated_at: string | null;
+}
+
+export interface CalculatorStatusResponse {
+  brand_id: number;
+  calculators: Record<string, SingleCalculatorStatus>;
+}
+
+export function useCalculatorStatus(brandId: number) {
+  return useQuery<CalculatorStatusResponse>({
+    queryKey: ['calculatorStatus', brandId],
+    queryFn: async () => {
+      const { data, error } = await client.GET(
+        '/api/v1/evaluations/brands/{brand_id}/calculators/status',
+        { params: { path: { brand_id: brandId } } },
+      );
+      if (error) throw error;
+      return data as CalculatorStatusResponse;
+    },
+    enabled: brandId > 0,
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Run-all calculators types and hook
+// ---------------------------------------------------------------------------
+
+export interface RunCalculatorItem {
+  calculator_type: string;
+  status: 'success' | 'skipped' | 'error';
+  result?: CalculatorResult;
+  reason?: string;
+}
+
+export interface RunAllResponse {
+  results: RunCalculatorItem[];
+}
+
+export function useRunAllCalculators(brandId: number) {
+  const queryClient = useQueryClient();
+
+  return useMutation<RunAllResponse>({
+    mutationFn: async () => {
+      const { data, error } = await client.POST(
+        '/api/v1/evaluations/brands/{brand_id}/calculators/run-all',
+        { params: { path: { brand_id: brandId } } },
+      );
+      if (error) throw error;
+      return data as RunAllResponse;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });
+      queryClient.invalidateQueries({ queryKey: ['calculatorStatus', brandId] });
     },
   });
 }

@@ -52,3 +52,22 @@ async def upsert_evaluation_inputs(
         json.dumps(manual_data) if manual_data is not None else None,
     )
     return dict(row)
+
+
+async def get_any_evaluation_inputs(
+    conn: Connection,
+    brand_id: int,
+) -> dict | None:
+    """Get evaluation inputs for a brand (any user). Used for readiness checks."""
+    row = await conn.fetchrow(
+        """
+        SELECT id, brand_id, user_id, category_type, manual_data,
+               created_at, updated_at
+        FROM evaluation_inputs
+        WHERE brand_id = $1 AND manual_data IS NOT NULL
+        ORDER BY updated_at DESC
+        LIMIT 1
+        """,
+        brand_id,
+    )
+    return dict(row) if row else None

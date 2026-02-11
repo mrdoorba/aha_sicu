@@ -1,6 +1,7 @@
 """Pydantic schemas for upload endpoints."""
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel
 
@@ -32,6 +33,18 @@ class UploadResponse(BaseModel):
     file_size: int
     row_count: int
     uploaded_at: datetime
+
+
+class AutoCalculatedItem(BaseModel):
+    calculator_type: str
+    status: str  # "success", "skipped", "error"
+    result: dict[str, Any] | None = None
+    reason: str | None = None
+
+
+class ProcessUploadResponse(BaseModel):
+    upload: UploadResponse
+    auto_calculated: list[AutoCalculatedItem]
 
 
 class BrandUploadsResponse(BaseModel):
