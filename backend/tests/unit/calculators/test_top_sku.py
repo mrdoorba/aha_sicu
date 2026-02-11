@@ -350,6 +350,18 @@ class TestEnrichWithMassUpdate:
         enriched = _enrich_with_mass_update(top, line_items, self._make_lookup())
         assert enriched[0].stok == 0
 
+    def test_empty_kode_variasi_treated_as_not_found(self):
+        """Mass update row with empty Kode Variasi should be 'tidak ditemukan'."""
+        mu_data = [
+            {"Nama Produk": "Prod X", "Nama Variasi": "Blue", "Kode Variasi": "", "Stok": 99},
+        ]
+        lookup = _build_mass_update_lookup(mu_data)
+        top = [AggregatedProduct("Prod X - Blue", 2, 200000)]
+        line_items = [LineItem("S5", "Prod X - Blue", 2, 200000)]
+        enriched = _enrich_with_mass_update(top, line_items, lookup)
+        assert enriched[0].kode_variasi == "Kode Variasi tidak ditemukan"
+        assert enriched[0].stok == 0
+
     def test_rata2_harga_jual_is_max_single_line_revenue(self):
         """rata2_harga_jual = max revenue across individual lines for that product."""
         top = [AggregatedProduct("Prod A - Red", 5, 500000)]
@@ -420,6 +432,16 @@ class TestBuildOutputTables:
         assert row["varian"] == "Cokelat Muda"
         assert row["stok"] == 782
 
+    def test_output_2_splits_product_with_dashes_in_name(self):
+        """Product names containing ' - ' must split on the LAST separator."""
+        products = [
+            EnrichedProduct("KYPSO - Frontier - Tas Selempang Laptop Kulit Pria - ", 5, 1887000, "Kode Variasi tidak ditemukan", 629000, 0),
+        ]
+        _, output_2 = _build_output_tables(products)
+        row = output_2[0]
+        assert row["nama_produk"] == "KYPSO - Frontier - Tas Selempang Laptop Kulit Pria"
+        assert row["varian"] == ""
+
     def test_output_2_tidak_ditemukan(self):
         products = [
             EnrichedProduct("KYPSO Frontier - ", 5, 1887000, "Kode Variasi tidak ditemukan", 629000, 0),
@@ -486,8 +508,8 @@ class TestCalculateTopSku:
         assert result.details["output_2"][0]["stok"] == 50
         assert result.details["average_stock"] == 50
 
-    def test_kypso_sample_pattern(self):
-        """Verify KYPSO-like sample: 20 products, top product and avg stock pattern."""
+    def test_ranking_95_products_returns_top_20(self):
+        """95 products: ROUND(95*0.2)=19, MIN 20 → returns 20 (KYPSO-like pattern)."""
         # Create 95 unique products (to get 20% = 19, but MIN 20)
         order_data = []
         mu_data = []
@@ -519,8 +541,8 @@ class TestCalculateTopSku:
         assert result.details["output_1"][0]["product_name"] == "Product 0 - Variant 0"
         assert result.details["output_1"][0]["total_omzet"] == 5000000
 
-    def test_mnd_sample_pattern(self):
-        """Verify MND-like sample: 20 products, top product pattern."""
+    def test_ranking_100_products_returns_top_20(self):
+        """100 products: ROUND(100*0.2)=20, MIN 20 → returns 20 (MND-like pattern)."""
         # Create 100 unique products
         order_data = []
         mu_data = []

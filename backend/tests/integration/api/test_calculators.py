@@ -722,6 +722,44 @@ def test_run_top_sku_missing_columns(client):
         assert "missing required columns" in data["detail"]
 
 
+def test_run_top_sku_missing_order_export_columns(client):
+    """POST returns 400 when order_export is missing top_sku-specific columns."""
+    upload_missing_cols = {
+        **SAMPLE_ORDER_UPLOAD_TOP_SKU,
+        "parsed_data": {
+            "columns": ["No. Pesanan", "Nama Produk", "Jumlah"],  # Missing top_sku columns
+            "data": [{"No. Pesanan": "ORD001", "Nama Produk": "Product A", "Jumlah": 1}],
+            "row_count": 1,
+        },
+    }
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.calculator_service.db") as mock_calc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_calc_conn = _make_transactional_conn([
+            SAMPLE_BRAND,           # get_brand_by_id
+            upload_missing_cols,    # get_upload_by_type (order_export)
+            SAMPLE_MASS_UPDATE_UPLOAD,  # get_upload_by_type (mass_update)
+        ])
+        mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/calculators/top_sku",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 400
+        data = response.json()
+        assert data["code"] == "CALC_MISSING_DATA"
+        assert "missing required columns" in data["detail"]
+        assert "Cashback Koin" in data["detail"]
+
+
 def test_run_top_sku_upsert_on_recalculation(client):
     """Running top_sku calculator twice should upsert existing result."""
     with (
