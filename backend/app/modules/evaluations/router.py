@@ -5,13 +5,16 @@ from fastapi import APIRouter, Depends
 from app.calculators.engine import check_calculator_readiness, run_ready_calculators
 from app.core.dependencies import get_current_user
 from app.db.connection import db
+from app.db.queries.calculator_results import get_results_by_brand
 from app.modules.evaluations.calculator_service import (
     run_ads_keyword_calculator as _run_ads_keyword,
     run_discount_calculator as _run_discount,
     run_top_sku_calculator as _run_top_sku,
 )
 from app.modules.evaluations.schemas import (
+    CalculatorResultItem,
     CalculatorResultResponse,
+    CalculatorResultsListResponse,
     CalculatorStatusResponse,
     EvaluationInputsUpdate,
     EvaluationStateResponse,
@@ -56,6 +59,35 @@ async def update_evaluation(
         category_type=body.category_type,
         manual_data=body.manual_data,
     )
+
+
+@router.get(
+    "/brands/{brand_id}/calculators/results",
+    response_model=CalculatorResultsListResponse,
+)
+async def get_calculator_results(
+    brand_id: int,
+    current_user: dict = Depends(get_current_user),
+) -> CalculatorResultsListResponse:
+    """Return all stored calculator results for a brand.
+
+    Returns an empty list if brand_id doesn't exist or has no results.
+    This is intentional for read-only list endpoints (vs POST endpoints
+    which validate brand existence and return 400).
+    """
+    async with db.connection() as conn:
+        rows = await get_results_by_brand(conn=conn, brand_id=brand_id)
+
+    results = [
+        CalculatorResultItem(
+            calculator_type=row["calculator_type"],
+            output_text=row["output_text"],
+            details=row["details"],
+            calculated_at=row["calculated_at"],
+        )
+        for row in rows
+    ]
+    return CalculatorResultsListResponse(brand_id=brand_id, results=results)
 
 
 @router.post(
