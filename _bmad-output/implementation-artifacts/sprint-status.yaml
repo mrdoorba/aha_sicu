@@ -69,7 +69,7 @@ development_status:
   3-8-calculator-results-display: done
   3-9-final-scoring-with-template-selection: done
   3-10-save-evaluation: done
-  epic-3-retrospective: optional
+  epic-3-retrospective: done
 
   # Epic 4: Evaluation History & Search
   epic-4: backlog
