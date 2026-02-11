@@ -174,6 +174,15 @@ export const CAMPAIGN_FIELDS: FieldDefinition[] = [
   { key: 'availableSessions', label: 'Sesi Tersedia', inputType: 'number', unit: 'count' },
 ];
 
+export const COMPETITION_FIELDS: FieldDefinition[] = [
+  { key: 'product1.keyword', label: 'Produk Kompetitor 1 — Keyword', inputType: 'text' },
+  { key: 'product1.marketPrice', label: 'Produk Kompetitor 1 — Harga Pasar', inputType: 'currency', unit: 'IDR' },
+  { key: 'product2.keyword', label: 'Produk Kompetitor 2 — Keyword', inputType: 'text' },
+  { key: 'product2.marketPrice', label: 'Produk Kompetitor 2 — Harga Pasar', inputType: 'currency', unit: 'IDR' },
+  { key: 'product3.keyword', label: 'Produk Kompetitor 3 — Keyword', inputType: 'text' },
+  { key: 'product3.marketPrice', label: 'Produk Kompetitor 3 — Harga Pasar', inputType: 'currency', unit: 'IDR' },
+];
+
 // ── Category definitions (maps categories to their fields) ─────────────────
 
 export const MANUAL_DATA_FIELDS: CategoryDefinition[] = [
@@ -185,6 +194,7 @@ export const MANUAL_DATA_FIELDS: CategoryDefinition[] = [
   { key: 'products', displayName: 'Products/Status', fields: PRODUCTS_FIELDS },
   { key: 'ads', displayName: 'Ads', fields: ADS_FIELDS },
   { key: 'campaign', displayName: 'Campaign', fields: CAMPAIGN_FIELDS },
+  { key: 'competition', displayName: 'Competition', fields: COMPETITION_FIELDS },
 ];
 
 // ── IDR formatting utilities ───────────────────────────────────────────────
@@ -199,6 +209,64 @@ export function parseIDR(formatted: string): number | null {
   if (stripped === '') return null;
   const num = Number(stripped);
   return isNaN(num) ? null : num;
+}
+
+// ── Section progress computation ──────────────────────────────────────────
+
+export interface SectionProgress {
+  filled: number;
+  total: number;
+}
+
+function countFilledInFlat(obj: Record<string, unknown>): { filled: number; total: number } {
+  const values = Object.values(obj);
+  return {
+    total: values.length,
+    filled: values.filter((v) => v != null && v !== '').length,
+  };
+}
+
+export function computeSectionProgress(data: ManualData): Record<string, SectionProgress> {
+  const s1 = countFilledInFlat(data.operational);
+
+  const biz = countFilledInFlat(data.business);
+  const content = countFilledInFlat(data.content);
+  const visitors = countFilledInFlat(data.visitors);
+  const s2 = {
+    filled: biz.filled + content.filled + visitors.filled,
+    total: biz.total + content.total + visitors.total,
+  };
+
+  const promo = countFilledInFlat(data.promoTools);
+  const products = countFilledInFlat(data.products);
+  const s3 = {
+    filled: promo.filled + products.filled,
+    total: promo.total + products.total,
+  };
+
+  // Section 4 is file upload — no manual fields
+
+  const ads = countFilledInFlat(data.ads);
+  const campaign = countFilledInFlat(data.campaign);
+  const compFilled = [data.competition.product1, data.competition.product2, data.competition.product3]
+    .reduce(
+      (acc, p) =>
+        acc +
+        (p.keyword != null && p.keyword !== '' ? 1 : 0) +
+        (p.marketPrice != null ? 1 : 0),
+      0,
+    );
+  const s5 = {
+    filled: ads.filled + campaign.filled + compFilled,
+    total: ads.total + campaign.total + 6, // 3 products × 2 fields
+  };
+
+  return {
+    'section-1': s1,
+    'section-2': s2,
+    'section-3': s3,
+    'section-5': s5,
+  };
 }
 
 // ── Default empty ManualData ───────────────────────────────────────────────

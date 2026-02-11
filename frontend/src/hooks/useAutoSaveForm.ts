@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSaveEvaluationInputs } from './useEvaluation';
 import type { ManualData } from '../components/evaluation/forms/formConfig';
 import { EMPTY_MANUAL_DATA } from '../components/evaluation/forms/formConfig';
@@ -11,6 +11,45 @@ interface UseAutoSaveFormOptions {
   initialData: Record<string, unknown> | null;
 }
 
+/** Deep merge initialData into EMPTY_MANUAL_DATA to preserve null defaults for missing fields */
+function buildManualData(initialData: Record<string, unknown> | null): ManualData {
+  const raw = (initialData ?? {}) as Partial<ManualData>;
+  return {
+    operational: { ...EMPTY_MANUAL_DATA.operational, ...raw.operational },
+    business: { ...EMPTY_MANUAL_DATA.business, ...raw.business },
+    content: { ...EMPTY_MANUAL_DATA.content, ...raw.content },
+    visitors: { ...EMPTY_MANUAL_DATA.visitors, ...raw.visitors },
+    promoTools: { ...EMPTY_MANUAL_DATA.promoTools, ...raw.promoTools },
+    products: { ...EMPTY_MANUAL_DATA.products, ...raw.products },
+    ads: { ...EMPTY_MANUAL_DATA.ads, ...raw.ads },
+    campaign: { ...EMPTY_MANUAL_DATA.campaign, ...raw.campaign },
+    competition: {
+      product1: { ...EMPTY_MANUAL_DATA.competition.product1, ...raw.competition?.product1 },
+      product2: { ...EMPTY_MANUAL_DATA.competition.product2, ...raw.competition?.product2 },
+      product3: { ...EMPTY_MANUAL_DATA.competition.product3, ...raw.competition?.product3 },
+    },
+  };
+}
+
+/** Merge local overrides into base server data */
+function mergeWithOverrides(base: ManualData, overrides: Partial<ManualData>): ManualData {
+  return {
+    operational: { ...base.operational, ...overrides.operational },
+    business: { ...base.business, ...overrides.business },
+    content: { ...base.content, ...overrides.content },
+    visitors: { ...base.visitors, ...overrides.visitors },
+    promoTools: { ...base.promoTools, ...overrides.promoTools },
+    products: { ...base.products, ...overrides.products },
+    ads: { ...base.ads, ...overrides.ads },
+    campaign: { ...base.campaign, ...overrides.campaign },
+    competition: {
+      product1: { ...base.competition.product1, ...overrides.competition?.product1 },
+      product2: { ...base.competition.product2, ...overrides.competition?.product2 },
+      product3: { ...base.competition.product3, ...overrides.competition?.product3 },
+    },
+  };
+}
+
 export function useAutoSaveForm({ brandId, categoryType, initialData }: UseAutoSaveFormOptions) {
   const saveMutation = useSaveEvaluationInputs(brandId);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
@@ -18,33 +57,23 @@ export function useAutoSaveForm({ brandId, categoryType, initialData }: UseAutoS
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingDataRef = useRef<ManualData | null>(null);
 
-  // Merge raw API data (Record<string, unknown>) into typed ManualData
-  const manualData: ManualData = {
-    ...EMPTY_MANUAL_DATA,
-    ...(initialData as Partial<ManualData> | null),
-  };
+  // Deep merge API data into defaults (M1 fix)
+  const manualData = buildManualData(initialData);
 
-  // We track local edits on top of the server data
+  // Store latest values in refs so callbacks stay stable (M3 fix)
+  const manualDataRef = useRef(manualData);
+  manualDataRef.current = manualData;
+
   const [localOverrides, setLocalOverrides] = useState<Partial<ManualData>>({});
 
-  const mergedData: ManualData = {
-    ...manualData,
-    ...localOverrides,
-    // Deep merge each category that has local overrides
-    operational: { ...manualData.operational, ...localOverrides.operational },
-    business: { ...manualData.business, ...localOverrides.business },
-    content: { ...manualData.content, ...localOverrides.content },
-    visitors: { ...manualData.visitors, ...localOverrides.visitors },
-    promoTools: { ...manualData.promoTools, ...localOverrides.promoTools },
-    products: { ...manualData.products, ...localOverrides.products },
-    ads: { ...manualData.ads, ...localOverrides.ads },
-    campaign: { ...manualData.campaign, ...localOverrides.campaign },
-    competition: {
-      product1: { ...manualData.competition.product1, ...localOverrides.competition?.product1 },
-      product2: { ...manualData.competition.product2, ...localOverrides.competition?.product2 },
-      product3: { ...manualData.competition.product3, ...localOverrides.competition?.product3 },
-    },
-  };
+  const mergedData = mergeWithOverrides(manualData, localOverrides);
+
+  // Clean up debounce timer on unmount (M4 fix)
+  useEffect(() => {
+    return () => {
+      if (debounceRef.current) clearTimeout(debounceRef.current);
+    };
+  }, []);
 
   const doSave = useCallback(
     (dataToSave: ManualData) => {
@@ -83,25 +112,25 @@ export function useAutoSaveForm({ brandId, categoryType, initialData }: UseAutoS
     [doSave],
   );
 
+  // Stable callback — uses refs instead of render-scoped values (M3 fix)
   const handleFieldChange = useCallback(
     (category: string, key: string, value: number | string | null) => {
       setLocalOverrides((prev) => {
+        const base = manualDataRef.current;
         const updated = { ...prev };
 
         if (category === 'competition' && key.includes('.')) {
-          // Handle nested competition fields: "product1.keyword", "product1.marketPrice"
           const [productKey, fieldKey] = key.split('.');
           const currentComp = {
-            product1: { ...mergedData.competition.product1, ...prev.competition?.product1 },
-            product2: { ...mergedData.competition.product2, ...prev.competition?.product2 },
-            product3: { ...mergedData.competition.product3, ...prev.competition?.product3 },
+            product1: { ...base.competition.product1, ...prev.competition?.product1 },
+            product2: { ...base.competition.product2, ...prev.competition?.product2 },
+            product3: { ...base.competition.product3, ...prev.competition?.product3 },
           };
           (currentComp as Record<string, Record<string, unknown>>)[productKey][fieldKey] = value;
           updated.competition = currentComp;
         } else {
-          // Handle flat category fields
           const currentCat = {
-            ...(mergedData as Record<string, Record<string, unknown>>)[category],
+            ...(base as Record<string, Record<string, unknown>>)[category],
             ...(prev as Record<string, Record<string, unknown>>)[category],
           };
           currentCat[key] = value;
@@ -111,40 +140,25 @@ export function useAutoSaveForm({ brandId, categoryType, initialData }: UseAutoS
         return updated;
       });
     },
-    [mergedData],
+    [], // Stable — reads from refs, not render-scoped values
   );
 
+  // Use functional updater to read latest overrides without stale closure (L2 fix)
   const triggerSave = useCallback(() => {
-    // Recompute merged data with latest overrides
-    setLocalOverrides((prev) => {
-      const latestMerged: ManualData = {
-        ...manualData,
-        ...prev,
-        operational: { ...manualData.operational, ...prev.operational },
-        business: { ...manualData.business, ...prev.business },
-        content: { ...manualData.content, ...prev.content },
-        visitors: { ...manualData.visitors, ...prev.visitors },
-        promoTools: { ...manualData.promoTools, ...prev.promoTools },
-        products: { ...manualData.products, ...prev.products },
-        ads: { ...manualData.ads, ...prev.ads },
-        campaign: { ...manualData.campaign, ...prev.campaign },
-        competition: {
-          product1: { ...manualData.competition.product1, ...prev.competition?.product1 },
-          product2: { ...manualData.competition.product2, ...prev.competition?.product2 },
-          product3: { ...manualData.competition.product3, ...prev.competition?.product3 },
-        },
-      };
-      scheduleSave(latestMerged);
-      return prev;
+    setLocalOverrides((currentOverrides) => {
+      const base = manualDataRef.current;
+      scheduleSave(mergeWithOverrides(base, currentOverrides));
+      return currentOverrides;
     });
-  }, [manualData, scheduleSave]);
+  }, [scheduleSave]);
 
   const retrySave = useCallback(() => {
-    const latestMerged: ManualData = {
-      ...mergedData,
-    };
-    doSave(latestMerged);
-  }, [mergedData, doSave]);
+    setLocalOverrides((currentOverrides) => {
+      const base = manualDataRef.current;
+      doSave(mergeWithOverrides(base, currentOverrides));
+      return currentOverrides;
+    });
+  }, [doSave]);
 
   return {
     manualData: mergedData,
@@ -155,3 +169,6 @@ export function useAutoSaveForm({ brandId, categoryType, initialData }: UseAutoS
     lastSaved,
   };
 }
+
+// Exported for testing
+export { buildManualData, mergeWithOverrides };

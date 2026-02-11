@@ -1,6 +1,6 @@
 # Story 3.3: Manual Data Input Form
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -526,6 +526,26 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-02-11: Implemented Story 3.3 — Manual Data Input Form. Created ~40 form controls across 9 scoring categories with benchmark helper text, IDR formatting, auto-save on blur with debounce, pre-fill from saved data, Status Toko dropdown, Fashion-specific benchmarks. 149 tests pass. 29 files changed.
+- 2026-02-11: Code Review Fixes (10 issues: 3H/4M/3L). Fixed: AC #8 section progress in SectionNav, SelectField auto-save trigger, useAutoSaveForm deep merge + memoization + cleanup + tests, MANUAL_DATA_FIELDS competition category, story File List. 167 tests pass.
+
+### Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door | **Date:** 2026-02-11
+
+**Issues Found:** 3 High, 4 Medium, 3 Low — **ALL FIXED**
+
+| # | Severity | Issue | Fix Applied |
+|---|----------|-------|-------------|
+| H1 | HIGH | AC #8 Section progress indication not implemented | Added `computeSectionProgress()` utility, `SectionNav` now shows filled/total counts + checkmark on completion |
+| H2 | HIGH | SelectField dropdown doesn't trigger auto-save | `ProductsStatusForm` now calls `onBlur()` after `onChange` on select |
+| H3 | HIGH | `useAutoSaveForm` hook has no unit tests | Created `useAutoSaveForm.test.ts` with 18 tests (pure functions + hook integration) |
+| M1 | MEDIUM | Shallow merge of `initialData` loses nested defaults | Extracted `buildManualData()` for deep category-level merge |
+| M2 | MEDIUM | `MANUAL_DATA_FIELDS` missing competition category | Added `COMPETITION_FIELDS` constant and competition to `MANUAL_DATA_FIELDS` |
+| M3 | MEDIUM | `handleFieldChange` defeats `useCallback` memoization | Refactored to use `manualDataRef` — empty dependency array, stable identity |
+| M4 | MEDIUM | Debounce timer not cleared on unmount | Added `useEffect` cleanup for `debounceRef` |
+| L1 | LOW | Competition fields not in declarative config | Included via `COMPETITION_FIELDS` (flat key notation for nested fields) |
+| L2 | LOW | `triggerSave` used setState hack to read state | Kept functional updater (correct pattern) but extracted `mergeWithOverrides` for clarity |
+| L3 | LOW | `sprint-status.yaml` not in File List | Added to File List |
 
 ### File List
 
@@ -555,9 +575,12 @@ Claude Opus 4.6
 - frontend/src/components/evaluation/forms/EvaluationForms.test.tsx
 - frontend/src/components/ui/select.tsx
 - frontend/src/hooks/useAutoSaveForm.ts
+- frontend/src/hooks/useAutoSaveForm.test.ts
 
 **Modified files:**
 - frontend/src/components/evaluation/EvaluationSections.tsx
+- frontend/src/components/evaluation/SectionNav.tsx
 - frontend/src/pages/EvaluationPage.tsx
 - frontend/src/pages/EvaluationPage.test.tsx
 - frontend/src/test/setup.ts
+- _bmad-output/implementation-artifacts/sprint-status.yaml
