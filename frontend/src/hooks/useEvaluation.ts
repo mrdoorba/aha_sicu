@@ -1,15 +1,17 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client from '../services/apiClient';
 
+export type CategoryType = 'fashion' | 'non_fashion';
+
 export interface EvaluationState {
   brand_id: number;
-  category_type: string | null;
+  category_type: CategoryType | null;
   manual_data: Record<string, unknown> | null;
   updated_at: string | null;
 }
 
 export interface EvaluationInputsUpdate {
-  category_type?: string | null;
+  category_type?: CategoryType | null;
   manual_data?: Record<string, unknown> | null;
 }
 

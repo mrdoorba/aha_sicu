@@ -1,7 +1,8 @@
 """Integration tests for evaluations API endpoints."""
 
+from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
@@ -32,6 +33,19 @@ SAMPLE_EVAL_INPUTS = {
     "created_at": datetime(2026, 2, 5, 10, 0, 0, tzinfo=timezone.utc),
     "updated_at": datetime(2026, 2, 5, 10, 0, 0, tzinfo=timezone.utc),
 }
+
+
+def _make_transactional_conn(fetchrow_side_effect):
+    """Create a mock connection that supports conn.transaction() context manager."""
+    mock_conn = AsyncMock()
+    mock_conn.fetchrow = AsyncMock(side_effect=fetchrow_side_effect)
+
+    @asynccontextmanager
+    async def mock_transaction():
+        yield
+
+    mock_conn.transaction = mock_transaction
+    return mock_conn
 
 
 def _setup_auth_mocks(mock_verify, mock_db, mock_user_queries):
@@ -107,13 +121,11 @@ def test_put_evaluation_creates_new(client):
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
-        mock_eval_conn = AsyncMock()
-        mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
-        # get_brand_by_id returns a brand
-        mock_eval_conn.fetchrow = AsyncMock(side_effect=[
+        mock_eval_conn = _make_transactional_conn([
             SAMPLE_BRAND,  # get_brand_by_id
             SAMPLE_EVAL_INPUTS,  # upsert_evaluation_inputs RETURNING
         ])
+        mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
 
         response = client.put(
             "/api/v1/evaluations/brands/1",
@@ -142,12 +154,11 @@ def test_put_evaluation_updates_existing(client):
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
-        mock_eval_conn = AsyncMock()
-        mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
-        mock_eval_conn.fetchrow = AsyncMock(side_effect=[
+        mock_eval_conn = _make_transactional_conn([
             SAMPLE_BRAND,  # get_brand_by_id
             updated_inputs,  # upsert RETURNING
         ])
+        mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
 
         response = client.put(
             "/api/v1/evaluations/brands/1",
@@ -170,9 +181,8 @@ def test_put_evaluation_brand_not_found(client):
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
-        mock_eval_conn = AsyncMock()
+        mock_eval_conn = _make_transactional_conn([None])  # brand not found
         mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
-        mock_eval_conn.fetchrow = AsyncMock(return_value=None)  # brand not found
 
         response = client.put(
             "/api/v1/evaluations/brands/999",
