@@ -1,6 +1,6 @@
 # Story 2.6: Retrofit Accessibility Basics
 
-Status: review
+Status: done
 
 ## Story
 
@@ -336,19 +336,22 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-02-11: Implemented Story 2.6 — Retrofit Accessibility Basics. Added skip-to-content link, aria-labels, aria-hidden on decorative icons, aria-live region for sync status, replaced custom modal with shadcn Dialog, added aria-busy to loading table, and wrote comprehensive a11y tests.
+- 2026-02-11: Code review fixes (9 issues: 1 HIGH, 5 MEDIUM, 3 LOW). Added id="main-content" to LoginPage for skip link coverage on all pages; replaced brittle CSS selectors in tests with accessible role queries; added DashboardPage tests; added skip-link target verification test; used DialogClose for Cancel button; added aria-live to connection state; added type="search" for searchbox semantics. Tests: 69/69 passing (10 files, +3 new tests).
 
 ### File List
 
 - frontend/src/App.tsx (modified — added skip-to-content link)
-- frontend/src/App.test.tsx (created — skip-to-content test)
-- frontend/src/pages/BrandsPage.tsx (modified — aria-label on search, aria-hidden on icons, id on main)
-- frontend/src/pages/BrandsPage.test.tsx (modified — added a11y tests)
+- frontend/src/App.test.tsx (created — skip-to-content tests with target verification)
+- frontend/src/pages/BrandsPage.tsx (modified — aria-label on search, type="search", aria-hidden on icons, id on main)
+- frontend/src/pages/BrandsPage.test.tsx (modified — a11y tests with role-based queries)
 - frontend/src/pages/DashboardPage.tsx (modified — id and tabIndex on main)
-- frontend/src/components/layout/Header.tsx (modified — replaced custom modal with shadcn Dialog, removed manual a11y handling)
-- frontend/src/components/layout/Header.test.tsx (modified — updated tests for Radix Dialog, added a11y title test)
+- frontend/src/pages/DashboardPage.test.tsx (created — main landmark and id verification tests)
+- frontend/src/pages/LoginPage.tsx (modified — changed outer div to main with id="main-content" and tabIndex)
+- frontend/src/components/layout/Header.tsx (modified — replaced custom modal with shadcn Dialog, DialogClose for Cancel, removed manual handlers)
+- frontend/src/components/layout/Header.test.tsx (modified — accessible role queries for dialog buttons)
 - frontend/src/components/brands/BrandTable.tsx (modified — added aria-busy, aria-label on Table)
 - frontend/src/components/brands/BrandTable.test.tsx (modified — added aria-busy and aria-label tests)
-- frontend/src/components/sync/SyncStatus.tsx (modified — added aria-live region, aria-hidden on decorative icons)
+- frontend/src/components/sync/SyncStatus.tsx (modified — added aria-live regions for sync status and connection state, aria-hidden on icons)
 - frontend/src/components/sync/SyncStatus.test.tsx (modified — added aria-live and icon aria-hidden tests)
 - _bmad-output/implementation-artifacts/sprint-status.yaml (modified — status updated to review)
-- _bmad-output/implementation-artifacts/2-6-retrofit-accessibility-basics.md (modified — tasks marked complete, dev agent record updated)
+- _bmad-output/implementation-artifacts/2-6-retrofit-accessibility-basics.md (modified — tasks marked complete, dev agent record updated, review fixes applied)

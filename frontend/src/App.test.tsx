@@ -36,9 +36,19 @@ describe('App', () => {
   it('renders skip-to-content link with correct href', () => {
     render(<App />);
 
-    const skipLink = screen.getByText(/skip to main content/i);
+    const skipLink = screen.getByRole('link', { name: /skip to main content/i });
     expect(skipLink).toBeInTheDocument();
-    expect(skipLink.tagName).toBe('A');
     expect(skipLink).toHaveAttribute('href', '#main-content');
+  });
+
+  it('skip-to-content link targets an element with id="main-content"', () => {
+    render(<App />);
+
+    const skipLink = screen.getByRole('link', { name: /skip to main content/i });
+    expect(skipLink).toHaveAttribute('href', '#main-content');
+
+    const target = document.getElementById('main-content');
+    expect(target).toBeInTheDocument();
+    expect(target).toHaveAttribute('tabIndex', '-1');
   });
 });
