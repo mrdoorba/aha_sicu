@@ -191,8 +191,8 @@ def _build_mass_update_lookup(
         stok = int(_safe_num(row.get("Stok")))
 
         label = f"{nama_produk} - {nama_variasi}"
-        name_to_kode[label] = kode_variasi
         if kode_variasi:
+            name_to_kode[label] = kode_variasi
             kode_to_stok[kode_variasi] = stok
 
     return name_to_kode, kode_to_stok
@@ -269,12 +269,12 @@ def _build_output_tables(
         output_1.append({
             "kode_variasi": product.kode_variasi,
             "product_name": product.product_variant_label,
-            "total_omzet": int(product.total_omzet),
-            "rata2_harga_jual": int(product.rata2_harga_jual),
+            "total_omzet": round(product.total_omzet),
+            "rata2_harga_jual": round(product.rata2_harga_jual),
         })
 
         # Output 2: split product_variant_label into nama_produk and varian
-        parts = product.product_variant_label.split(" - ", 1)
+        parts = product.product_variant_label.rsplit(" - ", 1)
         nama_produk = parts[0].strip() if parts else ""
         varian = parts[1].strip() if len(parts) > 1 else ""
 
