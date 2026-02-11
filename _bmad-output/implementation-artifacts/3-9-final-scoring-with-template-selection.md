@@ -716,11 +716,12 @@ None — no HALT conditions triggered.
 - Tasks 1 & 2 combined into single commit since scoring functions and G-column messages are tightly coupled in the same file
 - Values stored as percentage numbers (0.5 = 0.5%, not fractions 0.005 = 0.5%) — consistent with how ManualData stores values with `unit: '%'`
 - Scoring formulas adjusted accordingly (e.g., operational H7 uses `if value <= 1.0` instead of `if value <= 0.01`)
-- Backend: 454 tests pass (75 new unit + 5 new integration + 374 existing)
-- Frontend: 203 tests pass (31 new scoring + 172 existing). 2 pre-existing Firebase config failures in App.test.tsx and EvaluationForms.test.tsx (not related to this story)
+- Backend: 466 tests pass (92 scoring unit + 8 scoring integration + 366 existing)
+- Frontend: 209 tests pass (37 new scoring + 172 existing). 2 pre-existing Firebase config failures in App.test.tsx and EvaluationForms.test.tsx (not related to this story)
 - SectionNav updated from 5 to 6 sections; existing tests updated accordingly
 - EvaluationPage test updated to mock useScoring hook and verify 6 nav items
 - ScorePanel shows live per-category scores in sidebar; ScoringSection is the main scoring UI
+- **Code review fixes (commit 8):** Fixed critical ScorePanel category name mismatch (Indonesian→English mapping), added N/A marking for missing calculator data (available field), verdict validation (Literal type), expanded tests
 
 ### Change Log
 
@@ -733,13 +734,14 @@ None — no HALT conditions triggered.
 | 5 | Create frontend scoring display components and hook (Tasks 6-7 partial) |
 | 6 | Integrate scoring components into EvaluationPage (Tasks 6-8) |
 | 7 | Add frontend component tests for scoring (Task 9) |
+| 8 | Fix code review findings: ScorePanel category mapping, N/A marking, verdict validation, expanded tests |
 
 ### File List
 
 **New files created:**
 - `backend/app/calculators/scoring.py` — Main scoring calculator pure function (~1400 lines)
-- `backend/tests/unit/calculators/test_scoring.py` — 75 unit tests
-- `backend/tests/integration/api/test_scoring.py` — 5 integration tests
+- `backend/tests/unit/calculators/test_scoring.py` — 84 unit tests
+- `backend/tests/integration/api/test_scoring.py` — 8 integration tests
 - `frontend/src/hooks/useScoring.ts` — Scoring mutation hook with stale detection
 - `frontend/src/components/evaluation/scoring/ScoreBreakdown.tsx` — Per-category score table
 - `frontend/src/components/evaluation/scoring/FinalScoreDisplay.tsx` — Score + verdict display
@@ -751,10 +753,10 @@ None — no HALT conditions triggered.
 - `frontend/src/components/evaluation/scoring/index.ts` — Barrel re-exports
 - `frontend/src/components/evaluation/scoring/ScoringSection.test.tsx` — 9 tests
 - `frontend/src/components/evaluation/scoring/FinalScoreDisplay.test.tsx` — 7 tests
-- `frontend/src/components/evaluation/scoring/ScoreBreakdown.test.tsx` — 4 tests
+- `frontend/src/components/evaluation/scoring/ScoreBreakdown.test.tsx` — 6 tests
 - `frontend/src/components/evaluation/scoring/EmailOutput.test.tsx` — 4 tests
 - `frontend/src/components/evaluation/scoring/ScorePanel.test.tsx` — 5 tests
-- `frontend/src/components/evaluation/scoring/VerdictSelector.test.tsx` — 2 tests
+- `frontend/src/components/evaluation/scoring/VerdictSelector.test.tsx` — 6 tests
 
 **Modified files:**
 - `backend/app/modules/evaluations/schemas.py` — Added ScoringRequest, ScoringResponse, RowScoreItem, CategoryScoreItem

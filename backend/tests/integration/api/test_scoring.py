@@ -193,11 +193,18 @@ def test_score_with_missing_calculator_results(client):
         assert response.status_code == 200
         data = response.json()
         assert "total_score" in data
-        # Stock category should have -5 (missing data → average_stock=0 < 12)
+        # Stock category should be unavailable (no calculator data)
         stock_cat = next(
             c for c in data["category_scores"] if c["category"] == "Stok"
         )
-        assert stock_cat["score"] == -5.0
+        assert stock_cat["available"] is False
+        assert stock_cat["score"] == 0.0
+        # Discount category should also be unavailable
+        disc_cat = next(
+            c for c in data["category_scores"] if c["category"] == "Discount"
+        )
+        assert disc_cat["available"] is False
+        assert disc_cat["score"] == 0.0
 
 
 def test_score_brand_not_found(client):
@@ -252,3 +259,77 @@ def test_score_missing_manual_data(client):
         assert response.status_code == 400
         data = response.json()
         assert data["code"] == "CALC_MISSING_DATA"
+
+
+def test_score_invalid_verdict(client):
+    """Test POST /score returns 422 for invalid verdict value."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        bad_request = {**SCORING_REQUEST, "verdict": "INVALID_VERDICT"}
+        response = client.post(
+            "/api/v1/evaluations/brands/1/score",
+            json=bad_request,
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 422  # Pydantic validation error
+
+
+def test_score_invalid_template(client):
+    """Test POST /score returns 422 for invalid template value."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        bad_request = {**SCORING_REQUEST, "template": "invalid_template"}
+        response = client.post(
+            "/api/v1/evaluations/brands/1/score",
+            json=bad_request,
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 422
+
+
+def test_score_available_field_in_response(client):
+    """Test POST /score response includes available field on category scores."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
+            SAMPLE_BRAND,
+            SAMPLE_EVAL_INPUTS,
+        ])
+        mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/score",
+            json=SCORING_REQUEST,
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        # All categories should have available field
+        for cat in data["category_scores"]:
+            assert "available" in cat
+        # With full data, stock/discount should be available
+        stock_cat = next(
+            c for c in data["category_scores"] if c["category"] == "Stok"
+        )
+        assert stock_cat["available"] is True

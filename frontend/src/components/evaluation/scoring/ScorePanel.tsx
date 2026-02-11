@@ -1,17 +1,18 @@
 import type { ScoringResult } from '../../../hooks/useScoring';
 
-const CATEGORY_LABELS = [
-  'Operational',
-  'Business',
-  'Content',
-  'Visitors',
-  'Promo Tools',
-  'Products/Status',
-  'Ads',
-  'Campaign',
-  'Competition',
-  'Stock',
-  'Discount',
+// Map backend Indonesian category names → English display labels
+const CATEGORY_MAP: Array<{ backend: string; label: string }> = [
+  { backend: 'Kesehatan Operasional Toko', label: 'Operational' },
+  { backend: 'Bisnis Analisis', label: 'Business' },
+  { backend: 'Skor Kesehatan Konten', label: 'Content' },
+  { backend: 'Tinjauan Pengunjung', label: 'Visitors' },
+  { backend: 'Promo Toko', label: 'Promo Tools' },
+  { backend: 'Jumlah Produk & Status Toko', label: 'Products/Status' },
+  { backend: 'Data Iklan', label: 'Ads' },
+  { backend: 'Partisipasi Campaign', label: 'Campaign' },
+  { backend: 'Kompetisi TOP Produk', label: 'Competition' },
+  { backend: 'Stok', label: 'Stock' },
+  { backend: 'Discount', label: 'Discount' },
 ];
 
 interface ScorePanelProps {
@@ -33,15 +34,19 @@ export const ScorePanel = ({ scoringResult }: ScorePanelProps) => {
       </div>
 
       <div className="space-y-1 text-sm text-muted-foreground">
-        {CATEGORY_LABELS.map((label) => {
+        {CATEGORY_MAP.map(({ backend, label }) => {
           const cat = scoringResult?.category_scores.find(
-            (c) => c.category.toLowerCase() === label.toLowerCase(),
+            (c) => c.category === backend,
           );
           return (
-            <div key={label} className="flex justify-between">
+            <div key={backend} className="flex justify-between">
               <span>{label}</span>
               <span className="tabular-nums">
-                {cat ? Math.round(cat.score) : '\u2014'}
+                {cat
+                  ? cat.available
+                    ? Math.round(cat.score)
+                    : 'N/A'
+                  : '\u2014'}
               </span>
             </div>
           );

@@ -254,6 +254,50 @@ class TestScoreBusiness:
         assert h19_row.score == 0.0  # 55M < 100M
 
 
+class TestScoreContent:
+    def test_high_quality(self):
+        data = {"content": {"needsImprovement": 2, "goodQuality": 48}}
+        cat = _score_content(data)
+        assert cat.category == "Skor Kesehatan Konten"
+        assert cat.score == 0.0  # Content has no H-column scores
+        assert cat.max_score == 0.0
+        d24_row = next(r for r in cat.rows if r.row == 24)
+        assert d24_row.verdict == "✔️"  # 48/50 = 96% > 95%
+        assert abs(d24_row.value - 0.96) < 0.01
+
+    def test_low_quality(self):
+        data = {"content": {"needsImprovement": 10, "goodQuality": 40}}
+        cat = _score_content(data)
+        d24_row = next(r for r in cat.rows if r.row == 24)
+        assert d24_row.verdict == "❌"  # 40/50 = 80% < 95%
+
+    def test_exactly_95_percent(self):
+        data = {"content": {"needsImprovement": 5, "goodQuality": 95}}
+        cat = _score_content(data)
+        d24_row = next(r for r in cat.rows if r.row == 24)
+        assert d24_row.verdict == "✔️"  # 95/100 = 95% >= 95%
+
+    def test_no_content_data(self):
+        cat = _score_content({})
+        assert len(cat.rows) == 3
+        d24_row = next(r for r in cat.rows if r.row == 24)
+        assert d24_row.verdict == "❌"  # 0/0 → 0% < 95%
+
+    def test_all_good(self):
+        data = {"content": {"needsImprovement": 0, "goodQuality": 100}}
+        cat = _score_content(data)
+        d24_row = next(r for r in cat.rows if r.row == 24)
+        assert d24_row.verdict == "✔️"
+        assert d24_row.value == 1.0  # 100%
+
+    def test_all_bad(self):
+        data = {"content": {"needsImprovement": 50, "goodQuality": 0}}
+        cat = _score_content(data)
+        d24_row = next(r for r in cat.rows if r.row == 24)
+        assert d24_row.verdict == "❌"
+        assert d24_row.value == 0.0  # 0%
+
+
 class TestScoreVisitors:
     def test_both_pass(self):
         data = {
@@ -464,7 +508,8 @@ class TestScoreStock:
 
     def test_missing_data(self):
         cat = _score_stock({})
-        assert cat.score == -5.0  # 0 < 12 → -5
+        assert cat.available is False
+        assert cat.score == 0.0  # Missing calculator data → unavailable
 
 
 class TestScoreDiscount:
@@ -480,7 +525,8 @@ class TestScoreDiscount:
 
     def test_missing_data(self):
         cat = _score_discount_row({})
-        assert cat.score == 5.0  # No flag → default False → 5
+        assert cat.available is False
+        assert cat.score == 0.0  # Missing calculator data → unavailable
 
 
 # ---------------------------------------------------------------------------
@@ -636,6 +682,18 @@ class TestG73:
         result = _compute_g73("⭕️", 0.15, 200_000_000, is_fashion=True)
         assert result == ""
 
+    def test_rejected_non_mall_suppressed(self):
+        result = _compute_g73("❌ Non Mall", 0.15, 200_000_000, is_fashion=True)
+        assert result == ""
+
+    def test_rejected_no_brand_suppressed(self):
+        result = _compute_g73("❌ No Brand", 0.15, 200_000_000, is_fashion=True)
+        assert result == ""
+
+    def test_rejected_opex_suppressed(self):
+        result = _compute_g73("❌ Opex", 0.15, 200_000_000, is_fashion=True)
+        assert result == ""
+
 
 # ---------------------------------------------------------------------------
 # G75 closing message tests
@@ -754,12 +812,14 @@ class TestEdgeCases:
             template="non_fashion", verdict="✔️",
             store_name="S", period="P", brand_name="B",
         )
-        # Stock should be -5 (missing data → 0 < 12)
+        # Stock should be unavailable (no calculator data)
         stock_cat = next(c for c in result.category_scores if c.category == "Stok")
-        assert stock_cat.score == -5.0
-        # Discount should be 5 (no flag → pass)
+        assert stock_cat.available is False
+        assert stock_cat.score == 0.0
+        # Discount should also be unavailable
         disc_cat = next(c for c in result.category_scores if c.category == "Discount")
-        assert disc_cat.score == 5.0
+        assert disc_cat.available is False
+        assert disc_cat.score == 0.0
 
     def test_extreme_operational_values(self):
         data = {"operational": {"unfulfilledOrderRate": 50.0}}  # 50%

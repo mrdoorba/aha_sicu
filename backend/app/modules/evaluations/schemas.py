@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 
 CategoryType = Literal["fashion", "non_fashion"]
 
@@ -89,15 +89,18 @@ class RunAllResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+VerdictType = Literal["✔️", "❌", "❌ Non Mall", "❌ No Brand", "❌ Opex", "⭕️", ""]
+
+
 class ScoringRequest(BaseModel):
     """Request body for generating a final score."""
 
     template: CategoryType
-    verdict: str
-    store_name: str
-    period: str
-    brand_name: str
-    email: str | None = None
+    verdict: VerdictType
+    store_name: str = Field(max_length=200)
+    period: str = Field(max_length=50)
+    brand_name: str = Field(max_length=200)
+    email: str | None = Field(default=None, max_length=254)
 
 
 class RowScoreItem(BaseModel):
@@ -119,6 +122,7 @@ class CategoryScoreItem(BaseModel):
     score: float
     max_score: float
     rows: list[RowScoreItem]
+    available: bool = True
 
 
 class ScoringResponse(BaseModel):

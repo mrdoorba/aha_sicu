@@ -41,6 +41,7 @@ class CategoryScore:
     score: float
     max_score: float
     rows: list[RowScore] = field(default_factory=list)
+    available: bool = True  # False when required calculator data is missing
 
 
 @dataclass
@@ -665,9 +666,21 @@ def _score_stock(calculator_results: dict) -> CategoryScore:
     H70: >=24 → 10, >=12 → 5, <12 → -5
     Source: Calculator 2 details.average_stock
     """
-    avg_stock = _safe_num(
-        _get_nested(calculator_results, "top_sku", "details", "average_stock")
-    )
+    top_sku_data = _get_nested(calculator_results, "top_sku", "details")
+    has_data = top_sku_data is not None and "average_stock" in (top_sku_data or {})
+
+    if not has_data:
+        row = RowScore(
+            row=70, metric="Rata² Stok",
+            value="N/A", benchmark=">=24", verdict="-",
+            message="Calculator 2 (Top SKU) belum dijalankan", score=0.0,
+        )
+        return CategoryScore(
+            category="Stok",
+            score=0.0, max_score=10.0, rows=[row], available=False,
+        )
+
+    avg_stock = _safe_num(top_sku_data.get("average_stock"))
     # Round if decimal (spec says round to integer)
     avg_stock_int = round(avg_stock)
 
@@ -695,7 +708,20 @@ def _score_discount_row(calculator_results: dict) -> CategoryScore:
     H73: 5 if no fake discount, 0 if fake discount detected
     Source: Calculator 3 details.fake_discount_flag
     """
-    disc_details = _get_nested(calculator_results, "discount", "details") or {}
+    disc_details = _get_nested(calculator_results, "discount", "details")
+    has_data = disc_details is not None
+
+    if not has_data:
+        row = RowScore(
+            row=73, metric="Discount Check Up",
+            value="N/A", benchmark="-", verdict="-",
+            message="Calculator 3 (Discount) belum dijalankan", score=0.0,
+        )
+        return CategoryScore(
+            category="Discount",
+            score=0.0, max_score=5.0, rows=[row], available=False,
+        )
+
     fake_flag = disc_details.get("fake_discount_flag", False)
     disc_output = _get_nested(calculator_results, "discount", "output_text") or ""
 
@@ -1038,7 +1064,7 @@ def _compute_g73(
 
     Suppressed for ❌ and ⭕️ verdicts.
     """
-    if verdict in ("❌", "⭕️"):
+    if verdict.startswith("❌") or verdict == "⭕️":
         return ""
 
     # Clamp to range

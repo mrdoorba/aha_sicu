@@ -6,9 +6,17 @@ import type { ScoringResult } from '../../../hooks/useScoring';
 const MOCK_RESULT: ScoringResult = {
   total_score: 75,
   category_scores: [
-    { category: 'Operational', score: 5, max_score: 5, rows: [] },
-    { category: 'Business', score: 10, max_score: 15, rows: [] },
-    { category: 'Content', score: 8, max_score: 10, rows: [] },
+    { category: 'Kesehatan Operasional Toko', score: 5, max_score: 10, rows: [], available: true },
+    { category: 'Bisnis Analisis', score: 10, max_score: 20, rows: [], available: true },
+    { category: 'Skor Kesehatan Konten', score: 0, max_score: 0, rows: [], available: true },
+    { category: 'Tinjauan Pengunjung', score: 3, max_score: 5, rows: [], available: true },
+    { category: 'Promo Toko', score: 15, max_score: 15, rows: [], available: true },
+    { category: 'Jumlah Produk & Status Toko', score: 15, max_score: 15, rows: [], available: true },
+    { category: 'Data Iklan', score: 5, max_score: 10, rows: [], available: true },
+    { category: 'Partisipasi Campaign', score: 10, max_score: 10, rows: [], available: true },
+    { category: 'Kompetisi TOP Produk', score: 0, max_score: 0, rows: [], available: true },
+    { category: 'Stok', score: -5, max_score: 10, rows: [], available: true },
+    { category: 'Discount', score: 5, max_score: 5, rows: [], available: true },
   ],
   verdict: '✔️',
   conclusion: '',
@@ -41,11 +49,13 @@ describe('ScorePanel', () => {
     expect(screen.getByText('75')).toBeInTheDocument();
   });
 
-  it('shows category scores', () => {
+  it('shows category scores from backend Indonesian names', () => {
     render(<ScorePanel scoringResult={MOCK_RESULT} />);
-    expect(screen.getByText('5')).toBeInTheDocument();
-    expect(screen.getByText('10')).toBeInTheDocument();
-    expect(screen.getByText('8')).toBeInTheDocument();
+    // Multiple categories share the same score value (5 appears 3 times)
+    expect(screen.getAllByText('5')).toHaveLength(3);     // Operational, Ads, Discount
+    expect(screen.getAllByText('10')).toHaveLength(2);    // Business, Campaign
+    expect(screen.getByText('3')).toBeInTheDocument();    // Visitors
+    expect(screen.getByText('-5')).toBeInTheDocument();   // Stock (negative)
   });
 
   it('renders all category labels', () => {
