@@ -1,5 +1,4 @@
 import { useEffect, useRef } from 'react';
-import { Calculator } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
@@ -15,6 +14,7 @@ import { AdsForm } from './forms/AdsForm';
 import { CampaignForm } from './forms/CampaignForm';
 import { CompetitionForm } from './forms/CompetitionForm';
 import { SaveIndicator } from './forms/SaveIndicator';
+import { CalculatorResultsSection } from './calculators';
 import type { ManualData } from './forms/formConfig';
 import type { SaveStatus } from '../../hooks/useAutoSaveForm';
 
@@ -30,12 +30,6 @@ interface EvaluationSectionsProps {
   lastSaved: Date | null;
   onRetrySave: () => void;
 }
-
-const CALCULATOR_CARDS = [
-  { name: 'Ads Keyword Calculator', description: 'Requires CPC Ad Report + Keyword Placement Report' },
-  { name: 'Top SKU Calculator', description: 'Requires Order Export + Mass Update' },
-  { name: 'Discount Check Calculator', description: 'Requires Order Export' },
-];
 
 export const EvaluationSections = ({
   brandId,
@@ -187,27 +181,7 @@ export const EvaluationSections = ({
         />
 
         {/* Calculator Results */}
-        <div className="mt-4">
-          <p className="mb-3 text-sm font-semibold uppercase text-muted-foreground">
-            Calculator Results
-          </p>
-          <div className="grid gap-4 sm:grid-cols-3">
-            {CALCULATOR_CARDS.map((calc) => (
-              <Card key={calc.name}>
-                <CardContent className="flex items-start gap-3 pt-4">
-                  <Calculator className="mt-0.5 size-5 text-muted-foreground" aria-hidden="true" />
-                  <div>
-                    <p className="font-medium">{calc.name}</p>
-                    <p className="text-xs text-muted-foreground">{calc.description}</p>
-                    <p className="mt-2 text-sm text-amber-600">
-                      Pending: upload required files
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
+        <CalculatorResultsSection brandId={brandId} />
 
         {/* Final Score */}
         <div className="mt-4">
