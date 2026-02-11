@@ -1,0 +1,138 @@
+import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { describe, it, expect, vi } from 'vitest';
+import { EvaluationSections } from '../EvaluationSections';
+import type { ManualData } from './formConfig';
+import { EMPTY_MANUAL_DATA } from './formConfig';
+
+// Mock FileUploadSection since it has its own hooks
+vi.mock('../FileUploadSection', () => ({
+  FileUploadSection: () => <div data-testid="file-upload-section">File Upload</div>,
+}));
+
+const defaultProps = {
+  brandId: 1,
+  categoryType: 'non_fashion' as string | null,
+  onCategoryChange: vi.fn(),
+  onActiveSection: vi.fn(),
+  manualData: EMPTY_MANUAL_DATA,
+  onFieldChange: vi.fn(),
+  onFieldBlur: vi.fn(),
+  saveStatus: 'idle' as const,
+  lastSaved: null,
+  onRetrySave: vi.fn(),
+};
+
+describe('EvaluationForms Integration', () => {
+  it('renders form fields instead of placeholders in all sections', () => {
+    render(<EvaluationSections {...defaultProps} />);
+
+    // Section 1: Operational
+    expect(screen.getByLabelText(/Pesanan Tidak Terselesaikan/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Penilaian/)).toBeInTheDocument();
+
+    // Section 2: Business, Content, Visitors
+    expect(screen.getByLabelText(/Penjualan Bulan Ini/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Conversion Rate/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Perlu Ditingkatkan/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Total Pengunjung/)).toBeInTheDocument();
+
+    // Section 3: Promo Tools, Products
+    expect(screen.getByLabelText(/Promo Toko/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Jumlah Produk/)).toBeInTheDocument();
+
+    // Section 5: Ads, Campaign, Competition
+    expect(screen.getByLabelText(/Penjualan Iklan/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Sesi Dinominasikan/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Produk Kompetitor 1 — Keyword/)).toBeInTheDocument();
+
+    // No placeholder text
+    expect(screen.queryByText('Form fields will be added in Story 3.3')).not.toBeInTheDocument();
+  });
+
+  it('pre-fills forms when manual_data has saved values', () => {
+    const savedData: ManualData = {
+      ...EMPTY_MANUAL_DATA,
+      operational: {
+        unfulfilledOrderRate: 0.5,
+        lateShipmentRate: 0.3,
+        preparationTime: 0.8,
+        chatResponseRate: 97,
+        overallRating: 4.8,
+      },
+      business: {
+        ...EMPTY_MANUAL_DATA.business,
+        salesMonth0: 500000000,
+        conversionRate: 3.5,
+      },
+      products: {
+        productCount: 42,
+        storeStatus: 'Shopee Mall',
+      },
+    };
+
+    render(<EvaluationSections {...defaultProps} manualData={savedData} />);
+
+    // Operational pre-filled
+    const opInputs = screen.getAllByRole('spinbutton');
+    expect(opInputs[0]).toHaveValue(0.5);  // unfulfilledOrderRate
+
+    // Products pre-filled
+    expect(screen.getByText('Shopee Mall')).toBeInTheDocument();
+  });
+
+  it('calls onFieldChange when a field value changes', async () => {
+    const onFieldChange = vi.fn();
+    const user = userEvent.setup();
+    render(<EvaluationSections {...defaultProps} onFieldChange={onFieldChange} />);
+
+    const ratingInput = screen.getByLabelText(/Penilaian/);
+    await user.type(ratingInput, '4');
+    expect(onFieldChange).toHaveBeenCalledWith('operational', 'overallRating', 4);
+  });
+
+  it('calls onFieldBlur when a field loses focus', async () => {
+    const onFieldBlur = vi.fn();
+    const user = userEvent.setup();
+    render(<EvaluationSections {...defaultProps} onFieldBlur={onFieldBlur} />);
+
+    const input = screen.getByLabelText(/Pesanan Tidak Terselesaikan/);
+    await user.click(input);
+    await user.tab();
+    expect(onFieldBlur).toHaveBeenCalled();
+  });
+
+  it('renders save indicator when status is saving', () => {
+    render(<EvaluationSections {...defaultProps} saveStatus="saving" />);
+    expect(screen.getByText('Saving...')).toBeInTheDocument();
+  });
+
+  it('renders save indicator when status is saved', () => {
+    render(
+      <EvaluationSections {...defaultProps} saveStatus="saved" lastSaved={new Date()} />,
+    );
+    expect(screen.getByText('Saved just now')).toBeInTheDocument();
+  });
+
+  it('renders save error with retry button', async () => {
+    const onRetry = vi.fn();
+    const user = userEvent.setup();
+    render(<EvaluationSections {...defaultProps} saveStatus="error" onRetrySave={onRetry} />);
+
+    expect(screen.getByText('Save failed.')).toBeInTheDocument();
+    await user.click(screen.getByText('Retry'));
+    expect(onRetry).toHaveBeenCalled();
+  });
+
+  it('keeps Section 4 file upload section intact', () => {
+    render(<EvaluationSections {...defaultProps} />);
+    expect(screen.getByTestId('file-upload-section')).toBeInTheDocument();
+  });
+
+  it('keeps calculator results and final score placeholders', () => {
+    render(<EvaluationSections {...defaultProps} />);
+    expect(screen.getByText('Calculator Results')).toBeInTheDocument();
+    expect(screen.getByText('Final Score')).toBeInTheDocument();
+    expect(screen.getByText('Not yet calculated')).toBeInTheDocument();
+  });
+});
