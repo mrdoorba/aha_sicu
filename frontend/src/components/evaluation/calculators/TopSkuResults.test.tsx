@@ -31,8 +31,8 @@ describe('TopSkuResults', () => {
     // Product names appear in both tables, so use getAllByText
     expect(screen.getAllByText('Product A').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Product B').length).toBeGreaterThanOrEqual(1);
-    // IDR formatted values
-    expect(screen.getAllByText(/Rp/).length).toBeGreaterThanOrEqual(1);
+    // IDR formatted values (with space between Rp and number)
+    expect(screen.getAllByText(/Rp\s/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders stock table', () => {
@@ -56,11 +56,10 @@ describe('TopSkuResults', () => {
     const user = userEvent.setup();
     render(<TopSkuResults result={SAMPLE_RESULT} />);
 
-    // Revenue table rows: find all rows, revenue table is the first table
-    const tables = document.querySelectorAll('[data-slot="table-container"]');
-    const revenueTable = tables[0];
+    // Revenue table rows via stable data-testid
+    const revenueTable = screen.getByTestId('revenue-table');
     const getRevenueRows = () =>
-      Array.from(revenueTable.querySelectorAll('[data-slot="table-row"]')).slice(1); // skip header
+      Array.from(revenueTable.querySelectorAll('tbody tr'));
 
     // Default sort: total_omzet desc → Product A (500k) first
     let dataRows = getRevenueRows();

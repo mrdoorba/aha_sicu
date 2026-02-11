@@ -78,7 +78,7 @@ export function TopSkuResults({ result }: TopSkuResultsProps) {
 
       {/* Revenue ranking table */}
       <p className="mb-1 text-xs font-medium text-muted-foreground">Revenue Ranking</p>
-      <Table>
+      <Table data-testid="revenue-table">
         <TableHeader>
           <TableRow>
             <TableHead
@@ -108,12 +108,12 @@ export function TopSkuResults({ result }: TopSkuResultsProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedRevenue.map((row, i) => (
-            <TableRow key={i}>
+          {sortedRevenue.map((row) => (
+            <TableRow key={row.kode_variasi}>
               <TableCell>{row.kode_variasi}</TableCell>
               <TableCell>{row.product_name}</TableCell>
-              <TableCell className="text-right">Rp{formatIDR(row.total_omzet)}</TableCell>
-              <TableCell className="text-right">Rp{formatIDR(row.rata2_harga_jual)}</TableCell>
+              <TableCell className="text-right">Rp {formatIDR(row.total_omzet)}</TableCell>
+              <TableCell className="text-right">Rp {formatIDR(row.rata2_harga_jual)}</TableCell>
             </TableRow>
           ))}
         </TableBody>
@@ -121,7 +121,7 @@ export function TopSkuResults({ result }: TopSkuResultsProps) {
 
       {/* Stock ranking table */}
       <p className="mb-1 mt-4 text-xs font-medium text-muted-foreground">Stock Ranking</p>
-      <Table>
+      <Table data-testid="stock-table">
         <TableHeader>
           <TableRow>
             <TableHead
@@ -151,8 +151,8 @@ export function TopSkuResults({ result }: TopSkuResultsProps) {
           </TableRow>
         </TableHeader>
         <TableBody>
-          {sortedStock.map((row, i) => (
-            <TableRow key={i}>
+          {sortedStock.map((row) => (
+            <TableRow key={row.kode_variasi}>
               <TableCell>{row.kode_variasi}</TableCell>
               <TableCell>{row.nama_produk}</TableCell>
               <TableCell>{row.varian}</TableCell>

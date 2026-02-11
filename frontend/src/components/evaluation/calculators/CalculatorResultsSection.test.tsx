@@ -25,10 +25,12 @@ import { CalculatorResultsSection } from './CalculatorResultsSection';
 import {
   useCalculatorResults,
   useCalculatorStatus,
+  useRunCalculator,
 } from '../../../hooks/useCalculator';
 
 const mockedUseResults = vi.mocked(useCalculatorResults);
 const mockedUseStatus = vi.mocked(useCalculatorStatus);
+const mockedUseRunCalculator = vi.mocked(useRunCalculator);
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -172,5 +174,53 @@ describe('CalculatorResultsSection', () => {
     await user.click(recalcBtn);
 
     expect(mockMutate).toHaveBeenCalledOnce();
+  });
+
+  it('shows error state with retry button when calculator fails', async () => {
+    const user = userEvent.setup();
+    const mockRetryMutate = vi.fn();
+
+    // Make ads_keyword return error state
+    mockedUseRunCalculator.mockImplementation((_brandId, calcType) => {
+      if (calcType === 'ads_keyword') {
+        return {
+          mutate: mockRetryMutate,
+          isPending: false,
+          isError: true,
+          error: new Error('Calculator execution failed'),
+        } as unknown as ReturnType<typeof useRunCalculator>;
+      }
+      return {
+        mutate: vi.fn(),
+        isPending: false,
+        isError: false,
+        error: null,
+      } as unknown as ReturnType<typeof useRunCalculator>;
+    });
+
+    // No ads_keyword result (so error state shows instead of result)
+    mockedUseResults.mockReturnValue({
+      data: {
+        brand_id: 1,
+        results: [SAMPLE_RESULTS.results[1]], // only discount, no ads_keyword
+      },
+      isLoading: false,
+    } as ReturnType<typeof useCalculatorResults>);
+    mockedUseStatus.mockReturnValue({
+      data: SAMPLE_STATUS,
+      isLoading: false,
+    } as ReturnType<typeof useCalculatorStatus>);
+
+    render(<CalculatorResultsSection brandId={1} />, { wrapper: createWrapper() });
+
+    // Error message should be visible
+    expect(screen.getByText(/Calculator execution failed/)).toBeInTheDocument();
+
+    // Retry button should be visible and functional
+    const retryBtn = screen.getByText('Retry');
+    expect(retryBtn).toBeInTheDocument();
+    await user.click(retryBtn);
+
+    expect(mockRetryMutate).toHaveBeenCalledOnce();
   });
 });
