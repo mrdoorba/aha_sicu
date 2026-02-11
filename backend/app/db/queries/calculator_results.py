@@ -36,6 +36,22 @@ async def get_result_by_type(
     return dict(row) if row else None
 
 
+async def delete_results_by_types(
+    conn: Connection, brand_id: int, calculator_types: list[str]
+) -> int:
+    """Delete calculator results for a brand matching any of the given types.
+
+    Returns the count of deleted rows.
+    """
+    result = await conn.execute(
+        "DELETE FROM calculator_results WHERE brand_id = $1 AND calculator_type = ANY($2::text[])",
+        brand_id,
+        calculator_types,
+    )
+    # result format: "DELETE N"
+    return int(result.split()[-1])
+
+
 async def upsert_result(
     conn: Connection,
     brand_id: int,

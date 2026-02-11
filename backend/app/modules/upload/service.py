@@ -6,6 +6,7 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
+from app.calculators.engine import clear_dependent_results, run_calculators_for_upload
 from app.core.exceptions import AppException, UploadException
 from app.db.connection import db
 from app.db.queries import brands as brand_queries
@@ -18,7 +19,9 @@ from app.modules.upload.parser import (
     validate_columns,
 )
 from app.modules.upload.schemas import (
+    AutoCalculatedItem,
     BrandUploadsResponse,
+    ProcessUploadResponse,
     SignedUrlResponse,
     UploadResponse,
 )
@@ -141,8 +144,8 @@ async def process_upload(
     brand_id: int,
     file_type: str,
     user_id: int,
-) -> UploadResponse:
-    """Download file from storage, parse, validate, store parsed data, cleanup."""
+) -> ProcessUploadResponse:
+    """Download file from storage, parse, validate, store parsed data, auto-execute calculators, cleanup."""
     _validate_file_type(file_type)
 
     pending = _pending_uploads.get(upload_id)
@@ -208,7 +211,7 @@ async def process_upload(
     parsed_data = dataframe_to_json(df)
     calculator_target = _CALCULATOR_TARGETS[file_type]
 
-    # Store in database (upsert)
+    # Store in database (upsert) + clear dependent results + auto-execute calculators
     async with db.connection() as conn:
         async with conn.transaction():
             row = await upload_queries.upsert_upload(
@@ -223,6 +226,20 @@ async def process_upload(
                 uploaded_by=user_id,
             )
 
+        # Clear dependent calculator results + auto-execute (outside transaction — already committed)
+        # Wrapped in try/except so upload success is preserved even if auto-execute fails
+        try:
+            await clear_dependent_results(brand_id, file_type, conn)
+            auto_calc_raw = await run_calculators_for_upload(
+                brand_id, file_type, user_id, conn
+            )
+        except Exception as e:
+            logger.warning(
+                "Auto-execute failed after upload for brand %d, file_type %s: %s",
+                brand_id, file_type, e, exc_info=True,
+            )
+            auto_calc_raw = []
+
     # Delete from storage (best-effort cleanup)
     try:
         await asyncio.to_thread(storage.delete_file, pending.object_name)
@@ -232,7 +249,7 @@ async def process_upload(
     # Remove from pending
     _pending_uploads.pop(upload_id, None)
 
-    return UploadResponse(
+    upload_resp = UploadResponse(
         id=row["id"],
         brand_id=row["brand_id"],
         file_type=row["file_type"],
@@ -241,6 +258,18 @@ async def process_upload(
         row_count=row["row_count"],
         uploaded_at=row["uploaded_at"],
     )
+
+    auto_calculated = [
+        AutoCalculatedItem(
+            calculator_type=item["calculator_type"],
+            status=item["status"],
+            result=item.get("result"),
+            reason=item.get("reason"),
+        )
+        for item in auto_calc_raw
+    ]
+
+    return ProcessUploadResponse(upload=upload_resp, auto_calculated=auto_calculated)
 
 
 async def get_brand_uploads(brand_id: int) -> BrandUploadsResponse:
