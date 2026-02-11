@@ -171,13 +171,21 @@ interface paths {
         200: {
           content: {
             'application/json': {
-              id: number;
-              brand_id: number;
-              file_type: string;
-              filename: string;
-              file_size: number;
-              row_count: number;
-              uploaded_at: string;
+              upload: {
+                id: number;
+                brand_id: number;
+                file_type: string;
+                filename: string;
+                file_size: number;
+                row_count: number;
+                uploaded_at: string;
+              };
+              auto_calculated: Array<{
+                calculator_type: string;
+                status: string;
+                result?: Record<string, unknown>;
+                reason?: string;
+              }>;
             };
           };
         };
@@ -315,6 +323,57 @@ interface paths {
               output_text: string;
               details: Record<string, unknown>;
               calculated_at: string;
+            };
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/evaluations/brands/{brand_id}/calculators/run-all': {
+    post: {
+      parameters: {
+        path: {
+          brand_id: number;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              results: Array<{
+                calculator_type: string;
+                status: string;
+                result?: Record<string, unknown>;
+                reason?: string;
+              }>;
+            };
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/evaluations/brands/{brand_id}/calculators/status': {
+    get: {
+      parameters: {
+        path: {
+          brand_id: number;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              brand_id: number;
+              calculators: Record<string, {
+                status: string;
+                has_result: boolean;
+                required_files: string[];
+                required_manual: string[];
+                available_files: string[];
+                missing_files: string[];
+                missing_manual: string[];
+                calculated_at: string | null;
+              }>;
             };
           };
         };
