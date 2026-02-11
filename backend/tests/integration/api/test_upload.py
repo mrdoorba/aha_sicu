@@ -183,7 +183,7 @@ def _make_csv_bytes():
 
 
 def test_process_valid_csv(client):
-    """Test processing a valid CSV upload."""
+    """Test processing a valid CSV upload with auto-calculated results."""
     from app.modules.upload.service import _pending_uploads, PendingUpload
 
     upload_id = "test-uuid-1234"
@@ -203,6 +203,8 @@ def test_process_valid_csv(client):
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.upload.service.db") as mock_svc_db,
         patch("app.modules.upload.service.get_storage_client") as mock_storage_fn,
+        patch("app.modules.upload.service.clear_dependent_results") as mock_clear,
+        patch("app.modules.upload.service.run_calculators_for_upload") as mock_run,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
@@ -216,6 +218,12 @@ def test_process_valid_csv(client):
         mock_svc_conn = _make_transactional_conn(fetchrow_side_effect=[SAMPLE_UPLOAD])
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
 
+        # Engine mocks
+        mock_clear.return_value = 0
+        mock_run.return_value = [
+            {"calculator_type": "ads_keyword", "status": "skipped", "reason": "Missing required files: keyword_report"},
+        ]
+
         response = client.post("/api/v1/upload/process", json={
             "upload_id": upload_id,
             "brand_id": 123,
@@ -224,9 +232,11 @@ def test_process_valid_csv(client):
 
         assert response.status_code == 200
         data = response.json()
-        assert data["brand_id"] == 123
-        assert data["file_type"] == "cpc_ad_report"
-        assert data["row_count"] == 50
+        assert data["upload"]["brand_id"] == 123
+        assert data["upload"]["file_type"] == "cpc_ad_report"
+        assert data["upload"]["row_count"] == 50
+        assert len(data["auto_calculated"]) == 1
+        assert data["auto_calculated"][0]["status"] == "skipped"
 
     # Clean up
     _pending_uploads.pop(upload_id, None)
