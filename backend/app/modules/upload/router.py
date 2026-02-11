@@ -63,6 +63,7 @@ async def local_upload(
     upload_id: str,
     filename: str,
     request: Request,
+    current_user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """Local dev endpoint: receive file bytes that would go to GCS in production.
 
@@ -73,11 +74,19 @@ async def local_upload(
             status_code=404, content={"detail": "Local upload not available in production"}
         )
 
+    # Sanitize filename to prevent path traversal
+    import os
+    safe_filename = os.path.basename(filename)
+    if not safe_filename or safe_filename in (".", ".."):
+        return JSONResponse(
+            status_code=400, content={"detail": "Invalid filename"}
+        )
+
     from app.modules.upload.gcs_client import LocalStorageClient, make_object_name
 
     body = await request.body()
     storage = LocalStorageClient()
-    object_name = make_object_name(upload_id, filename)
+    object_name = make_object_name(upload_id, safe_filename)
     file_path = storage._base_dir / object_name
     file_path.parent.mkdir(parents=True, exist_ok=True)
     file_path.write_bytes(body)

@@ -70,15 +70,18 @@ export function FileUploadSlot({
 
           {/* State: Empty */}
           {!uploadInfo && uploadStatus === 'idle' && (
-            <Button
-              variant="outline"
-              size="sm"
-              className="mt-2"
-              onClick={() => inputRef.current?.click()}
-            >
-              <Upload className="mr-1.5 size-3.5" aria-hidden="true" />
-              Upload File
-            </Button>
+            <div className="mt-2">
+              <p className="text-sm text-muted-foreground">No file uploaded</p>
+              <Button
+                variant="outline"
+                size="sm"
+                className="mt-1"
+                onClick={() => inputRef.current?.click()}
+              >
+                <Upload className="mr-1.5 size-3.5" aria-hidden="true" />
+                Upload File
+              </Button>
+            </div>
           )}
 
           {/* State: Uploading / Processing */}

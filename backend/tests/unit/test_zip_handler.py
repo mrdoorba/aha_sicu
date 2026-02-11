@@ -18,23 +18,7 @@ from app.modules.upload.zip_handler import (
 # Helper: build a ZIP from DataFrames
 # ---------------------------------------------------------------------------
 
-def _make_excel_bytes(df: pl.DataFrame, header_row: int = 0) -> bytes:
-    """Write DataFrame to Excel bytes, optionally with leading blank rows."""
-    import xlsxwriter
-
-    excel_buf = BytesIO()
-    if header_row > 0:
-        workbook = xlsxwriter.Workbook(excel_buf)
-        worksheet = workbook.add_worksheet()
-        for col_idx, col_name in enumerate(df.columns):
-            worksheet.write(header_row, col_idx, col_name)
-        for row_idx, row_data in enumerate(df.to_dicts()):
-            for col_idx, col_name in enumerate(df.columns):
-                worksheet.write(header_row + 1 + row_idx, col_idx, row_data[col_name])
-        workbook.close()
-    else:
-        df.write_excel(excel_buf)
-    return excel_buf.getvalue()
+from tests.unit.conftest import make_excel_bytes as _make_excel_bytes
 
 
 def _make_zip(entries: dict[str, pl.DataFrame], header_row: int = 0) -> bytes:
@@ -47,7 +31,7 @@ def _make_zip(entries: dict[str, pl.DataFrame], header_row: int = 0) -> bytes:
     buf = BytesIO()
     with zipfile.ZipFile(buf, "w") as zf:
         for name, df in entries.items():
-            zf.writestr(name, _make_excel_bytes(df, header_row))
+            zf.writestr(name, _make_excel_bytes(df, header_row=header_row))
     return buf.getvalue()
 
 
@@ -125,7 +109,9 @@ def test_process_zip_mass_update_header_row():
     df = pl.DataFrame({"Kode Variasi": ["V1"], "Nama Produk": ["P1"], "Nama Variasi": ["NV"], "SKU": ["S1"], "Stok": [10]})
     zip_bytes = _make_zip({"data.xlsx": df}, header_row=2)
     result = process_zip(zip_bytes, "mass_update")
-    assert "Kode Variasi" in result.columns or len(result) >= 0  # parsed without error
+    assert "Kode Variasi" in result.columns
+    assert "Nama Produk" in result.columns
+    assert len(result) == 1
 
 
 # ---------------------------------------------------------------------------

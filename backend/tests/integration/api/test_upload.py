@@ -337,11 +337,13 @@ def test_get_uploads_empty(client):
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.brand_queries") as mock_brand_queries,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
         mock_svc_conn = AsyncMock()
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_brand_queries.get_brand_by_id = AsyncMock(return_value=SAMPLE_BRAND)
         mock_svc_conn.fetch = AsyncMock(return_value=[])
 
         response = client.get("/api/v1/upload/brands/123", headers=AUTH_HEADERS)
@@ -358,11 +360,13 @@ def test_get_uploads_with_data(client):
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.brand_queries") as mock_brand_queries,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
         mock_svc_conn = AsyncMock()
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_brand_queries.get_brand_by_id = AsyncMock(return_value=SAMPLE_BRAND)
         mock_svc_conn.fetch = AsyncMock(return_value=[SAMPLE_UPLOAD])
 
         response = client.get("/api/v1/upload/brands/123", headers=AUTH_HEADERS)
@@ -375,6 +379,26 @@ def test_get_uploads_with_data(client):
         assert upload["file_type"] == "cpc_ad_report"
         assert upload["filename"] == "report.csv"
         assert upload["row_count"] == 50
+
+
+def test_get_uploads_brand_not_found(client):
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.brand_queries") as mock_brand_queries,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_brand_queries.get_brand_by_id = AsyncMock(return_value=None)
+
+        response = client.get("/api/v1/upload/brands/999", headers=AUTH_HEADERS)
+
+        assert response.status_code == 404
+        assert response.json()["code"] == "BRAND_NOT_FOUND"
 
 
 def test_get_uploads_without_token(client):

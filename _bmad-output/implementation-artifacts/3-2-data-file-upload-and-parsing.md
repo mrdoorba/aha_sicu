@@ -1,6 +1,6 @@
 # Story 3.2: Data File Upload and Parsing
 
-Status: review
+Status: done
 
 ## Story
 
@@ -590,6 +590,7 @@ frontend/src/components/evaluation/EvaluationSections.tsx ← MODIFY: replace fi
 ### Modified Files
 
 - `backend/pyproject.toml` — Added polars, fastexcel, python-multipart, google-cloud-storage deps + xlsxwriter dev dep
+- `backend/uv.lock` — Updated lockfile from `uv sync` after adding new dependencies
 - `backend/app/config.py` — Added `gcs_upload_bucket` setting
 - `backend/app/core/exceptions.py` — Added `UploadException` class
 - `backend/app/main.py` — Registered upload router
@@ -611,9 +612,29 @@ frontend/src/components/evaluation/EvaluationSections.tsx ← MODIFY: replace fi
 
 ### Test Results
 
-- **Backend**: 128 tests passed (35 new + 93 existing), 0 regressions
+- **Backend**: 129 tests passed (36 new + 93 existing), 0 regressions
 - **Frontend**: 89 tests passed (10 new + 79 existing), 2 pre-existing failures (Firebase API key config in App.test.tsx and EvaluationPage.test.tsx — not related to this story)
+
+### Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door — 2026-02-11
+
+**Findings (8 total):** 1 HIGH, 4 MEDIUM, 3 LOW — all fixed.
+
+| # | Severity | Issue | File | Fix |
+|---|----------|-------|------|-----|
+| H1 | HIGH | Local upload endpoint: no auth + path traversal | `router.py:61-84` | Added `Depends(get_current_user)` + `os.path.basename()` sanitization |
+| M1 | MEDIUM | ZipFile not used as context manager (resource leak) | `zip_handler.py:47` | Wrapped with `with zf:` |
+| M2 | MEDIUM | GET /upload/brands/{id} returns 200 for non-existent brands | `service.py:237-255` | Added brand existence check + 404 |
+| M3 | MEDIUM | `backend/uv.lock` missing from story File List | Story file | Added to Modified Files |
+| M4 | MEDIUM | Stale pending uploads never cleaned up | `service.py:62` | Added `_cleanup_expired_uploads()` sweep on new requests |
+| L1 | LOW | Missing "No file uploaded" text per AC7 | `FileUploadSlot.tsx:72` | Added text to empty state |
+| L2 | LOW | Tautological test assertion (always True) | `test_zip_handler.py:128` | Replaced with proper column+row assertions |
+| L3 | LOW | Duplicate `_make_excel_bytes` test helper | `test_parser.py`, `test_zip_handler.py` | Extracted to `tests/unit/conftest.py` |
+
+**New test added:** `test_get_uploads_brand_not_found` — validates 404 response for non-existent brands on GET endpoint.
 
 ## Change Log
 
 - **2026-02-11**: Story 3.2 implemented — Full-stack file upload with GCS signed URL flow, Polars parsing, ZIP handling, column validation, 4-slot frontend UI (Tasks 1-12 complete)
+- **2026-02-11**: Code review — 8 issues found (1H/4M/3L), all fixed. Added auth+path traversal fix to local upload, ZipFile context manager, brand existence check on GET, stale upload cleanup, AC7 text, test assertion fix, DRY test helper. +1 new test (129 backend total).

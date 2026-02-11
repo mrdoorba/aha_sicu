@@ -62,6 +62,14 @@ class PendingUpload:
 _pending_uploads: dict[str, PendingUpload] = {}
 
 
+def _cleanup_expired_uploads() -> None:
+    """Remove expired entries from _pending_uploads to prevent unbounded growth."""
+    now = datetime.now(timezone.utc)
+    expired = [uid for uid, p in _pending_uploads.items() if now > p.expires_at]
+    for uid in expired:
+        _pending_uploads.pop(uid, None)
+
+
 def _validate_file_type(file_type: str) -> None:
     """Raise if file_type is not one of the allowed values."""
     if file_type not in _VALID_FILE_TYPES:
@@ -89,6 +97,7 @@ async def request_signed_url(
     content_type: str,
 ) -> SignedUrlResponse:
     """Validate inputs, generate a signed upload URL, and track the pending upload."""
+    _cleanup_expired_uploads()
     _validate_file_type(file_type)
     _validate_extension(filename, file_type)
 
@@ -237,6 +246,11 @@ async def process_upload(
 async def get_brand_uploads(brand_id: int) -> BrandUploadsResponse:
     """Return all uploads for a brand."""
     async with db.connection() as conn:
+        brand = await brand_queries.get_brand_by_id(conn, brand_id)
+        if not brand:
+            raise AppException(
+                code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
+            )
         rows = await upload_queries.get_uploads_by_brand(conn, brand_id)
 
     uploads = [

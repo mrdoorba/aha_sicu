@@ -48,6 +48,7 @@ describe('FileUploadSlot', () => {
     expect(screen.getByText('CPC Ad Report')).toBeInTheDocument();
     expect(screen.getByText(/Format: .csv/)).toBeInTheDocument();
     expect(screen.getByText(/Routes to: Calculator 1/)).toBeInTheDocument();
+    expect(screen.getByText('No file uploaded')).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /upload file/i })).toBeInTheDocument();
   });
 
