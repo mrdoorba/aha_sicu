@@ -2,9 +2,10 @@
 
 import math
 
+from app.core.exceptions import AppException
 from app.db.connection import db
 from app.db.queries import brands as brand_queries
-from app.modules.brands.schemas import BrandListItem, BrandListResponse
+from app.modules.brands.schemas import BrandDetailResponse, BrandListItem, BrandListResponse
 
 
 async def get_brands_paginated(
@@ -42,3 +43,26 @@ async def get_brands_paginated(
         limit=limit,
         pages=pages,
     )
+
+
+async def get_brand_detail(brand_id: int) -> BrandDetailResponse:
+    """Get a single brand by ID with meeting data.
+
+    Args:
+        brand_id: The brand VP data ID.
+
+    Returns:
+        BrandDetailResponse with VP and optional meeting data.
+
+    Raises:
+        AppException: If brand not found (404).
+    """
+    async with db.connection() as conn:
+        row = await brand_queries.get_brand_by_id(conn, brand_id)
+
+    if not row:
+        raise AppException(
+            code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
+        )
+
+    return BrandDetailResponse(**row)

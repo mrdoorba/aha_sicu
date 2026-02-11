@@ -6,6 +6,7 @@ import { Toaster } from './components/ui/sonner';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { BrandsPage } from './pages/BrandsPage';
+import { EvaluationPage } from './pages/EvaluationPage';
 
 const queryClient = new QueryClient();
 
@@ -35,6 +36,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <BrandsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/evaluation/:brandId"
+              element={
+                <ProtectedRoute>
+                  <EvaluationPage />
                 </ProtectedRoute>
               }
             />
