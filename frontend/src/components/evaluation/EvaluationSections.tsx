@@ -1,22 +1,17 @@
 import { useEffect, useRef } from 'react';
-import { FileText, Calculator } from 'lucide-react';
+import { Calculator } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
+import { FileUploadSection } from './FileUploadSection';
 
 interface EvaluationSectionsProps {
+  brandId: number;
   categoryType: string | null;
   onCategoryChange: (value: string) => void;
   onActiveSection: (sectionId: string) => void;
 }
-
-const FILE_UPLOAD_SLOTS = [
-  { label: 'CPC Ad Report', format: '.csv', calculator: 'Calculator 1 (Ads Keyword — Sheet 1)' },
-  { label: 'Keyword Placement Report', format: '.csv', calculator: 'Calculator 1 (Ads Keyword — Sheet 2)' },
-  { label: 'Order Export', format: '.xlsx', calculator: 'Calculator 2 (Top SKU) & Calculator 3 (Discount Check)' },
-  { label: 'Mass Update / Sales Info', format: '.xlsx', calculator: 'Calculator 2 (Top SKU)' },
-];
 
 const CALCULATOR_CARDS = [
   { name: 'Ads Keyword Calculator', description: 'Requires CPC Ad Report + Keyword Placement Report' },
@@ -25,6 +20,7 @@ const CALCULATOR_CARDS = [
 ];
 
 export const EvaluationSections = ({
+  brandId,
   categoryType,
   onCategoryChange,
   onActiveSection,
@@ -112,27 +108,7 @@ export const EvaluationSections = ({
         <h3 className="mb-4 text-lg font-semibold text-foreground">
           Step 4. File Upload
         </h3>
-        <div className="grid gap-4 sm:grid-cols-2">
-          {FILE_UPLOAD_SLOTS.map((slot) => (
-            <Card key={slot.label}>
-              <CardContent className="flex items-start gap-3 pt-4">
-                <FileText className="mt-0.5 size-5 text-muted-foreground" aria-hidden="true" />
-                <div>
-                  <p className="font-medium">{slot.label}</p>
-                  <p className="text-xs text-muted-foreground">
-                    Format: {slot.format}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    Routes to: {slot.calculator}
-                  </p>
-                  <p className="mt-2 text-sm text-muted-foreground">
-                    No file uploaded
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+        <FileUploadSection brandId={brandId} />
       </section>
 
       {/* Section 5: Ads, Campaign, Competition & Review */}
