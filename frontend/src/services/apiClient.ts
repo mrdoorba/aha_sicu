@@ -431,6 +431,43 @@ interface paths {
       };
     };
   };
+  '/api/v1/evaluations/brands/{brand_id}/save': {
+    post: {
+      parameters: {
+        path: {
+          brand_id: number;
+        };
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            template: 'fashion' | 'non_fashion';
+            final_score: number;
+            verdict: string;
+            score_breakdown: Array<Record<string, unknown>>;
+            calculator_results: Record<string, unknown>;
+            manual_inputs: Record<string, unknown>;
+            rule_version?: number;
+            email_output?: string | null;
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              id: number;
+              brand_id: number;
+              final_score: number;
+              verdict: string;
+              template: string;
+              created_at: string;
+            };
+          };
+        };
+      };
+    };
+  };
   '/api/v1/evaluations/brands/{brand_id}/calculators/status': {
     get: {
       parameters: {

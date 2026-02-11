@@ -12,6 +12,9 @@ import { ArrowLeft } from 'lucide-react';
 import { computeSectionProgress } from '../components/evaluation/forms/formConfig';
 import { useScoring } from '../hooks/useScoring';
 import { ScorePanel } from '../components/evaluation/scoring';
+import { useSaveEvaluation } from '../hooks/useSaveEvaluation';
+import { useCalculatorResults } from '../hooks/useCalculator';
+import { toast } from 'sonner';
 
 export const EvaluationPage = () => {
   const { brandId } = useParams<{ brandId: string }>();
@@ -48,6 +51,51 @@ export const EvaluationPage = () => {
     isGenerating,
     error: scoringError,
   } = useScoring(safeBrandId);
+
+  const { data: calculatorResultsData } = useCalculatorResults(safeBrandId);
+
+  const {
+    saveEvaluation,
+    isSaving,
+    isSaved,
+    error: saveError,
+    reset: resetSave,
+  } = useSaveEvaluation(safeBrandId);
+
+  const handleSaveEvaluation = useCallback(() => {
+    if (!scoringResult) return;
+
+    const calcResults: Record<string, unknown> = {};
+    if (calculatorResultsData?.results) {
+      for (const r of calculatorResultsData.results) {
+        calcResults[r.calculator_type] = {
+          details: r.details,
+          output_text: r.output_text,
+        };
+      }
+    }
+
+    saveEvaluation(
+      {
+        template: scoringResult.template as 'fashion' | 'non_fashion',
+        final_score: scoringResult.total_score,
+        verdict: scoringResult.verdict,
+        score_breakdown: scoringResult.category_scores as unknown as Array<Record<string, unknown>>,
+        calculator_results: calcResults,
+        manual_inputs: manualData as unknown as Record<string, unknown>,
+        rule_version: 1,
+        email_output: scoringResult.email_body || null,
+      },
+      {
+        onSuccess: () => {
+          toast.success('Evaluation saved');
+        },
+        onError: () => {
+          toast.error('Failed to save evaluation. Please try again.');
+        },
+      },
+    );
+  }, [scoringResult, calculatorResultsData, manualData, saveEvaluation]);
 
   const handleCategoryChange = useCallback(
     (value: string) => {
@@ -115,6 +163,11 @@ export const EvaluationPage = () => {
                   isGenerating={isGenerating}
                   isStale={isStale}
                   scoringError={scoringError}
+                  onSaveEvaluation={handleSaveEvaluation}
+                  isSaving={isSaving}
+                  isSaved={isSaved}
+                  saveError={saveError}
+                  onResetSave={resetSave}
                 />
               </div>
 

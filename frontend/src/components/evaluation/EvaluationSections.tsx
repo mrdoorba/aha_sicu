@@ -3,6 +3,7 @@ import { Card, CardContent } from '../ui/card';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
+import { Save, Check, Loader2 } from 'lucide-react';
 import { FileUploadSection } from './FileUploadSection';
 import { OperationalForm } from './forms/OperationalForm';
 import { BusinessForm } from './forms/BusinessForm';
@@ -44,6 +45,11 @@ interface EvaluationSectionsProps {
   isGenerating: boolean;
   isStale: boolean;
   scoringError: Error | null;
+  onSaveEvaluation: () => void;
+  isSaving: boolean;
+  isSaved: boolean;
+  saveError: Error | null;
+  onResetSave: () => void;
 }
 
 export const EvaluationSections = ({
@@ -64,6 +70,11 @@ export const EvaluationSections = ({
   isGenerating,
   isStale,
   scoringError,
+  onSaveEvaluation,
+  isSaving,
+  isSaved,
+  saveError,
+  onResetSave,
 }: EvaluationSectionsProps) => {
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
 
@@ -224,9 +235,38 @@ export const EvaluationSections = ({
 
         {/* Save Button */}
         <div className="mt-6">
-          <Button disabled className="w-full">
-            Save Evaluation
+          <Button
+            className="w-full"
+            disabled={!scoringResult || isSaving || isSaved}
+            onClick={onSaveEvaluation}
+          >
+            {isSaving ? (
+              <>
+                <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
+                Saving...
+              </>
+            ) : isSaved ? (
+              <>
+                <Check className="mr-2 size-4" aria-hidden="true" />
+                Saved ✓
+              </>
+            ) : (
+              <>
+                <Save className="mr-2 size-4" aria-hidden="true" />
+                Save Evaluation
+              </>
+            )}
           </Button>
+          {!scoringResult && !isSaved && (
+            <p className="mt-1 text-center text-sm text-muted-foreground">
+              Generate a score first to save
+            </p>
+          )}
+          {saveError && (
+            <p className="mt-1 text-center text-sm text-destructive">
+              Failed to save. Please try again.
+            </p>
+          )}
         </div>
       </section>
     </div>
