@@ -376,6 +376,60 @@ interface paths {
       };
     };
   };
+  '/api/v1/evaluations/brands/{brand_id}/score': {
+    post: {
+      parameters: {
+        path: {
+          brand_id: number;
+        };
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            template: 'fashion' | 'non_fashion';
+            verdict: string;
+            store_name: string;
+            period: string;
+            brand_name: string;
+            email?: string | null;
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              total_score: number;
+              category_scores: Array<{
+                category: string;
+                score: number;
+                max_score: number;
+                rows: Array<{
+                  row: number;
+                  metric: string;
+                  value: unknown;
+                  benchmark: string;
+                  verdict: string;
+                  message: string;
+                  score: number;
+                }>;
+              }>;
+              verdict: string;
+              conclusion: string;
+              marketing_estimation: string;
+              marketing_percentage: string;
+              marketing_budget: string;
+              closing_message: string;
+              email_subject: string;
+              email_body: string;
+              whatsapp_link: string;
+              template: string;
+            };
+          };
+        };
+      };
+    };
+  };
   '/api/v1/evaluations/brands/{brand_id}/calculators/status': {
     get: {
       parameters: {
