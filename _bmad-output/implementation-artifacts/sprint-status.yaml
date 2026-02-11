@@ -68,7 +68,7 @@ development_status:
   3-7-calculator-orchestration-and-auto-execute: done
   3-8-calculator-results-display: done
   3-9-final-scoring-with-template-selection: done
-  3-10-save-evaluation: backlog
+  3-10-save-evaluation: review
   epic-3-retrospective: optional
 
   # Epic 4: Evaluation History & Search
