@@ -3,7 +3,7 @@
 from typing import Any
 
 from app.calculators.ads_keyword import calculate_ads_keyword
-from app.core.exceptions import AppException
+from app.core.exceptions import CalculatorException
 from app.db.connection import db
 from app.db.queries import brands as brand_queries
 from app.db.queries import calculator_results as calc_queries
@@ -21,15 +21,16 @@ async def run_ads_keyword_calculator(
     runs the pure calculator function, and stores the result.
 
     Raises:
-        AppException: BRAND_NOT_FOUND if brand doesn't exist.
-        AppException: CALC_MISSING_DATA if required uploads or inputs are missing.
+        CalculatorException: BRAND_NOT_FOUND if brand doesn't exist.
+        CalculatorException: CALC_MISSING_DATA if required uploads or inputs are missing.
+        CalculatorException: CALC_EXECUTION_FAILED if calculator raises an unexpected error.
     """
     async with db.connection() as conn:
         async with conn.transaction():
             # Validate brand exists
             brand = await brand_queries.get_brand_by_id(conn, brand_id)
             if not brand:
-                raise AppException(
+                raise CalculatorException(
                     code="BRAND_NOT_FOUND",
                     detail="Brand not found",
                     status_code=404,
@@ -40,7 +41,7 @@ async def run_ads_keyword_calculator(
                 conn, brand_id, "cpc_ad_report"
             )
             if not cpc_upload:
-                raise AppException(
+                raise CalculatorException(
                     code="CALC_MISSING_DATA",
                     detail="CPC Ad Report (cpc_ad_report) has not been uploaded for this brand",
                 )
@@ -50,7 +51,7 @@ async def run_ads_keyword_calculator(
                 conn, brand_id, "keyword_report"
             )
             if not keyword_upload:
-                raise AppException(
+                raise CalculatorException(
                     code="CALC_MISSING_DATA",
                     detail="Keyword/Placement Report (keyword_report) has not been uploaded for this brand",
                 )
@@ -61,12 +62,19 @@ async def run_ads_keyword_calculator(
             )
             total_products = _extract_total_products(eval_inputs)
 
-            # Extract parsed data
-            cpc_data: list[dict[str, Any]] = cpc_upload["parsed_data"]["data"]
-            keyword_data: list[dict[str, Any]] = keyword_upload["parsed_data"]["data"]
+            # Extract and validate parsed data structure
+            cpc_data = _extract_parsed_data(cpc_upload, "cpc_ad_report")
+            keyword_data = _extract_parsed_data(keyword_upload, "keyword_report")
 
             # Run pure calculator
-            result = calculate_ads_keyword(cpc_data, keyword_data, total_products)
+            try:
+                result = calculate_ads_keyword(cpc_data, keyword_data, total_products)
+            except Exception as e:
+                raise CalculatorException(
+                    code="CALC_EXECUTION_FAILED",
+                    detail=f"Ads Keyword Calculator failed: {e}",
+                    status_code=500,
+                ) from e
 
             # Store result
             row = await calc_queries.upsert_result(
@@ -85,16 +93,39 @@ async def run_ads_keyword_calculator(
     )
 
 
+def _extract_parsed_data(upload: dict, file_type: str) -> list[dict[str, Any]]:
+    """Extract and validate parsed_data.data from a brand upload record.
+
+    Raises:
+        CalculatorException: CALC_MISSING_DATA if parsed_data structure is invalid.
+    """
+    parsed_data = upload.get("parsed_data")
+    if not isinstance(parsed_data, dict):
+        raise CalculatorException(
+            code="CALC_MISSING_DATA",
+            detail=f"Upload '{file_type}' has invalid parsed_data structure",
+        )
+
+    data = parsed_data.get("data")
+    if not isinstance(data, list):
+        raise CalculatorException(
+            code="CALC_MISSING_DATA",
+            detail=f"Upload '{file_type}' has invalid parsed_data.data structure",
+        )
+
+    return data
+
+
 def _extract_total_products(eval_inputs: dict | None) -> int:
     """Extract total_products from evaluation_inputs.manual_data.
 
     Path: manual_data → products → productCount
 
     Raises:
-        AppException: CALC_MISSING_DATA if not available.
+        CalculatorException: CALC_MISSING_DATA if not available.
     """
     if not eval_inputs:
-        raise AppException(
+        raise CalculatorException(
             code="CALC_MISSING_DATA",
             detail="Manual input 'total_products' (productCount) is required "
             "for Ads Keyword Calculator",
@@ -102,7 +133,7 @@ def _extract_total_products(eval_inputs: dict | None) -> int:
 
     manual_data = eval_inputs.get("manual_data")
     if not manual_data:
-        raise AppException(
+        raise CalculatorException(
             code="CALC_MISSING_DATA",
             detail="Manual input 'total_products' (productCount) is required "
             "for Ads Keyword Calculator",
@@ -110,7 +141,7 @@ def _extract_total_products(eval_inputs: dict | None) -> int:
 
     products = manual_data.get("products")
     if not products:
-        raise AppException(
+        raise CalculatorException(
             code="CALC_MISSING_DATA",
             detail="Manual input 'total_products' (productCount) is required "
             "for Ads Keyword Calculator",
@@ -118,7 +149,7 @@ def _extract_total_products(eval_inputs: dict | None) -> int:
 
     product_count = products.get("productCount")
     if product_count is None:
-        raise AppException(
+        raise CalculatorException(
             code="CALC_MISSING_DATA",
             detail="Manual input 'total_products' (productCount) is required "
             "for Ads Keyword Calculator",
@@ -127,7 +158,7 @@ def _extract_total_products(eval_inputs: dict | None) -> int:
     try:
         return int(product_count)
     except (TypeError, ValueError) as e:
-        raise AppException(
+        raise CalculatorException(
             code="CALC_MISSING_DATA",
             detail="Manual input 'total_products' (productCount) must be a valid number",
         ) from e

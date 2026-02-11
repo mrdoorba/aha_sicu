@@ -32,14 +32,11 @@ export function useRunCalculator(brandId: number, calculatorType: 'ads_keyword')
 
   return useMutation<CalculatorResult>({
     mutationFn: async () => {
-      if (calculatorType !== 'ads_keyword') {
-        throw new Error(`Unsupported calculator type: ${calculatorType}`);
-      }
       const { data, error } = await client.POST(
         '/api/v1/evaluations/brands/{brand_id}/calculators/ads_keyword',
         { params: { path: { brand_id: brandId } } },
       );
-      if (error) throw new Error('Failed to run calculator');
+      if (error) throw error;
       return data as CalculatorResult;
     },
     onSuccess: () => {
