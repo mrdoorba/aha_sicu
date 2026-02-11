@@ -6,7 +6,7 @@ import { EvaluationSections } from '../components/evaluation/EvaluationSections'
 import { useBrandDetail } from '../hooks/useBrandDetail';
 import { useEvaluationState, useSaveEvaluationInputs, type CategoryType } from '../hooks/useEvaluation';
 import { useAutoSaveForm } from '../hooks/useAutoSaveForm';
-import { useState, useCallback, useMemo } from 'react';
+import { useState, useCallback, useMemo, useEffect } from 'react';
 import { Button } from '../components/ui/button';
 import { ArrowLeft } from 'lucide-react';
 import { computeSectionProgress } from '../components/evaluation/forms/formConfig';
@@ -61,6 +61,16 @@ export const EvaluationPage = () => {
     error: saveError,
     reset: resetSave,
   } = useSaveEvaluation(safeBrandId);
+
+  // Reset save state when evaluation data changes after a successful save
+  // This re-enables the save button for multi-save workflow (AC #2)
+  useEffect(() => {
+    if (isSaved) {
+      resetSave();
+    }
+    // Only trigger on data changes, not on isSaved/resetSave changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [manualData, scoringResult]);
 
   const handleSaveEvaluation = useCallback(() => {
     if (!scoringResult) return;

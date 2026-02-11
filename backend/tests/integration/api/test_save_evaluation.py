@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 from decimal import Decimal
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
 
@@ -74,6 +74,7 @@ def test_save_evaluation_success(client):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
         mock_svc_conn = AsyncMock()
+        mock_svc_conn.transaction = MagicMock(return_value=AsyncMock())
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
         mock_svc_conn.fetchrow = AsyncMock(side_effect=[
             SAMPLE_BRAND,  # get_brand_by_id
@@ -132,6 +133,7 @@ def test_save_evaluation_invalid_brand(client):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
         mock_svc_conn = AsyncMock()
+        mock_svc_conn.transaction = MagicMock(return_value=AsyncMock())
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
         mock_svc_conn.fetchrow = AsyncMock(return_value=None)  # Brand not found
 
@@ -177,6 +179,7 @@ def test_save_creates_new_record_each_time(client):
         }
 
         mock_svc_conn = AsyncMock()
+        mock_svc_conn.transaction = MagicMock(return_value=AsyncMock())
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
         mock_svc_conn.fetchrow = AsyncMock(side_effect=[
             SAMPLE_BRAND, saved_row_1,  # First save
@@ -217,6 +220,7 @@ def test_save_evaluation_negative_score(client):
             "final_score": Decimal("-15.50"),
         }
         mock_svc_conn = AsyncMock()
+        mock_svc_conn.transaction = MagicMock(return_value=AsyncMock())
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
         mock_svc_conn.fetchrow = AsyncMock(side_effect=[
             SAMPLE_BRAND,
@@ -247,6 +251,7 @@ def test_save_preserves_jsonb_data(client):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
         mock_svc_conn = AsyncMock()
+        mock_svc_conn.transaction = MagicMock(return_value=AsyncMock())
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
 
         # get_brand_by_id returns brand; insert_evaluation is patched separately
