@@ -3,7 +3,11 @@
 from fastapi import APIRouter, Depends
 
 from app.core.dependencies import get_current_user
+from app.modules.evaluations.calculator_service import (
+    run_ads_keyword_calculator as _run_ads_keyword,
+)
 from app.modules.evaluations.schemas import (
+    CalculatorResultResponse,
     EvaluationInputsUpdate,
     EvaluationStateResponse,
 )
@@ -43,4 +47,22 @@ async def update_evaluation(
         user_id=current_user["id"],
         category_type=body.category_type,
         manual_data=body.manual_data,
+    )
+
+
+@router.post(
+    "/brands/{brand_id}/calculators/ads_keyword",
+    response_model=CalculatorResultResponse,
+)
+async def run_ads_keyword_calculator(
+    brand_id: int,
+    current_user: dict = Depends(get_current_user),
+) -> CalculatorResultResponse:
+    """Execute the Ads Keyword Calculator for a brand.
+
+    Loads required CSV data and manual inputs, runs the calculator,
+    and stores the result. Returns 400 if required data is missing.
+    """
+    return await _run_ads_keyword(
+        brand_id=brand_id, user_id=current_user["id"]
     )
