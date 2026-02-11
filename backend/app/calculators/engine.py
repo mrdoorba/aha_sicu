@@ -79,9 +79,16 @@ def _build_skip_reason(status_info: dict) -> str:
 
 
 async def check_calculator_readiness(
-    brand_id: int, conn: Connection
+    brand_id: int, conn: Connection, *, user_id: int | None = None
 ) -> dict[str, dict]:
     """Check which calculators are ready to run for a brand.
+
+    Args:
+        brand_id: The brand to check.
+        conn: Database connection.
+        user_id: When provided, check this specific user's manual data
+            (used before execution to avoid readiness/execution mismatch).
+            When None, check any user's manual data (general status view).
 
     Returns a dict keyed by calculator_type with readiness status:
     - status: "ready" or "pending"
@@ -94,8 +101,11 @@ async def check_calculator_readiness(
     uploads = await upload_queries.get_uploads_by_brand(conn, brand_id)
     available_file_types = {u["file_type"] for u in uploads}
 
-    # Check manual data availability (any user)
-    eval_inputs = await eval_queries.get_any_evaluation_inputs(conn, brand_id)
+    # Check manual data availability
+    if user_id is not None:
+        eval_inputs = await eval_queries.get_evaluation_inputs(conn, brand_id, user_id)
+    else:
+        eval_inputs = await eval_queries.get_any_evaluation_inputs(conn, brand_id)
     has_manual_total_products = _has_total_products(
         eval_inputs["manual_data"] if eval_inputs else None
     )
@@ -144,7 +154,7 @@ async def run_ready_calculators(
     - {calculator_type, status="skipped", reason="..."}
     - {calculator_type, status="error", reason="..."}
     """
-    readiness = await check_calculator_readiness(brand_id, conn)
+    readiness = await check_calculator_readiness(brand_id, conn, user_id=user_id)
     results: list[dict] = []
 
     for calc_type, status_info in readiness.items():
@@ -166,12 +176,13 @@ async def run_ready_calculators(
             })
         except Exception as e:
             logger.warning(
-                "Calculator %s failed for brand %d: %s", calc_type, brand_id, e
+                "Calculator %s failed for brand %d: %s",
+                calc_type, brand_id, e, exc_info=True,
             )
             results.append({
                 "calculator_type": calc_type,
                 "status": "error",
-                "reason": str(e),
+                "reason": f"Calculator execution failed: {calc_type}",
             })
 
     return results
@@ -188,7 +199,7 @@ async def run_calculators_for_upload(
     if not affected_calculators:
         return []
 
-    readiness = await check_calculator_readiness(brand_id, conn)
+    readiness = await check_calculator_readiness(brand_id, conn, user_id=user_id)
     results: list[dict] = []
 
     for calc_type in affected_calculators:
@@ -217,14 +228,12 @@ async def run_calculators_for_upload(
         except Exception as e:
             logger.warning(
                 "Calculator %s failed for brand %d after upload: %s",
-                calc_type,
-                brand_id,
-                e,
+                calc_type, brand_id, e, exc_info=True,
             )
             results.append({
                 "calculator_type": calc_type,
                 "status": "error",
-                "reason": str(e),
+                "reason": f"Calculator execution failed: {calc_type}",
             })
 
     return results

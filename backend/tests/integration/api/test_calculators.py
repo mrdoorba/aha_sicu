@@ -1060,6 +1060,75 @@ def test_calculator_status_reflects_existing_results(client):
 # ---------------------------------------------------------------------------
 
 
+def test_upload_reupload_clears_and_reruns(client):
+    """Re-uploading a file clears dependent results and re-runs calculators."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.router.process_upload") as mock_process,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        from app.modules.upload.schemas import (
+            AutoCalculatedItem,
+            ProcessUploadResponse,
+            UploadResponse,
+        )
+
+        # Simulate re-upload of order_export: clears discount+top_sku, re-runs discount
+        mock_process.return_value = ProcessUploadResponse(
+            upload=UploadResponse(
+                id=2,
+                brand_id=1,
+                file_type="order_export",
+                filename="order_v2.xlsx",
+                file_size=8192,
+                row_count=200,
+                uploaded_at=datetime(2026, 2, 11, 12, 0, tzinfo=timezone.utc),
+            ),
+            auto_calculated=[
+                AutoCalculatedItem(
+                    calculator_type="discount",
+                    status="success",
+                    result={
+                        "calculator_type": "discount",
+                        "output_text": "re-calculated",
+                        "details": {"discount_pct": "15.0%"},
+                        "calculated_at": "2026-02-11T12:00:00+00:00",
+                    },
+                ),
+                AutoCalculatedItem(
+                    calculator_type="top_sku",
+                    status="skipped",
+                    reason="Missing required files: mass_update",
+                ),
+            ],
+        )
+
+        response = client.post(
+            "/api/v1/upload/process",
+            json={"upload_id": "reupload-id", "brand_id": 1, "file_type": "order_export"},
+            headers=AUTH_HEADERS,
+        )
+
+    assert response.status_code == 200
+    data = response.json()
+
+    # Upload reflects the new file
+    assert data["upload"]["id"] == 2
+    assert data["upload"]["row_count"] == 200
+    assert data["upload"]["filename"] == "order_v2.xlsx"
+
+    # Auto-calculated shows re-run results
+    assert len(data["auto_calculated"]) == 2
+    discount_r = next(r for r in data["auto_calculated"] if r["calculator_type"] == "discount")
+    top_sku_r = next(r for r in data["auto_calculated"] if r["calculator_type"] == "top_sku")
+    assert discount_r["status"] == "success"
+    assert discount_r["result"]["output_text"] == "re-calculated"
+    assert top_sku_r["status"] == "skipped"
+
+
 def test_upload_process_includes_auto_calculated(client):
     """POST upload process response includes auto_calculated results."""
     with (

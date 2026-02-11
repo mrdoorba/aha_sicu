@@ -65,6 +65,7 @@ async def get_any_evaluation_inputs(
                created_at, updated_at
         FROM evaluation_inputs
         WHERE brand_id = $1 AND manual_data IS NOT NULL
+        ORDER BY updated_at DESC
         LIMIT 1
         """,
         brand_id,
