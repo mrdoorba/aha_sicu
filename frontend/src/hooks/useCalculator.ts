@@ -46,7 +46,25 @@ export interface DiscountDetails {
   };
 }
 
-export type CalculatorDetails = AdsKeywordDetails | DiscountDetails;
+export interface TopSkuDetails {
+  output_1: Array<{
+    kode_variasi: string;
+    product_name: string;
+    total_omzet: number;
+    rata2_harga_jual: number;
+  }>;
+  output_2: Array<{
+    kode_variasi: string;
+    nama_produk: string;
+    varian: string;
+    stok: number;
+  }>;
+  average_stock: number;
+  product_count: number;
+  total_unique_products: number;
+}
+
+export type CalculatorDetails = AdsKeywordDetails | DiscountDetails | TopSkuDetails;
 
 export interface CalculatorResult {
   calculator_type: string;
@@ -55,11 +73,12 @@ export interface CalculatorResult {
   calculated_at: string;
 }
 
-type CalculatorType = 'ads_keyword' | 'discount';
+type CalculatorType = 'ads_keyword' | 'discount' | 'top_sku';
 
 const CALCULATOR_PATHS = {
   ads_keyword: '/api/v1/evaluations/brands/{brand_id}/calculators/ads_keyword',
   discount: '/api/v1/evaluations/brands/{brand_id}/calculators/discount',
+  top_sku: '/api/v1/evaluations/brands/{brand_id}/calculators/top_sku',
 } as const;
 
 export function useRunCalculator(brandId: number, calculatorType: CalculatorType) {

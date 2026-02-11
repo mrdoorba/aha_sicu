@@ -300,6 +300,27 @@ interface paths {
       };
     };
   };
+  '/api/v1/evaluations/brands/{brand_id}/calculators/top_sku': {
+    post: {
+      parameters: {
+        path: {
+          brand_id: number;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              calculator_type: string;
+              output_text: string;
+              details: Record<string, unknown>;
+              calculated_at: string;
+            };
+          };
+        };
+      };
+    };
+  };
 }
 
 const authMiddleware: Middleware = {
