@@ -4,6 +4,7 @@ from typing import Any
 
 from app.calculators.ads_keyword import calculate_ads_keyword
 from app.calculators.discount import calculate_discount
+from app.calculators.top_sku import calculate_top_sku
 from app.core.exceptions import CalculatorException
 from app.db.connection import db
 from app.db.queries import brands as brand_queries
@@ -127,6 +128,23 @@ _REQUIRED_COLUMNS: dict[str, frozenset[str]] = {
         "Jumlah",
         "Voucher Ditanggung Penjual",
         "Paket Diskon",
+    }),
+    "order_export_top_sku": frozenset({
+        "Nama Produk",
+        "Nomor Referensi SKU",
+        "Nama Variasi",
+        "Harga Setelah Diskon",
+        "Jumlah",
+        "Jumlah Produk di Pesan",
+        "Voucher Ditanggung Penjual",
+        "Cashback Koin",
+        "Diskon Dari Shopee",
+    }),
+    "mass_update": frozenset({
+        "Nama Produk",
+        "Nama Variasi",
+        "Kode Variasi",
+        "Stok",
     }),
 }
 
@@ -265,6 +283,89 @@ async def run_discount_calculator(
                 conn,
                 brand_id=brand_id,
                 calculator_type="discount",
+                details=result.details,
+                output_text=result.output_text,
+            )
+
+    return CalculatorResultResponse(
+        calculator_type=row["calculator_type"],
+        output_text=row["output_text"],
+        details=row["details"],
+        calculated_at=row["calculated_at"],
+    )
+
+
+async def run_top_sku_calculator(
+    brand_id: int, user_id: int  # noqa: ARG001 — kept for API consistency with other calculators
+) -> CalculatorResultResponse:
+    """Execute the Top SKU Calculator for a brand.
+
+    Loads order_export and mass_update parsed data from brand_uploads,
+    runs the pure calculator function, and stores the result.
+
+    Args:
+        brand_id: The brand to run the calculator for.
+        user_id: Unused — kept for consistent interface with other calculators.
+
+    Raises:
+        CalculatorException: BRAND_NOT_FOUND if brand doesn't exist.
+        CalculatorException: CALC_MISSING_DATA if required uploads or columns are missing.
+        CalculatorException: CALC_EXECUTION_FAILED if calculator raises an unexpected error.
+    """
+    async with db.connection() as conn:
+        async with conn.transaction():
+            # Validate brand exists
+            brand = await brand_queries.get_brand_by_id(conn, brand_id)
+            if not brand:
+                raise CalculatorException(
+                    code="BRAND_NOT_FOUND",
+                    detail="Brand not found",
+                    status_code=404,
+                )
+
+            # Load Order Export
+            order_upload = await upload_queries.get_upload_by_type(
+                conn, brand_id, "order_export"
+            )
+            if not order_upload:
+                raise CalculatorException(
+                    code="CALC_MISSING_DATA",
+                    detail="Order Export (order_export) has not been uploaded for this brand",
+                )
+
+            # Load Mass Update
+            mass_update_upload = await upload_queries.get_upload_by_type(
+                conn, brand_id, "mass_update"
+            )
+            if not mass_update_upload:
+                raise CalculatorException(
+                    code="CALC_MISSING_DATA",
+                    detail="Mass Update (mass_update) has not been uploaded for this brand",
+                )
+
+            # Validate required columns for both file types
+            _validate_columns(order_upload.get("parsed_data", {}), "order_export_top_sku")
+            _validate_columns(mass_update_upload.get("parsed_data", {}), "mass_update")
+
+            # Extract parsed data
+            order_data = _extract_parsed_data(order_upload, "order_export")
+            mass_update_data = _extract_parsed_data(mass_update_upload, "mass_update")
+
+            # Run pure calculator
+            try:
+                result = calculate_top_sku(order_data, mass_update_data)
+            except Exception as e:
+                raise CalculatorException(
+                    code="CALC_EXECUTION_FAILED",
+                    detail=f"Top SKU Calculator failed: {e}",
+                    status_code=500,
+                ) from e
+
+            # Store result
+            row = await calc_queries.upsert_result(
+                conn,
+                brand_id=brand_id,
+                calculator_type="top_sku",
                 details=result.details,
                 output_text=result.output_text,
             )
