@@ -26,7 +26,10 @@ export function ProductsStatusForm({ data, onChange, onBlur }: ProductsStatusFor
                   options={STORE_STATUS_OPTIONS}
                   benchmark={field.benchmark}
                   value={data.storeStatus}
-                  onChange={(v) => onChange('products', field.key, v)}
+                  onChange={(v) => {
+                    onChange('products', field.key, v);
+                    onBlur(); // Trigger auto-save — dropdown selection IS the commit action
+                  }}
                 />
               );
             }

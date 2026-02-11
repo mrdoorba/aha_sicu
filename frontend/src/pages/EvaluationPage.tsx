@@ -6,9 +6,10 @@ import { EvaluationSections } from '../components/evaluation/EvaluationSections'
 import { useBrandDetail } from '../hooks/useBrandDetail';
 import { useEvaluationState, useSaveEvaluationInputs, type CategoryType } from '../hooks/useEvaluation';
 import { useAutoSaveForm } from '../hooks/useAutoSaveForm';
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import { Button } from '../components/ui/button';
 import { ArrowLeft } from 'lucide-react';
+import { computeSectionProgress } from '../components/evaluation/forms/formConfig';
 
 export const EvaluationPage = () => {
   const { brandId } = useParams<{ brandId: string }>();
@@ -35,6 +36,8 @@ export const EvaluationPage = () => {
     categoryType: evaluationState?.category_type ?? null,
     initialData: evaluationState?.manual_data ?? null,
   });
+
+  const sectionProgress = useMemo(() => computeSectionProgress(manualData), [manualData]);
 
   const handleCategoryChange = useCallback(
     (value: string) => {
@@ -78,6 +81,7 @@ export const EvaluationPage = () => {
                   onSectionClick={(sectionId) => {
                     document.getElementById(sectionId)?.scrollIntoView({ behavior: 'smooth' });
                   }}
+                  progress={sectionProgress}
                 />
               </aside>
 
