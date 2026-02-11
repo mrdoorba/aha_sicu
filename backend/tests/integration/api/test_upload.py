@@ -158,14 +158,28 @@ def test_signed_url_brand_not_found(client):
 # POST /api/v1/upload/process
 # ---------------------------------------------------------------------------
 
-def _make_csv_bytes():
-    """Create valid CPC Ad Report CSV."""
-    cols = [
-        "Nama Produk", "Nama Iklan", "Tipe Iklan",
-        "Penempatan", "Tipe Biaya", "Biaya",
+def _shopee_csv(header_line: str, data_lines: list[str] | None = None) -> bytes:
+    """Build a Shopee-style CSV with 7 metadata rows before the real headers."""
+    metadata = [
+        "Semua Laporan Iklan CPC - Shopee Indonesia",
+        "Username,testuser",
+        "Nama Toko,Test Store",
+        "ID Toko,123456",
+        "Waktu Laporan Dibuat,01/01/2026 00:00",
+        "Periode,01/01/2026 - 31/01/2026",
+        "",
     ]
-    rows = [",".join(cols), ",".join(["val"] * len(cols))]
-    return "\n".join(rows).encode()
+    lines = metadata + [header_line] + (data_lines or [])
+    return "\n".join(lines).encode()
+
+
+def _make_csv_bytes():
+    """Create valid CPC Ad Report CSV in Shopee format."""
+    cols = [
+        "Nama Iklan", "Jenis Iklan", "Kode Produk",
+        "Penempatan Iklan", "Biaya",
+    ]
+    return _shopee_csv(",".join(cols), [",".join(["val"] * len(cols))])
 
 
 def test_process_valid_csv(client):
@@ -241,9 +255,11 @@ def test_process_missing_columns(client):
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
-        # CSV with wrong columns
+        # CSV with wrong columns (still needs Shopee metadata rows)
         mock_storage = MagicMock()
-        mock_storage.download_file.return_value = b"wrong_col_a,wrong_col_b\n1,2"
+        mock_storage.download_file.return_value = _shopee_csv(
+            "wrong_col_a,wrong_col_b", ["1,2"]
+        )
         mock_storage_fn.return_value = mock_storage
 
         response = client.post("/api/v1/upload/process", json={

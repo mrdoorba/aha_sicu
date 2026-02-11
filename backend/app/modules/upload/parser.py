@@ -7,24 +7,28 @@ import polars as pl
 
 from app.core.exceptions import UploadException
 
-# Required columns per file type (case-sensitive)
+# Shopee CSV exports include 7 metadata rows (report title, username,
+# shop name, shop ID, creation date, period, blank line) before the
+# actual column headers on row 8.
+SHOPEE_CSV_SKIP_ROWS = 7
+
+# Required columns per file type — matched against actual Shopee exports.
 REQUIRED_COLUMNS: dict[str, list[str]] = {
     "cpc_ad_report": [
-        "Nama Produk",
         "Nama Iklan",
-        "Tipe Iklan",
-        "Penempatan",
-        "Tipe Biaya",
+        "Jenis Iklan",
+        "Kode Produk",
+        "Penempatan Iklan",
         "Biaya",
     ],
     "keyword_report": [
-        "Kata Kunci Pencarian",
-        "Klik",
-        "Kunjungan",
-        "Pesanan",
-        "Pendapatan",
-        "Biaya Iklan",
-        "ROAS",
+        "Kata Pencarian/Penempatan",
+        "Jenis Iklan",
+        "Kode Produk",
+        "Penempatan Iklan",
+        "Biaya",
+        "Omzet Penjualan",
+        "Efektifitas Iklan",
     ],
     "order_export": [
         "No. Pesanan",
@@ -38,22 +42,33 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
         "Nama Variasi",
         "Jumlah Produk di Pesan",
         "Cashback Koin",
-        "Diskon dari Shopee",
+        "Diskon Dari Shopee",
     ],
     "mass_update": [
-        "Kode Variasi",
+        "Kode Produk",
         "Nama Produk",
+        "Kode Variasi",
         "Nama Variasi",
         "SKU",
+        "Harga",
         "Stok",
     ],
 }
 
 
 def parse_csv(file_bytes: bytes) -> pl.DataFrame:
-    """Parse CSV bytes into a Polars DataFrame."""
+    """Parse a Shopee CSV export into a Polars DataFrame.
+
+    Shopee CSV exports contain 7 metadata rows before the actual column
+    headers, so we skip them.  ``truncate_ragged_lines`` handles the
+    metadata rows that have fewer fields than the data section.
+    """
     try:
-        return pl.read_csv(BytesIO(file_bytes))
+        return pl.read_csv(
+            BytesIO(file_bytes),
+            skip_rows=SHOPEE_CSV_SKIP_ROWS,
+            truncate_ragged_lines=True,
+        )
     except Exception as e:
         raise UploadException(
             code="UPLOAD_PARSE_FAILED",
