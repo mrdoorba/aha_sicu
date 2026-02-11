@@ -5,6 +5,7 @@ import { SectionNav } from '../components/evaluation/SectionNav';
 import { EvaluationSections } from '../components/evaluation/EvaluationSections';
 import { useBrandDetail } from '../hooks/useBrandDetail';
 import { useEvaluationState, useSaveEvaluationInputs, type CategoryType } from '../hooks/useEvaluation';
+import { useAutoSaveForm } from '../hooks/useAutoSaveForm';
 import { useState, useCallback } from 'react';
 import { Button } from '../components/ui/button';
 import { ArrowLeft } from 'lucide-react';
@@ -21,6 +22,19 @@ export const EvaluationPage = () => {
   const saveMutation = useSaveEvaluationInputs(safeBrandId);
 
   const [activeSection, setActiveSection] = useState('section-1');
+
+  const {
+    manualData,
+    handleFieldChange,
+    triggerSave,
+    retrySave,
+    saveStatus,
+    lastSaved,
+  } = useAutoSaveForm({
+    brandId: safeBrandId,
+    categoryType: evaluationState?.category_type ?? null,
+    initialData: evaluationState?.manual_data ?? null,
+  });
 
   const handleCategoryChange = useCallback(
     (value: string) => {
@@ -74,6 +88,12 @@ export const EvaluationPage = () => {
                   categoryType={evaluationState?.category_type ?? null}
                   onCategoryChange={handleCategoryChange}
                   onActiveSection={setActiveSection}
+                  manualData={manualData}
+                  onFieldChange={handleFieldChange}
+                  onFieldBlur={triggerSave}
+                  saveStatus={saveStatus}
+                  lastSaved={lastSaved}
+                  onRetrySave={retrySave}
                 />
               </div>
 
