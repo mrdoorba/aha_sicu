@@ -1,6 +1,6 @@
 # Story 3.6: Top SKU Calculator
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -535,6 +535,7 @@ No debug issues encountered. All tests passed on first run.
 - **Task 2+4**: Added `run_top_sku_calculator()` service function loading both order_export and mass_update, validating columns for each (`order_export_top_sku` and `mass_update` column sets), calling pure calculator, and upserting to `calculator_results`. Router endpoint at `POST /api/v1/evaluations/brands/{brand_id}/calculators/top_sku`. 6 integration tests covering success, missing files, missing columns, upsert, and auth.
 - **Task 5**: Added `TopSkuDetails` interface, `'top_sku'` to `CalculatorType` union and `CALCULATOR_PATHS`, and top_sku endpoint path type in `apiClient.ts`. TypeScript compiles cleanly.
 - **Regression**: Full test suite passes (321 tests, 0 failures).
+- **Code Review Fixes (1H/3M/3L)**: Fixed Output 2 split direction (rsplit), empty Kode Variasi handling, int→round for currency. Added 3 new tests: dashed product names, empty Kode Variasi edge case, order_export column validation. Renamed misleading KYPSO/MND test names. 324 tests pass after fixes.
 
 ### File List
 
@@ -554,3 +555,4 @@ Modified files:
 ## Change Log
 
 - 2026-02-11: Implemented Story 3.6 — Top SKU Calculator with full processing pipeline, API endpoint, 47 unit tests, 6 integration tests, and frontend type additions. All 321 tests pass.
+- 2026-02-11: Code review fixed 7 issues (1H/3M/3L): rsplit for Output 2, empty Kode Variasi handling, round() for currency, 3 new tests added. 324 tests pass. Status → done.
