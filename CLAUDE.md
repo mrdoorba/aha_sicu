@@ -16,13 +16,7 @@
 - Keep commits small, focused, and self-contained
 - Each commit should be able to stand on its own
 - Don't bundle unrelated changes together
-- **Never include Co-Authored-By lines** in commit messages
 - **Always commit when work is complete** - Don't wait to be asked
-- **Always end commit messages with:** `Author: Mr. Door`
-
-## PR Standards
-
-- **Always end PR descriptions with:** `Author: Mr. Door`
 
 ## Before Any Commit
 
@@ -61,13 +55,3 @@ These directories contain critical project configuration.
 ## Lessons Learned
 
 Read `_bmad-output/lessons-learned.md` for accumulated knowledge from code reviews, retrospectives, and implementation patterns. Consult it before writing new code.
-
-## Command Autonomy
-
-**Proceed without asking** for all commands EXCEPT the following, which require explicit user approval:
-
-- `git push` - Always ask before pushing to any remote
-- `git merge` - Always ask before merging branches
-- `gh pr create` / any PR creation - Always ask before opening pull requests
-
-Everything else (file edits, git add, git commit, running tests, installing dependencies, builds, etc.) can be executed freely.
