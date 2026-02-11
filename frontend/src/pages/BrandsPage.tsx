@@ -45,6 +45,7 @@ export const BrandsPage = () => {
         <div className="relative mb-4">
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
+            type="search"
             placeholder="Search brands..."
             aria-label="Search brands"
             value={search}

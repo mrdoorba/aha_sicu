@@ -1,4 +1,4 @@
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -62,9 +62,9 @@ describe('Header', () => {
 
     await user.click(screen.getByRole('button', { name: /^logout$/i }));
 
-    // Find the destructive logout button inside the dialog (via data-variant attribute)
+    // Find the logout button inside the dialog using accessible role query
     const dialog = screen.getByRole('dialog');
-    const confirmButton = dialog.querySelector('button[data-variant="destructive"]') as HTMLElement;
+    const confirmButton = within(dialog).getByRole('button', { name: /logout/i });
     await user.click(confirmButton);
 
     await waitFor(() => {

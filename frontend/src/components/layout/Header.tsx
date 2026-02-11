@@ -4,6 +4,7 @@ import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Button } from '../ui/button';
 import {
   Dialog,
+  DialogClose,
   DialogContent,
   DialogHeader,
   DialogTitle,
@@ -33,10 +34,6 @@ export const Header = () => {
       setIsLoggingOut(false);
       setShowConfirm(false);
     }
-  };
-
-  const handleCancelLogout = () => {
-    setShowConfirm(false);
   };
 
   return (
@@ -90,9 +87,11 @@ export const Header = () => {
             <DialogDescription>Are you sure you want to log out?</DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="outline" onClick={handleCancelLogout} disabled={isLoggingOut}>
-              Cancel
-            </Button>
+            <DialogClose asChild>
+              <Button variant="outline" disabled={isLoggingOut}>
+                Cancel
+              </Button>
+            </DialogClose>
             <Button variant="destructive" onClick={handleConfirmLogout} disabled={isLoggingOut}>
               {isLoggingOut ? 'Logging out...' : 'Logout'}
             </Button>

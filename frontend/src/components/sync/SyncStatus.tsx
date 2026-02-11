@@ -113,7 +113,7 @@ export const SyncStatus = () => {
             </div>
           )}
 
-          <div className="flex items-center gap-1 text-xs text-muted-foreground">
+          <div className="flex items-center gap-1 text-xs text-muted-foreground" aria-live="polite">
             {connectionState === 'connected' && (
               <>
                 <Wifi className="size-3 text-green-500" aria-hidden="true" />
