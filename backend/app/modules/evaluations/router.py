@@ -6,6 +6,7 @@ from app.core.dependencies import get_current_user
 from app.modules.evaluations.calculator_service import (
     run_ads_keyword_calculator as _run_ads_keyword,
     run_discount_calculator as _run_discount,
+    run_top_sku_calculator as _run_top_sku,
 )
 from app.modules.evaluations.schemas import (
     CalculatorResultResponse,
@@ -83,5 +84,23 @@ async def run_discount_calculator(
     and stores the result. Returns 400 if required data is missing.
     """
     return await _run_discount(
+        brand_id=brand_id, user_id=current_user["id"]
+    )
+
+
+@router.post(
+    "/brands/{brand_id}/calculators/top_sku",
+    response_model=CalculatorResultResponse,
+)
+async def run_top_sku_calculator(
+    brand_id: int,
+    current_user: dict = Depends(get_current_user),
+) -> CalculatorResultResponse:
+    """Execute the Top SKU Calculator for a brand.
+
+    Loads order export and mass update data, runs the calculator,
+    and stores the result. Returns 400 if required data is missing.
+    """
+    return await _run_top_sku(
         brand_id=brand_id, user_id=current_user["id"]
     )
