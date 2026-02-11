@@ -30,3 +30,10 @@ class UploadException(AppException):
 
     def __init__(self, code: str, detail: str, status_code: int = 400) -> None:
         super().__init__(code=code, detail=detail, status_code=status_code)
+
+
+class CalculatorException(AppException):
+    """Calculator-related exceptions."""
+
+    def __init__(self, code: str, detail: str, status_code: int = 400) -> None:
+        super().__init__(code=code, detail=detail, status_code=status_code)

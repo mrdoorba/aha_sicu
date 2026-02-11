@@ -491,6 +491,10 @@ def calculate_sheet2(rows: list[dict]) -> dict[str, Any]:
             "terkontrol biayanya (disarankan dimonitor 1-2x setiap hari)."
         )
 
+    # NOTE: AL8 triggers on "Iklan Pencarian Produk: " — this substring appears
+    # when the keyword report has Jenis Iklan = "Iklan Pencarian Produk" (a more
+    # specific ad type that Shopee uses in keyword reports for search product ads).
+    # The CPC report uses "Iklan Produk" but keyword report may use this variant.
     al8 = ""
     if al5.count("Iklan Pencarian Produk: ") >= 3:
         al8 = (
