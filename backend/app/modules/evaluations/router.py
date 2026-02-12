@@ -1,5 +1,6 @@
 """Evaluations API endpoints."""
 
+from datetime import date
 from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
@@ -47,20 +48,25 @@ async def list_evaluations_endpoint(
     sort_by: Literal["created_at", "final_score"] = Query(default="created_at"),
     sort_order: Literal["asc", "desc"] = Query(default="desc"),
     search: str | None = Query(default=None, max_length=200),
-    # Forward-compat params — accepted but not yet implemented (Stories 4.3-4.4)
-    date_from: str | None = Query(default=None),
-    date_to: str | None = Query(default=None),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    # Forward-compat param — accepted but not yet implemented (Story 4.4)
     category: Literal["fashion", "non_fashion"] | None = Query(default=None),
     current_user: dict = Depends(get_current_user),
 ) -> EvaluationListResponse:
     """List all evaluations with pagination and sorting.
 
     Returns paginated evaluation history with brand names and evaluator emails.
-    Optional filter params (date_from, date_to, category) are accepted but not
-    yet implemented — they will be wired in Stories 4.3-4.4.
+    Supports filtering by search (brand name), date range (date_from, date_to).
     """
     return await list_evaluations(
-        page=page, limit=limit, sort_by=sort_by, sort_order=sort_order, search=search
+        page=page,
+        limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        search=search,
+        date_from=date_from,
+        date_to=date_to,
     )
 
 

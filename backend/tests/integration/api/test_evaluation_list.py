@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 from decimal import Decimal
-from unittest.mock import AsyncMock, call, patch
+from unittest.mock import AsyncMock, patch
 
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
 
@@ -554,3 +554,234 @@ def test_search_query_no_where_when_empty(client):
 
         assert "ILIKE" not in query_sql
         assert len(query_params) == 2  # limit and offset only
+
+
+# --- Date filter tests (Story 4.3) ---
+
+
+EVAL_ROW_JAN = {
+    "id": 10,
+    "brand_name": "January Brand",
+    "final_score": Decimal("70.00"),
+    "verdict": "✔️",
+    "template": "fashion",
+    "evaluator_email": "rina@company.com",
+    "created_at": datetime(2026, 1, 15, 10, 0, 0, tzinfo=timezone.utc),
+}
+
+EVAL_ROW_FEB_EARLY = {
+    "id": 11,
+    "brand_name": "Feb Early Brand",
+    "final_score": Decimal("75.00"),
+    "verdict": "✔️",
+    "template": "non_fashion",
+    "evaluator_email": "budi@company.com",
+    "created_at": datetime(2026, 2, 5, 14, 0, 0, tzinfo=timezone.utc),
+}
+
+EVAL_ROW_FEB_LATE = {
+    "id": 12,
+    "brand_name": "Nike Indonesia",
+    "final_score": Decimal("80.00"),
+    "verdict": "✔️",
+    "template": "fashion",
+    "evaluator_email": "rina@company.com",
+    "created_at": datetime(2026, 2, 28, 23, 59, 0, tzinfo=timezone.utc),
+}
+
+
+def test_filter_by_date_range(client):
+    """Test date_from + date_to returns only evaluations within range."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_search_mocks(
+            mock_verify, mock_db, mock_user_queries, mock_svc_db,
+            fetch_return=[EVAL_ROW_FEB_EARLY], fetchval_return=1,
+        )
+
+        response = client.get(
+            "/api/v1/evaluations?date_from=2026-02-01&date_to=2026-02-15",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert len(data["items"]) == 1
+
+
+def test_filter_date_from_only(client):
+    """Test date_from only — returns evaluations from that date onwards."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_search_mocks(
+            mock_verify, mock_db, mock_user_queries, mock_svc_db,
+            fetch_return=[EVAL_ROW_FEB_EARLY, EVAL_ROW_FEB_LATE], fetchval_return=2,
+        )
+
+        response = client.get(
+            "/api/v1/evaluations?date_from=2026-02-01",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 2
+        assert len(data["items"]) == 2
+
+
+def test_filter_date_to_only(client):
+    """Test date_to only — returns evaluations up to and including that date."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_search_mocks(
+            mock_verify, mock_db, mock_user_queries, mock_svc_db,
+            fetch_return=[EVAL_ROW_JAN], fetchval_return=1,
+        )
+
+        response = client.get(
+            "/api/v1/evaluations?date_to=2026-01-31",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert len(data["items"]) == 1
+
+
+def test_filter_date_to_inclusive_end_of_day(client):
+    """Test date_to is inclusive of the entire day (23:59 on date_to day is included)."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        mock_svc_conn = _setup_search_mocks(
+            mock_verify, mock_db, mock_user_queries, mock_svc_db,
+            fetch_return=[EVAL_ROW_FEB_LATE], fetchval_return=1,
+        )
+
+        response = client.get(
+            "/api/v1/evaluations?date_to=2026-02-28",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+
+        # Verify the SQL uses < (date + 1 day) pattern for inclusive end-of-day
+        fetch_call = mock_svc_conn.fetch.call_args
+        query_sql = fetch_call.args[0]
+        assert "interval '1 day'" in query_sql
+
+
+def test_filter_date_combined_with_search(client):
+    """Test date filter AND search filter combine (AND logic)."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        mock_svc_conn = _setup_search_mocks(
+            mock_verify, mock_db, mock_user_queries, mock_svc_db,
+            fetch_return=[EVAL_ROW_FEB_LATE], fetchval_return=1,
+        )
+
+        response = client.get(
+            "/api/v1/evaluations?search=Nike&date_from=2026-02-01&date_to=2026-02-28",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 1
+        assert data["items"][0]["brand_name"] == "Nike Indonesia"
+
+        # Verify SQL has both ILIKE and date conditions
+        fetch_call = mock_svc_conn.fetch.call_args
+        query_sql = fetch_call.args[0]
+        assert "ILIKE" in query_sql
+        assert "created_at >=" in query_sql
+        assert "interval '1 day'" in query_sql
+
+
+def test_filter_no_dates_returns_all(client):
+    """Test omitting both date params returns all evaluations (existing behavior)."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_search_mocks(
+            mock_verify, mock_db, mock_user_queries, mock_svc_db,
+            fetch_return=[EVAL_ROW_JAN, EVAL_ROW_FEB_EARLY, EVAL_ROW_FEB_LATE],
+            fetchval_return=3,
+        )
+
+        response = client.get(
+            "/api/v1/evaluations",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 3
+        assert len(data["items"]) == 3
+
+
+def test_filter_invalid_date_returns_422(client):
+    """Test invalid date format returns 422 Unprocessable Entity."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        response = client.get(
+            "/api/v1/evaluations?date_from=not-a-date",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 422
+
+
+def test_filter_date_with_pagination(client):
+    """Test date-filtered results have correct total/pages."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_search_mocks(
+            mock_verify, mock_db, mock_user_queries, mock_svc_db,
+            fetch_return=[EVAL_ROW_FEB_EARLY], fetchval_return=5,
+        )
+
+        response = client.get(
+            "/api/v1/evaluations?date_from=2026-02-01&limit=2&page=1",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 5
+        assert data["pages"] == 3
+        assert data["page"] == 1
+        assert len(data["items"]) == 1
