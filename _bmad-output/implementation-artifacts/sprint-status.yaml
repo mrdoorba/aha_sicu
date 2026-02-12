@@ -78,7 +78,7 @@ development_status:
   4-3-filter-by-date-range: done
   4-4-filter-by-category: done
   4-5-evaluation-detail-view: done
-  4-6-real-time-new-evaluation-notifications: backlog
+  4-6-real-time-new-evaluation-notifications: done
   epic-4-retrospective: optional
 
   # Epic 5: Rule Configuration
