@@ -67,6 +67,19 @@ Accumulated knowledge from code reviews, retrospectives, and implementation expe
 - SSE pattern reusable: `new_evaluation` event in Story 4.6 cleanly reused Epic 2's SSE infrastructure
 - Epic 3 retro self-check habit (AC coverage + error handling) did not fully stick — same patterns still flagged
 
+## Epic 5 Retrospective Insights (2026-02-12)
+
+- ~19 code review issues across 3 stories (~6.3/story) — HIGH issues down to ~1.3/story (from ~3.8 in Epic 2 → ~6 in Epic 3 → ~7 in Epic 4)
+- Fallback-first design: `rules: dict | None = None` with hardcoded defaults as fallback eliminates risk of breaking existing behavior during refactoring
+- Clean 3-story decomposition (view → edit → apply) — each story built naturally on the prior with no rework between stories; effective pattern for CRUD features
+- Helper extraction pattern: `_get_rule_category()` and `_get_rule_value()` created repeatable, consistent access across all 10 scoring categories
+- Reuse of existing infrastructure: `get_rules_by_template()` from Story 5.1 reused directly in Story 5.3 with zero new DB queries needed
+- Story 5.2 concentrated 3 HIGH issues — dialog caught ALL errors as "Incorrect password" (server failures misreported), inline validation marked complete but not implemented, task falsely marked done before AC met
+- Recurring review themes persist across Epics 3–5: type precision (`str` → `Literal`), file list gaps in story specs — needs stronger enforcement
+- Test suite grew to 855+ automated tests, zero regressions throughout the epic
+- Seed data as source of truth: migration seed data served as both configuration and living documentation of all thresholds
+- Tech debt items D1 (marketing floor) and D2 (G-column message templates) completed as Stories 5.4 and 5.5 before Epic 6
+
 ## Epic 3 Retrospective Insights (2026-02-11)
 
 - ~60 code review issues across 10 stories — issue rate improved from ~11/story (Epic 2) to ~6/story
