@@ -11,6 +11,7 @@ from app.db.connection import db
 from app.db.queries import brands as brand_queries
 from app.db.queries import calculator_results as calc_queries
 from app.db.queries import evaluations as eval_queries
+from app.db.queries import rules as rules_queries
 from app.modules.evaluations.schemas import (
     CategoryScoreItem,
     EvaluationDetailResponse,
@@ -183,6 +184,12 @@ async def generate_score(
         # Load calculator results
         calc_rows = await calc_queries.get_results_by_brand(conn, brand_id)
 
+        # Load scoring rules for template
+        rule_row = await rules_queries.get_rules_by_template(conn, template)
+
+    rules_jsonb = rule_row["rules"] if rule_row else None
+    rule_version = rule_row["version"] if rule_row else 1
+
     calculator_results: dict[str, dict] = {}
     for row in calc_rows:
         calculator_results[row["calculator_type"]] = {
@@ -201,6 +208,8 @@ async def generate_score(
             period=period,
             brand_name=brand_name,
             email=email,
+            rules=rules_jsonb,
+            rule_version=rule_version,
         )
     except Exception as e:
         raise CalculatorException(
@@ -245,6 +254,7 @@ async def generate_score(
         email_body=result.email_body,
         whatsapp_link=result.whatsapp_link,
         template=result.template,
+        rule_version=result.rule_version,
     )
 
 
