@@ -44,6 +44,7 @@ let mockHookReturn = {
   evaluation: MOCK_EVALUATION as typeof MOCK_EVALUATION | null,
   isLoading: false,
   isError: false,
+  isNotFound: false,
   error: null as Error | null,
   refetch: mockRefetch,
 };
@@ -81,6 +82,7 @@ beforeEach(() => {
     evaluation: MOCK_EVALUATION,
     isLoading: false,
     isError: false,
+    isNotFound: false,
     error: null,
     refetch: mockRefetch,
   };
@@ -153,11 +155,26 @@ describe('EvaluationDetailPage', () => {
     expect(screen.queryByText('Email Output')).not.toBeInTheDocument();
   });
 
+  it('copies email output to clipboard on copy button click', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    renderPage();
+
+    const copyBtn = screen.getByRole('button', { name: /copy email output/i });
+    await userEvent.click(copyBtn);
+
+    expect(writeText).toHaveBeenCalledWith(MOCK_EVALUATION.email_output);
+  });
+
   it('shows loading skeleton', () => {
     mockHookReturn = {
       evaluation: null,
       isLoading: true,
       isError: false,
+      isNotFound: false,
       error: null,
       refetch: mockRefetch,
     };
@@ -172,6 +189,7 @@ describe('EvaluationDetailPage', () => {
       evaluation: null,
       isLoading: false,
       isError: true,
+      isNotFound: false,
       error: new Error('Network error'),
       refetch: mockRefetch,
     };
@@ -186,30 +204,48 @@ describe('EvaluationDetailPage', () => {
     expect(mockRefetch).toHaveBeenCalledTimes(1);
   });
 
-  it('shows 404 not found state with back link', () => {
-    // When hook returns error for an invalid ID (NaN parsed from route)
+  it('shows 404 not found state for invalid ID', () => {
     mockHookReturn = {
       evaluation: null,
       isLoading: false,
-      isError: true,
-      error: new Error('Not found'),
+      isError: false,
+      isNotFound: false,
+      error: null,
       refetch: mockRefetch,
     };
 
     renderPage('/history/invalid');
 
     expect(screen.getByText('Evaluation not found')).toBeInTheDocument();
-    // There are two "Back to History" buttons: the top nav ghost button and the card outline button
     const backButtons = screen.getAllByRole('button', { name: /back to history/i });
     expect(backButtons.length).toBeGreaterThanOrEqual(2);
   });
 
-  it('back to history button navigates back', async () => {
+  it('shows 404 not found when API returns EVAL_NOT_FOUND', () => {
+    mockHookReturn = {
+      evaluation: null,
+      isLoading: false,
+      isError: true,
+      isNotFound: true,
+      error: new Error('Evaluation not found'),
+      refetch: mockRefetch,
+    };
+
+    renderPage('/history/99999');
+
+    expect(screen.getByText('Evaluation not found')).toBeInTheDocument();
+    const backButtons = screen.getAllByRole('button', { name: /back to history/i });
+    expect(backButtons.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('back to history button navigates to /history', async () => {
     renderPage();
 
     const backBtn = screen.getByRole('button', { name: /back to history/i });
-    expect(backBtn).toBeInTheDocument();
-    // The button uses navigate(-1) so we just verify it exists and is clickable
     await userEvent.click(backBtn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('/history');
+    });
   });
 });

@@ -207,10 +207,14 @@ function EmailOutputSection({ emailOutput }: { emailOutput: string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
-    await navigator.clipboard.writeText(emailOutput);
-    setCopied(true);
-    toast.success('Email output copied to clipboard');
-    setTimeout(() => setCopied(false), 2000);
+    try {
+      await navigator.clipboard.writeText(emailOutput);
+      setCopied(true);
+      toast.success('Email output copied to clipboard');
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      toast.error('Failed to copy to clipboard');
+    }
   };
 
   return (
@@ -239,8 +243,9 @@ export function EvaluationDetailPage() {
   const navigate = useNavigate();
   const id = Number(params.id);
 
-  const { evaluation, isLoading, isError, refetch } = useEvaluationDetail(
-    isNaN(id) ? 0 : id,
+  const validId = !isNaN(id) && id > 0;
+  const { evaluation, isLoading, isError, isNotFound, refetch } = useEvaluationDetail(
+    validId ? id : 0,
   );
 
   return (
@@ -255,7 +260,7 @@ export function EvaluationDetailPage() {
           variant="ghost"
           size="sm"
           className="mb-4"
-          onClick={() => navigate(-1)}
+          onClick={() => navigate('/history')}
         >
           <ArrowLeft className="size-4" />
           Back to History
@@ -263,34 +268,23 @@ export function EvaluationDetailPage() {
 
         {isLoading && <LoadingSkeleton />}
 
-        {isError && !isLoading && !evaluation && (
-          <Card>
-            <CardContent className="flex flex-col items-center gap-4 py-12">
-              {(isNaN(id) || id <= 0) ? (
-                <>
-                  <p className="text-muted-foreground">Evaluation not found</p>
-                  <Button variant="outline" onClick={() => navigate('/history')}>
-                    Back to History
-                  </Button>
-                </>
-              ) : (
-                <>
-                  <p className="text-destructive">Failed to load evaluation details</p>
-                  <Button variant="outline" onClick={() => refetch()}>
-                    Retry
-                  </Button>
-                </>
-              )}
-            </CardContent>
-          </Card>
-        )}
-
-        {!isLoading && !isError && !evaluation && id > 0 && (
+        {!isLoading && (!validId || isNotFound) && (
           <Card>
             <CardContent className="flex flex-col items-center gap-4 py-12">
               <p className="text-muted-foreground">Evaluation not found</p>
               <Button variant="outline" onClick={() => navigate('/history')}>
                 Back to History
+              </Button>
+            </CardContent>
+          </Card>
+        )}
+
+        {!isLoading && isError && !isNotFound && (
+          <Card>
+            <CardContent className="flex flex-col items-center gap-4 py-12">
+              <p className="text-destructive">Failed to load evaluation details</p>
+              <Button variant="outline" onClick={() => refetch()}>
+                Retry
               </Button>
             </CardContent>
           </Card>
@@ -349,7 +343,7 @@ export function EvaluationDetailPage() {
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <h2 className="mb-3 text-base font-semibold">Ads Keyword Analysis</h2>
+                  <h3 className="mb-3 text-base font-semibold">Ads Keyword Analysis</h3>
                   {evaluation.calculator_results.ads_keyword ? (
                     <AdsKeywordSection
                       data={evaluation.calculator_results.ads_keyword as Record<string, unknown>}
@@ -360,7 +354,7 @@ export function EvaluationDetailPage() {
                 </div>
 
                 <div>
-                  <h2 className="mb-3 text-base font-semibold">Top SKU Analysis</h2>
+                  <h3 className="mb-3 text-base font-semibold">Top SKU Analysis</h3>
                   {evaluation.calculator_results.top_sku ? (
                     <TopSkuSection
                       data={evaluation.calculator_results.top_sku as Record<string, unknown>}
@@ -371,7 +365,7 @@ export function EvaluationDetailPage() {
                 </div>
 
                 <div>
-                  <h2 className="mb-3 text-base font-semibold">Discount Check</h2>
+                  <h3 className="mb-3 text-base font-semibold">Discount Check</h3>
                   {evaluation.calculator_results.discount ? (
                     <DiscountSection
                       data={evaluation.calculator_results.discount as Record<string, unknown>}
