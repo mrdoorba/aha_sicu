@@ -6,7 +6,7 @@ from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from app.config import settings
-from app.core.exceptions import AuthException
+from app.core.exceptions import AppException, AuthException
 from app.core.oidc import verify_oidc_token
 from app.core.security import verify_firebase_token
 from app.db.connection import db
@@ -82,3 +82,24 @@ async def get_current_user(
             user = await user_queries.get_user_by_firebase_uid(conn, token_data["uid"])
 
     return user
+
+
+def require_role(*allowed_roles: str):
+    """Dependency factory that enforces role-based access control.
+
+    Usage in routers:
+        @router.get("", dependencies=[Depends(require_role("leader", "admin"))])
+    Or:
+        current_user: dict = Depends(require_role("leader", "admin"))
+    """
+
+    async def check(current_user: dict = Depends(get_current_user)):
+        if current_user["role"] not in allowed_roles:
+            raise AppException(
+                code="RULE_ACCESS_DENIED",
+                detail="Only leaders and admins can access scoring rules",
+                status_code=403,
+            )
+        return current_user
+
+    return check

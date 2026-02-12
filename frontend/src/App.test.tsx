@@ -16,6 +16,26 @@ vi.mock('./components/auth/ProtectedRoute', () => ({
   ProtectedRoute: ({ children }: { children: React.ReactNode }) => <>{children}</>,
 }));
 
+vi.mock('./components/auth/RoleProtectedRoute', () => ({
+  RoleProtectedRoute: ({ children }: { children: React.ReactNode }) => <>{children}</>,
+}));
+
+vi.mock('./pages/RulesPage', () => ({
+  RulesPage: () => <main id="main-content" tabIndex={-1}>Rules</main>,
+}));
+
+vi.mock('./pages/EvaluationPage', () => ({
+  EvaluationPage: () => <main id="main-content" tabIndex={-1}>Evaluation</main>,
+}));
+
+vi.mock('./pages/HistoryPage', () => ({
+  HistoryPage: () => <main id="main-content" tabIndex={-1}>History</main>,
+}));
+
+vi.mock('./pages/EvaluationDetailPage', () => ({
+  EvaluationDetailPage: () => <main id="main-content" tabIndex={-1}>Detail</main>,
+}));
+
 vi.mock('./components/ui/sonner', () => ({
   Toaster: () => null,
 }));

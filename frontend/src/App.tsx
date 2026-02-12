@@ -9,6 +9,8 @@ import { BrandsPage } from './pages/BrandsPage';
 import { EvaluationPage } from './pages/EvaluationPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { EvaluationDetailPage } from './pages/EvaluationDetailPage';
+import { RulesPage } from './pages/RulesPage';
+import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
 
 const queryClient = new QueryClient();
 
@@ -63,6 +65,14 @@ function App() {
                 <ProtectedRoute>
                   <HistoryPage />
                 </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/rules"
+              element={
+                <RoleProtectedRoute allowedRoles={['leader', 'admin']}>
+                  <RulesPage />
+                </RoleProtectedRoute>
               }
             />
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
