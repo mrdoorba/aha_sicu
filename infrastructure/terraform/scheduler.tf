@@ -8,7 +8,7 @@ locals {
 }
 
 resource "google_cloud_scheduler_job" "daily_sync" {
-  name        = "aha_sicu_daily_sync"
+  name        = "aha-sicu-${var.environment}-daily-sync"
   description = "Daily brand data sync from Google Sheets"
   schedule    = "0 6 * * *"
   time_zone   = "Asia/Jakarta"

@@ -1,8 +1,8 @@
 # Workload Identity Federation: Keyless GitHub Actions → GCP authentication
 
 resource "google_iam_workload_identity_pool" "github" {
-  workload_identity_pool_id = "aha-sicu-github-pool"
-  display_name              = "Store ICU GitHub Actions Pool"
+  workload_identity_pool_id = "aha-sicu-${var.environment}-github-pool"
+  display_name              = "Store ICU ${var.environment} GitHub Actions Pool"
   description               = "Workload Identity Pool for GitHub Actions CI/CD"
   project                   = var.project_id
 

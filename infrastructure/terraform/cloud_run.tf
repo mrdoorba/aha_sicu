@@ -1,7 +1,7 @@
 # Cloud Run v2: API service for Store ICU backend
 
 resource "google_cloud_run_v2_service" "api" {
-  name                = var.cloud_run_service_name
+  name                = var.cloud_run_service_name != "" ? var.cloud_run_service_name : "aha-sicu-${var.environment}-api"
   location            = var.region
   project             = var.project_id
   deletion_protection = var.environment == "prod" ? true : false

@@ -88,10 +88,10 @@ resource "google_project_service" "sheets_api" {
 }
 
 # Service Account for Google Sheets access
-# Naming follows architecture convention: aha-sicu-{purpose}-sa
+# Naming follows architecture convention: aha-sicu-{env}-{purpose}-sa
 resource "google_service_account" "gsheets_sync" {
-  account_id   = "aha-sicu-sheets-sa"
-  display_name = "Store ICU Google Sheets Sync"
+  account_id   = "aha-sicu-${var.environment}-sheets-sa"
+  display_name = "Store ICU ${var.environment} Google Sheets Sync"
   description  = "Service account for syncing brand data from Google Sheets"
   project      = var.project_id
 }
