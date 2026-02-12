@@ -4,8 +4,8 @@
 
 # Scheduler SA (existing from Epic 2) — PRESERVED
 resource "google_service_account" "scheduler" {
-  account_id   = "aha-sicu-scheduler-sa"
-  display_name = "Store ICU Scheduler Service Account"
+  account_id   = "aha-sicu-${var.environment}-scheduler-sa"
+  display_name = "Store ICU ${var.environment} Scheduler Service Account"
   description  = "Service account for Cloud Scheduler to invoke Cloud Run sync endpoint"
   project      = var.project_id
 }
@@ -15,8 +15,8 @@ resource "google_service_account" "scheduler" {
 
 # Cloud Run API service account — dedicated runtime identity
 resource "google_service_account" "cloud_run" {
-  account_id   = "aha-sicu-api-sa"
-  display_name = "Store ICU Cloud Run API"
+  account_id   = "aha-sicu-${var.environment}-api-sa"
+  display_name = "Store ICU ${var.environment} Cloud Run API"
   description  = "Service account for Cloud Run API runtime (secret access, storage)"
   project      = var.project_id
 
@@ -25,8 +25,8 @@ resource "google_service_account" "cloud_run" {
 
 # Deploy service account — GitHub Actions CI/CD
 resource "google_service_account" "deploy" {
-  account_id   = "aha-sicu-deploy-sa"
-  display_name = "Store ICU Deploy (GitHub Actions)"
+  account_id   = "aha-sicu-${var.environment}-deploy-sa"
+  display_name = "Store ICU ${var.environment} Deploy (GitHub Actions)"
   description  = "Service account for CI/CD deployments via GitHub Actions"
   project      = var.project_id
 

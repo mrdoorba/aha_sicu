@@ -3,7 +3,7 @@
 #   echo -n "VALUE" | gcloud secrets versions add SECRET_NAME --data-file=-
 
 resource "google_secret_manager_secret" "db_url" {
-  secret_id = "aha_sicu_db_url"
+  secret_id = "aha_sicu_${var.environment}_db_url"
   project   = var.project_id
 
   replication {
@@ -14,7 +14,7 @@ resource "google_secret_manager_secret" "db_url" {
 }
 
 resource "google_secret_manager_secret" "gsheets_credentials" {
-  secret_id = "aha_sicu_gsheets_credentials"
+  secret_id = "aha_sicu_${var.environment}_gsheets_credentials"
   project   = var.project_id
 
   replication {
@@ -25,7 +25,7 @@ resource "google_secret_manager_secret" "gsheets_credentials" {
 }
 
 resource "google_secret_manager_secret" "firebase_admin" {
-  secret_id = "aha_sicu_firebase_admin"
+  secret_id = "aha_sicu_${var.environment}_firebase_admin"
   project   = var.project_id
 
   replication {
