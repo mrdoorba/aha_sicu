@@ -1,6 +1,6 @@
 # Story 4.1: Evaluation History List
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -104,37 +104,37 @@ so that **I can review the team's work and quickly find specific evaluations**.
   - [x] 4.6 Integration test: Empty results return `{ items: [], total: 0, page: 1, limit: 20, pages: 0 }`
   - [x] 4.7 Integration test: Auth required (401 without token)
 
-- [ ] Task 5: Create frontend `useEvaluationHistory` hook (AC: #1, #2, #3)
-  - [ ] 5.1 Create `frontend/src/hooks/useEvaluationHistory.ts` with TanStack `useQuery`
-  - [ ] 5.2 GET `/api/v1/evaluations` via `apiClient.ts` with page, limit, sort_by, sort_order params
-  - [ ] 5.3 Add path type for list endpoint in `apiClient.ts`
-  - [ ] 5.4 Return: `{ evaluations, total, page, pages, isLoading, isError, error, refetch, isPlaceholderData }`
-  - [ ] 5.5 Use queryKey: `['evaluations', page, limit, sortBy, sortOrder]` for cache management
-  - [ ] 5.6 Use `placeholderData: keepPreviousData` (TanStack Query v5 API) for smooth page transitions — keeps previous page visible while next page loads. Use `isPlaceholderData` flag to show subtle loading indicator without full skeleton swap
+- [x] Task 5: Create frontend `useEvaluationHistory` hook (AC: #1, #2, #3)
+  - [x] 5.1 Create `frontend/src/hooks/useEvaluationHistory.ts` with TanStack `useQuery`
+  - [x] 5.2 GET `/api/v1/evaluations` via `apiClient.ts` with page, limit, sort_by, sort_order params
+  - [x] 5.3 Add path type for list endpoint in `apiClient.ts`
+  - [x] 5.4 Return: `{ evaluations, total, page, pages, isLoading, isError, error, refetch, isPlaceholderData }`
+  - [x] 5.5 Use queryKey: `['evaluations', page, limit, sortBy, sortOrder]` for cache management
+  - [x] 5.6 Use `placeholderData: keepPreviousData` (TanStack Query v5 API) for smooth page transitions — keeps previous page visible while next page loads. Use `isPlaceholderData` flag to show subtle loading indicator without full skeleton swap
 
-- [ ] Task 6: Create `HistoryPage.tsx` and evaluation table component (AC: #1, #2, #3, #4, #5, #6, #7, #9)
-  - [ ] 6.1 Create `frontend/src/pages/HistoryPage.tsx` with page layout (Header + main content)
-  - [ ] 6.2 Create `frontend/src/components/evaluations/EvaluationHistoryTable.tsx` — use shadcn/ui `Table` with `@tanstack/react-table` (`useReactTable` with `manualPagination: true` and `manualSorting: true` for server-side control). Columns: Brand, Score, Template, Evaluator, Date
-  - [ ] 6.3 Add pagination controls (Previous/Next buttons, page indicator) — wire `onPaginationChange` to update page state
-  - [ ] 6.4 Add sortable column headers — use `Button variant="ghost"` with `column.toggleSorting()` and `ArrowUpDown`/`ArrowUp`/`ArrowDown` icons from lucide-react for direction indicators (Date, Score columns only)
-  - [ ] 6.5 Add row click handler → navigate to `/history/{id}` (placeholder for Story 4.5)
-  - [ ] 6.6 Add loading state (skeleton or spinner with `aria-busy`) — when `isPlaceholderData` is true, show subtle opacity reduction instead of full skeleton swap
-  - [ ] 6.7 Add empty state ("No evaluations found")
-  - [ ] 6.8 Add error state with "Retry" button
+- [x] Task 6: Create `HistoryPage.tsx` and evaluation table component (AC: #1, #2, #3, #4, #5, #6, #7, #9)
+  - [x] 6.1 Create `frontend/src/pages/HistoryPage.tsx` with page layout (Header + main content)
+  - [x] 6.2 Create `frontend/src/components/evaluations/EvaluationHistoryTable.tsx` — use shadcn/ui `Table` with `@tanstack/react-table` (`useReactTable` with `manualPagination: true` and `manualSorting: true` for server-side control). Columns: Brand, Score, Template, Evaluator, Date
+  - [x] 6.3 Add pagination controls (Previous/Next buttons, page indicator) — wire `onPaginationChange` to update page state
+  - [x] 6.4 Add sortable column headers — use `Button variant="ghost"` with `column.toggleSorting()` and `ArrowUpDown`/`ArrowUp`/`ArrowDown` icons from lucide-react for direction indicators (Date, Score columns only)
+  - [x] 6.5 Add row click handler → navigate to `/history/{id}` (placeholder for Story 4.5)
+  - [x] 6.6 Add loading state (skeleton or spinner with `aria-busy`) — when `isPlaceholderData` is true, show subtle opacity reduction instead of full skeleton swap
+  - [x] 6.7 Add empty state ("No evaluations found")
+  - [x] 6.8 Add error state with "Retry" button
 
-- [ ] Task 7: Add route and navigation (AC: #9)
-  - [ ] 7.1 Add `/history` route in `App.tsx` with `ProtectedRoute` wrapper
-  - [ ] 7.2 Add "History" link in `Header.tsx` navigation alongside Dashboard and Brands
-  - [ ] 7.3 Highlight active link when on `/history`
+- [x] Task 7: Add route and navigation (AC: #9)
+  - [x] 7.1 Add `/history` route in `App.tsx` with `ProtectedRoute` wrapper
+  - [x] 7.2 Add "History" link in `Header.tsx` navigation alongside Dashboard and Brands
+  - [x] 7.3 Highlight active link when on `/history`
 
-- [ ] Task 8: Write frontend tests (AC: #1, #2, #3, #5, #6, #7)
-  - [ ] 8.1 Test: History page renders table with evaluation data
-  - [ ] 8.2 Test: Pagination buttons navigate between pages
-  - [ ] 8.3 Test: Column header click triggers sort
-  - [ ] 8.4 Test: Loading state displayed during fetch
-  - [ ] 8.5 Test: Empty state when no evaluations
-  - [ ] 8.6 Test: Error state with retry button
-  - [ ] 8.7 Test: History link appears in header navigation
+- [x] Task 8: Write frontend tests (AC: #1, #2, #3, #5, #6, #7)
+  - [x] 8.1 Test: History page renders table with evaluation data
+  - [x] 8.2 Test: Pagination buttons navigate between pages
+  - [x] 8.3 Test: Column header click triggers sort
+  - [x] 8.4 Test: Loading state displayed during fetch
+  - [x] 8.5 Test: Empty state when no evaluations
+  - [x] 8.6 Test: Error state with retry button
+  - [x] 8.7 Test: History link appears in header navigation
 
 ## Dev Notes
 
@@ -516,6 +516,38 @@ Claude Opus 4.6
 
 ### Debug Log References
 
+- @tanstack/react-table was listed as "Installed" in story Library table but was missing — installed as part of Task 6
+
 ### Completion Notes List
 
+- Tasks 1-4 (Backend): Added `list_evaluations()` and `count_evaluations()` DB queries with JOIN on brand_vp_data and users. Created `EvaluationListItem`/`EvaluationListResponse` schemas. Service layer handles pagination math (offset, pages). Router uses `Literal` types for sort_by/sort_order validation — FastAPI auto-returns 422 for invalid values. 8 integration tests covering all AC #8 scenarios.
+- Tasks 5-6 (Frontend): Created `useEvaluationHistory` hook with TanStack Query v5 `placeholderData: keepPreviousData` for smooth page transitions. Built `EvaluationHistoryTable` with `@tanstack/react-table` (`manualPagination`/`manualSorting`), sortable Date/Score columns with arrow indicators, row click navigation to `/history/{id}`, loading skeletons with `aria-busy`, empty state, error state with retry.
+- Task 7 (Navigation): Added `/history` route with `ProtectedRoute` wrapper and "History" link in Header nav alongside Dashboard and Brands with active state highlighting.
+- Task 8 (Frontend Tests): 6 EvaluationHistoryTable tests (data rendering, pagination, sort, loading, empty, error+retry) + 1 Header test for History link. All pass.
+- Full regression: 481 backend tests pass (0 failures), 224 frontend tests pass (2 pre-existing Firebase API key failures in App.test.tsx and EvaluationForms.test.tsx — unrelated to this story).
+
+### Change Log
+
+- 2026-02-12: Implemented evaluation history list — backend endpoint `GET /api/v1/evaluations` with pagination/sorting, frontend history page with table, route, and navigation
+
 ### File List
+
+**New files:**
+- backend/tests/integration/api/test_evaluation_list.py
+- frontend/src/hooks/useEvaluationHistory.ts
+- frontend/src/components/evaluations/EvaluationHistoryTable.tsx
+- frontend/src/components/evaluations/EvaluationHistoryTable.test.tsx
+- frontend/src/pages/HistoryPage.tsx
+
+**Modified files:**
+- backend/app/db/queries/evaluations.py
+- backend/app/modules/evaluations/schemas.py
+- backend/app/modules/evaluations/service.py
+- backend/app/modules/evaluations/router.py
+- frontend/src/services/apiClient.ts
+- frontend/src/App.tsx
+- frontend/src/components/layout/Header.tsx
+- frontend/src/components/layout/Header.test.tsx
+- frontend/package.json
+- frontend/package-lock.json
+- _bmad-output/implementation-artifacts/sprint-status.yaml

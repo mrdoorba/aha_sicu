@@ -218,6 +218,39 @@ interface paths {
       };
     };
   };
+  '/api/v1/evaluations': {
+    get: {
+      parameters: {
+        query?: {
+          page?: number;
+          limit?: number;
+          sort_by?: 'created_at' | 'final_score';
+          sort_order?: 'asc' | 'desc';
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              items: Array<{
+                id: number;
+                brand_name: string;
+                final_score: number;
+                verdict: string;
+                template: string;
+                evaluator_email: string;
+                created_at: string;
+              }>;
+              total: number;
+              page: number;
+              limit: number;
+              pages: number;
+            };
+          };
+        };
+      };
+    };
+  };
   '/api/v1/evaluations/brands/{brand_id}': {
     get: {
       parameters: {
