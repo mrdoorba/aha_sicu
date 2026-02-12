@@ -26,3 +26,19 @@ async def get_rules_by_template(conn: Connection, template: str) -> dict | None:
         template,
     )
     return dict(row) if row else None
+
+
+async def update_rules(conn: Connection, template: str, rules: dict, user_id: int) -> dict | None:
+    """Update scoring rules for a template, incrementing version."""
+    row = await conn.fetchrow(
+        """
+        UPDATE scoring_rules
+        SET rules = $1, version = version + 1, updated_by = $2, updated_at = NOW()
+        WHERE template = $3
+        RETURNING id, template, rules, version, updated_by, updated_at
+        """,
+        rules,
+        user_id,
+        template,
+    )
+    return dict(row) if row else None
