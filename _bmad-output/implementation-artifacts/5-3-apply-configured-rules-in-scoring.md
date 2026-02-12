@@ -1,6 +1,6 @@
 # Story 5.3: Apply Configured Rules in Scoring
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -449,6 +449,9 @@ Claude Opus 4.6 (claude-opus-4-6)
 ### Completion Notes List
 
 - All 10 per-category scoring functions refactored to accept `rules: dict | None = None` with fallback defaults matching current hardcoded values
+- E-column benchmark strings are now dynamic — they use the actual threshold values from rules instead of hardcoded strings
+- Task 1.15 (`_compute_g72` marketing floor): The 0.15/0.12 fashion/non-fashion floor values remain hardcoded because the rules JSONB structure has no marketing floor category — "if possible" was evaluated and determined not feasible with current rules schema
+- The `comparison` field in rules JSONB entries is descriptive metadata only — comparison operators are structural to scoring logic and not dynamically applied (only thresholds and points are configurable)
 - Helper functions `_get_rule_category()` and `_get_rule_value()` provide safe extraction with defaults
 - `DEFAULT_FASHION_RULES` and `DEFAULT_NON_FASHION_RULES` constants copied from migration 010 seed data
 - Service layer loads rules via existing `get_rules_by_template()` query — single additional DB call in same connection
@@ -470,13 +473,16 @@ Claude Opus 4.6 (claude-opus-4-6)
 ### File List
 
 **Modified (backend):**
-- `backend/app/calculators/scoring.py` — Added rules parameter, helper functions, DEFAULT_*_RULES constants, refactored all scoring functions
+- `backend/app/calculators/scoring.py` — Added rules parameter, helper functions, DEFAULT_*_RULES constants, refactored all scoring functions, dynamic E-column benchmarks
 - `backend/app/modules/evaluations/schemas.py` — Added `rule_version: int` to ScoringResponse
 - `backend/app/modules/evaluations/service.py` — Load rules from DB, pass to calculate_score(), include in response
-- `backend/tests/unit/calculators/test_scoring.py` — 18 new tests (4 default rules identity + 14 custom rules behavior)
+- `backend/tests/unit/calculators/test_scoring.py` — 21 new tests (4 default rules identity + 17 custom rules behavior incl. business & content)
 - `backend/tests/integration/api/test_scoring.py` — Fixed 3 existing tests, added 3 new integration tests
 
 **Modified (frontend):**
 - `frontend/src/hooks/useScoring.ts` — Added `rule_version: number` to ScoringResult interface
 - `frontend/src/pages/EvaluationPage.tsx` — Changed `rule_version: 1` to `scoringResult.rule_version`
 - `frontend/src/pages/EvaluationPage.test.tsx` — Updated save payload test to verify dynamic rule_version
+
+**Modified (project):**
+- `.gitignore` — Added `local-resources/` and `logic/` to local development exclusions
