@@ -671,29 +671,29 @@ class TestG72:
 
 class TestG73:
     def test_normal_verdict(self):
-        result = _compute_g73("✔️", 0.15, 200_000_000, is_fashion=True)
+        result = _compute_g73("✔️", 0.15, 200_000_000)
         assert "💡" in result
         assert "15%" in result
         assert "30.000.000" in result  # 200M * 15%
 
     def test_rejected_verdict_suppressed(self):
-        result = _compute_g73("❌", 0.15, 200_000_000, is_fashion=True)
+        result = _compute_g73("❌", 0.15, 200_000_000)
         assert result == ""
 
     def test_circle_verdict_suppressed(self):
-        result = _compute_g73("⭕️", 0.15, 200_000_000, is_fashion=True)
+        result = _compute_g73("⭕️", 0.15, 200_000_000)
         assert result == ""
 
     def test_rejected_non_mall_suppressed(self):
-        result = _compute_g73("❌ Non Mall", 0.15, 200_000_000, is_fashion=True)
+        result = _compute_g73("❌ Non Mall", 0.15, 200_000_000)
         assert result == ""
 
     def test_rejected_no_brand_suppressed(self):
-        result = _compute_g73("❌ No Brand", 0.15, 200_000_000, is_fashion=True)
+        result = _compute_g73("❌ No Brand", 0.15, 200_000_000)
         assert result == ""
 
     def test_rejected_opex_suppressed(self):
-        result = _compute_g73("❌ Opex", 0.15, 200_000_000, is_fashion=True)
+        result = _compute_g73("❌ Opex", 0.15, 200_000_000)
         assert result == ""
 
 
@@ -1434,29 +1434,139 @@ class TestG73WithRules:
     def test_custom_display_max(self):
         """Custom display_max clamps high values."""
         rules = {"marketing": {"display_max": {"value": 0.20}, "display_min": {"value": 0.10}}}
-        result = _compute_g73("✔️", 0.30, 200_000_000, is_fashion=True, rules=rules)
+        result = _compute_g73("✔️", 0.30, 200_000_000, rules=rules)
         assert "20%" in result  # Clamped to 20% not 30%
 
     def test_custom_display_min(self):
         """Custom display_min clamps low values."""
         rules = {"marketing": {"display_max": {"value": 0.25}, "display_min": {"value": 0.15}}}
-        result = _compute_g73("✔️", 0.05, 200_000_000, is_fashion=True, rules=rules)
+        result = _compute_g73("✔️", 0.05, 200_000_000, rules=rules)
         assert "15%" in result  # Clamped to 15% not 5%
 
     def test_rules_none_fallback(self):
         """rules=None uses default display bounds (0.10 - 0.25)."""
-        result = _compute_g73("✔️", 0.15, 200_000_000, is_fashion=True, rules=None)
+        result = _compute_g73("✔️", 0.15, 200_000_000, rules=None)
         assert "15%" in result
         assert "💡" in result
 
     def test_rules_missing_marketing_category(self):
         """Rules without marketing key falls back to defaults."""
         rules = {"operational": {}}
-        result = _compute_g73("✔️", 0.15, 200_000_000, is_fashion=True, rules=rules)
+        result = _compute_g73("✔️", 0.15, 200_000_000, rules=rules)
         assert "15%" in result
 
     def test_suppressed_for_rejected_verdicts_with_rules(self):
         """Verdict suppression still works with custom rules."""
         rules = {"marketing": {"display_max": {"value": 0.30}, "display_min": {"value": 0.05}}}
-        assert _compute_g73("❌", 0.15, 200_000_000, is_fashion=True, rules=rules) == ""
-        assert _compute_g73("⭕️", 0.15, 200_000_000, is_fashion=True, rules=rules) == ""
+        assert _compute_g73("❌", 0.15, 200_000_000, rules=rules) == ""
+        assert _compute_g73("⭕️", 0.15, 200_000_000, rules=rules) == ""
+
+
+# ---------------------------------------------------------------------------
+# End-to-end marketing rules propagation (moved from integration — Story 5-4)
+# ---------------------------------------------------------------------------
+
+
+class TestMarketingRulesPropagation:
+    """Test calculate_score with custom marketing rules affects G72, G73, and email."""
+
+    CALC_RESULTS = {
+        "discount": {
+            "details": {"fake_discount_flag": False},
+            "output_text": "% Diskon TOP SKU: 25.0%\nRange: 15.0% ~ 35.0%\nVoucher 3.0%\nPaket Diskon 1.0%",
+        },
+        "top_sku": {
+            "details": {
+                "average_stock": 30,
+                "output_1": [
+                    {"rata2_harga_jual": 180_000},
+                    {"rata2_harga_jual": 140_000},
+                ],
+            },
+            "output_text": "",
+        },
+        "ads_keyword": {"details": {}, "output_text": ""},
+    }
+
+    def test_custom_marketing_rules_change_g72_g73(self, full_manual_data):
+        """Custom marketing rules with higher floor change marketing percentage and budget."""
+        result_default = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=self.CALC_RESULTS,
+            template="fashion",
+            verdict="✔️",
+            store_name="Test Store",
+            period="Jan 2026",
+            brand_name="TestBrand",
+            rules=DEFAULT_FASHION_RULES,
+            rule_version=1,
+        )
+
+        custom_rules = {
+            **DEFAULT_FASHION_RULES,
+            "marketing": {
+                "floor": {"value": 0.20},
+                "base_subtraction": {"value": 0.03},
+                "upper_limit_base": {"value": 0.20},
+                "fashion_adjustment": {"value": 0.05},
+                "minimum_threshold": {"value": 0.10},
+                "display_max": {"value": 0.30},
+                "display_min": {"value": 0.05},
+            },
+        }
+        result_custom = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=self.CALC_RESULTS,
+            template="fashion",
+            verdict="✔️",
+            store_name="Test Store",
+            period="Jan 2026",
+            brand_name="TestBrand",
+            rules=custom_rules,
+            rule_version=2,
+        )
+
+        assert result_custom.marketing_percentage == "20%"
+        assert "20%" in result_custom.marketing_budget
+
+    def test_marketing_changes_propagate_to_email_body(self, full_manual_data):
+        """Custom marketing rules propagate to email body."""
+        calc_results = {
+            **self.CALC_RESULTS,
+            "top_sku": {
+                "details": {
+                    "average_stock": 30,
+                    "output_1": [{"rata2_harga_jual": 180_000}],
+                },
+                "output_text": "",
+            },
+        }
+
+        custom_rules = {
+            **DEFAULT_FASHION_RULES,
+            "marketing": {
+                "floor": {"value": 0.22},
+                "base_subtraction": {"value": 0.03},
+                "upper_limit_base": {"value": 0.30},
+                "fashion_adjustment": {"value": 0.05},
+                "minimum_threshold": {"value": 0.10},
+                "display_max": {"value": 0.30},
+                "display_min": {"value": 0.10},
+            },
+        }
+
+        result = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=calc_results,
+            template="fashion",
+            verdict="✔️",
+            store_name="Test Store",
+            period="Jan 2026",
+            brand_name="TestBrand",
+            rules=custom_rules,
+            rule_version=2,
+        )
+
+        assert result.marketing_budget != ""
+        assert "22%" in result.marketing_budget
+        assert "22%" in result.email_body

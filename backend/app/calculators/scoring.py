@@ -1226,7 +1226,7 @@ def _compute_g72(
 
 
 def _compute_g73(
-    verdict: str, g72_value: float, d13: float, is_fashion: bool,
+    verdict: str, g72_value: float, d13: float,
     rules: dict | None = None,
 ) -> str:
     """G73: Marketing budget recommendation text.
@@ -1575,7 +1575,7 @@ def calculate_score(
 
     g68 = _compute_g68(d73_text, d52)
     g72 = _compute_g72(g68, d52, d73_text, is_fashion, rules)
-    g73 = _compute_g73(verdict, g72, d13, is_fashion, rules)
+    g73 = _compute_g73(verdict, g72, d13, rules)
 
     marketing_label = f"📌 Estimasi persentase biaya marketing {brand_name} sekarang:"
 

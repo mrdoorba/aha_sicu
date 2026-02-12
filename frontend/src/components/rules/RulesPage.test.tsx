@@ -771,6 +771,7 @@ describe('Marketing category', () => {
     renderRulesPage();
 
     expect(screen.getByText('Marketing')).toBeInTheDocument();
+    expect(screen.getByText('Config')).toBeInTheDocument();
     expect(screen.getByText('Floor')).toBeInTheDocument();
     expect(screen.getByText('Base Subtraction')).toBeInTheDocument();
     expect(screen.getByText('Upper Limit Base')).toBeInTheDocument();
@@ -800,7 +801,37 @@ describe('Marketing category', () => {
     expect(floorInput).toHaveValue(0.15);
   });
 
-  it('marketing floor and fashion_adjustment show differs badge', async () => {
+  it('marketing floor and fashion_adjustment show differs badge within marketing card', async () => {
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Find the Marketing category card specifically
+    const marketingHeading = screen.getByText('Marketing');
+    const marketingCard = marketingHeading.closest('[data-slot="card"]') ?? marketingHeading.closest('.rounded-xl');
+
+    // Verify differs badges exist within the marketing card context
+    expect(marketingCard).not.toBeNull();
+    const differsBadgesInMarketing = within(marketingCard!).getAllByText('differs');
+    // Exactly 2 differs badges in marketing: floor, fashion_adjustment
+    expect(differsBadgesInMarketing).toHaveLength(2);
+
+    // Verify the specific differing fields are highlighted
+    expect(within(marketingCard!).getByText('Floor')).toBeInTheDocument();
+    expect(within(marketingCard!).getByText('Fashion Adjustment')).toBeInTheDocument();
+
+    // Total differs badges across all categories: conversion_rate, roi_threshold, floor, fashion_adjustment
+    const allDiffersBadges = screen.getAllByText('differs');
+    expect(allDiffersBadges).toHaveLength(4);
+  });
+
+  it('non-fashion tab shows different marketing values', async () => {
     const user = userEvent.setup();
     mockUseRules.mockReturnValue({
       rules: SAMPLE_RULES,
@@ -812,9 +843,14 @@ describe('Marketing category', () => {
 
     renderRulesPage();
 
-    // Fashion tab should show "differs" badges for floor and fashion_adjustment
-    const differsBadges = screen.getAllByText('differs');
-    // At least 4 differs badges: conversion_rate, roi_threshold, floor, fashion_adjustment
-    expect(differsBadges.length).toBeGreaterThanOrEqual(4);
+    // Fashion tab: floor should display as 15.0%
+    expect(screen.getByText('15.0%')).toBeInTheDocument();
+
+    // Switch to Non-Fashion tab
+    await user.click(screen.getByRole('tab', { name: /non-fashion/i }));
+
+    // Non-fashion: floor = 0.12 (12.0%), fashion_adjustment = 0.0 (0.0%)
+    expect(screen.getByText('12.0%')).toBeInTheDocument();
+    expect(screen.getByText('0.0%')).toBeInTheDocument();
   });
 });
