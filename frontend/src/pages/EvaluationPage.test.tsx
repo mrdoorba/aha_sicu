@@ -201,6 +201,7 @@ describe('EvaluationPage', () => {
         closing_message: 'Thank you',
         email_subject: 'Result',
         whatsapp_link: 'https://wa.me/',
+        rule_version: 3,
       },
       isStale: false,
       markStale: vi.fn(),
@@ -239,7 +240,7 @@ describe('EvaluationPage', () => {
       template: 'fashion',
       final_score: 75.5,
       verdict: '✔️',
-      rule_version: 1,
+      rule_version: 3,
       email_output: 'Dear Store,\nScore: 75.5',
     }));
     expect(payload.score_breakdown).toEqual([
