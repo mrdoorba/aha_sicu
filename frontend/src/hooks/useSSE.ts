@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
+import { toast } from 'sonner';
 import { getCurrentUserToken } from '../firebase/auth';
 import { API_BASE_URL } from '../config';
 
@@ -15,16 +16,18 @@ const INITIAL_RETRY_DELAY = 1000;
 const MAX_RETRY_DELAY = 30000;
 const MAX_RETRIES = 5;
 
-export function useSSE() {
+export function useSSE(currentUserEmail?: string) {
   const queryClient = useQueryClient();
   const [connectionState, setConnectionState] =
     useState<SSEConnectionState>('disconnected');
   const eventSourceRef = useRef<EventSource | null>(null);
   const retryCountRef = useRef(0);
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  // Ref avoids stale closure for queryClient in event handlers
+  // Refs avoid stale closures for mutable state in event handlers
   const queryClientRef = useRef(queryClient);
   queryClientRef.current = queryClient;
+  const currentUserEmailRef = useRef(currentUserEmail);
+  currentUserEmailRef.current = currentUserEmail;
 
   useEffect(() => {
     const cleanup = () => {
@@ -66,6 +69,32 @@ export function useSSE() {
       es.addEventListener('sync_status', () => {
         queryClientRef.current.invalidateQueries({ queryKey: ['syncStatus'] });
         queryClientRef.current.invalidateQueries({ queryKey: ['brands'] });
+      });
+
+      es.addEventListener('new_evaluation', (event: MessageEvent) => {
+        // Always invalidate — history list should refresh for any new evaluation
+        queryClientRef.current.invalidateQueries({ queryKey: ['evaluations'] });
+
+        // Show toast only for OTHER users' evaluations
+        try {
+          const data = JSON.parse(event.data);
+          if (
+            data.evaluator &&
+            data.brand_name &&
+            data.score != null &&
+            data.evaluator !== currentUserEmailRef.current
+          ) {
+            const rawName = data.evaluator.split('@')[0];
+            const displayName =
+              rawName.charAt(0).toUpperCase() + rawName.slice(1);
+            toast.info(
+              `New evaluation: ${data.brand_name} (${data.score}) by ${displayName}`,
+              { duration: 5000 },
+            );
+          }
+        } catch {
+          // Malformed event data — ignore, query invalidation already fired
+        }
       });
 
       es.onerror = () => {

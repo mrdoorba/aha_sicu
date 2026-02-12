@@ -5,6 +5,7 @@ import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { useSyncStatus, useTriggerSync } from '../../hooks/useSync';
 import { useSSE } from '../../hooks/useSSE';
+import { useAuth } from '../../context/AuthContext';
 
 /** Format ISO timestamp as relative time. Assumes server returns UTC timestamps. */
 function formatRelativeTime(dateString: string): string {
@@ -27,7 +28,8 @@ function formatRelativeTime(dateString: string): string {
 export const SyncStatus = () => {
   const { data: syncStatus, isLoading, isError } = useSyncStatus();
   const triggerSync = useTriggerSync();
-  const { connectionState } = useSSE();
+  const { user } = useAuth();
+  const { connectionState } = useSSE(user?.email);
 
   const handleSyncNow = () => {
     triggerSync.mutate(undefined, {
