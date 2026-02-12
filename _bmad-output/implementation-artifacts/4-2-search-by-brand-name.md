@@ -1,6 +1,6 @@
 # Story 4.2: Search by Brand Name
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -405,13 +405,34 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-02-12: Implemented brand name search for evaluations — backend ILIKE query with escape, service/router wiring, search input UI with debounce and URL sync, 14 new tests (8 backend + 6 frontend)
+- 2026-02-12: Code review fixes — extracted `escape_like` to shared `db/queries/utils.py` (M1), added initial-mount skip for debounce useEffect (H1), added 2 query construction verification tests (M2), removed incorrect `aria-busy` from SearchInput (M3), updated File List (L1)
 
 ### File List
 
-- backend/app/db/queries/evaluations.py (modified — added `_escape_like` import, WHERE clause in list/count queries)
+- backend/app/db/queries/evaluations.py (modified — added `escape_like` import from shared utils, WHERE clause in list/count queries)
+- backend/app/db/queries/utils.py (new — extracted `escape_like` shared helper from brands.py)
+- backend/app/db/queries/brands.py (modified — updated `_escape_like` → `escape_like` import from utils.py)
 - backend/app/modules/evaluations/service.py (modified — added `search` param, passed to DB queries)
 - backend/app/modules/evaluations/router.py (modified — wired `search` to service call, updated comments)
-- backend/tests/integration/api/test_evaluation_list.py (modified — added 8 search integration tests)
+- backend/tests/integration/api/test_evaluation_list.py (modified — added 8 search integration tests + 2 query construction verification tests)
+- backend/tests/integration/api/test_brands.py (modified — updated `_escape_like` → `escape_like` import)
 - frontend/src/hooks/useEvaluationHistory.ts (modified — added `search` param to hook signature, query key, API params)
-- frontend/src/components/evaluations/EvaluationHistoryTable.tsx (modified — added SearchInput component, debounce, URL sync, contextual empty state)
+- frontend/src/components/evaluations/EvaluationHistoryTable.tsx (modified — added SearchInput component, debounce with initial-mount skip, URL sync, contextual empty state)
 - frontend/src/components/evaluations/EvaluationHistoryTable.test.tsx (modified — added 6 search tests)
+- _bmad-output/implementation-artifacts/4-2-search-by-brand-name.md (modified — updated status to done, added review notes)
+
+### Senior Developer Review (AI)
+
+**Reviewer:** Claude Opus 4.6
+**Date:** 2026-02-12
+**Verdict:** All ACs IMPLEMENTED. 5 findings (1 HIGH, 3 MEDIUM, 1 LOW) — all fixed.
+
+| ID | Severity | Finding | Fix |
+|----|----------|---------|-----|
+| H1 | HIGH | Debounce `useEffect` fires on initial mount, deleting `page` URL param after 300ms — breaks bookmarked URLs | Added `useRef(true)` to skip first render in debounce effect |
+| M1 | MEDIUM | Private `_escape_like` imported cross-module (`brands.py` → `evaluations.py`) violates encapsulation | Extracted to public `escape_like()` in shared `db/queries/utils.py` |
+| M2 | MEDIUM | Backend search tests mock at connection level — never verify actual SQL or param order | Added 2 query construction tests asserting ILIKE clause, escape, and param positions |
+| M3 | MEDIUM | `aria-busy` on `<Input>` is semantically incorrect — should only be on results container | Removed `aria-busy` and `isLoading` prop from SearchInput (table already has `aria-busy`) |
+| L1 | LOW | File List incomplete — missing files changed during implementation | Updated File List to include all modified files |
+
+**Test results after fixes:** 491 backend tests passed, 232 frontend tests passed (2 pre-existing Firebase config failures unrelated to story).

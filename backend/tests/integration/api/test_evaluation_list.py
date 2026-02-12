@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 from decimal import Decimal
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, call, patch
 
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
 
@@ -486,3 +486,71 @@ def test_search_empty_returns_all(client):
         data = response.json()
         assert data["total"] == 3
         assert len(data["items"]) == 3
+
+
+# --- Query construction verification tests (Review M2) ---
+
+
+def test_search_query_passes_escaped_params(client):
+    """Verify that search with special chars calls DB with escaped value and correct param order."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        mock_svc_conn = _setup_search_mocks(
+            mock_verify, mock_db, mock_user_queries, mock_svc_db,
+            fetch_return=[], fetchval_return=0,
+        )
+
+        response = client.get(
+            "/api/v1/evaluations?search=brand%25_test",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+
+        # Verify conn.fetch was called with escaped search as $1, limit as $2, offset as $3
+        fetch_call = mock_svc_conn.fetch.call_args
+        query_sql = fetch_call.args[0]
+        query_params = fetch_call.args[1:]
+
+        # SQL must contain ILIKE with ESCAPE clause
+        assert "ILIKE" in query_sql
+        assert "ESCAPE" in query_sql
+
+        # First param must be the escaped search term (% → \%, _ → \_)
+        assert query_params[0] == "brand\\%\\_test"
+        # Second param is limit, third is offset
+        assert query_params[1] == 20  # default limit
+        assert query_params[2] == 0   # page 1 → offset 0
+
+
+def test_search_query_no_where_when_empty(client):
+    """Verify that empty search doesn't include WHERE clause — only limit/offset params."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        mock_svc_conn = _setup_search_mocks(
+            mock_verify, mock_db, mock_user_queries, mock_svc_db,
+            fetch_return=[EVAL_ROW_1], fetchval_return=1,
+        )
+
+        response = client.get(
+            "/api/v1/evaluations",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+
+        # Verify conn.fetch was called with only 2 params (limit, offset) — no search param
+        fetch_call = mock_svc_conn.fetch.call_args
+        query_sql = fetch_call.args[0]
+        query_params = fetch_call.args[1:]
+
+        assert "ILIKE" not in query_sql
+        assert len(query_params) == 2  # limit and offset only

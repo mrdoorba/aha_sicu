@@ -5,14 +5,11 @@ from typing import Any, Literal
 
 from asyncpg import Connection
 
+from app.db.queries.utils import escape_like
+
 TableName = Literal["brand_vp_data", "brand_meeting_data"]
 
 _VALID_TABLES: frozenset[str] = frozenset({"brand_vp_data", "brand_meeting_data"})
-
-
-def _escape_like(term: str) -> str:
-    """Escape special LIKE/ILIKE pattern characters in search terms."""
-    return term.replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_")
 
 
 def _validate_table(table: str) -> str:
@@ -105,7 +102,7 @@ async def get_brands_with_meeting(
     search: str | None = None,
 ) -> list[dict]:
     """Get VP brands with LEFT JOIN to meeting data, with optional search."""
-    search_escaped = _escape_like(search) if search else None
+    search_escaped = escape_like(search) if search else None
     rows = await conn.fetch(
         """
         SELECT
@@ -145,7 +142,7 @@ async def get_brands_count_with_search(
     search: str | None = None,
 ) -> int:
     """Get total count of VP brands with optional search filter."""
-    search_escaped = _escape_like(search) if search else None
+    search_escaped = escape_like(search) if search else None
     result = await conn.fetchval(
         """
         SELECT COUNT(*)
