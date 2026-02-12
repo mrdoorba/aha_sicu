@@ -44,10 +44,9 @@ SAVE_BODY = {
 }
 
 
-def _make_transactional_conn(fetchrow_side_effect):
+def _make_transactional_conn():
     """Create a mock connection that supports conn.transaction() context manager."""
     mock_conn = AsyncMock()
-    mock_conn.fetchrow = AsyncMock(side_effect=fetchrow_side_effect)
 
     @asynccontextmanager
     async def mock_transaction():
@@ -66,6 +65,14 @@ def _setup_auth_mocks(mock_verify, mock_db, mock_user_queries):
     mock_user_queries.update_last_login = AsyncMock()
 
 
+def _setup_eval_mocks(mock_eval_db, mock_brand_qs, mock_eval_qs, *, brand=SAMPLE_BRAND, saved_row=SAMPLE_SAVED_ROW):
+    """Shared evaluation service mock setup — patches query functions directly."""
+    mock_eval_conn = _make_transactional_conn()
+    mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
+    mock_brand_qs.get_brand_by_id = AsyncMock(return_value=brand)
+    mock_eval_qs.insert_evaluation = AsyncMock(return_value=saved_row)
+
+
 def test_save_evaluation_broadcasts_new_evaluation(client):
     """Test that save_evaluation broadcasts new_evaluation event on success."""
     with (
@@ -73,17 +80,14 @@ def test_save_evaluation_broadcasts_new_evaluation(client):
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.evaluations.service.db") as mock_eval_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_brand_qs,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eval_qs,
         patch(
             "app.modules.evaluations.service.sync_broadcaster"
         ) as mock_broadcaster,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_eval_conn = _make_transactional_conn([
-            SAMPLE_BRAND,      # get_brand_by_id
-            SAMPLE_SAVED_ROW,  # insert_evaluation
-        ])
-        mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
+        _setup_eval_mocks(mock_eval_db, mock_brand_qs, mock_eval_qs)
         mock_broadcaster.broadcast = AsyncMock()
 
         response = client.post(
@@ -105,17 +109,14 @@ def test_broadcast_payload_includes_all_required_fields(client):
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.evaluations.service.db") as mock_eval_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_brand_qs,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eval_qs,
         patch(
             "app.modules.evaluations.service.sync_broadcaster"
         ) as mock_broadcaster,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_eval_conn = _make_transactional_conn([
-            SAMPLE_BRAND,
-            SAMPLE_SAVED_ROW,
-        ])
-        mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
+        _setup_eval_mocks(mock_eval_db, mock_brand_qs, mock_eval_qs)
         mock_broadcaster.broadcast = AsyncMock()
 
         response = client.post(
@@ -143,14 +144,16 @@ def test_no_broadcast_on_brand_not_found(client):
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.evaluations.service.db") as mock_eval_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_brand_qs,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eval_qs,
         patch(
             "app.modules.evaluations.service.sync_broadcaster"
         ) as mock_broadcaster,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_eval_conn = _make_transactional_conn([None])  # brand not found
-        mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
+        _setup_eval_mocks(
+            mock_eval_db, mock_brand_qs, mock_eval_qs, brand=None
+        )
         mock_broadcaster.broadcast = AsyncMock()
 
         response = client.post(
@@ -170,17 +173,14 @@ def test_broadcast_failure_does_not_block_save(client):
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.evaluations.service.db") as mock_eval_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_brand_qs,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eval_qs,
         patch(
             "app.modules.evaluations.service.sync_broadcaster"
         ) as mock_broadcaster,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_eval_conn = _make_transactional_conn([
-            SAMPLE_BRAND,
-            SAMPLE_SAVED_ROW,
-        ])
-        mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
+        _setup_eval_mocks(mock_eval_db, mock_brand_qs, mock_eval_qs)
         # Broadcast raises an exception
         mock_broadcaster.broadcast = AsyncMock(
             side_effect=RuntimeError("SSE broadcast failed")

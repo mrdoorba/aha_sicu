@@ -11,9 +11,6 @@ from app.db.connection import db
 from app.db.queries import brands as brand_queries
 from app.db.queries import calculator_results as calc_queries
 from app.db.queries import evaluations as eval_queries
-from app.services.event_broadcaster import sync_broadcaster
-
-logger = logging.getLogger(__name__)
 from app.modules.evaluations.schemas import (
     CategoryScoreItem,
     EvaluationDetailResponse,
@@ -24,6 +21,9 @@ from app.modules.evaluations.schemas import (
     SaveEvaluationResponse,
     ScoringResponse,
 )
+from app.services.event_broadcaster import sync_broadcaster
+
+logger = logging.getLogger(__name__)
 
 
 async def list_evaluations(

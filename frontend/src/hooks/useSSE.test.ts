@@ -313,7 +313,7 @@ describe('useSSE', () => {
     });
 
     expect(mockToastInfo).toHaveBeenCalledWith(
-      'New evaluation: Nike (78) by rina',
+      'New evaluation: Nike (78) by Rina',
       { duration: 5000 },
     );
   });
@@ -366,5 +366,45 @@ describe('useSSE', () => {
     });
 
     expect(mockToastInfo).not.toHaveBeenCalled();
+  });
+
+  it('does NOT show toast when event data has missing fields', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children,
+      );
+
+    renderHook(() => useSSE('me@company.com'), { wrapper });
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    const es =
+      MockEventSource.instances[MockEventSource.instances.length - 1];
+
+    // Valid JSON but missing brand_name and score
+    await act(async () => {
+      es.onopen?.();
+      es.simulateEvent(
+        'new_evaluation',
+        JSON.stringify({ evaluator: 'other@company.com' }),
+      );
+    });
+
+    // Toast should NOT fire — missing required fields
+    expect(mockToastInfo).not.toHaveBeenCalled();
+
+    // Query invalidation should STILL fire (happens before field checks)
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ['evaluations'],
+    });
   });
 });
