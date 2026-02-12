@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { Badge } from '../ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
+import { Input } from '../ui/input';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import type { RuleThreshold } from '../../hooks/useRules';
 
@@ -10,6 +11,8 @@ interface RulesCategoryCardProps {
   category: string;
   rules: Record<string, RuleThreshold>;
   differingKeys?: Set<string>;
+  isEditing?: boolean;
+  onRuleChange?: (category: string, key: string, field: string, value: number) => void;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -58,6 +61,22 @@ const COMPARISON_SYMBOLS: Record<string, string> = {
   lt: '<',
   eq: '=',
 };
+
+// Fields that are editable numeric values
+const EDITABLE_FIELDS = new Set([
+  'threshold',
+  'threshold_pct',
+  'points',
+  'opportunity_points',
+  'min',
+  'max',
+  'points_no_flag',
+  'points_flag',
+  'mall',
+  'star_plus',
+  'star',
+  'regular',
+]);
 
 function formatThreshold(rule: RuleThreshold): string {
   // Store status — display status type labels instead of "-"
@@ -112,7 +131,140 @@ function calculateMaxPoints(rules: Record<string, RuleThreshold>, category: stri
   return max;
 }
 
-export const RulesCategoryCard = ({ category, rules, differingKeys }: RulesCategoryCardProps) => {
+function EditableNumber({
+  value,
+  onChange,
+  label,
+}: {
+  value: number | undefined;
+  onChange: (v: number) => void;
+  label: string;
+}) {
+  if (value === undefined) return null;
+  return (
+    <Input
+      type="number"
+      value={value}
+      onChange={(e) => {
+        const parsed = parseFloat(e.target.value);
+        if (!isNaN(parsed)) onChange(parsed);
+      }}
+      className="w-20 h-7 text-sm inline-block"
+      aria-label={label}
+    />
+  );
+}
+
+function renderEditableThreshold(
+  rule: RuleThreshold,
+  category: string,
+  key: string,
+  onRuleChange: (category: string, key: string, field: string, value: number) => void,
+) {
+  const comparison = rule.comparison ? COMPARISON_SYMBOLS[rule.comparison] || rule.comparison : '';
+
+  // Store status — editable per store type
+  if (rule.mall !== undefined) {
+    return (
+      <span className="flex items-center gap-1 flex-wrap">
+        By store type
+      </span>
+    );
+  }
+
+  // Range (min - max)
+  if (rule.min !== undefined && rule.max !== undefined && rule.min !== null && rule.max !== null) {
+    return (
+      <span className="flex items-center gap-1">
+        <EditableNumber value={rule.min} onChange={(v) => onRuleChange(category, key, 'min', v)} label={`${key} min`} />
+        <span>-</span>
+        <EditableNumber value={rule.max} onChange={(v) => onRuleChange(category, key, 'max', v)} label={`${key} max`} />
+      </span>
+    );
+  }
+
+  // Fake discount — no threshold to edit
+  if (rule.points_no_flag !== undefined) {
+    return <span>Flag check</span>;
+  }
+
+  // Standard threshold or threshold_pct
+  const thresholdField = rule.threshold !== undefined ? 'threshold' : rule.threshold_pct !== undefined ? 'threshold_pct' : null;
+  const thresholdValue = rule.threshold ?? rule.threshold_pct;
+
+  if (thresholdField && thresholdValue !== undefined) {
+    return (
+      <span className="flex items-center gap-1">
+        {comparison && <span>{comparison}</span>}
+        <EditableNumber
+          value={thresholdValue}
+          onChange={(v) => onRuleChange(category, key, thresholdField, v)}
+          label={`${key} threshold`}
+        />
+      </span>
+    );
+  }
+
+  return <span>-</span>;
+}
+
+function renderEditablePoints(
+  rule: RuleThreshold,
+  category: string,
+  key: string,
+  onRuleChange: (category: string, key: string, field: string, value: number) => void,
+) {
+  if (rule.info_only) return <Badge variant="outline" className="text-muted-foreground">Info only</Badge>;
+
+  if (rule.points !== undefined) {
+    return (
+      <span className="flex items-center gap-1">
+        <EditableNumber value={rule.points} onChange={(v) => onRuleChange(category, key, 'points', v)} label={`${key} points`} />
+        <span className="text-sm">pts</span>
+      </span>
+    );
+  }
+
+  if (rule.opportunity_points !== undefined) {
+    return (
+      <span className="flex items-center gap-1">
+        <EditableNumber value={rule.opportunity_points} onChange={(v) => onRuleChange(category, key, 'opportunity_points', v)} label={`${key} opportunity points`} />
+        <span className="text-sm">opp pts</span>
+      </span>
+    );
+  }
+
+  if (rule.points_no_flag !== undefined) {
+    return (
+      <span className="flex items-center gap-1">
+        <EditableNumber value={rule.points_no_flag} onChange={(v) => onRuleChange(category, key, 'points_no_flag', v)} label={`${key} points no flag`} />
+        <span className="text-sm">/</span>
+        <EditableNumber value={rule.points_flag} onChange={(v) => onRuleChange(category, key, 'points_flag', v)} label={`${key} points flag`} />
+        <span className="text-sm">pts</span>
+      </span>
+    );
+  }
+
+  // Store status points
+  if (rule.mall !== undefined) {
+    return (
+      <span className="flex items-center gap-1 flex-wrap text-sm">
+        <span>Mall:</span>
+        <EditableNumber value={rule.mall} onChange={(v) => onRuleChange(category, key, 'mall', v)} label={`${key} mall`} />
+        <span>Star+:</span>
+        <EditableNumber value={rule.star_plus} onChange={(v) => onRuleChange(category, key, 'star_plus', v)} label={`${key} star plus`} />
+        <span>Star:</span>
+        <EditableNumber value={rule.star} onChange={(v) => onRuleChange(category, key, 'star', v)} label={`${key} star`} />
+        <span>Reg:</span>
+        <EditableNumber value={rule.regular} onChange={(v) => onRuleChange(category, key, 'regular', v)} label={`${key} regular`} />
+      </span>
+    );
+  }
+
+  return <span>-</span>;
+}
+
+export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = false, onRuleChange }: RulesCategoryCardProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const maxPoints = calculateMaxPoints(rules, category);
   const label = CATEGORY_LABELS[category] || category;
@@ -157,12 +309,18 @@ export const RulesCategoryCard = ({ category, rules, differingKeys }: RulesCateg
                         )}
                       </TableCell>
                       <TableCell>
-                        <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
-                          {formatThreshold(rule)}
-                        </code>
+                        {isEditing && onRuleChange ? (
+                          renderEditableThreshold(rule, category, key, onRuleChange)
+                        ) : (
+                          <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                            {formatThreshold(rule)}
+                          </code>
+                        )}
                       </TableCell>
                       <TableCell>
-                        {rule.info_only ? (
+                        {isEditing && onRuleChange ? (
+                          renderEditablePoints(rule, category, key, onRuleChange)
+                        ) : rule.info_only ? (
                           <Badge variant="outline" className="text-muted-foreground">Info only</Badge>
                         ) : (
                           <span className="text-sm">{formatPoints(rule)}</span>
