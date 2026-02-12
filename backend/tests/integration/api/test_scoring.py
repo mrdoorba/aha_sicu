@@ -3,6 +3,8 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
+from app.calculators.scoring import DEFAULT_FASHION_RULES
+
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
 
 MOCK_USER = {
@@ -108,6 +110,15 @@ SCORING_REQUEST = {
     "brand_name": "TestBrand",
 }
 
+SAMPLE_RULES_ROW = {
+    "id": 1,
+    "template": "fashion",
+    "rules": DEFAULT_FASHION_RULES,
+    "version": 1,
+    "updated_by": None,
+    "updated_at": datetime(2026, 2, 5, tzinfo=timezone.utc),
+}
+
 
 def _setup_auth_mocks(mock_verify, mock_db, mock_user_queries):
     """Shared auth mock setup."""
@@ -142,6 +153,7 @@ def test_score_with_full_data(client):
         mock_svc_conn.fetchrow = AsyncMock(side_effect=[
             SAMPLE_BRAND,        # get_brand_by_id
             SAMPLE_EVAL_INPUTS,  # get_evaluation_inputs
+            SAMPLE_RULES_ROW,    # get_rules_by_template
         ])
         mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
 
@@ -164,6 +176,8 @@ def test_score_with_full_data(client):
         assert "whatsapp_link" in data
         assert data["email_subject"].startswith("🏥")
         assert data["whatsapp_link"].startswith("https://api.whatsapp.com")
+        assert "rule_version" in data
+        assert data["rule_version"] == 1
 
 
 def test_score_with_missing_calculator_results(client):
@@ -181,6 +195,7 @@ def test_score_with_missing_calculator_results(client):
         mock_svc_conn.fetchrow = AsyncMock(side_effect=[
             SAMPLE_BRAND,
             SAMPLE_EVAL_INPUTS,
+            SAMPLE_RULES_ROW,    # get_rules_by_template
         ])
         mock_svc_conn.fetch = AsyncMock(return_value=[])  # No calculator results
 
@@ -314,6 +329,7 @@ def test_score_available_field_in_response(client):
         mock_svc_conn.fetchrow = AsyncMock(side_effect=[
             SAMPLE_BRAND,
             SAMPLE_EVAL_INPUTS,
+            SAMPLE_RULES_ROW,    # get_rules_by_template
         ])
         mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
 
@@ -333,3 +349,125 @@ def test_score_available_field_in_response(client):
             c for c in data["category_scores"] if c["category"] == "Stok"
         )
         assert stock_cat["available"] is True
+
+
+def test_score_endpoint_returns_rule_version(client):
+    """Test POST /score returns rule_version field matching DB version."""
+    rules_v3 = {**SAMPLE_RULES_ROW, "version": 3}
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
+            SAMPLE_BRAND,
+            SAMPLE_EVAL_INPUTS,
+            rules_v3,            # get_rules_by_template with version=3
+        ])
+        mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/score",
+            json=SCORING_REQUEST,
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["rule_version"] == 3
+
+
+def test_score_uses_db_rules(client):
+    """Test scoring uses rules from DB (not just defaults)."""
+    # Custom rules with doubled operational points
+    custom_rules = {
+        **DEFAULT_FASHION_RULES,
+        "operational": {
+            "unfulfilled_order_rate": {"threshold": 1.0, "points": 8, "comparison": "lte"},
+            "late_shipment_rate": {"threshold": 1.0, "points": 6, "comparison": "lte"},
+            "preparation_time": {"threshold": 1.0, "points": 6, "comparison": "lte"},
+            "chat_response_rate": {"threshold": 95.0, "comparison": "gte", "info_only": True},
+            "overall_rating": {"threshold": 4.7, "comparison": "gte", "info_only": True},
+        },
+    }
+    custom_rules_row = {**SAMPLE_RULES_ROW, "rules": custom_rules, "version": 2}
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        # First call: default rules
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
+            SAMPLE_BRAND,
+            SAMPLE_EVAL_INPUTS,
+            SAMPLE_RULES_ROW,  # default rules (version=1)
+        ])
+        mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
+
+        resp_default = client.post(
+            "/api/v1/evaluations/brands/1/score",
+            json=SCORING_REQUEST,
+            headers=AUTH_HEADERS,
+        )
+
+        # Second call: custom rules
+        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
+            SAMPLE_BRAND,
+            SAMPLE_EVAL_INPUTS,
+            custom_rules_row,  # custom rules (version=2)
+        ])
+        mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
+
+        resp_custom = client.post(
+            "/api/v1/evaluations/brands/1/score",
+            json=SCORING_REQUEST,
+            headers=AUTH_HEADERS,
+        )
+
+        assert resp_default.status_code == 200
+        assert resp_custom.status_code == 200
+        # Custom rules have higher operational points → higher total
+        assert resp_custom.json()["total_score"] > resp_default.json()["total_score"]
+        assert resp_custom.json()["rule_version"] == 2
+
+
+def test_score_rules_not_found_falls_back(client):
+    """Test scoring falls back to defaults when rules not found in DB."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
+            SAMPLE_BRAND,
+            SAMPLE_EVAL_INPUTS,
+            None,                # get_rules_by_template returns None
+        ])
+        mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/score",
+            json=SCORING_REQUEST,
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["rule_version"] == 1  # fallback default
+        assert data["total_score"] > 0
