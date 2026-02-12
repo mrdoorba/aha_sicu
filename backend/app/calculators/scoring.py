@@ -170,45 +170,140 @@ def _get_rule_value(category_rules: dict, key: str, field: str, default: Any) ->
     return category_rules.get(key, {}).get(field, default)
 
 
+def _format_message_template(template: str, **kwargs: Any) -> str:
+    """Format a message template safely — missing placeholders stay as-is."""
+    from collections import defaultdict
+
+    class _SafeDict(defaultdict):
+        def __missing__(self, key: str) -> str:
+            return f"{{{key}}}"
+
+    return template.format_map(_SafeDict(None, **kwargs))
+
+
 # Default rules matching migration 010 seed data — used when rules=None.
 # IMPORTANT: These are module-level constants — treat as immutable.
 # DEFAULT_NON_FASHION_RULES shares nested dicts via shallow spread;
 # never mutate nested values in either dict.
 DEFAULT_FASHION_RULES: dict = {
     "operational": {
-        "unfulfilled_order_rate": {"threshold": 1.0, "points": 4, "comparison": "lte"},
-        "late_shipment_rate": {"threshold": 1.0, "points": 3, "comparison": "lte"},
-        "preparation_time": {"threshold": 1.0, "points": 3, "comparison": "lte"},
-        "chat_response_rate": {"threshold": 95.0, "comparison": "gte", "info_only": True},
-        "overall_rating": {"threshold": 4.7, "comparison": "gte", "info_only": True},
+        "unfulfilled_order_rate": {
+            "threshold": 1.0, "points": 4, "comparison": "lte",
+            "message_pass": "✔️ Tingkat Pesanan Tidak Terselesaikan = {val_str} Sudah Baik",
+            "message_fail": "❌ Tingkat Pesanan Tidak Terselesaikan = {val_str} Kurang Baik, nilai disarankan: <{threshold}%",
+        },
+        "late_shipment_rate": {
+            "threshold": 1.0, "points": 3, "comparison": "lte",
+            "message_pass": "✔️ Tingkat Keterlambatan Pengiriman = {val_str} Sudah Baik",
+            "message_fail": "❌ Tingkat Keterlambatan Pengiriman = {val_str} Kurang Baik, nilai disarankan: <{threshold}%",
+        },
+        "preparation_time": {
+            "threshold": 1.0, "points": 3, "comparison": "lte",
+            "message_pass": "✔️ Masa Pengemasan = {val_str} hari Sudah Baik",
+            "message_fail": "❌ Masa Pengemasan = {val_str} hari Kurang Baik, nilai disarankan: <{threshold} hari",
+        },
+        "chat_response_rate": {
+            "threshold": 95.0, "comparison": "gte", "info_only": True,
+            "message_pass": "✔️ Persentase Chat Dibalas = {val_str} Sudah Baik",
+            "message_fail": "❌ Persentase Chat Dibalas = {val_str} Kurang Baik, nilai disarankan: >{threshold}%",
+        },
+        "overall_rating": {
+            "threshold": 4.7, "comparison": "gte", "info_only": True,
+            "message_pass": "✔️ Keseluruhan Penilaian = {val_str} Sudah Baik",
+            "message_fail": "❌ Keseluruhan Penilaian = {val_str} Kurang Baik, nilai disarankan: >{threshold}",
+        },
     },
     "business": {
-        "monthly_sales_trend": {"threshold_pct": 90.0, "points": 10, "comparison": "gte"},
+        "monthly_sales_trend": {
+            "threshold_pct": 90.0, "points": 10, "comparison": "gte",
+            "message_pass": "✔️ Penjualan = IDR {idr_val} Meningkat {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: IDR {idr_avg}",
+            "message_fail": "❌ Penjualan = IDR {idr_val} Menurun {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: IDR {idr_avg}",
+            "message_fail_severe": "\n❗️ Potensi peningkatan harga jual signifikan atau terdapat event abnormal.",
+        },
         "six_month_avg_threshold": {"threshold": 100000000, "points": 10, "comparison": "gte"},
-        "conversion_rate": {"threshold": 2.0, "comparison": "gte", "info_only": True},
+        "conversion_rate": {
+            "threshold": 2.0, "comparison": "gte", "info_only": True,
+            "message_pass": "✔️ Tingkat Konversi = {val_str} Sudah Baik",
+            "message_fail": "❌ Tingkat Konversi = {val_str} Kurang Baik, nilai disarankan: {benchmark}",
+        },
     },
     "content": {
-        "quality_ratio": {"threshold": 95.0, "comparison": "gte", "info_only": True},
+        "quality_ratio": {
+            "threshold": 95.0, "comparison": "gte", "info_only": True,
+            "message_pass": "✔️ % Konten baik = {val_str} Sudah Baik",
+            "message_fail": "❌ % Konten baik = {val_str} Kurang Baik, nilai disarankan: >{threshold}%",
+        },
     },
     "visitors": {
-        "returning_visitors_pct": {"threshold": 23.0, "points": 3, "comparison": "gte"},
-        "followers": {"threshold": 50000, "points": 2, "comparison": "gte"},
+        "returning_visitors_pct": {
+            "threshold": 23.0, "points": 3, "comparison": "gte",
+            "message_pass": "✔️ % Pengunjung Lama = {val_str} Sudah Baik",
+            "message_fail": "❌ % Pengunjung Lama = {val_str} Kurang Baik, nilai disarankan: >{threshold}%",
+        },
+        "followers": {
+            "threshold": 50000, "points": 2, "comparison": "gte",
+            "message_pass": "✔️ Total Pengikut = {val_str} Sudah Baik",
+            "message_fail": "❌ Total Pengikut = {val_str} Kurang Baik, nilai disarankan: >50.000",
+        },
     },
     "promo_tools": {
-        "usage_pct_threshold": {"threshold": 80.0, "opportunity_points": 5},
-        "effectiveness_pct_threshold": {"threshold": 90.0, "opportunity_points": 10},
+        "usage_pct_threshold": {
+            "threshold": 80.0, "opportunity_points": 5,
+            "message_pass": "✔️ Penggunaan alat promosi = {val_str} Sudah Baik",
+            "message_fail": "❌ Penggunaan alat promosi = {val_str} Kurang Baik, nilai disarankan: >{threshold}%",
+        },
+        "effectiveness_pct_threshold": {
+            "threshold": 90.0, "opportunity_points": 10,
+            "message_pass": "✔️ Efektifitas alat promosi = {val_str} Sudah Baik",
+            "message_fail": "❌ Efektifitas alat promosi = {val_str} Kurang Baik, nilai disarankan: >{threshold}%",
+        },
+        "individual_messages": {
+            "message_zero": "{verdict} {metric} nil pendapatan",
+            "message_dependent": "{verdict} {metric} = {pct_str} Terlalu mengandalkan promo, nilai disarankan: 15%-50%",
+            "message_fail": "❌ {metric} = {pct_str} Kurang Efektif, nilai disarankan: {benchmark}",
+            "message_pass": "✔️ {metric} ({pct_str}) digunakan & persentase penggunaan baik",
+            "message_pass_afiliasi": "✔️ {metric} ({pct_str}) digunakan",
+        },
     },
     "products_status": {
-        "product_count": {"threshold": 35, "points": 5, "comparison": "gte"},
-        "store_status_points": {"mall": 10, "star_plus": 5, "star": 0, "regular": 0},
+        "product_count": {
+            "threshold": 35, "points": 5, "comparison": "gte",
+            "message_pass": "✔️ Jumlah Produk = {value_int} OK",
+            "message_fail": "❌ Jumlah Produk = {value_int} NOT OK, nilai disarankan: >={threshold}",
+        },
+        "store_status_points": {
+            "mall": 10, "star_plus": 5, "star": 0, "regular": 0,
+            "message_pass": "✔️ Status Toko = {store_status} OK",
+            "message_fail": "❌ Status Toko = {store_status} Wajib Shopee Mall",
+        },
     },
     "ads": {
-        "roi_threshold": {"threshold": 8.0, "opportunity_points": 5, "comparison": "gt"},
-        "gmv_ratio_threshold": {"threshold": 84.0, "points": 5, "comparison": "lt"},
-        "cost_ratio_range": {"min": 5.0, "max": 10.0, "info_only": True},
+        "roi_threshold": {
+            "threshold": 8.0, "opportunity_points": 5, "comparison": "gt",
+            "message_pass": "✔️ ROI = {val_str} Sudah Baik",
+            "message_fail": "❌ ROI = {val_str} Kurang Baik, nilai disarankan: {benchmark}",
+        },
+        "gmv_ratio_threshold": {
+            "threshold": 84.0, "points": 5, "comparison": "lt",
+            "message_pass": "✔️ % GMV Iklan / GMV Toko = {pct_str} Sudah Baik",
+            "message_fail": "❌ % GMV Iklan / GMV Toko = {pct_str} Terlalu bergantung terhadap Iklan, nilai disarankan: <{threshold}%",
+            "message_no_ads": "❌ Iklan tidak aktif sama sekali",
+        },
+        "cost_ratio_range": {
+            "min": 5.0, "max": 10.0, "info_only": True,
+            "message_pass": "✔️ % Biaya Iklan / GMV Toko = {pct_str} Sudah Baik",
+            "message_fail": "❌ % Biaya Iklan / GMV Toko = {pct_str} Biaya terlalu tinggi, nilai disarankan: <{threshold}%",
+            "message_no_ads": "❌ Iklan tidak aktif sama sekali",
+            "message_too_minimal": "❌ Penggunaan iklan terlalu minim ({pct_str}). Nilai disarankan: {min}%-{max}%.",
+        },
     },
     "campaign": {
-        "participation_pct_threshold": {"threshold": 90.0, "opportunity_points": 10, "comparison": "gte"},
+        "participation_pct_threshold": {
+            "threshold": 90.0, "opportunity_points": 10, "comparison": "gte",
+            "message_pass": "✔️ % Partisipasi Campaign = {pct_str} Sudah Baik",
+            "message_fail": "❌ % Partisipasi Campaign = {pct_str} Kurang Baik, nilai disarankan: >{threshold}%",
+            "message_no_data": "❌Tidak ada Campaign yang dipartisipasikan",
+        },
     },
     "stock": {
         "high_threshold": {"threshold": 24, "points": 10, "comparison": "gte"},
@@ -227,12 +322,25 @@ DEFAULT_FASHION_RULES: dict = {
         "display_max": {"value": 0.25},
         "display_min": {"value": 0.10},
     },
+    "competition": {
+        "message_pass": "✅kompetitif",
+        "message_fail": "❌tidak kompetitif (harga kisaran pasaran: Rp. {market_price})",
+    },
     "interpretation": {
         "ranges": [
             {"min": 71, "max": None, "label": "Good Candidate", "verdict": "✔️"},
             {"min": 41, "max": 70, "label": "Needs Review", "verdict": "⭕️"},
             {"min": None, "max": 40, "label": "Not Recommended", "verdict": "❌"},
         ],
+        "closing_messages": {
+            "✔️": "Berdasarkan data analisa diatas, potensi toko masih belum maksimal. Kami mengundang untuk berdiskusi mengenai potensi optimisasi toko melalui link berikut: cal-bd2.ahacommerce.net",
+            "❌": "Berdasarkan data analisa diatas, perlu mempertimbangkan potensi keuntungan. Silakan cek AHA Coventures: bit.ly/AHACoventures",
+            "❌ Non Mall": "Toko belum berstatus Mall. AHA dapat membantu proses pengajuan Shopee Mall. Persyaratan: HAKI (Merek Terdaftar), NIB, dan dokumen legalitas usaha.",
+            "❌ No Brand": "Toko bukan merupakan toko yang memiliki brand sendiri. Terima kasih atas waktunya, semoga sukses selalu.",
+            "": "Performa toko sudah cukup baik. Terima kasih atas waktunya, semoga sukses selalu.",
+            "❌ Opex": "Tingkat keterlambatan cukup tinggi. Disarankan untuk memperbaiki pengiriman (<2%) dan masa pengemasan (<1 hari) terlebih dahulu.",
+            "⭕️": "",
+        },
     },
 }
 
@@ -240,11 +348,19 @@ DEFAULT_NON_FASHION_RULES: dict = {
     **DEFAULT_FASHION_RULES,
     "business": {
         **DEFAULT_FASHION_RULES["business"],
-        "conversion_rate": {"threshold": 3.0, "comparison": "gte", "info_only": True},
+        "conversion_rate": {
+            "threshold": 3.0, "comparison": "gte", "info_only": True,
+            "message_pass": "✔️ Tingkat Konversi = {val_str} Sudah Baik",
+            "message_fail": "❌ Tingkat Konversi = {val_str} Kurang Baik, nilai disarankan: {benchmark}",
+        },
     },
     "ads": {
         **DEFAULT_FASHION_RULES["ads"],
-        "roi_threshold": {"threshold": 9.0, "opportunity_points": 5, "comparison": "gt"},
+        "roi_threshold": {
+            "threshold": 9.0, "opportunity_points": 5, "comparison": "gt",
+            "message_pass": "✔️ ROI = {val_str} Sudah Baik",
+            "message_fail": "❌ ROI = {val_str} Kurang Baik, nilai disarankan: {benchmark}",
+        },
     },
     "marketing": {
         **DEFAULT_FASHION_RULES["marketing"],
@@ -903,44 +1019,37 @@ def _score_discount_row(calculator_results: dict, rules: dict | None = None) -> 
 # G-column message generation
 # ---------------------------------------------------------------------------
 
-def _generate_operational_messages(cat: CategoryScore, manual_data: dict) -> None:
+def _generate_operational_messages(cat: CategoryScore, manual_data: dict, rules: dict | None = None) -> None:
     """Fill G-column messages for operational rows 7-11."""
+    ops_rules = _get_rule_category(rules, "operational")
+
+    _ROW_RULE_MAP = {
+        7: ("unfulfilled_order_rate", lambda v: f"{v:.1f}%"),
+        8: ("late_shipment_rate", lambda v: f"{v:.1f}%"),
+        9: ("preparation_time", lambda v: f"{v:.2f}"),
+        10: ("chat_response_rate", lambda v: f"{v:.0f}%"),
+        11: ("overall_rating", lambda v: f"{v:.2f}"),
+    }
+
     for row in cat.rows:
-        value = row.value
-        if row.row == 7:
-            val_str = f"{value:.1f}%"
-            if row.verdict == "✔️":
-                row.message = f"✔️ Tingkat Pesanan Tidak Terselesaikan = {val_str} Sudah Baik"
-            else:
-                row.message = f"❌ Tingkat Pesanan Tidak Terselesaikan = {val_str} Kurang Baik, nilai disarankan: <1%"
-        elif row.row == 8:
-            val_str = f"{value:.1f}%"
-            if row.verdict == "✔️":
-                row.message = f"✔️ Tingkat Keterlambatan Pengiriman = {val_str} Sudah Baik"
-            else:
-                row.message = f"❌ Tingkat Keterlambatan Pengiriman = {val_str} Kurang Baik, nilai disarankan: <1%"
-        elif row.row == 9:
-            val_str = f"{value:.2f}"
-            if row.verdict == "✔️":
-                row.message = f"✔️ Masa Pengemasan = {val_str} hari Sudah Baik"
-            else:
-                row.message = f"❌ Masa Pengemasan = {val_str} hari Kurang Baik, nilai disarankan: <1 hari"
-        elif row.row == 10:
-            val_str = f"{value:.0f}%"
-            if row.verdict == "✔️":
-                row.message = f"✔️ Persentase Chat Dibalas = {val_str} Sudah Baik"
-            else:
-                row.message = f"❌ Persentase Chat Dibalas = {val_str} Kurang Baik, nilai disarankan: >95%"
-        elif row.row == 11:
-            val_str = f"{value:.2f}"
-            if row.verdict == "✔️":
-                row.message = f"✔️ Keseluruhan Penilaian = {val_str} Sudah Baik"
-            else:
-                row.message = f"❌ Keseluruhan Penilaian = {val_str} Kurang Baik, nilai disarankan: >4.7"
+        if row.row not in _ROW_RULE_MAP:
+            continue
+        rule_key, fmt_fn = _ROW_RULE_MAP[row.row]
+        val_str = fmt_fn(row.value)
+        threshold = _get_rule_value(ops_rules, rule_key, "threshold", "")
+        if row.verdict == "✔️":
+            tmpl = _get_rule_value(ops_rules, rule_key, "message_pass",
+                f"✔️ {rule_key} = {{val_str}} Sudah Baik")
+            row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
+        else:
+            tmpl = _get_rule_value(ops_rules, rule_key, "message_fail",
+                f"❌ {rule_key} = {{val_str}} Kurang Baik")
+            row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
 
 
-def _generate_business_messages(cat: CategoryScore, manual_data: dict) -> None:
+def _generate_business_messages(cat: CategoryScore, manual_data: dict, rules: dict | None = None) -> None:
     """Fill G-column messages for business rows 13-20."""
+    biz_rules = _get_rule_category(rules, "business")
     biz = _get_nested(manual_data, "business") or {}
     sales_months = [_safe_num(biz.get(f"salesMonth{i}")) for i in range(6)]
     current = sales_months[0]
@@ -954,60 +1063,81 @@ def _generate_business_messages(cat: CategoryScore, manual_data: dict) -> None:
                 change_pct = ((current - avg_6mo) / avg_6mo) * 100
             else:
                 change_pct = 0.0
+            change_pct_str = f"{abs(change_pct):.1f}"
 
             if row.verdict == "✔️":
-                row.message = (
-                    f"✔️ Penjualan = IDR {idr_val} "
-                    f"Meningkat {abs(change_pct):.1f}% dibandingkan dengan "
-                    f"rata² 6 bulan terakhir: IDR {idr_avg}"
-                )
+                tmpl = _get_rule_value(biz_rules, "monthly_sales_trend", "message_pass",
+                    "✔️ Penjualan = IDR {idr_val} Meningkat {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: IDR {idr_avg}")
+                row.message = _format_message_template(tmpl, idr_val=idr_val, change_pct=change_pct_str, idr_avg=idr_avg)
             else:
-                msg = (
-                    f"❌ Penjualan = IDR {idr_val} "
-                    f"Menurun {abs(change_pct):.1f}% dibandingkan dengan "
-                    f"rata² 6 bulan terakhir: IDR {idr_avg}"
-                )
+                tmpl = _get_rule_value(biz_rules, "monthly_sales_trend", "message_fail",
+                    "❌ Penjualan = IDR {idr_val} Menurun {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: IDR {idr_avg}")
+                msg = _format_message_template(tmpl, idr_val=idr_val, change_pct=change_pct_str, idr_avg=idr_avg)
                 if change_pct < -25:
-                    msg += "\n❗️ Potensi peningkatan harga jual signifikan atau terdapat event abnormal."
+                    severe_tmpl = _get_rule_value(biz_rules, "monthly_sales_trend", "message_fail_severe",
+                        "\n❗️ Potensi peningkatan harga jual signifikan atau terdapat event abnormal.")
+                    msg += severe_tmpl
                 row.message = msg
         elif row.row == 20:
             val_str = f"{row.value:.1f}%"
             if row.verdict == "✔️":
-                row.message = f"✔️ Tingkat Konversi = {val_str} Sudah Baik"
+                tmpl = _get_rule_value(biz_rules, "conversion_rate", "message_pass",
+                    "✔️ Tingkat Konversi = {val_str} Sudah Baik")
+                row.message = _format_message_template(tmpl, val_str=val_str, benchmark=row.benchmark)
             elif row.verdict == "❌":
-                row.message = f"❌ Tingkat Konversi = {val_str} Kurang Baik, nilai disarankan: {row.benchmark}"
+                tmpl = _get_rule_value(biz_rules, "conversion_rate", "message_fail",
+                    "❌ Tingkat Konversi = {val_str} Kurang Baik, nilai disarankan: {benchmark}")
+                row.message = _format_message_template(tmpl, val_str=val_str, benchmark=row.benchmark)
 
 
-def _generate_content_messages(cat: CategoryScore) -> None:
+def _generate_content_messages(cat: CategoryScore, rules: dict | None = None) -> None:
     """Fill G-column messages for content rows 22-24."""
+    content_rules = _get_rule_category(rules, "content")
     for row in cat.rows:
         if row.row == 24:
             val_str = _fmt_pct_0dp(row.value) if isinstance(row.value, float) else str(row.value)
+            threshold = _get_rule_value(content_rules, "quality_ratio", "threshold", 95)
             if row.verdict == "✔️":
-                row.message = f"✔️ % Konten baik = {val_str} Sudah Baik"
+                tmpl = _get_rule_value(content_rules, "quality_ratio", "message_pass",
+                    "✔️ % Konten baik = {val_str} Sudah Baik")
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
             else:
-                row.message = f"❌ % Konten baik = {val_str} Kurang Baik, nilai disarankan: >95%"
+                tmpl = _get_rule_value(content_rules, "quality_ratio", "message_fail",
+                    "❌ % Konten baik = {val_str} Kurang Baik, nilai disarankan: >{threshold}%")
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
 
 
-def _generate_visitors_messages(cat: CategoryScore) -> None:
+def _generate_visitors_messages(cat: CategoryScore, rules: dict | None = None) -> None:
     """Fill G-column messages for visitor rows 26-29."""
+    vis_rules = _get_rule_category(rules, "visitors")
     for row in cat.rows:
         if row.row == 28:
             val_str = _fmt_pct_1dp(row.value) if isinstance(row.value, float) else str(row.value)
+            threshold = _get_rule_value(vis_rules, "returning_visitors_pct", "threshold", 23)
             if row.verdict == "✔️":
-                row.message = f"✔️ % Pengunjung Lama = {val_str} Sudah Baik"
+                tmpl = _get_rule_value(vis_rules, "returning_visitors_pct", "message_pass",
+                    "✔️ % Pengunjung Lama = {val_str} Sudah Baik")
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
             else:
-                row.message = f"❌ % Pengunjung Lama = {val_str} Kurang Baik, nilai disarankan: >23%"
+                tmpl = _get_rule_value(vis_rules, "returning_visitors_pct", "message_fail",
+                    "❌ % Pengunjung Lama = {val_str} Kurang Baik, nilai disarankan: >{threshold}%")
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
         elif row.row == 29:
             val_str = f"{int(row.value):,}".replace(",", ".")
             if row.verdict == "✔️":
-                row.message = f"✔️ Total Pengikut = {val_str} Sudah Baik"
+                tmpl = _get_rule_value(vis_rules, "followers", "message_pass",
+                    "✔️ Total Pengikut = {val_str} Sudah Baik")
+                row.message = _format_message_template(tmpl, val_str=val_str)
             else:
-                row.message = f"❌ Total Pengikut = {val_str} Kurang Baik, nilai disarankan: >50.000"
+                tmpl = _get_rule_value(vis_rules, "followers", "message_fail",
+                    "❌ Total Pengikut = {val_str} Kurang Baik, nilai disarankan: >50.000")
+                row.message = _format_message_template(tmpl, val_str=val_str)
 
 
-def _generate_promo_messages(cat: CategoryScore, manual_data: dict) -> None:
+def _generate_promo_messages(cat: CategoryScore, manual_data: dict, rules: dict | None = None) -> None:
     """Fill G-column messages for promo tool rows 31-43."""
+    promo_rules = _get_rule_category(rules, "promo_tools")
+    indiv = promo_rules.get("individual_messages", {})
     d13 = _safe_num(_get_nested(manual_data, "business", "salesMonth0"))
 
     for row in cat.rows:
@@ -1018,56 +1148,82 @@ def _generate_promo_messages(cat: CategoryScore, manual_data: dict) -> None:
             pct_str = _fmt_pct_1dp(pct_of_sales)
 
             if d_value == 0:
-                row.message = f"{row.verdict} {row.metric} nil pendapatan"
+                tmpl = indiv.get("message_zero", "{verdict} {metric} nil pendapatan")
+                row.message = _format_message_template(tmpl, verdict=row.verdict, metric=row.metric)
             elif d13 > 0 and d_value / d13 >= 0.50:
-                row.message = (
-                    f"{row.verdict} {row.metric} = {pct_str} "
-                    f"Terlalu mengandalkan promo, nilai disarankan: 15%-50%"
-                )
+                tmpl = indiv.get("message_dependent",
+                    "{verdict} {metric} = {pct_str} Terlalu mengandalkan promo, nilai disarankan: 15%-50%")
+                row.message = _format_message_template(tmpl, verdict=row.verdict, metric=row.metric, pct_str=pct_str)
             elif row.verdict == "❌":
-                row.message = (
-                    f"❌ {row.metric} = {pct_str} "
-                    f"Kurang Efektif, nilai disarankan: {row.benchmark}"
-                )
+                tmpl = indiv.get("message_fail",
+                    "❌ {metric} = {pct_str} Kurang Efektif, nilai disarankan: {benchmark}")
+                row.message = _format_message_template(tmpl, metric=row.metric, pct_str=pct_str, benchmark=row.benchmark)
             elif row.verdict == "✔️":
                 if row.metric == "Program Afiliasi":
-                    row.message = f"✔️ {row.metric} ({pct_str}) digunakan"
+                    tmpl = indiv.get("message_pass_afiliasi", "✔️ {metric} ({pct_str}) digunakan")
+                    row.message = _format_message_template(tmpl, metric=row.metric, pct_str=pct_str)
                 else:
-                    row.message = f"✔️ {row.metric} ({pct_str}) digunakan & persentase penggunaan baik"
+                    tmpl = indiv.get("message_pass",
+                        "✔️ {metric} ({pct_str}) digunakan & persentase penggunaan baik")
+                    row.message = _format_message_template(tmpl, metric=row.metric, pct_str=pct_str)
 
         elif row.row == 42:
             val_str = _fmt_pct_0dp(row.value) if isinstance(row.value, float) else str(row.value)
+            threshold = _get_rule_value(promo_rules, "usage_pct_threshold", "threshold", 80)
             if row.verdict == "✔️":
-                row.message = f"✔️ Penggunaan alat promosi = {val_str} Sudah Baik"
+                tmpl = _get_rule_value(promo_rules, "usage_pct_threshold", "message_pass",
+                    "✔️ Penggunaan alat promosi = {val_str} Sudah Baik")
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
             else:
-                row.message = f"❌ Penggunaan alat promosi = {val_str} Kurang Baik, nilai disarankan: >80%"
+                tmpl = _get_rule_value(promo_rules, "usage_pct_threshold", "message_fail",
+                    "❌ Penggunaan alat promosi = {val_str} Kurang Baik, nilai disarankan: >{threshold}%")
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
         elif row.row == 43:
             val_str = _fmt_pct_0dp(row.value) if isinstance(row.value, float) else str(row.value)
+            threshold = _get_rule_value(promo_rules, "effectiveness_pct_threshold", "threshold", 90)
             if row.verdict == "✔️":
-                row.message = f"✔️ Efektifitas alat promosi = {val_str} Sudah Baik"
+                tmpl = _get_rule_value(promo_rules, "effectiveness_pct_threshold", "message_pass",
+                    "✔️ Efektifitas alat promosi = {val_str} Sudah Baik")
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
             else:
-                row.message = f"❌ Efektifitas alat promosi = {val_str} Kurang Baik, nilai disarankan: >90%"
+                tmpl = _get_rule_value(promo_rules, "effectiveness_pct_threshold", "message_fail",
+                    "❌ Efektifitas alat promosi = {val_str} Kurang Baik, nilai disarankan: >{threshold}%")
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
 
 
-def _generate_products_messages(cat: CategoryScore) -> None:
+def _generate_products_messages(cat: CategoryScore, rules: dict | None = None) -> None:
     """Fill G-column messages for product/status rows 45-46."""
+    prod_rules = _get_rule_category(rules, "products_status")
     for row in cat.rows:
         if row.row == 45:
+            value_int = str(int(row.value))
+            threshold = _get_rule_value(prod_rules, "product_count", "threshold", 35)
             if row.verdict == "✔️":
-                row.message = f"✔️ Jumlah Produk = {int(row.value)} OK"
+                tmpl = _get_rule_value(prod_rules, "product_count", "message_pass",
+                    "✔️ Jumlah Produk = {value_int} OK")
+                row.message = _format_message_template(tmpl, value_int=value_int, threshold=str(threshold))
             else:
-                row.message = f"❌ Jumlah Produk = {int(row.value)} NOT OK, nilai disarankan: >=35"
+                tmpl = _get_rule_value(prod_rules, "product_count", "message_fail",
+                    "❌ Jumlah Produk = {value_int} NOT OK, nilai disarankan: >={threshold}")
+                row.message = _format_message_template(tmpl, value_int=value_int, threshold=str(threshold))
         elif row.row == 46:
+            store_status = str(row.value)
             if row.verdict == "✔️":
-                row.message = f"✔️ Status Toko = {row.value} OK"
+                tmpl = _get_rule_value(prod_rules, "store_status_points", "message_pass",
+                    "✔️ Status Toko = {store_status} OK")
+                row.message = _format_message_template(tmpl, store_status=store_status)
             elif row.verdict == "❌":
-                row.message = f"❌ Status Toko = {row.value} Wajib Shopee Mall"
+                tmpl = _get_rule_value(prod_rules, "store_status_points", "message_fail",
+                    "❌ Status Toko = {store_status} Wajib Shopee Mall")
+                row.message = _format_message_template(tmpl, store_status=store_status)
 
 
 def _generate_ads_messages(
     cat: CategoryScore, manual_data: dict, calculator_results: dict,
+    rules: dict | None = None,
 ) -> None:
     """Fill G-column messages for ads rows 48-53."""
+    ads_rules = _get_rule_category(rules, "ads")
     d13 = _safe_num(_get_nested(manual_data, "business", "salesMonth0"))
     ads = _get_nested(manual_data, "ads") or {}
     d48 = _safe_num(ads.get("adSales"))
@@ -1080,61 +1236,80 @@ def _generate_ads_messages(
         if row.row == 50:
             val_str = f"{row.value:.1f}"
             if row.verdict == "✔️":
-                row.message = f"✔️ ROI = {val_str} Sudah Baik"
+                tmpl = _get_rule_value(ads_rules, "roi_threshold", "message_pass",
+                    "✔️ ROI = {val_str} Sudah Baik")
+                row.message = _format_message_template(tmpl, val_str=val_str, benchmark=row.benchmark)
             else:
-                row.message = f"❌ ROI = {val_str} Kurang Baik, nilai disarankan: {row.benchmark}"
+                tmpl = _get_rule_value(ads_rules, "roi_threshold", "message_fail",
+                    "❌ ROI = {val_str} Kurang Baik, nilai disarankan: {benchmark}")
+                row.message = _format_message_template(tmpl, val_str=val_str, benchmark=row.benchmark)
         elif row.row == 51:
             pct_str = _fmt_pct_1dp(row.value) if isinstance(row.value, float) else str(row.value)
+            threshold = _get_rule_value(ads_rules, "gmv_ratio_threshold", "threshold", 84)
             if d48 == 0:
-                row.message = "❌ Iklan tidak aktif sama sekali"
+                tmpl = _get_rule_value(ads_rules, "gmv_ratio_threshold", "message_no_ads",
+                    "❌ Iklan tidak aktif sama sekali")
+                row.message = _format_message_template(tmpl)
             elif row.verdict == "✔️":
-                row.message = f"✔️ % GMV Iklan / GMV Toko = {pct_str} Sudah Baik"
+                tmpl = _get_rule_value(ads_rules, "gmv_ratio_threshold", "message_pass",
+                    "✔️ % GMV Iklan / GMV Toko = {pct_str} Sudah Baik")
+                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=str(threshold))
             else:
-                row.message = (
-                    f"❌ % GMV Iklan / GMV Toko = {pct_str} "
-                    f"Terlalu bergantung terhadap Iklan, nilai disarankan: <84%"
-                )
+                tmpl = _get_rule_value(ads_rules, "gmv_ratio_threshold", "message_fail",
+                    "❌ % GMV Iklan / GMV Toko = {pct_str} Terlalu bergantung terhadap Iklan, nilai disarankan: <{threshold}%")
+                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=str(threshold))
         elif row.row == 52:
             d52 = d49 / d13 if d13 > 0 else 0.0
             pct_str = _fmt_pct_1dp(d52)
+            cost_min = _get_rule_value(ads_rules, "cost_ratio_range", "min", 5.0)
+            cost_max = _get_rule_value(ads_rules, "cost_ratio_range", "max", 10.0)
+            threshold = str(int(cost_max))
             if d49 == 0:
-                row.message = "❌ Iklan tidak aktif sama sekali"
+                tmpl = _get_rule_value(ads_rules, "cost_ratio_range", "message_no_ads",
+                    "❌ Iklan tidak aktif sama sekali")
+                row.message = _format_message_template(tmpl)
             elif d52 < 0.05:
-                row.message = (
-                    f"❌ Penggunaan iklan terlalu minim ({pct_str}). "
-                    f"Nilai disarankan: 5-8%."
-                )
+                tmpl = _get_rule_value(ads_rules, "cost_ratio_range", "message_too_minimal",
+                    "❌ Penggunaan iklan terlalu minim ({pct_str}). Nilai disarankan: {min}%-{max}%.")
+                row.message = _format_message_template(tmpl, pct_str=pct_str,
+                    min=str(int(cost_min)), max=str(int(cost_max)))
             elif row.verdict == "❌":
-                row.message = (
-                    f"❌ % Biaya Iklan / GMV Toko = {pct_str} "
-                    f"Biaya terlalu tinggi, nilai disarankan: <10%"
-                )
+                tmpl = _get_rule_value(ads_rules, "cost_ratio_range", "message_fail",
+                    "❌ % Biaya Iklan / GMV Toko = {pct_str} Biaya terlalu tinggi, nilai disarankan: <{threshold}%")
+                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=threshold)
             elif row.verdict == "✔️":
-                row.message = f"✔️ % Biaya Iklan / GMV Toko = {pct_str} Sudah Baik"
+                tmpl = _get_rule_value(ads_rules, "cost_ratio_range", "message_pass",
+                    "✔️ % Biaya Iklan / GMV Toko = {pct_str} Sudah Baik")
+                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=threshold)
         elif row.row == 53:
             row.message = calc1_output
 
 
-def _generate_campaign_messages(cat: CategoryScore) -> None:
+def _generate_campaign_messages(cat: CategoryScore, rules: dict | None = None) -> None:
     """Fill G-column messages for campaign rows 55-57."""
+    camp_rules = _get_rule_category(rules, "campaign")
+    threshold = _get_rule_value(camp_rules, "participation_pct_threshold", "threshold", 90)
     for row in cat.rows:
         if row.row == 57:
             if isinstance(row.value, float) and row.value == 0.0:
-                # IFERROR fallback: no campaign data
-                row.message = "❌Tidak ada Campaign yang dipartisipasikan"
+                tmpl = _get_rule_value(camp_rules, "participation_pct_threshold", "message_no_data",
+                    "❌Tidak ada Campaign yang dipartisipasikan")
+                row.message = _format_message_template(tmpl)
             elif row.verdict == "✔️":
                 pct_str = _fmt_pct_1dp(row.value)
-                row.message = f"✔️ % Partisipasi Campaign = {pct_str} Sudah Baik"
+                tmpl = _get_rule_value(camp_rules, "participation_pct_threshold", "message_pass",
+                    "✔️ % Partisipasi Campaign = {pct_str} Sudah Baik")
+                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=str(threshold))
             else:
                 pct_str = _fmt_pct_1dp(row.value) if isinstance(row.value, float) else str(row.value)
-                row.message = (
-                    f"❌ % Partisipasi Campaign = {pct_str} "
-                    f"Kurang Baik, nilai disarankan: >90%"
-                )
+                tmpl = _get_rule_value(camp_rules, "participation_pct_threshold", "message_fail",
+                    "❌ % Partisipasi Campaign = {pct_str} Kurang Baik, nilai disarankan: >{threshold}%")
+                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=str(threshold))
 
 
-def _generate_competition_messages(cat: CategoryScore, manual_data: dict) -> None:
+def _generate_competition_messages(cat: CategoryScore, manual_data: dict, rules: dict | None = None) -> None:
     """Fill G-column messages for competition rows 61-63."""
+    comp_rules = _get_rule_category(rules, "competition")
     comp = _get_nested(manual_data, "competition") or {}
 
     for row in cat.rows:
@@ -1144,9 +1319,12 @@ def _generate_competition_messages(cat: CategoryScore, manual_data: dict) -> Non
         market_price = _safe_num(product_data.get("marketPrice"))
 
         if row.verdict == "❌":
-            row.message = f"❌tidak kompetitif (harga kisaran pasaran: Rp. {_fmt_idr(market_price)})"
+            tmpl = comp_rules.get("message_fail",
+                "❌tidak kompetitif (harga kisaran pasaran: Rp. {market_price})")
+            row.message = _format_message_template(tmpl, market_price=_fmt_idr(market_price))
         elif row.verdict == "✔️":
-            row.message = "✅kompetitif"
+            tmpl = comp_rules.get("message_pass", "✅kompetitif")
+            row.message = _format_message_template(tmpl)
 
 
 # ---------------------------------------------------------------------------
@@ -1313,8 +1491,16 @@ def _compute_g66(
     return "\n".join(lines)
 
 
-def _compute_g75(verdict: str) -> str:
+def _compute_g75(verdict: str, rules: dict | None = None) -> str:
     """G75: Closing message based on verdict type."""
+    # Try to read from rules first
+    interp_rules = _get_rule_category(rules, "interpretation")
+    closing = interp_rules.get("closing_messages")
+
+    if closing:
+        return closing.get(verdict, "")
+
+    # Fallback to hardcoded defaults
     messages = {
         "✔️": (
             "Berdasarkan data analisa diatas, potensi toko masih belum maksimal. "
@@ -1556,15 +1742,15 @@ def calculate_score(
     total_score = sum(cat.score for cat in all_categories)
 
     # --- G-column messages ---
-    _generate_operational_messages(cat_operational, manual_data)
-    _generate_business_messages(cat_business, manual_data)
-    _generate_content_messages(cat_content)
-    _generate_visitors_messages(cat_visitors)
-    _generate_promo_messages(cat_promo, manual_data)
-    _generate_products_messages(cat_products)
-    _generate_ads_messages(cat_ads, manual_data, calculator_results)
-    _generate_campaign_messages(cat_campaign)
-    _generate_competition_messages(cat_competition, manual_data)
+    _generate_operational_messages(cat_operational, manual_data, rules)
+    _generate_business_messages(cat_business, manual_data, rules)
+    _generate_content_messages(cat_content, rules)
+    _generate_visitors_messages(cat_visitors, rules)
+    _generate_promo_messages(cat_promo, manual_data, rules)
+    _generate_products_messages(cat_products, rules)
+    _generate_ads_messages(cat_ads, manual_data, calculator_results, rules)
+    _generate_campaign_messages(cat_campaign, rules)
+    _generate_competition_messages(cat_competition, manual_data, rules)
 
     # --- Derived formulas ---
     d13 = _safe_num(_get_nested(manual_data, "business", "salesMonth0"))
@@ -1580,7 +1766,7 @@ def calculate_score(
     marketing_label = f"📌 Estimasi persentase biaya marketing {brand_name} sekarang:"
 
     g66 = _compute_g66(all_categories, manual_data, g68)
-    g75 = _compute_g75(verdict)
+    g75 = _compute_g75(verdict, rules)
 
     # --- Email ---
     email_subject = f"🏥 AHA Store Internal Check Up (Store ICU) - {store_name} {period}"
