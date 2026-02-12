@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Dialog,
   DialogContent,
@@ -30,16 +30,28 @@ export const PasswordConfirmDialog = ({
 
   const isBusy = isLoading || isReauthing;
 
+  useEffect(() => {
+    if (open) {
+      setPassword('');
+      setError('');
+    }
+  }, [open]);
+
   const handleConfirm = async () => {
     setError('');
     setIsReauthing(true);
     try {
       await reauthenticateUser(password);
-      await onConfirm();
     } catch {
       setError('Incorrect password');
-    } finally {
       setIsReauthing(false);
+      return;
+    }
+    setIsReauthing(false);
+    try {
+      await onConfirm();
+    } catch {
+      setError('Failed to save changes. Please try again.');
     }
   };
 

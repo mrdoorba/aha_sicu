@@ -9,6 +9,7 @@ import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
+import { Input } from '../components/ui/input';
 import { RulesCategoryCard } from '../components/rules/RulesCategoryCard';
 import { PasswordConfirmDialog } from '../components/rules/PasswordConfirmDialog';
 
@@ -38,6 +39,7 @@ export const RulesPage = () => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedRules, setEditedRules] = useState<Record<string, Record<string, unknown>>>({});
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
+  const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const canEdit = profile?.role === 'leader' || profile?.role === 'admin';
 
@@ -54,11 +56,13 @@ export const RulesPage = () => {
       cloned[rule.template] = JSON.parse(JSON.stringify(rule.rules));
     }
     setEditedRules(cloned);
+    setValidationErrors({});
     setIsEditing(true);
   };
 
   const cancelEdit = () => {
     setEditedRules({});
+    setValidationErrors({});
     setIsEditing(false);
   };
 
@@ -71,11 +75,32 @@ export const RulesPage = () => {
     return false;
   };
 
-  const handleRuleChange = (category: string, key: string, field: string, value: number) => {
+  const handleRuleChange = (category: string, key: string, field: string, value: number | null) => {
+    const errorKey = `${activeTemplate}.${category}.${key}.${field}`;
+    if (value === null) {
+      setValidationErrors((prev) => ({ ...prev, [errorKey]: 'Required' }));
+    } else {
+      setValidationErrors((prev) => {
+        const { [errorKey]: _, ...rest } = prev;
+        return rest;
+      });
+    }
     setEditedRules((prev) => {
       const updated = JSON.parse(JSON.stringify(prev));
       if (updated[activeTemplate]?.[category]?.[key]) {
         updated[activeTemplate][category][key][field] = value;
+      }
+      return updated;
+    });
+  };
+
+  const hasValidationErrors = Object.keys(validationErrors).length > 0;
+
+  const handleInterpretationChange = (tmpl: string, rangeIdx: number, field: 'min' | 'max', value: number | null) => {
+    setEditedRules((prev) => {
+      const updated = JSON.parse(JSON.stringify(prev));
+      if (updated[tmpl]?.interpretation?.ranges?.[rangeIdx]) {
+        updated[tmpl].interpretation.ranges[rangeIdx][field] = value;
       }
       return updated;
     });
@@ -157,7 +182,7 @@ export const RulesPage = () => {
                 <Button variant="outline" onClick={cancelEdit}>Cancel</Button>
                 <Button
                   onClick={() => setShowPasswordDialog(true)}
-                  disabled={!hasChanges()}
+                  disabled={!hasChanges() || hasValidationErrors}
                 >
                   Save Changes
                 </Button>
@@ -180,6 +205,15 @@ export const RulesPage = () => {
               ? displayRules[template] as ScoringRule['rules']
               : rule.rules;
 
+            // Filter validation errors for this template
+            const templatePrefix = `${template}.`;
+            const templateErrors: Record<string, string> = {};
+            for (const [errKey, msg] of Object.entries(validationErrors)) {
+              if (errKey.startsWith(templatePrefix)) {
+                templateErrors[errKey.slice(templatePrefix.length)] = msg;
+              }
+            }
+
             return (
               <TabsContent key={template} value={template} className="space-y-4">
                 {CATEGORY_ORDER.map((category) => {
@@ -194,6 +228,7 @@ export const RulesPage = () => {
                       differingKeys={DIFFERING_KEYS}
                       isEditing={isEditing}
                       onRuleChange={handleRuleChange}
+                      validationErrors={templateErrors}
                     />
                   );
                 })}
@@ -217,9 +252,37 @@ export const RulesPage = () => {
                           {rulesData.interpretation.ranges.map((range, idx) => (
                             <TableRow key={idx}>
                               <TableCell>
-                                <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
-                                  {range.min ?? 0} - {range.max ?? '100+'}
-                                </code>
+                                {isEditing ? (
+                                  <span className="flex items-center gap-1">
+                                    <Input
+                                      type="number"
+                                      value={range.min ?? ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                                        if (e.target.value !== '' && isNaN(val as number)) return;
+                                        handleInterpretationChange(template, idx, 'min', val);
+                                      }}
+                                      className="w-16 h-7 text-sm"
+                                      aria-label={`Range ${idx + 1} min`}
+                                    />
+                                    <span>-</span>
+                                    <Input
+                                      type="number"
+                                      value={range.max ?? ''}
+                                      onChange={(e) => {
+                                        const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                                        if (e.target.value !== '' && isNaN(val as number)) return;
+                                        handleInterpretationChange(template, idx, 'max', val);
+                                      }}
+                                      className="w-16 h-7 text-sm"
+                                      aria-label={`Range ${idx + 1} max`}
+                                    />
+                                  </span>
+                                ) : (
+                                  <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                                    {range.min ?? 0} - {range.max ?? '100+'}
+                                  </code>
+                                )}
                               </TableCell>
                               <TableCell>
                                 <Badge

@@ -15,7 +15,10 @@ export function useUpdateRule() {
         params: { path: { template } },
         body: { rules },
       });
-      if (error) throw new Error('Failed to update scoring rules');
+      if (error) {
+        const detail = (error as Record<string, unknown>)?.detail;
+        throw new Error(typeof detail === 'string' ? detail : 'Failed to update scoring rules');
+      }
       return data;
     },
     onSuccess: () => {

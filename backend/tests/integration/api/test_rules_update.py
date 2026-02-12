@@ -1,6 +1,5 @@
 """Integration tests for rules PUT endpoint."""
 
-import json
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
@@ -260,6 +259,42 @@ def test_update_rules_response_schema(client):
         data = response.json()
         expected_fields = {"id", "template", "rules", "version", "updated_by", "updated_at"}
         assert set(data.keys()) == expected_fields
+
+
+def test_update_rules_empty_body(client):
+    """Test empty rules dict gets 422."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        _setup_mocks(mock_verify, mock_db, mock_user_queries, MOCK_LEADER)
+
+        response = client.put(
+            "/api/v1/rules/fashion",
+            headers=AUTH_HEADERS,
+            json={"rules": {}},
+        )
+
+        assert response.status_code == 422
+
+
+def test_update_rules_invalid_structure(client):
+    """Test invalid rules structure (non-dict values) gets 422."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        _setup_mocks(mock_verify, mock_db, mock_user_queries, MOCK_LEADER)
+
+        response = client.put(
+            "/api/v1/rules/fashion",
+            headers=AUTH_HEADERS,
+            json={"rules": {"bad_key": "not_a_dict"}},
+        )
+
+        assert response.status_code == 422
 
 
 def test_update_rules_preserves_jsonb_structure(client):

@@ -1,6 +1,6 @@
 # Story 5.2: Edit Scoring Rules with Password Confirmation
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -549,6 +549,30 @@ No debug issues encountered. All implementations worked on first attempt.
 - `frontend/src/components/rules/PasswordConfirmDialog.tsx` — Password confirmation dialog component
 - `frontend/src/components/rules/PasswordConfirmDialog.test.tsx` — 6 dialog tests
 
+### Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door on 2026-02-12
+**Outcome:** Changes Requested → Fixed
+
+**Issues Found:** 3 High, 5 Medium, 3 Low — **All fixed automatically**
+
+| # | Severity | Finding | Fix Applied |
+|---|----------|---------|-------------|
+| H1 | HIGH | PasswordConfirmDialog catches ALL errors as "Incorrect password" — server save failures misreported | Split try/catch: reauth errors → "Incorrect password", mutation errors → "Failed to save changes" |
+| H2 | HIGH | AC #7 NOT implemented — no inline validation errors for empty/invalid fields | Added validation state tracking, "Required" errors on empty fields, Save Changes disabled on errors |
+| H3 | HIGH | Task 9.4 marked [x] but inline validation missing | Implemented with H2 fix — EditableNumber now handles null, shows error messages |
+| M1 | MEDIUM | Stale password persists in dialog state after successful save | Added useEffect to reset password/error when dialog opens |
+| M2 | MEDIUM | No test for tab switching in edit mode (explicit AC #1 requirement) | Added test verifying edit mode persists across tab switch |
+| M3 | MEDIUM | useUpdateRule discards server error details | Extract error.detail from API response before falling back to generic message |
+| M4 | MEDIUM | Score Interpretation ranges not editable in edit mode (Dev Notes requirement) | Added editable min/max inputs for interpretation ranges |
+| M5 | MEDIUM | No structural validation on rules JSONB payload — any dict accepted | Added Pydantic validator requiring all top-level values to be dicts |
+| L1 | LOW | Unused `json` import in test_rules_update.py | Removed |
+| L2 | LOW | No backend test for empty rules body (422) | Added test_update_rules_empty_body |
+| L3 | LOW | EditableNumber clearing edge case — empty input not properly handled | Fixed with H2 — null values now properly handled and displayed |
+
+**Post-fix test results:** Backend 12 passed (2 new), Frontend 33 passed (3 new)
+
 ### Change Log
 
+- 2026-02-12: Code review fix — 3H + 5M + 3L issues. Split PasswordConfirmDialog error handling (H1), added inline validation with Required errors and Save Changes disabled on errors (H2/H3), reset dialog state on open (M1), added tab switch test (M2), extracted API error details in useUpdateRule (M3), made interpretation ranges editable (M4), added JSONB structural validation (M5), removed unused import (L1), added empty body + invalid structure tests (L2/M5), fixed EditableNumber null handling (L3).
 - 2026-02-12: Implemented story 5-2 — Edit Scoring Rules with Password Confirmation. Added backend PUT endpoint for updating rules JSONB with version increment, role-based access control. Added frontend edit mode with editable threshold fields, password re-confirmation via Firebase reauthentication, and success toast. 40 new tests total (10 backend + 30 frontend).
