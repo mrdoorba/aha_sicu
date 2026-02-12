@@ -140,6 +140,7 @@ class ScoringResponse(BaseModel):
     email_body: str
     whatsapp_link: str
     template: str
+    rule_version: int
 
 
 # ---------------------------------------------------------------------------
