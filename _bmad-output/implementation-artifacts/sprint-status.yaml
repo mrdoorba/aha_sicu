@@ -72,14 +72,14 @@ development_status:
   epic-3-retrospective: done
 
   # Epic 4: Evaluation History & Search
-  epic-4: in-progress
+  epic-4: done
   4-1-evaluation-history-list: done
   4-2-search-by-brand-name: done
   4-3-filter-by-date-range: done
   4-4-filter-by-category: done
   4-5-evaluation-detail-view: done
   4-6-real-time-new-evaluation-notifications: done
-  epic-4-retrospective: optional
+  epic-4-retrospective: done
 
   # Epic 5: Rule Configuration
   epic-5: backlog
