@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
 import { Button } from '../ui/button';
 import {
@@ -14,8 +15,10 @@ import {
 
 export const Header = () => {
   const { user, logout } = useAuth();
+  const { profile } = useCurrentUser();
   const navigate = useNavigate();
   const location = useLocation();
+  const canAccessRules = profile?.role === 'leader' || profile?.role === 'admin';
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -74,6 +77,18 @@ export const Header = () => {
                 >
                   History
                 </Link>
+                {canAccessRules && (
+                  <Link
+                    to="/rules"
+                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                      location.pathname === '/rules'
+                        ? 'bg-white/20 text-white'
+                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    Rules
+                  </Link>
+                )}
               </nav>
             </div>
             <div className="flex items-center gap-4">

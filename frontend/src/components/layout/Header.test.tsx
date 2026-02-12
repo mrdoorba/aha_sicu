@@ -14,6 +14,14 @@ vi.mock('../../context/AuthContext', () => ({
   }),
 }));
 
+vi.mock('../../hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    profile: { id: '1', email: 'test@example.com', role: 'leader', created_at: '', last_login: '' },
+    isLoading: false,
+    isError: false,
+  }),
+}));
+
 const renderHeader = () => {
   return render(
     <BrowserRouter>

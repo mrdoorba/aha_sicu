@@ -535,6 +535,24 @@ interface paths {
       };
     };
   };
+  '/api/v1/rules': {
+    get: {
+      responses: {
+        200: {
+          content: {
+            'application/json': Array<{
+              id: number;
+              template: string;
+              rules: Record<string, unknown>;
+              version: number;
+              updated_by: number | null;
+              updated_at: string;
+            }>;
+          };
+        };
+      };
+    };
+  };
   '/api/v1/evaluations/brands/{brand_id}/calculators/status': {
     get: {
       parameters: {
