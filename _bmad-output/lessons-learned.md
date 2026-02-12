@@ -56,6 +56,17 @@ Accumulated knowledge from code reviews, retrospectives, and implementation expe
 - Code review issue count decreased over epic: 10 → 8 → 20 → 10 → 8 (2.3 spike was first full-stack)
 - Updated docs in retro: architecture.md (SQL safety, error handling, review checklist), dev-story checklist, code-review checklist
 
+## Epic 4 Retrospective Insights (2026-02-12)
+
+- ~42 code review issues across 6 stories (~7/story) — slight increase from Epic 3's ~6/story
+- Forward-compatible API design: Story 4.1 accepted query params (search, date_from, date_to, category) before wiring them — Stories 4.2-4.4 plugged in with zero API contract changes
+- Extract shared helpers early: `_build_filter_clauses()` for conditional WHERE clauses, `escape_like()` in `db/queries/utils.py` — reduces duplication across filter stories
+- Type precision: use `Literal` types (not `str`) for constrained values like sort direction, order_by fields — caught in multiple reviews
+- File List in story specs often incomplete — devs discover mid-implementation that unlisted files need changes
+- Accessibility gaps persist: ARIA labels, keyboard navigation still caught in reviews despite checklist
+- SSE pattern reusable: `new_evaluation` event in Story 4.6 cleanly reused Epic 2's SSE infrastructure
+- Epic 3 retro self-check habit (AC coverage + error handling) did not fully stick — same patterns still flagged
+
 ## Epic 3 Retrospective Insights (2026-02-11)
 
 - ~60 code review issues across 10 stories — issue rate improved from ~11/story (Epic 2) to ~6/story
