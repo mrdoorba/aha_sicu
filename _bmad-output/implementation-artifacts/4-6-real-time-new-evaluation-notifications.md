@@ -414,16 +414,35 @@ None — clean implementation with no blocking issues.
 ### Change Log
 
 - 2026-02-12: Implemented Story 4.6 — Real-time new evaluation notifications via SSE
+- 2026-02-12: Code review fixes (4M + 3L) — import ordering, field validation, test resilience, capitalize name
+
+### Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door (via Claude Opus 4.6) | **Date:** 2026-02-12
+
+**Result:** 0 HIGH, 4 MEDIUM, 3 LOW — all fixed
+
+| ID | Severity | Finding | Fix |
+|----|----------|---------|-----|
+| M1 | MEDIUM | Backend tests used fragile `fetchrow` side_effect ordering | Refactored to mock `brand_queries` / `eval_queries` directly |
+| M2 | MEDIUM | Frontend toast didn't validate event data fields before display | Added `data.brand_name && data.score != null` guards |
+| M3 | MEDIUM | Frontend test for malformed data only covered invalid JSON | Added test for valid JSON with missing fields |
+| M4 | MEDIUM | `logger` statement split import blocks in `service.py` | Moved all imports before logger |
+| L1 | LOW | Toast showed raw email prefix as evaluator name | Capitalize first letter of extracted name |
+| L2 | LOW | Redundant `?? undefined` in SyncStatus.tsx | Removed — optional chaining already returns undefined |
+| L3 | LOW | Forward guidance: toast could deep-link to evaluation detail | Not implemented — AC doesn't require it, kept as future enhancement |
+
+**Regressions after fixes:** 526 backend (0 failures), 264 frontend (0 failures). 2 pre-existing Firebase config suite failures (unrelated).
 
 ### File List
 
 **Modified:**
-- `backend/app/modules/evaluations/service.py` — Added sync_broadcaster import, evaluator_email param, broadcast call after save
+- `backend/app/modules/evaluations/service.py` — Added sync_broadcaster import, evaluator_email param, broadcast call after save; fixed import ordering (M4)
 - `backend/app/modules/evaluations/router.py` — Pass evaluator_email=current_user["email"] to save_evaluation
-- `frontend/src/hooks/useSSE.ts` — Added new_evaluation event listener, toast import, currentUserEmail param
-- `frontend/src/hooks/useSSE.test.ts` — Added 5 new tests for new_evaluation event handling
-- `frontend/src/components/sync/SyncStatus.tsx` — Pass current user email to useSSE hook
+- `frontend/src/hooks/useSSE.ts` — Added new_evaluation event listener, toast import, currentUserEmail param; added field validation (M2), capitalize name (L1)
+- `frontend/src/hooks/useSSE.test.ts` — Added 6 new tests for new_evaluation event handling (5 original + 1 missing-fields test M3)
+- `frontend/src/components/sync/SyncStatus.tsx` — Pass current user email to useSSE hook; removed redundant ?? undefined (L2)
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` — Updated 4-6 status to review
 
 **New:**
-- `backend/tests/integration/api/test_evaluation_save_broadcast.py` — 4 backend tests for SSE broadcast after save
+- `backend/tests/integration/api/test_evaluation_save_broadcast.py` — 4 backend tests for SSE broadcast after save (refactored M1)

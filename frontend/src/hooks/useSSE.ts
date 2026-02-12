@@ -78,10 +78,17 @@ export function useSSE(currentUserEmail?: string) {
         // Show toast only for OTHER users' evaluations
         try {
           const data = JSON.parse(event.data);
-          if (data.evaluator && data.evaluator !== currentUserEmailRef.current) {
-            const name = data.evaluator.split('@')[0];
+          if (
+            data.evaluator &&
+            data.brand_name &&
+            data.score != null &&
+            data.evaluator !== currentUserEmailRef.current
+          ) {
+            const rawName = data.evaluator.split('@')[0];
+            const displayName =
+              rawName.charAt(0).toUpperCase() + rawName.slice(1);
             toast.info(
-              `New evaluation: ${data.brand_name} (${data.score}) by ${name}`,
+              `New evaluation: ${data.brand_name} (${data.score}) by ${displayName}`,
               { duration: 5000 },
             );
           }
