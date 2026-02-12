@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useReactTable,
@@ -88,11 +88,9 @@ const columns: ColumnDef<EvaluationRow>[] = [
 function SearchInput({
   value,
   onChange,
-  isLoading,
 }: {
   value: string;
   onChange: (value: string) => void;
-  isLoading: boolean;
 }) {
   return (
     <div className="relative mb-4 max-w-sm">
@@ -106,7 +104,6 @@ function SearchInput({
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="pl-9 pr-9"
-        aria-busy={isLoading}
       />
       {value && (
         <Button
@@ -136,9 +133,14 @@ export const EvaluationHistoryTable = () => {
   const searchFromUrl = searchParams.get('search') ?? '';
 
   const [searchInput, setSearchInput] = useState(searchFromUrl);
+  const isInitialMount = useRef(true);
 
-  // Debounce: update URL params after 300ms idle
+  // Debounce: update URL params after 300ms idle (skip initial mount)
   useEffect(() => {
+    if (isInitialMount.current) {
+      isInitialMount.current = false;
+      return;
+    }
     const timer = setTimeout(() => {
       setSearchParams((prev) => {
         const p = new URLSearchParams(prev);
@@ -240,7 +242,6 @@ export const EvaluationHistoryTable = () => {
         <SearchInput
           value={searchInput}
           onChange={setSearchInput}
-          isLoading={isLoading || isPlaceholderData}
         />
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <p className="text-muted-foreground">

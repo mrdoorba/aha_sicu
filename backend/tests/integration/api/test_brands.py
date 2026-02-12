@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
-from app.db.queries.brands import _escape_like
+from app.db.queries.utils import escape_like
 
 
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
@@ -276,13 +276,13 @@ def test_brands_without_meeting_data(client):
 
 
 def test_escape_like_special_characters():
-    """Test _escape_like escapes %, _, and \\ for ILIKE patterns."""
-    assert _escape_like("test%value") == "test\\%value"
-    assert _escape_like("test_value") == "test\\_value"
-    assert _escape_like("test\\value") == "test\\\\value"
-    assert _escape_like("normal") == "normal"
-    assert _escape_like("%_\\") == "\\%\\_\\\\"
-    assert _escape_like("") == ""
+    """Test escape_like escapes %, _, and \\ for ILIKE patterns."""
+    assert escape_like("test%value") == "test\\%value"
+    assert escape_like("test_value") == "test\\_value"
+    assert escape_like("test\\value") == "test\\\\value"
+    assert escape_like("normal") == "normal"
+    assert escape_like("%_\\") == "\\%\\_\\\\"
+    assert escape_like("") == ""
 
 
 def test_brands_search_special_chars_escaped(client):

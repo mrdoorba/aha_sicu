@@ -5,7 +5,7 @@ from typing import Any, Literal
 
 from asyncpg import Connection
 
-from app.db.queries.brands import _escape_like
+from app.db.queries.utils import escape_like
 
 
 async def get_evaluation_inputs(
@@ -114,7 +114,7 @@ async def list_evaluations(
     When search is provided, filters by brand_name ILIKE with escaped special chars.
     """
     if search:
-        escaped = _escape_like(search)
+        escaped = escape_like(search)
         where_clause = "WHERE b.brand_name ILIKE '%' || $1 || '%' ESCAPE '\\'"
         params: list[Any] = [escaped, limit, offset]
         limit_param, offset_param = "$2", "$3"
@@ -142,7 +142,7 @@ async def count_evaluations(
 ) -> int:
     """Return total number of evaluations, optionally filtered by brand name search."""
     if search:
-        escaped = _escape_like(search)
+        escaped = escape_like(search)
         row = await conn.fetchval(
             """
             SELECT COUNT(*)
