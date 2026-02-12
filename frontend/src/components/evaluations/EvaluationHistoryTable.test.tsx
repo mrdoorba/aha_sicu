@@ -303,13 +303,9 @@ describe('EvaluationHistoryTable', () => {
     const fromPicker = screen.getByRole('button', { name: /filter from date/i });
     await user.click(fromPicker);
 
-    // Find a day button in the calendar and click it
-    const dayButtons = screen.getAllByRole('gridcell').filter(
-      (cell) => cell.querySelector('button'),
-    );
-    const dayButton = dayButtons[10]?.querySelector('button');
-    expect(dayButton).toBeTruthy();
-    await user.click(dayButton!);
+    // Find the "15th" day button — uses ordinal suffix to avoid ambiguous matches
+    const dayButton = screen.getByRole('button', { name: /15th/ });
+    await user.click(dayButton);
 
     await waitFor(() => {
       const location = screen.getByTestId('location').textContent ?? '';
@@ -326,13 +322,9 @@ describe('EvaluationHistoryTable', () => {
     const toPicker = screen.getByRole('button', { name: /filter to date/i });
     await user.click(toPicker);
 
-    // Find a day button in the calendar and click it
-    const dayButtons = screen.getAllByRole('gridcell').filter(
-      (cell) => cell.querySelector('button'),
-    );
-    const dayButton = dayButtons[15]?.querySelector('button');
-    expect(dayButton).toBeTruthy();
-    await user.click(dayButton!);
+    // Find the "18th" day button — uses ordinal suffix to avoid matching "2026"
+    const dayButton = screen.getByRole('button', { name: /18th/ });
+    await user.click(dayButton);
 
     await waitFor(() => {
       const location = screen.getByTestId('location').textContent ?? '';
@@ -367,6 +359,19 @@ describe('EvaluationHistoryTable', () => {
     const lastCall = mockUseEvaluationHistory.mock.calls.at(-1);
     expect(lastCall?.[4]).toBe('Nike');       // search
     expect(lastCall?.[5]).toBe('2026-01-01'); // dateFrom
+  });
+
+  it('empty state with date filter shows contextual message', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluations: [],
+      total: 0,
+    };
+    renderTable(['/history?date_from=2026-01-01&date_to=2026-01-31']);
+
+    expect(
+      screen.getByText('No evaluations found for the selected date range'),
+    ).toBeInTheDocument();
   });
 
   it('date filter persists across sort changes', async () => {

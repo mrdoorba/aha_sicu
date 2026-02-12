@@ -1,6 +1,6 @@
 # Story 4.3: Filter by Date Range
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -432,7 +432,7 @@ No issues encountered during implementation.
 ### Completion Notes List
 
 - Refactored DB queries to use shared `_build_filter_clauses()` helper for conditional WHERE clause construction (search + date_from + date_to with dynamic $N param numbering)
-- Router `date_from`/`date_to` params changed from `str | None` to `date | None` — FastAPI auto-validates YYYY-MM-DD format and returns 422 for invalid dates
+- Router `date_from`/`date_to` params (already `date | None` from Story 4.1) now wired through to service and DB queries — FastAPI auto-validates YYYY-MM-DD format and returns 422 for invalid dates
 - `date_to` uses `< ($N::date + interval '1 day')` pattern for inclusive end-of-day boundary (23:59 on date_to day is included)
 - `count_evaluations()` now uses the same shared WHERE builder — ensures pagination totals match filtered results
 - Installed shadcn Calendar + Popover components bringing `react-day-picker` v9 and `date-fns` v4
@@ -446,19 +446,40 @@ No issues encountered during implementation.
 **Modified:**
 - backend/app/db/queries/evaluations.py — Added `_build_filter_clauses()`, `date_from`/`date_to` params to `list_evaluations()` and `count_evaluations()`
 - backend/app/modules/evaluations/service.py — Added `date_from`/`date_to` params, passes to DB queries
-- backend/app/modules/evaluations/router.py — Changed `date_from`/`date_to` type from `str` to `date`, wired to service
-- backend/tests/integration/api/test_evaluation_list.py — Added 8 date filter integration tests
+- backend/app/modules/evaluations/router.py — Wired existing `date_from`/`date_to` params to service call
+- backend/tests/integration/api/test_evaluation_list.py — Added 11 date filter integration tests (8 original + 3 review fixes)
+- backend/tests/unit/test_evaluation_queries.py — Added 7 unit tests for `_build_filter_clauses()`
 - frontend/package.json — Added `react-day-picker`, `date-fns` dependencies
 - frontend/package-lock.json — Updated lockfile
 - frontend/src/hooks/useEvaluationHistory.ts — Added `dateFrom`/`dateTo` params, query key, API params
 - frontend/src/components/evaluations/EvaluationHistoryTable.tsx — Added DatePickerField, filter bar, date URL param handling
-- frontend/src/components/evaluations/EvaluationHistoryTable.test.tsx — Added 6 date filter tests
+- frontend/src/components/evaluations/EvaluationHistoryTable.test.tsx — Added 8 date filter tests (6 original + 1 empty state + 1 review fix)
 - frontend/src/components/ui/button.tsx — Updated by shadcn install
 
 **New:**
 - frontend/src/components/ui/calendar.tsx — shadcn Calendar component
 - frontend/src/components/ui/popover.tsx — shadcn Popover component
 
+### Senior Developer Review (AI)
+
+**Reviewed by:** Mr. Door on 2026-02-12
+**Outcome:** Changes Requested → All Fixed
+
+**Issues Found:** 0 Critical, 5 Medium, 4 Low — all resolved
+
+| ID | Severity | Description | Resolution |
+|----|----------|-------------|------------|
+| M1 | Medium | No `date_from <= date_to` validation | Added 422 validation in service.py + disabled invalid dates in Calendar UI |
+| M2 | Medium | `_build_filter_clauses()` has no direct unit tests | Added 7 unit tests covering all filter combinations and param ordering |
+| M3 | Medium | Unnecessary `str()` conversion of date params | Removed `str()` wrappers, pass `date` objects directly to asyncpg |
+| M4 | Medium | Sprint status stale: 4-2 still `review` instead of `done` | Updated sprint-status.yaml |
+| M5 | Medium | Combined filter param ordering not verified in tests | Added param order assertions to integration test |
+| L1 | Low | Empty state message ignores date filter context | Added contextual "No evaluations found for the selected date range" |
+| L2 | Low | Invalid `date_to` not tested | Added `test_filter_invalid_date_to_returns_422` |
+| L3 | Low | Brittle index-based calendar test selectors | Changed to ordinal-suffix patterns (`/15th/`, `/18th/`) |
+| L4 | Low | Dev Agent Record contradictory type change claim | Fixed completion notes to reflect params were already `date | None` |
+
 ### Change Log
 
 - 2026-02-12: Implemented Story 4.3 — Date range filtering for evaluation history. Backend: shared WHERE clause builder with date_from/date_to conditions, wired through DB → service → router. Frontend: shadcn Calendar+Popover date pickers in filter bar, URL param sync, 8 backend + 6 frontend tests added. All 499 backend + 238 frontend tests pass.
+- 2026-02-12: Code review fixes — 5 Medium + 4 Low issues resolved. Added date range validation (backend 422 + frontend Calendar disabled dates), 7 unit tests for `_build_filter_clauses()`, removed unnecessary `str()` date conversion, fixed sprint status for 4.2, improved empty state messaging, fixed brittle test selectors, added param ordering verification. All 508 backend + 239 frontend tests pass.

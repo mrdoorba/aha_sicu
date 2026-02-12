@@ -36,6 +36,13 @@ async def list_evaluations(
     Handles pagination math and delegates to DB queries.
     Filters conditionally by brand name search and date range.
     """
+    if date_from and date_to and date_from > date_to:
+        raise AppException(
+            code="VALIDATION_ERROR",
+            detail="date_from must not be after date_to",
+            status_code=422,
+        )
+
     offset = (page - 1) * limit
 
     async with db.connection() as conn:

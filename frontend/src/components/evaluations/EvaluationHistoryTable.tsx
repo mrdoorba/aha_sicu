@@ -129,13 +129,21 @@ function DatePickerField({
   value,
   onChange,
   clearLabel,
+  disableBefore,
+  disableAfter,
 }: {
   label: string;
   value: Date | undefined;
   onChange: (date: Date | undefined) => void;
   clearLabel: string;
+  disableBefore?: Date;
+  disableAfter?: Date;
 }) {
   const [open, setOpen] = useState(false);
+
+  const disabled: Array<{ before: Date } | { after: Date }> = [];
+  if (disableBefore) disabled.push({ before: disableBefore });
+  if (disableAfter) disabled.push({ after: disableAfter });
 
   return (
     <div className="flex items-center gap-1">
@@ -162,6 +170,7 @@ function DatePickerField({
               setOpen(false);
             }}
             autoFocus
+            disabled={disabled.length > 0 ? disabled : undefined}
           />
         </PopoverContent>
       </Popover>
@@ -347,6 +356,7 @@ export const EvaluationHistoryTable = () => {
           value={dateFromUrl ? parseISO(dateFromUrl) : undefined}
           onChange={setDateFrom}
           clearLabel="Clear from date"
+          disableAfter={dateToUrl ? parseISO(dateToUrl) : undefined}
         />
         <span className="text-muted-foreground text-sm">–</span>
         <DatePickerField
@@ -354,6 +364,7 @@ export const EvaluationHistoryTable = () => {
           value={dateToUrl ? parseISO(dateToUrl) : undefined}
           onChange={setDateTo}
           clearLabel="Clear to date"
+          disableBefore={dateFromUrl ? parseISO(dateFromUrl) : undefined}
         />
       </div>
     </div>
@@ -367,7 +378,9 @@ export const EvaluationHistoryTable = () => {
           <p className="text-muted-foreground">
             {searchFromUrl
               ? `No evaluations found for '${searchFromUrl}'`
-              : 'No evaluations found'}
+              : dateFromUrl || dateToUrl
+                ? `No evaluations found for the selected date range`
+                : 'No evaluations found'}
           </p>
           {!searchFromUrl && !dateFromUrl && !dateToUrl && (
             <p className="text-sm text-muted-foreground">

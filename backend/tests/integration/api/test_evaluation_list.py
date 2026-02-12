@@ -711,12 +711,16 @@ def test_filter_date_combined_with_search(client):
         assert data["total"] == 1
         assert data["items"][0]["brand_name"] == "Nike Indonesia"
 
-        # Verify SQL has both ILIKE and date conditions
+        # Verify SQL has both ILIKE and date conditions with correct param ordering
         fetch_call = mock_svc_conn.fetch.call_args
         query_sql = fetch_call.args[0]
+        query_params = fetch_call.args[1:]
         assert "ILIKE" in query_sql
         assert "created_at >=" in query_sql
         assert "interval '1 day'" in query_sql
+        # Param order: $1=search, $2=date_from, $3=date_to, $4=limit, $5=offset
+        assert query_params[0] == "Nike"  # escaped search
+        assert len(query_params) == 5  # search + date_from + date_to + limit + offset
 
 
 def test_filter_no_dates_returns_all(client):
@@ -759,6 +763,45 @@ def test_filter_invalid_date_returns_422(client):
         )
 
         assert response.status_code == 422
+
+
+def test_filter_invalid_date_to_returns_422(client):
+    """Test invalid date_to format also returns 422."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        response = client.get(
+            "/api/v1/evaluations?date_to=not-a-date",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 422
+
+
+def test_filter_date_from_after_date_to_returns_422(client):
+    """Test date_from > date_to returns 422 validation error."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+
+        response = client.get(
+            "/api/v1/evaluations?date_from=2026-02-28&date_to=2026-01-01",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 422
+        data = response.json()
+        assert data["code"] == "VALIDATION_ERROR"
 
 
 def test_filter_date_with_pagination(client):
