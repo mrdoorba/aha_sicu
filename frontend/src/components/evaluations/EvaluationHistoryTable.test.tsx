@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, useLocation } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -39,8 +39,10 @@ let mockHookReturn = {
   isPlaceholderData: false,
 };
 
+const mockUseEvaluationHistory = vi.fn(() => mockHookReturn);
+
 vi.mock('../../hooks/useEvaluationHistory', () => ({
-  useEvaluationHistory: () => mockHookReturn,
+  useEvaluationHistory: (...args: unknown[]) => mockUseEvaluationHistory(...args),
 }));
 
 /** Helper that renders current location for assertions. */
@@ -192,5 +194,93 @@ describe('EvaluationHistoryTable', () => {
 
     await user.click(retryButton);
     expect(mockRefetch).toHaveBeenCalled();
+  });
+
+  // --- Search tests (Story 4.2) ---
+
+  it('search input renders with accessible label', () => {
+    renderTable();
+
+    const searchInput = screen.getByRole('textbox', {
+      name: /search evaluations by brand name/i,
+    });
+    expect(searchInput).toBeInTheDocument();
+    expect(searchInput).toHaveAttribute('placeholder', 'Search by brand name...');
+  });
+
+  it('typing in search triggers API call with search param', async () => {
+    const user = userEvent.setup();
+    renderTable();
+
+    const searchInput = screen.getByRole('textbox', {
+      name: /search evaluations by brand name/i,
+    });
+
+    await user.type(searchInput, 'Nike');
+
+    // Wait for debounce to fire and URL to update
+    await waitFor(() => {
+      const lastCall = mockUseEvaluationHistory.mock.calls.at(-1);
+      expect(lastCall?.[4]).toBe('Nike');
+    });
+  });
+
+  it('search updates URL query params', async () => {
+    const user = userEvent.setup();
+    renderTable();
+
+    const searchInput = screen.getByRole('textbox', {
+      name: /search evaluations by brand name/i,
+    });
+
+    await user.type(searchInput, 'Nike');
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('search=Nike');
+    });
+  });
+
+  it('clear button clears search and resets page', async () => {
+    const user = userEvent.setup();
+    renderTable(['/history?search=Nike']);
+
+    // Clear button should be visible
+    const clearButton = screen.getByRole('button', { name: /clear search/i });
+    expect(clearButton).toBeInTheDocument();
+
+    await user.click(clearButton);
+
+    await waitFor(() => {
+      const location = screen.getByTestId('location').textContent ?? '';
+      expect(location).not.toContain('search=');
+    });
+  });
+
+  it('empty search results show contextual message with search term', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluations: [],
+      total: 0,
+    };
+    renderTable(['/history?search=Nike']);
+
+    expect(
+      screen.getByText("No evaluations found for 'Nike'"),
+    ).toBeInTheDocument();
+  });
+
+  it('search persists across sort changes', async () => {
+    const user = userEvent.setup();
+    renderTable(['/history?search=Nike']);
+
+    // Click sort by score
+    const scoreButton = screen.getByRole('button', { name: /sort by score/i });
+    await user.click(scoreButton);
+
+    await waitFor(() => {
+      const location = screen.getByTestId('location').textContent ?? '';
+      expect(location).toContain('search=Nike');
+      expect(location).toContain('sort_by=final_score');
+    });
   });
 });

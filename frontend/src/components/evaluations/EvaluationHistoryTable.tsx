@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useReactTable,
@@ -7,7 +7,7 @@ import {
   type SortingState,
   flexRender,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, AlertCircle } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, AlertCircle, Search, X } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -18,6 +18,7 @@ import {
 } from '../ui/table';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { Input } from '../ui/input';
 import {
   useEvaluationHistory,
   type SortBy,
@@ -84,6 +85,44 @@ const columns: ColumnDef<EvaluationRow>[] = [
   },
 ];
 
+function SearchInput({
+  value,
+  onChange,
+  isLoading,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  isLoading: boolean;
+}) {
+  return (
+    <div className="relative mb-4 max-w-sm">
+      <Search
+        className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
+        aria-hidden="true"
+      />
+      <Input
+        aria-label="Search evaluations by brand name"
+        placeholder="Search by brand name..."
+        value={value}
+        onChange={(e) => onChange(e.target.value)}
+        className="pl-9 pr-9"
+        aria-busy={isLoading}
+      />
+      {value && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="absolute right-1 top-1/2 size-7 -translate-y-1/2 p-0"
+          aria-label="Clear search"
+          onClick={() => onChange('')}
+        >
+          <X className="size-4" aria-hidden="true" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export const EvaluationHistoryTable = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -94,6 +133,31 @@ export const EvaluationHistoryTable = () => {
     (searchParams.get('sort_by') as SortBy) || 'created_at';
   const sortOrder: SortOrder =
     (searchParams.get('sort_order') as SortOrder) || 'desc';
+  const searchFromUrl = searchParams.get('search') ?? '';
+
+  const [searchInput, setSearchInput] = useState(searchFromUrl);
+
+  // Debounce: update URL params after 300ms idle
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setSearchParams((prev) => {
+        const p = new URLSearchParams(prev);
+        if (searchInput) {
+          p.set('search', searchInput);
+        } else {
+          p.delete('search');
+        }
+        p.delete('page'); // Reset page on search change
+        return p;
+      }, { replace: true });
+    }, 300);
+    return () => clearTimeout(timer);
+  }, [searchInput, setSearchParams]);
+
+  // Sync input when URL changes externally (e.g., browser back)
+  useEffect(() => {
+    setSearchInput(searchFromUrl);
+  }, [searchFromUrl]);
 
   const sorting: SortingState = [
     { id: sortBy, desc: sortOrder === 'desc' },
@@ -140,7 +204,7 @@ export const EvaluationHistoryTable = () => {
     error,
     refetch,
     isPlaceholderData,
-  } = useEvaluationHistory(page, limit, sortBy, sortOrder);
+  } = useEvaluationHistory(page, limit, sortBy, sortOrder, searchFromUrl || undefined);
 
   const table = useReactTable({
     data: evaluations,
@@ -172,17 +236,35 @@ export const EvaluationHistoryTable = () => {
 
   if (!isLoading && evaluations.length === 0 && total === 0) {
     return (
-      <div className="flex flex-col items-center gap-3 py-16 text-center">
-        <p className="text-muted-foreground">No evaluations found</p>
-        <p className="text-sm text-muted-foreground">
-          Start evaluating brands to see history here.
-        </p>
+      <div>
+        <SearchInput
+          value={searchInput}
+          onChange={setSearchInput}
+          isLoading={isLoading || isPlaceholderData}
+        />
+        <div className="flex flex-col items-center gap-3 py-16 text-center">
+          <p className="text-muted-foreground">
+            {searchFromUrl
+              ? `No evaluations found for '${searchFromUrl}'`
+              : 'No evaluations found'}
+          </p>
+          {!searchFromUrl && (
+            <p className="text-sm text-muted-foreground">
+              Start evaluating brands to see history here.
+            </p>
+          )}
+        </div>
       </div>
     );
   }
 
   return (
     <div>
+      <SearchInput
+        value={searchInput}
+        onChange={setSearchInput}
+        isLoading={isLoading || isPlaceholderData}
+      />
       <Table
         aria-label="Evaluation history"
         aria-busy={isLoading || isPlaceholderData}
