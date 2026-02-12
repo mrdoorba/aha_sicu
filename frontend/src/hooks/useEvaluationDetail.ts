@@ -1,0 +1,43 @@
+import { useQuery } from '@tanstack/react-query';
+import client from '../services/apiClient';
+
+export interface EvaluationDetail {
+  id: number;
+  brand_id: number;
+  brand_name: string;
+  final_score: number;
+  verdict: string;
+  template: string;
+  score_breakdown: Array<Record<string, unknown>>;
+  calculator_results: Record<string, unknown>;
+  manual_inputs: Record<string, unknown>;
+  email_output: string | null;
+  evaluator_email: string;
+  created_at: string;
+  rule_version: number;
+}
+
+export function useEvaluationDetail(id: number) {
+  const query = useQuery<EvaluationDetail>({
+    queryKey: ['evaluation-detail', id],
+    queryFn: async () => {
+      const { data, error } = await client.GET(
+        '/api/v1/evaluations/{evaluation_id}',
+        {
+          params: { path: { evaluation_id: id } },
+        },
+      );
+      if (error) throw new Error('Failed to fetch evaluation detail');
+      return data as EvaluationDetail;
+    },
+    enabled: id > 0,
+  });
+
+  return {
+    evaluation: query.data ?? null,
+    isLoading: query.isLoading,
+    isError: query.isError,
+    error: query.error,
+    refetch: query.refetch,
+  };
+}

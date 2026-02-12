@@ -8,6 +8,7 @@ import { DashboardPage } from './pages/DashboardPage';
 import { BrandsPage } from './pages/BrandsPage';
 import { EvaluationPage } from './pages/EvaluationPage';
 import { HistoryPage } from './pages/HistoryPage';
+import { EvaluationDetailPage } from './pages/EvaluationDetailPage';
 
 const queryClient = new QueryClient();
 
@@ -45,6 +46,14 @@ function App() {
               element={
                 <ProtectedRoute>
                   <EvaluationPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/history/:id"
+              element={
+                <ProtectedRoute>
+                  <EvaluationDetailPage />
                 </ProtectedRoute>
               }
             />
