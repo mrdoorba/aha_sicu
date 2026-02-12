@@ -60,6 +60,7 @@ class ScoringResult:
     email_body: str                  # G1 assembled
     whatsapp_link: str               # E1
     template: str                    # "fashion" or "non_fashion"
+    rule_version: int = 1            # Version of rules used for scoring
 
 
 # ---------------------------------------------------------------------------
@@ -148,6 +149,89 @@ def _extract_pct(pattern: str, text: str) -> float:
 
 
 # ---------------------------------------------------------------------------
+# Rules helpers — extract configurable thresholds with fallback defaults
+# ---------------------------------------------------------------------------
+
+def _get_rule_category(rules: dict | None, category: str) -> dict:
+    """Get a category dict from rules, or empty dict if missing."""
+    if rules is None:
+        return {}
+    return rules.get(category, {})
+
+
+def _get_rule_value(category_rules: dict, key: str, field: str, default: Any) -> Any:
+    """Get a specific value from category rules, with default fallback."""
+    return category_rules.get(key, {}).get(field, default)
+
+
+# Default rules matching migration 010 seed data — used when rules=None
+DEFAULT_FASHION_RULES: dict = {
+    "operational": {
+        "unfulfilled_order_rate": {"threshold": 1.0, "points": 4, "comparison": "lte"},
+        "late_shipment_rate": {"threshold": 1.0, "points": 3, "comparison": "lte"},
+        "preparation_time": {"threshold": 1.0, "points": 3, "comparison": "lte"},
+        "chat_response_rate": {"threshold": 95.0, "comparison": "gte", "info_only": True},
+        "overall_rating": {"threshold": 4.7, "comparison": "gte", "info_only": True},
+    },
+    "business": {
+        "monthly_sales_trend": {"threshold_pct": 90.0, "points": 10, "comparison": "gte"},
+        "six_month_avg_threshold": {"threshold": 100000000, "points": 10, "comparison": "gte"},
+        "conversion_rate": {"threshold": 2.0, "comparison": "gte", "info_only": True},
+    },
+    "content": {
+        "quality_ratio": {"threshold": 95.0, "comparison": "gte", "info_only": True},
+    },
+    "visitors": {
+        "returning_visitors_pct": {"threshold": 23.0, "points": 3, "comparison": "gte"},
+        "followers": {"threshold": 50000, "points": 2, "comparison": "gte"},
+    },
+    "promo_tools": {
+        "usage_pct_threshold": {"threshold": 80.0, "opportunity_points": 5},
+        "effectiveness_pct_threshold": {"threshold": 90.0, "opportunity_points": 10},
+    },
+    "products_status": {
+        "product_count": {"threshold": 35, "points": 5, "comparison": "gte"},
+        "store_status_points": {"mall": 10, "star_plus": 5, "star": 0, "regular": 0},
+    },
+    "ads": {
+        "roi_threshold": {"threshold": 8.0, "opportunity_points": 5, "comparison": "gt"},
+        "gmv_ratio_threshold": {"threshold": 84.0, "points": 5, "comparison": "lt"},
+        "cost_ratio_range": {"min": 5.0, "max": 10.0, "info_only": True},
+    },
+    "campaign": {
+        "participation_pct_threshold": {"threshold": 90.0, "opportunity_points": 10, "comparison": "gte"},
+    },
+    "stock": {
+        "high_threshold": {"threshold": 24, "points": 10, "comparison": "gte"},
+        "mid_threshold": {"threshold": 12, "points": 5, "comparison": "gte"},
+        "low_penalty": {"threshold": 12, "points": -5, "comparison": "lt"},
+    },
+    "discount": {
+        "fake_discount_flag": {"points_no_flag": 5, "points_flag": 0},
+    },
+    "interpretation": {
+        "ranges": [
+            {"min": 71, "max": None, "label": "Good Candidate", "verdict": "✔️"},
+            {"min": 41, "max": 70, "label": "Needs Review", "verdict": "⭕️"},
+            {"min": None, "max": 40, "label": "Not Recommended", "verdict": "❌"},
+        ],
+    },
+}
+
+DEFAULT_NON_FASHION_RULES: dict = {
+    **DEFAULT_FASHION_RULES,
+    "business": {
+        **DEFAULT_FASHION_RULES["business"],
+        "conversion_rate": {"threshold": 3.0, "comparison": "gte", "info_only": True},
+    },
+    "ads": {
+        **DEFAULT_FASHION_RULES["ads"],
+        "roi_threshold": {"threshold": 9.0, "opportunity_points": 5, "comparison": "gt"},
+    },
+}
+
+
+# ---------------------------------------------------------------------------
 # Promo tools configuration
 # ---------------------------------------------------------------------------
 
@@ -174,7 +258,7 @@ PROMO_START_ROW = 31
 # Per-category scoring functions
 # ---------------------------------------------------------------------------
 
-def _score_operational(manual_data: dict) -> CategoryScore:
+def _score_operational(manual_data: dict, rules: dict | None = None) -> CategoryScore:
     """Score rows 7-11: Kesehatan Operasional Toko.
 
     H7: Pesanan Tidak Terselesaikan — ✔️=4, >1%=-(value)
@@ -186,12 +270,15 @@ def _score_operational(manual_data: dict) -> CategoryScore:
     days for preparation time.
     """
     ops = _get_nested(manual_data, "operational") or {}
+    ops_rules = _get_rule_category(rules, "operational")
     rows: list[RowScore] = []
 
     # H7: Pesanan Tidak Terselesaikan
     d7 = _safe_num(ops.get("unfulfilledOrderRate"))
-    if d7 <= 1.0:
-        f7, h7 = "✔️", 4.0
+    uor_threshold = _get_rule_value(ops_rules, "unfulfilled_order_rate", "threshold", 1.0)
+    uor_points = _get_rule_value(ops_rules, "unfulfilled_order_rate", "points", 4.0)
+    if d7 <= uor_threshold:
+        f7, h7 = "✔️", float(uor_points)
     else:
         f7, h7 = "❌", -d7
     rows.append(RowScore(
@@ -201,8 +288,10 @@ def _score_operational(manual_data: dict) -> CategoryScore:
 
     # H8: Keterlambatan Pengiriman
     d8 = _safe_num(ops.get("lateShipmentRate"))
-    if d8 <= 1.0:
-        f8, h8 = "✔️", 3.0
+    lsr_threshold = _get_rule_value(ops_rules, "late_shipment_rate", "threshold", 1.0)
+    lsr_points = _get_rule_value(ops_rules, "late_shipment_rate", "points", 3.0)
+    if d8 <= lsr_threshold:
+        f8, h8 = "✔️", float(lsr_points)
     else:
         f8, h8 = "❌", -d8
     rows.append(RowScore(
@@ -212,8 +301,10 @@ def _score_operational(manual_data: dict) -> CategoryScore:
 
     # H9: Masa Pengemasan
     d9 = _safe_num(ops.get("preparationTime"))
-    if d9 <= 1.0:
-        f9, h9 = "✔️", 3.0
+    pt_threshold = _get_rule_value(ops_rules, "preparation_time", "threshold", 1.0)
+    pt_points = _get_rule_value(ops_rules, "preparation_time", "points", 3.0)
+    if d9 <= pt_threshold:
+        f9, h9 = "✔️", float(pt_points)
     else:
         f9, h9 = "❌", -((d9 - 1) * 100)
     rows.append(RowScore(
@@ -223,9 +314,10 @@ def _score_operational(manual_data: dict) -> CategoryScore:
 
     # Row 10: Chat Dibalas (no score)
     d10 = _safe_num(ops.get("chatResponseRate"))
+    chat_threshold = _get_rule_value(ops_rules, "chat_response_rate", "threshold", 95.0)
     # F10 special: ROUNDUP to 2 decimals before comparing
     d10_rounded = math.ceil(d10 * 100) / 100
-    f10 = "✔️" if d10_rounded >= 95.0 else "❌"
+    f10 = "✔️" if d10_rounded >= chat_threshold else "❌"
     rows.append(RowScore(
         row=10, metric="Persentase Chat Dibalas",
         value=d10, benchmark=">95%", verdict=f10, message="", score=0.0,
@@ -233,7 +325,8 @@ def _score_operational(manual_data: dict) -> CategoryScore:
 
     # Row 11: Overall Rating (no score)
     d11 = _safe_num(ops.get("overallRating"))
-    f11 = "✔️" if d11 >= 4.7 else "❌"
+    rating_threshold = _get_rule_value(ops_rules, "overall_rating", "threshold", 4.7)
+    f11 = "✔️" if d11 >= rating_threshold else "❌"
     rows.append(RowScore(
         row=11, metric="Keseluruhan Penilaian",
         value=d11, benchmark=">4.7", verdict=f11, message="", score=0.0,
@@ -246,7 +339,7 @@ def _score_operational(manual_data: dict) -> CategoryScore:
     )
 
 
-def _score_business(manual_data: dict) -> CategoryScore:
+def _score_business(manual_data: dict, rules: dict | None = None) -> CategoryScore:
     """Score rows 13-20: Bisnis Analisis.
 
     H13: 10 if avg_6mo < salesMonth0 × 110%, else 0
@@ -254,6 +347,7 @@ def _score_business(manual_data: dict) -> CategoryScore:
     Rows 14-18, 20: no H score.
     """
     biz = _get_nested(manual_data, "business") or {}
+    biz_rules = _get_rule_category(rules, "business")
 
     sales_months = [
         _safe_num(biz.get("salesMonth0")),
@@ -268,9 +362,13 @@ def _score_business(manual_data: dict) -> CategoryScore:
     rows: list[RowScore] = []
 
     # Row 13: Current month sales
+    trend_pct = _get_rule_value(biz_rules, "monthly_sales_trend", "threshold_pct", 90.0)
+    trend_points = float(_get_rule_value(biz_rules, "monthly_sales_trend", "points", 10.0))
+    # threshold_pct=90 → multiplier=1.10: pass if avg < current × multiplier
+    trend_multiplier = (200 - trend_pct) / 100
     e13 = f">{_fmt_idr(avg_6mo)}" if avg_6mo > 0 else "-"
-    f13 = "✔️" if avg_6mo < current_month * 1.10 else "❌"
-    h13 = 10.0 if avg_6mo < current_month * 1.10 else 0.0
+    f13 = "✔️" if avg_6mo < current_month * trend_multiplier else "❌"
+    h13 = trend_points if avg_6mo < current_month * trend_multiplier else 0.0
     rows.append(RowScore(
         row=13, metric="Penjualan",
         value=current_month, benchmark=e13, verdict=f13, message="", score=h13,
@@ -284,8 +382,10 @@ def _score_business(manual_data: dict) -> CategoryScore:
         ))
 
     # Row 19: Average (computed)
-    f19 = "✔️" if avg_6mo > 100_000_000 else "❌"
-    h19 = 10.0 if avg_6mo > 100_000_000 else 0.0
+    avg_threshold = _get_rule_value(biz_rules, "six_month_avg_threshold", "threshold", 100_000_000)
+    avg_points = float(_get_rule_value(biz_rules, "six_month_avg_threshold", "points", 10.0))
+    f19 = "✔️" if avg_6mo > avg_threshold else "❌"
+    h19 = avg_points if avg_6mo > avg_threshold else 0.0
     rows.append(RowScore(
         row=19, metric="Rata² Penjualan 6 bulan terakhir",
         value=avg_6mo, benchmark="-", verdict=f19, message="", score=h19,
@@ -306,12 +406,13 @@ def _score_business(manual_data: dict) -> CategoryScore:
     )
 
 
-def _score_content(manual_data: dict) -> CategoryScore:
+def _score_content(manual_data: dict, rules: dict | None = None) -> CategoryScore:
     """Score rows 22-24: Skor Kesehatan Konten.
 
     No H-column scores. F24 verdict only.
     """
     content = _get_nested(manual_data, "content") or {}
+    content_rules = _get_rule_category(rules, "content")
     rows: list[RowScore] = []
 
     d22 = _safe_num(content.get("needsImprovement"))
@@ -327,7 +428,8 @@ def _score_content(manual_data: dict) -> CategoryScore:
         value=d23, benchmark="-", verdict="-", message="", score=0.0,
     ))
 
-    f24 = "✔️" if d24 >= 0.95 else "❌"
+    quality_threshold = _get_rule_value(content_rules, "quality_ratio", "threshold", 95.0) / 100
+    f24 = "✔️" if d24 >= quality_threshold else "❌"
     rows.append(RowScore(
         row=24, metric="% Konten baik",
         value=d24, benchmark=">95%", verdict=f24, message="", score=0.0,
@@ -339,13 +441,14 @@ def _score_content(manual_data: dict) -> CategoryScore:
     )
 
 
-def _score_visitors(manual_data: dict) -> CategoryScore:
+def _score_visitors(manual_data: dict, rules: dict | None = None) -> CategoryScore:
     """Score rows 26-29: Tinjauan Pengunjung.
 
     H28: 3 if returning visitors > 23%
     H29: 2 if followers > 50,000
     """
     vis = _get_nested(manual_data, "visitors") or {}
+    vis_rules = _get_rule_category(rules, "visitors")
     rows: list[RowScore] = []
 
     d26 = _safe_num(vis.get("totalVisitors"))
@@ -362,17 +465,21 @@ def _score_visitors(manual_data: dict) -> CategoryScore:
     ))
 
     # Row 28: % Returning visitors (computed)
+    rv_threshold = _get_rule_value(vis_rules, "returning_visitors_pct", "threshold", 23.0) / 100
+    rv_points = float(_get_rule_value(vis_rules, "returning_visitors_pct", "points", 3.0))
     d28 = d27 / d26 if d26 > 0 else 0.0
-    f28 = "✔️" if d28 > 0.23 else "❌"
-    h28 = 3.0 if d28 > 0.23 else 0.0
+    f28 = "✔️" if d28 > rv_threshold else "❌"
+    h28 = rv_points if d28 > rv_threshold else 0.0
     rows.append(RowScore(
         row=28, metric="% Pengunjung Lama",
         value=d28, benchmark=">23%", verdict=f28, message="", score=h28,
     ))
 
     # Row 29: Total followers
-    f29 = "✔️" if d29 > 50000 else "❌"
-    h29 = 2.0 if d29 > 50000 else 0.0
+    fl_threshold = _get_rule_value(vis_rules, "followers", "threshold", 50000)
+    fl_points = float(_get_rule_value(vis_rules, "followers", "points", 2.0))
+    f29 = "✔️" if d29 > fl_threshold else "❌"
+    h29 = fl_points if d29 > fl_threshold else 0.0
     rows.append(RowScore(
         row=29, metric="Total Pengikut",
         value=d29, benchmark=">50000", verdict=f29, message="", score=h29,
@@ -406,7 +513,7 @@ def _promo_verdict(d_value: float, d13_sales: float, benchmark_pct: float) -> st
     return "❌"
 
 
-def _score_promo_tools(manual_data: dict) -> CategoryScore:
+def _score_promo_tools(manual_data: dict, rules: dict | None = None) -> CategoryScore:
     """Score rows 31-43: Promo Toko.
 
     Rows 31-41: Individual promo tools (F-column only, no H score per row)
@@ -415,6 +522,7 @@ def _score_promo_tools(manual_data: dict) -> CategoryScore:
     """
     promo = _get_nested(manual_data, "promoTools") or {}
     d13 = _safe_num(_get_nested(manual_data, "business", "salesMonth0"))
+    promo_rules = _get_rule_category(rules, "promo_tools")
     rows: list[RowScore] = []
 
     used_count = 0
@@ -440,18 +548,22 @@ def _score_promo_tools(manual_data: dict) -> CategoryScore:
         ))
 
     # Row 42: % Usage
+    usage_threshold = _get_rule_value(promo_rules, "usage_pct_threshold", "threshold", 80.0) / 100
+    usage_opp_pts = float(_get_rule_value(promo_rules, "usage_pct_threshold", "opportunity_points", 5.0))
     usage_rate = used_count / total_tools if total_tools > 0 else 0.0
-    f42 = "✔️" if usage_rate > 0.80 else "❌"
-    h42 = 0.0 if usage_rate > 0.80 else 5.0  # Opportunity points
+    f42 = "✔️" if usage_rate > usage_threshold else "❌"
+    h42 = 0.0 if usage_rate > usage_threshold else usage_opp_pts
     rows.append(RowScore(
         row=42, metric="% Penggunaan alat promosi",
         value=usage_rate, benchmark=">80%", verdict=f42, message="", score=h42,
     ))
 
     # Row 43: % Effectiveness
+    eff_threshold = _get_rule_value(promo_rules, "effectiveness_pct_threshold", "threshold", 90.0) / 100
+    eff_opp_pts = float(_get_rule_value(promo_rules, "effectiveness_pct_threshold", "opportunity_points", 10.0))
     effectiveness_rate = pass_count / total_tools if total_tools > 0 else 0.0
-    f43 = "✔️" if effectiveness_rate > 0.90 else "❌"
-    h43 = 0.0 if effectiveness_rate > 0.90 else 10.0  # Opportunity points
+    f43 = "✔️" if effectiveness_rate > eff_threshold else "❌"
+    h43 = 0.0 if effectiveness_rate > eff_threshold else eff_opp_pts
     rows.append(RowScore(
         row=43, metric="% Efektifitas alat promosi",
         value=effectiveness_rate, benchmark=">90%", verdict=f43, message="", score=h43,
@@ -464,30 +576,36 @@ def _score_promo_tools(manual_data: dict) -> CategoryScore:
     )
 
 
-def _score_products(manual_data: dict) -> CategoryScore:
+def _score_products(manual_data: dict, rules: dict | None = None) -> CategoryScore:
     """Score rows 45-46: Jumlah Produk & Status Toko.
 
     H45: 5 if productCount >= 35
     H46: Mall=10, Star+=5, else 0
     """
     products = _get_nested(manual_data, "products") or {}
+    ps_rules = _get_rule_category(rules, "products_status")
     rows: list[RowScore] = []
 
     # Row 45: Product count
+    pc_threshold = _get_rule_value(ps_rules, "product_count", "threshold", 35)
+    pc_points = float(_get_rule_value(ps_rules, "product_count", "points", 5.0))
     d45 = _safe_num(products.get("productCount"))
-    f45 = "✔️" if d45 >= 35 else "❌"
-    h45 = 5.0 if d45 >= 35 else 0.0
+    f45 = "✔️" if d45 >= pc_threshold else "❌"
+    h45 = pc_points if d45 >= pc_threshold else 0.0
     rows.append(RowScore(
         row=45, metric="Jumlah Produk",
         value=d45, benchmark=">=35", verdict=f45, message="", score=h45,
     ))
 
     # Row 46: Store status
+    status_pts = ps_rules.get("store_status_points", {}) if ps_rules else {}
+    mall_pts = float(status_pts.get("mall", 10.0))
+    star_plus_pts = float(status_pts.get("star_plus", 5.0))
     d46 = _safe_str(products.get("storeStatus"))
     if d46 == "Shopee Mall":
-        f46, h46 = "✔️", 10.0
+        f46, h46 = "✔️", mall_pts
     elif d46 == "Star+":
-        f46, h46 = "✔️", 5.0
+        f46, h46 = "✔️", star_plus_pts
     elif d46:
         f46, h46 = "❌", 0.0
     else:
@@ -504,7 +622,7 @@ def _score_products(manual_data: dict) -> CategoryScore:
     )
 
 
-def _score_ads(manual_data: dict, template: str) -> CategoryScore:
+def _score_ads(manual_data: dict, template: str, rules: dict | None = None) -> CategoryScore:
     """Score rows 48-53: Data Iklan.
 
     H50: ROI — ✔️=0, ❌=5 (opportunity). Threshold: >8 Fashion, >9 Non-Fashion
@@ -513,6 +631,7 @@ def _score_ads(manual_data: dict, template: str) -> CategoryScore:
     """
     ads = _get_nested(manual_data, "ads") or {}
     d13 = _safe_num(_get_nested(manual_data, "business", "salesMonth0"))
+    ads_rules = _get_rule_category(rules, "ads")
     rows: list[RowScore] = []
 
     d48 = _safe_num(ads.get("adSales"))
@@ -534,19 +653,23 @@ def _score_ads(manual_data: dict, template: str) -> CategoryScore:
 
     # Row 50: ROI = D48/D49
     d50 = d48 / d49 if d49 > 0 else 0.0
-    roi_threshold = 8 if template == "fashion" else 9
+    roi_default = 8.0 if template == "fashion" else 9.0
+    roi_threshold = _get_rule_value(ads_rules, "roi_threshold", "threshold", roi_default)
+    roi_opp_pts = float(_get_rule_value(ads_rules, "roi_threshold", "opportunity_points", 5.0))
     f50 = "✔️" if d50 >= roi_threshold else "❌"
-    h50 = 0.0 if d50 >= roi_threshold else 5.0  # Opportunity
+    h50 = 0.0 if d50 >= roi_threshold else roi_opp_pts
     rows.append(RowScore(
         row=50, metric="ROI",
-        value=d50, benchmark=f">{roi_threshold}", verdict=f50,
+        value=d50, benchmark=f">{roi_threshold:g}", verdict=f50,
         message="", score=h50,
     ))
 
     # Row 51: GMV ratio = D48/D13
+    gmv_threshold = _get_rule_value(ads_rules, "gmv_ratio_threshold", "threshold", 84.0) / 100
+    gmv_points = float(_get_rule_value(ads_rules, "gmv_ratio_threshold", "points", 5.0))
     d51 = d48 / d13 if d13 > 0 else 0.0
-    f51 = "✔️" if d51 < 0.84 else "❌"
-    h51 = 5.0 if d51 < 0.84 else 0.0
+    f51 = "✔️" if d51 < gmv_threshold else "❌"
+    h51 = gmv_points if d51 < gmv_threshold else 0.0
     rows.append(RowScore(
         row=51, metric="% GMV Iklan / GMV Toko",
         value=d51, benchmark="<84%", verdict=f51, message="", score=h51,
@@ -580,12 +703,13 @@ def _score_ads(manual_data: dict, template: str) -> CategoryScore:
     )
 
 
-def _score_campaign(manual_data: dict) -> CategoryScore:
+def _score_campaign(manual_data: dict, rules: dict | None = None) -> CategoryScore:
     """Score rows 55-57: Partisipasi Campaign.
 
     H57: Participation — ✔️=0, ❌=10 (opportunity)
     """
     campaign = _get_nested(manual_data, "campaign") or {}
+    camp_rules = _get_rule_category(rules, "campaign")
     rows: list[RowScore] = []
 
     d55 = _safe_num(campaign.get("nominatedSessions"))
@@ -601,9 +725,11 @@ def _score_campaign(manual_data: dict) -> CategoryScore:
     ))
 
     # Row 57: Participation rate = D55/D56
+    part_threshold = _get_rule_value(camp_rules, "participation_pct_threshold", "threshold", 90.0) / 100
+    part_opp_pts = float(_get_rule_value(camp_rules, "participation_pct_threshold", "opportunity_points", 10.0))
     d57 = d55 / d56 if d56 > 0 else 0.0
-    f57 = "✔️" if d57 > 0.90 else "❌"
-    h57 = 0.0 if d57 > 0.90 else 10.0  # Opportunity
+    f57 = "✔️" if d57 > part_threshold else "❌"
+    h57 = 0.0 if d57 > part_threshold else part_opp_pts
     rows.append(RowScore(
         row=57, metric="% Partisipasi Campaign",
         value=d57, benchmark=">90%", verdict=f57, message="", score=h57,
@@ -660,7 +786,7 @@ def _score_competition(
     )
 
 
-def _score_stock(calculator_results: dict) -> CategoryScore:
+def _score_stock(calculator_results: dict, rules: dict | None = None) -> CategoryScore:
     """Score row 70: Stock Analysis.
 
     H70: >=24 → 10, >=12 → 5, <12 → -5
@@ -680,16 +806,23 @@ def _score_stock(calculator_results: dict) -> CategoryScore:
             score=0.0, max_score=10.0, rows=[row], available=False,
         )
 
+    stock_rules = _get_rule_category(rules, "stock")
+    high_threshold = _get_rule_value(stock_rules, "high_threshold", "threshold", 24)
+    high_points = float(_get_rule_value(stock_rules, "high_threshold", "points", 10.0))
+    mid_threshold = _get_rule_value(stock_rules, "mid_threshold", "threshold", 12)
+    mid_points = float(_get_rule_value(stock_rules, "mid_threshold", "points", 5.0))
+    low_points = float(_get_rule_value(stock_rules, "low_penalty", "points", -5.0))
+
     avg_stock = _safe_num(top_sku_data.get("average_stock"))
     # Round if decimal (spec says round to integer)
     avg_stock_int = round(avg_stock)
 
-    if avg_stock_int >= 24:
-        f70, h70 = "✔️", 10.0
-    elif avg_stock_int >= 12:
-        f70, h70 = "✔️", 5.0
+    if avg_stock_int >= high_threshold:
+        f70, h70 = "✔️", high_points
+    elif avg_stock_int >= mid_threshold:
+        f70, h70 = "✔️", mid_points
     else:
-        f70, h70 = "❌", -5.0
+        f70, h70 = "❌", low_points
 
     row = RowScore(
         row=70, metric="Rata² Stok",
@@ -702,7 +835,7 @@ def _score_stock(calculator_results: dict) -> CategoryScore:
     )
 
 
-def _score_discount_row(calculator_results: dict) -> CategoryScore:
+def _score_discount_row(calculator_results: dict, rules: dict | None = None) -> CategoryScore:
     """Score row 73: Discount Check Up.
 
     H73: 5 if no fake discount, 0 if fake discount detected
@@ -722,10 +855,14 @@ def _score_discount_row(calculator_results: dict) -> CategoryScore:
             score=0.0, max_score=5.0, rows=[row], available=False,
         )
 
+    disc_rules = _get_rule_category(rules, "discount")
+    pts_no_flag = float(_get_rule_value(disc_rules, "fake_discount_flag", "points_no_flag", 5.0))
+    pts_flag = float(_get_rule_value(disc_rules, "fake_discount_flag", "points_flag", 0.0))
+
     fake_flag = disc_details.get("fake_discount_flag", False)
     disc_output = _get_nested(calculator_results, "discount", "output_text") or ""
 
-    h73 = 0.0 if fake_flag else 5.0
+    h73 = pts_flag if fake_flag else pts_no_flag
     f73 = "❌" if fake_flag else "✔️"
 
     row = RowScore(
@@ -1326,6 +1463,8 @@ def calculate_score(
     period: str,
     brand_name: str,
     email: str | None = None,
+    rules: dict | None = None,
+    rule_version: int = 1,
 ) -> ScoringResult:
     """Compute the full scoring system.
 
@@ -1341,6 +1480,8 @@ def calculate_score(
         period: Period string (e.g., "Jan 2026").
         brand_name: Short brand name (H2).
         email: Optional email address (G3).
+        rules: Optional rules dict from DB. Falls back to defaults when None.
+        rule_version: Version of the rules used (from DB).
 
     Returns:
         ScoringResult with all scores, messages, email body, and WhatsApp link.
@@ -1348,24 +1489,26 @@ def calculate_score(
     is_fashion = template == "fashion"
 
     # --- Per-category scoring ---
-    cat_operational = _score_operational(manual_data)
-    cat_business = _score_business(manual_data)
-    cat_content = _score_content(manual_data)
-    cat_visitors = _score_visitors(manual_data)
-    cat_promo = _score_promo_tools(manual_data)
-    cat_products = _score_products(manual_data)
-    cat_ads = _score_ads(manual_data, template)
-    cat_campaign = _score_campaign(manual_data)
+    cat_operational = _score_operational(manual_data, rules)
+    cat_business = _score_business(manual_data, rules)
+    cat_content = _score_content(manual_data, rules)
+    cat_visitors = _score_visitors(manual_data, rules)
+    cat_promo = _score_promo_tools(manual_data, rules)
+    cat_products = _score_products(manual_data, rules)
+    cat_ads = _score_ads(manual_data, template, rules)
+    cat_campaign = _score_campaign(manual_data, rules)
     cat_competition = _score_competition(manual_data, calculator_results)
-    cat_stock = _score_stock(calculator_results)
-    cat_discount = _score_discount_row(calculator_results)
+    cat_stock = _score_stock(calculator_results, rules)
+    cat_discount = _score_discount_row(calculator_results, rules)
 
     # Apply Fashion-specific threshold for conversion rate (row 20)
+    biz_rules = _get_rule_category(rules, "business")
+    conv_default = 2.0 if is_fashion else 3.0
+    conv_threshold = _get_rule_value(biz_rules, "conversion_rate", "threshold", conv_default)
     conv_row = next((r for r in cat_business.rows if r.row == 20), None)
     if conv_row:
-        threshold = 2.0 if is_fashion else 3.0
-        conv_row.benchmark = f">{threshold:.0f}%"
-        conv_row.verdict = "✔️" if conv_row.value >= threshold else "❌"
+        conv_row.benchmark = f">{conv_threshold:.0f}%"
+        conv_row.verdict = "✔️" if conv_row.value >= conv_threshold else "❌"
 
     all_categories = [
         cat_operational, cat_business, cat_content, cat_visitors,
@@ -1425,4 +1568,5 @@ def calculate_score(
         email_body=email_body,
         whatsapp_link=whatsapp_link,
         template=template,
+        rule_version=rule_version,
     )
