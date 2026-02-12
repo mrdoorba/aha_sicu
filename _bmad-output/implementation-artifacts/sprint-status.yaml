@@ -1,5 +1,5 @@
-# generated: 2026-02-05
-# project: BMAD Method
+# generated: 2026-02-12
+# project: aha_sicu
 # project_key: NOKEY
 # tracking_system: file-system
 # story_location: _bmad-output/implementation-artifacts
@@ -33,8 +33,8 @@
 # - SM typically creates next story after previous one is 'done' to incorporate learnings
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
-generated: 2026-02-05
-project: BMAD Method
+generated: 2026-02-12
+project: aha_sicu
 project_key: NOKEY
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -82,17 +82,17 @@ development_status:
   epic-4-retrospective: done
 
   # Epic 5: Rule Configuration
-  epic-5: in-progress
+  epic-5: done
   5-1-view-current-scoring-rules: done
   5-2-edit-scoring-rules-with-password-confirmation: done
   5-3-apply-configured-rules-in-scoring: done
-  epic-5-retrospective: done
   5-4-marketing-floor-rules-migration: done
   5-5-configurable-g-column-message-templates: done
+  epic-5-retrospective: done
 
   # Epic 6: Production Deployment & Launch
-  epic-6: backlog
-  6-1-infrastructure-provisioning: backlog
+  epic-6: in-progress
+  6-1-infrastructure-provisioning: review
   6-2-cicd-pipeline-activation: backlog
   6-3-production-smoke-testing: backlog
   6-4-bd-team-onboarding-and-real-data-validation: backlog

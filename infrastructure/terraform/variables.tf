@@ -33,3 +33,48 @@ variable "cloud_run_service_name" {
   type        = string
   default     = "aha-sicu-api"
 }
+
+# =============================================================================
+# New Variables (Story 6.1)
+# =============================================================================
+
+variable "github_repo" {
+  description = "GitHub repository in format 'owner/repo' for Workload Identity Federation"
+  type        = string
+}
+
+variable "firebase_project_id" {
+  description = "Firebase project ID (usually same as GCP project_id)"
+  type        = string
+  default     = ""
+}
+
+variable "cloud_run_image" {
+  description = "Docker image URI for Cloud Run (e.g., asia-southeast1-docker.pkg.dev/PROJECT/aha-sicu-registry/aha-sicu-api:latest)"
+  type        = string
+  default     = "us-docker.pkg.dev/cloudrun/container/hello"
+}
+
+variable "cloud_run_min_instances" {
+  description = "Minimum number of Cloud Run instances"
+  type        = number
+  default     = 0
+}
+
+variable "cloud_run_max_instances" {
+  description = "Maximum number of Cloud Run instances"
+  type        = number
+  default     = 2
+}
+
+variable "cloud_run_memory" {
+  description = "Memory limit for Cloud Run container"
+  type        = string
+  default     = "512Mi"
+}
+
+variable "cloud_run_cpu" {
+  description = "CPU limit for Cloud Run container"
+  type        = string
+  default     = "1"
+}
