@@ -19,6 +19,7 @@ from app.modules.evaluations.schemas import (
     CalculatorResultResponse,
     CalculatorResultsListResponse,
     CalculatorStatusResponse,
+    EvaluationDetailResponse,
     EvaluationInputsUpdate,
     EvaluationListResponse,
     EvaluationStateResponse,
@@ -32,6 +33,7 @@ from app.modules.evaluations.schemas import (
 )
 from app.modules.evaluations.service import (
     generate_score,
+    get_evaluation_detail,
     get_evaluation_state,
     list_evaluations,
     save_evaluation,
@@ -69,6 +71,15 @@ async def list_evaluations_endpoint(
         date_to=date_to,
         category=category,
     )
+
+
+@router.get("/{evaluation_id}", response_model=EvaluationDetailResponse)
+async def get_evaluation_detail_endpoint(
+    evaluation_id: int,
+    current_user: dict = Depends(get_current_user),
+) -> EvaluationDetailResponse:
+    """Get full details of a single evaluation by ID."""
+    return await get_evaluation_detail(evaluation_id=evaluation_id)
 
 
 @router.get("/brands/{brand_id}", response_model=EvaluationStateResponse)
