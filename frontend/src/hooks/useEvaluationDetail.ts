@@ -17,6 +17,14 @@ export interface EvaluationDetail {
   rule_version: number;
 }
 
+class ApiError extends Error {
+  code?: string;
+  constructor(message: string, code?: string) {
+    super(message);
+    this.code = code;
+  }
+}
+
 export function useEvaluationDetail(id: number) {
   const query = useQuery<EvaluationDetail>({
     queryKey: ['evaluation-detail', id],
@@ -27,16 +35,28 @@ export function useEvaluationDetail(id: number) {
           params: { path: { evaluation_id: id } },
         },
       );
-      if (error) throw new Error('Failed to fetch evaluation detail');
+      if (error) {
+        const apiError = error as Record<string, unknown>;
+        throw new ApiError(
+          typeof apiError.detail === 'string'
+            ? apiError.detail
+            : 'Failed to fetch evaluation detail',
+          typeof apiError.code === 'string' ? apiError.code : undefined,
+        );
+      }
       return data as EvaluationDetail;
     },
     enabled: id > 0,
   });
 
+  const isNotFound =
+    query.isError && (query.error as ApiError)?.code === 'EVAL_NOT_FOUND';
+
   return {
     evaluation: query.data ?? null,
     isLoading: query.isLoading,
     isError: query.isError,
+    isNotFound,
     error: query.error,
     refetch: query.refetch,
   };

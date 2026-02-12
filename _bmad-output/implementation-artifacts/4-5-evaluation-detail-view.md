@@ -1,6 +1,6 @@
 # Story 4.5: Evaluation Detail View
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -689,10 +689,12 @@ No issues encountered during implementation.
 - Task 8: Route `/history/:id` added to App.tsx with ProtectedRoute wrapper
 - Task 9: 10 frontend tests covering all AC scenarios (header, score table, calculators, manual inputs, email, loading, error, 404, back navigation)
 - All 522 backend tests pass, all 256 frontend tests pass, zero regressions
+- Code review fixes: 8 issues fixed (2H, 3M, 3L) — 404 detection, heading hierarchy, clipboard error handling, navigate safety, stale comment, File List gap, 2 new tests added
 
 ### File List
 
 **Modified:**
+- _bmad-output/implementation-artifacts/sprint-status.yaml — Updated story development status
 - backend/app/db/queries/evaluations.py — Added `get_evaluation_by_id()` query
 - backend/app/modules/evaluations/schemas.py — Added `EvaluationDetailResponse` schema
 - backend/app/modules/evaluations/service.py — Added `get_evaluation_detail()` service function
@@ -704,8 +706,9 @@ No issues encountered during implementation.
 - backend/tests/integration/api/test_evaluation_detail.py — 6 integration tests
 - frontend/src/hooks/useEvaluationDetail.ts — Hook for fetching single evaluation
 - frontend/src/pages/EvaluationDetailPage.tsx — Detail page component
-- frontend/src/pages/EvaluationDetailPage.test.tsx — 10 frontend tests
+- frontend/src/pages/EvaluationDetailPage.test.tsx — 12 frontend tests
 
 ## Change Log
 
 - 2026-02-12: Story 4.5 implemented — full evaluation detail view with backend endpoint (GET /evaluations/{id}), frontend page (/history/:id), 6 backend + 10 frontend tests. All ACs satisfied.
+- 2026-02-12: Code review fixes — [H1] Hook now detects API 404 via EVAL_NOT_FOUND error code, returns isNotFound flag; page properly shows "Evaluation not found" for API 404s vs "Failed to load" for other errors. [H2] Added API 404 test case. [M1] Added sprint-status.yaml to File List. [M2] Added try/catch to clipboard copy. [M3] Fixed h2→h3 heading hierarchy in calculator sections. [L1] Back button uses navigate('/history'). [L2] Removed stale apiClient comment. [L3] Added clipboard copy test. 258 frontend tests pass.
