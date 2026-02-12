@@ -1,6 +1,6 @@
 # Story 5.5: Configurable G-Column Message Templates
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -81,69 +81,69 @@ so that I can customize evaluation feedback messages without requiring code chan
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Design message template schema (AC: #1)
-  - [ ] 1.1 Define `message_pass` / `message_fail` field structure for simple rules
-  - [ ] 1.2 Define multi-variant message fields for complex rules (`message_no_ads`, `message_too_minimal`, `message_fail_severe`, `message_no_data`)
-  - [ ] 1.3 Define promo individual row message templates structure (shared across all promo tool rows)
-  - [ ] 1.4 Define G75 closing messages structure under `interpretation` category
-  - [ ] 1.5 Document all placeholder names and their runtime sources
+- [x] Task 1: Design message template schema (AC: #1)
+  - [x] 1.1 Define `message_pass` / `message_fail` field structure for simple rules
+  - [x] 1.2 Define multi-variant message fields for complex rules (`message_no_ads`, `message_too_minimal`, `message_fail_severe`, `message_no_data`)
+  - [x] 1.3 Define promo individual row message templates structure (shared across all promo tool rows)
+  - [x] 1.4 Define G75 closing messages structure under `interpretation` category
+  - [x] 1.5 Document all placeholder names and their runtime sources
 
-- [ ] Task 2: Create migration to add message templates to rules JSONB (AC: #1, #2)
-  - [ ] 2.1 Add `message_pass` / `message_fail` to each rule entry in Fashion defaults
-  - [ ] 2.2 Add `message_pass` / `message_fail` to each rule entry in Non-Fashion defaults
-  - [ ] 2.3 Add multi-variant message fields for complex rules
-  - [ ] 2.4 Add promo shared message templates
-  - [ ] 2.5 Add G75 closing messages to `interpretation` category
-  - [ ] 2.6 Write migration that updates existing rows' JSONB to include message fields
-  - [ ] 2.7 Increment version for both templates
-  - [ ] 2.8 Write downgrade that removes message fields from JSONB
+- [x] Task 2: Create migration to add message templates to rules JSONB (AC: #1, #2)
+  - [x] 2.1 Add `message_pass` / `message_fail` to each rule entry in Fashion defaults
+  - [x] 2.2 Add `message_pass` / `message_fail` to each rule entry in Non-Fashion defaults
+  - [x] 2.3 Add multi-variant message fields for complex rules
+  - [x] 2.4 Add promo shared message templates
+  - [x] 2.5 Add G75 closing messages to `interpretation` category
+  - [x] 2.6 Write migration that updates existing rows' JSONB to include message fields
+  - [x] 2.7 Increment version for both templates
+  - [x] 2.8 Write downgrade that removes message fields from JSONB
 
-- [ ] Task 3: Create message template helper function (AC: #3, #4)
-  - [ ] 3.1 Create `_format_message_template(template: str, **kwargs) -> str` helper that safely formats template strings, returning the template unchanged if a placeholder is missing (prevent KeyError)
-  - [ ] 3.2 Add unit tests for the helper
+- [x] Task 3: Create message template helper function (AC: #3, #4)
+  - [x] 3.1 Create `_format_message_template(template: str, **kwargs) -> str` helper that safely formats template strings, returning the template unchanged if a placeholder is missing (prevent KeyError)
+  - [x] 3.2 Add unit tests for the helper
 
-- [ ] Task 4: Refactor simple message generators to use templates (AC: #3)
-  - [ ] 4.1 Refactor `_generate_operational_messages()` — rows 7, 8, 9, 10, 11
-  - [ ] 4.2 Refactor `_generate_content_messages()` — row 24
-  - [ ] 4.3 Refactor `_generate_visitors_messages()` — rows 28, 29
-  - [ ] 4.4 Refactor `_generate_products_messages()` — rows 45, 46
-  - [ ] 4.5 Refactor `_generate_campaign_messages()` — row 57 (simple pass/fail)
-  - [ ] 4.6 Refactor promo summary rows 42, 43 in `_generate_promo_messages()`
-  - [ ] 4.7 Pass `rules` parameter to all message generators that don't already receive it
+- [x] Task 4: Refactor simple message generators to use templates (AC: #3)
+  - [x] 4.1 Refactor `_generate_operational_messages()` — rows 7, 8, 9, 10, 11
+  - [x] 4.2 Refactor `_generate_content_messages()` — row 24
+  - [x] 4.3 Refactor `_generate_visitors_messages()` — rows 28, 29
+  - [x] 4.4 Refactor `_generate_products_messages()` — rows 45, 46
+  - [x] 4.5 Refactor `_generate_campaign_messages()` — row 57 (simple pass/fail)
+  - [x] 4.6 Refactor promo summary rows 42, 43 in `_generate_promo_messages()`
+  - [x] 4.7 Pass `rules` parameter to all message generators that don't already receive it
 
-- [ ] Task 5: Refactor complex message generators to use templates (AC: #4, #5, #6, #7)
-  - [ ] 5.1 Refactor `_generate_business_messages()` — row 13 (sales with severe drop variant), row 20
-  - [ ] 5.2 Refactor `_generate_ads_messages()` — rows 50, 51, 52 (multiple variants each)
-  - [ ] 5.3 Refactor `_generate_campaign_messages()` — row 57 `message_no_data` variant
-  - [ ] 5.4 Refactor `_generate_promo_messages()` — individual promo rows 31-41 (5 variants)
-  - [ ] 5.5 Refactor `_generate_competition_messages()` — rows 61-63
-  - [ ] 5.6 Refactor `_compute_g75()` — verdict-based closing messages
+- [x] Task 5: Refactor complex message generators to use templates (AC: #4, #5, #6, #7)
+  - [x] 5.1 Refactor `_generate_business_messages()` — row 13 (sales with severe drop variant), row 20
+  - [x] 5.2 Refactor `_generate_ads_messages()` — rows 50, 51, 52 (multiple variants each)
+  - [x] 5.3 Refactor `_generate_campaign_messages()` — row 57 `message_no_data` variant
+  - [x] 5.4 Refactor `_generate_promo_messages()` — individual promo rows 31-41 (5 variants)
+  - [x] 5.5 Refactor `_generate_competition_messages()` — rows 61-63
+  - [x] 5.6 Refactor `_compute_g75()` — verdict-based closing messages
 
-- [ ] Task 6: Update `calculate_score()` to pass rules to all message generators (AC: #3, #4)
-  - [ ] 6.1 Add `rules` parameter to message generator function signatures
-  - [ ] 6.2 Thread `rules` through from `calculate_score()` entry point
-  - [ ] 6.3 Verify all call sites pass rules correctly
+- [x] Task 6: Update `calculate_score()` to pass rules to all message generators (AC: #3, #4)
+  - [x] 6.1 Add `rules` parameter to message generator function signatures
+  - [x] 6.2 Thread `rules` through from `calculate_score()` entry point
+  - [x] 6.3 Verify all call sites pass rules correctly
 
-- [ ] Task 7: Update frontend Rules page for message templates (AC: #8)
-  - [ ] 7.1 Add message template display in `RulesCategoryCard.tsx` — show `message_pass` / `message_fail` as textarea fields below threshold/points
-  - [ ] 7.2 Add label annotations for placeholders (e.g., "Available: {val_str}, {threshold}")
-  - [ ] 7.3 Handle multi-variant messages (collapsible or grouped display)
-  - [ ] 7.4 Add G75 closing messages section in interpretation area of `RulesPage.tsx`
-  - [ ] 7.5 Ensure message fields are included in the save payload
+- [x] Task 7: Update frontend Rules page for message templates (AC: #8)
+  - [x] 7.1 Add message template display in `RulesCategoryCard.tsx` — show `message_pass` / `message_fail` as textarea fields below threshold/points
+  - [x] 7.2 Add label annotations for placeholders (e.g., "Available: {val_str}, {threshold}")
+  - [x] 7.3 Handle multi-variant messages (collapsible or grouped display)
+  - [x] 7.4 Add G75 closing messages section in interpretation area of `RulesPage.tsx`
+  - [x] 7.5 Ensure message fields are included in the save payload
 
-- [ ] Task 8: Add backend unit tests (AC: #9, #10)
-  - [ ] 8.1 Test each simple message generator with custom templates
-  - [ ] 8.2 Test each complex message generator with custom templates
-  - [ ] 8.3 Test fallback to defaults when rules is None
-  - [ ] 8.4 Test fallback when message fields missing from rule entry
-  - [ ] 8.5 Test `_compute_g75()` with custom closing messages
-  - [ ] 8.6 Test `_format_message_template()` edge cases (missing placeholders, extra kwargs)
+- [x] Task 8: Add backend unit tests (AC: #9, #10)
+  - [x] 8.1 Test each simple message generator with custom templates
+  - [x] 8.2 Test each complex message generator with custom templates
+  - [x] 8.3 Test fallback to defaults when rules is None
+  - [x] 8.4 Test fallback when message fields missing from rule entry
+  - [x] 8.5 Test `_compute_g75()` with custom closing messages
+  - [x] 8.6 Test `_format_message_template()` edge cases (missing placeholders, extra kwargs)
 
-- [ ] Task 9: Add integration and frontend tests (AC: #10)
-  - [ ] 9.1 Integration test: full `calculate_score()` with custom message templates
-  - [ ] 9.2 Verify custom messages propagate to email body and WhatsApp link
-  - [ ] 9.3 Frontend test: RulesPage renders message template fields
-  - [ ] 9.4 Frontend test: message template edits included in save payload
+- [x] Task 9: Add integration and frontend tests (AC: #10)
+  - [x] 9.1 Integration test: full `calculate_score()` with custom message templates
+  - [x] 9.2 Verify custom messages propagate to email body
+  - [x] 9.3 Frontend test: RulesPage renders message template fields
+  - [x] 9.4 Frontend test: message template edits included in save payload
 
 ## Dev Notes
 
@@ -320,10 +320,41 @@ This is the **largest story in Epic 5** by file change count. The scoring.py cha
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
+- Fixed threshold formatting inconsistency: `str(90.0)` = "90.0" vs `str(90)` = "90". Solution: use `f"{threshold:g}"` format specifier to strip trailing zeros from floats.
+- Fixed generic fallback defaults in `_generate_operational_messages`: when `rules=None`, rule_key name appeared in messages instead of proper Indonesian text. Added `_ROW_DEFAULTS` dict with proper hardcoded fallbacks.
+
 ### Completion Notes List
 
+- All 9 tasks and 44 subtasks completed
+- Backend: 624 tests pass (158 unit scoring + 12 integration scoring + rest of suite)
+- Frontend: 301 tests pass (39 RulesPage including 9 new message template tests)
+- 3 pre-existing frontend test failures (Firebase API key config) are unrelated
+- Migration 012 adds message templates to both fashion and non_fashion rules
+- WhatsApp link is a generic "check email" message and does not contain individual scoring messages (9.2 adjusted accordingly)
+
 ### File List
+
+**Created:**
+- `backend/app/db/migrations/versions/012_add_message_templates.py` — Migration adding message templates to scoring_rules JSONB
+
+**Modified:**
+- `backend/app/calculators/scoring.py` — Added `_format_message_template()` helper; refactored all 9 `_generate_*_messages()` functions + `_compute_g75()` to read templates from rules; updated `calculate_score()` to thread rules; added message templates to DEFAULT_FASHION_RULES and DEFAULT_NON_FASHION_RULES
+- `frontend/src/hooks/useRules.ts` — Added message template fields to RuleThreshold interface; added competition and closing_messages to ScoringRules
+- `frontend/src/components/rules/RulesCategoryCard.tsx` — Added message template display/edit with collapsible per-rule sections, textarea editing, placeholder hints
+- `frontend/src/pages/RulesPage.tsx` — Added handleMessageChange, handleClosingMessageChange, handleCompetitionMessageChange handlers; added Competition Messages and G75 Closing Messages card sections
+- `backend/tests/unit/calculators/test_scoring.py` — Added ~700 lines: TestFormatMessageTemplate (8 tests), message template tests for all 10 categories + G75 + end-to-end (34 tests total)
+- `backend/tests/integration/api/test_scoring.py` — Added test_score_with_custom_message_templates integration test
+- `frontend/src/components/rules/RulesPage.test.tsx` — Added Message templates describe block (9 tests)
+
+### Change Log
+
+| Commit | Description |
+|--------|-------------|
+| 1 | Add message template support to scoring rules JSONB (migration, helper, all generators refactored) |
+| 2 | Add unit tests for message template functionality (34 new tests) |
+| 3 | Add message template display and editing to Rules page UI |
+| 4 | Add integration and frontend tests for message templates |
