@@ -15,6 +15,7 @@ from app.modules.brands.router import router as brands_router
 from app.modules.events.router import router as events_router
 from app.modules.evaluations.router import router as evaluations_router
 from app.modules.sync.router import router as sync_router
+from app.modules.rules.router import router as rules_router
 from app.modules.upload.router import router as upload_router
 
 
@@ -41,6 +42,7 @@ app.include_router(auth_router)
 app.include_router(brands_router)
 app.include_router(evaluations_router)
 app.include_router(events_router)
+app.include_router(rules_router)
 app.include_router(sync_router)
 app.include_router(upload_router)
 
