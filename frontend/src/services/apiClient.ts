@@ -226,6 +226,11 @@ interface paths {
           limit?: number;
           sort_by?: 'created_at' | 'final_score';
           sort_order?: 'asc' | 'desc';
+          // Forward-compat params — accepted by API but not yet wired (Stories 4.2-4.4)
+          search?: string;
+          date_from?: string;
+          date_to?: string;
+          category?: 'fashion' | 'non_fashion';
         };
       };
       responses: {

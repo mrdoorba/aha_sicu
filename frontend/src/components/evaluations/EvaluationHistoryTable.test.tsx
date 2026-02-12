@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { BrowserRouter } from 'react-router-dom';
+import { MemoryRouter, useLocation } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EvaluationHistoryTable } from './EvaluationHistoryTable';
 
@@ -43,11 +43,23 @@ vi.mock('../../hooks/useEvaluationHistory', () => ({
   useEvaluationHistory: () => mockHookReturn,
 }));
 
-const renderTable = () => {
+/** Helper that renders current location for assertions. */
+function LocationDisplay() {
+  const location = useLocation();
+  return (
+    <div data-testid="location">
+      {location.pathname}
+      {location.search}
+    </div>
+  );
+}
+
+const renderTable = (initialEntries = ['/history']) => {
   return render(
-    <BrowserRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <EvaluationHistoryTable />
-    </BrowserRouter>,
+      <LocationDisplay />
+    </MemoryRouter>,
   );
 };
 
@@ -78,7 +90,8 @@ describe('EvaluationHistoryTable', () => {
     expect(screen.getByText('Non-Fashion')).toBeInTheDocument();
   });
 
-  it('pagination buttons navigate between pages', () => {
+  it('pagination buttons navigate between pages and update URL', async () => {
+    const user = userEvent.setup();
     mockHookReturn = {
       ...mockHookReturn,
       total: 40,
@@ -91,23 +104,38 @@ describe('EvaluationHistoryTable', () => {
     const nextButton = screen.getByRole('button', { name: /next/i });
     expect(prevButton).toBeDisabled();
     expect(nextButton).not.toBeDisabled();
+
+    // Click Next — URL should update with ?page=2
+    await user.click(nextButton);
+    expect(screen.getByTestId('location')).toHaveTextContent('?page=2');
   });
 
-  it('column header click triggers sort', async () => {
+  it('column header click triggers sort and updates URL', async () => {
     const user = userEvent.setup();
     renderTable();
 
     // Date and Score columns should be sortable (rendered as buttons)
-    const dateButton = screen.getByRole('button', { name: /date/i });
+    const dateButton = screen.getByRole('button', { name: /sort by date/i });
     expect(dateButton).toBeInTheDocument();
 
-    const scoreButton = screen.getByRole('button', { name: /score/i });
+    const scoreButton = screen.getByRole('button', { name: /sort by score/i });
     expect(scoreButton).toBeInTheDocument();
 
-    // Click score to sort
+    // Click score to sort — URL should update with sort_by param
     await user.click(scoreButton);
-    // The sort should have changed (component re-renders with new state)
-    expect(scoreButton).toBeInTheDocument();
+    expect(screen.getByTestId('location')).toHaveTextContent('sort_by=final_score');
+  });
+
+  it('row click navigates to evaluation detail', async () => {
+    const user = userEvent.setup();
+    renderTable();
+
+    // Click the first row (Nike Indonesia)
+    const row = screen.getByText('Nike Indonesia').closest('tr')!;
+    await user.click(row);
+
+    // Should navigate to /history/1
+    expect(screen.getByTestId('location')).toHaveTextContent('/history/1');
   });
 
   it('shows loading state during fetch', () => {
@@ -123,6 +151,17 @@ describe('EvaluationHistoryTable', () => {
     expect(table).toHaveAttribute('aria-busy', 'true');
     // Should not show data
     expect(screen.queryByText('Nike Indonesia')).not.toBeInTheDocument();
+  });
+
+  it('shows aria-busy during placeholder data transitions', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      isPlaceholderData: true,
+    };
+    renderTable();
+
+    const table = screen.getByRole('table', { name: /evaluation history/i });
+    expect(table).toHaveAttribute('aria-busy', 'true');
   });
 
   it('shows empty state when no evaluations', () => {

@@ -46,11 +46,18 @@ async def list_evaluations_endpoint(
     limit: int = Query(default=20, ge=1, le=100),
     sort_by: Literal["created_at", "final_score"] = Query(default="created_at"),
     sort_order: Literal["asc", "desc"] = Query(default="desc"),
+    # Forward-compat params — accepted but not yet implemented (Stories 4.2-4.4)
+    search: str | None = Query(default=None, max_length=200),
+    date_from: str | None = Query(default=None),
+    date_to: str | None = Query(default=None),
+    category: Literal["fashion", "non_fashion"] | None = Query(default=None),
     current_user: dict = Depends(get_current_user),
 ) -> EvaluationListResponse:
     """List all evaluations with pagination and sorting.
 
     Returns paginated evaluation history with brand names and evaluator emails.
+    Optional search/filter params (search, date_from, date_to, category) are
+    accepted but not yet implemented — they will be wired in Stories 4.2-4.4.
     """
     return await list_evaluations(
         page=page, limit=limit, sort_by=sort_by, sort_order=sort_order
