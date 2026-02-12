@@ -33,6 +33,7 @@ export interface ScoringResult {
   email_body: string;
   whatsapp_link: string;
   template: string;
+  rule_version: number;
 }
 
 interface ScoringRequest {

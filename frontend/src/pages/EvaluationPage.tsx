@@ -93,7 +93,7 @@ export const EvaluationPage = () => {
         score_breakdown: scoringResult.category_scores as unknown as Array<Record<string, unknown>>,
         calculator_results: calcResults,
         manual_inputs: manualData as unknown as Record<string, unknown>,
-        rule_version: 1,
+        rule_version: scoringResult.rule_version,
         email_output: scoringResult.email_body || null,
       },
       {
