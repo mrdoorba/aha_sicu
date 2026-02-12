@@ -389,4 +389,114 @@ describe('EvaluationHistoryTable', () => {
       expect(location).toContain('sort_by=final_score');
     });
   });
+
+  // --- Category filter tests (Story 4.4) ---
+
+  it('category dropdown renders with accessible label', () => {
+    renderTable();
+
+    const categorySelect = screen.getByRole('combobox', {
+      name: /filter by category/i,
+    });
+    expect(categorySelect).toBeInTheDocument();
+  });
+
+  it('selecting Fashion updates URL with category=fashion and resets page', async () => {
+    const user = userEvent.setup();
+    renderTable(['/history?page=3']);
+
+    // Open the category dropdown
+    const categorySelect = screen.getByRole('combobox', {
+      name: /filter by category/i,
+    });
+    await user.click(categorySelect);
+
+    // Select "Fashion"
+    const fashionOption = screen.getByRole('option', { name: /^Fashion$/i });
+    await user.click(fashionOption);
+
+    await waitFor(() => {
+      const location = screen.getByTestId('location').textContent ?? '';
+      expect(location).toContain('category=fashion');
+      expect(location).not.toContain('page=3');
+    });
+  });
+
+  it('selecting Non-Fashion updates URL with category=non_fashion', async () => {
+    const user = userEvent.setup();
+    renderTable();
+
+    const categorySelect = screen.getByRole('combobox', {
+      name: /filter by category/i,
+    });
+    await user.click(categorySelect);
+
+    const nonFashionOption = screen.getByRole('option', { name: /Non-Fashion/i });
+    await user.click(nonFashionOption);
+
+    await waitFor(() => {
+      const location = screen.getByTestId('location').textContent ?? '';
+      expect(location).toContain('category=non_fashion');
+    });
+  });
+
+  it('selecting All removes category from URL', async () => {
+    const user = userEvent.setup();
+    renderTable(['/history?category=fashion']);
+
+    const categorySelect = screen.getByRole('combobox', {
+      name: /filter by category/i,
+    });
+    await user.click(categorySelect);
+
+    const allOption = screen.getByRole('option', { name: /All Categories/i });
+    await user.click(allOption);
+
+    await waitFor(() => {
+      const location = screen.getByTestId('location').textContent ?? '';
+      expect(location).not.toContain('category=');
+    });
+  });
+
+  it('category filter combines with search in URL and hook call', () => {
+    renderTable(['/history?search=Nike&category=fashion']);
+
+    const location = screen.getByTestId('location').textContent ?? '';
+    expect(location).toContain('search=Nike');
+    expect(location).toContain('category=fashion');
+
+    // Verify hook receives both params
+    const lastCall = mockUseEvaluationHistory.mock.calls.at(-1);
+    expect(lastCall?.[4]).toBe('Nike');       // search
+    expect(lastCall?.[7]).toBe('fashion');    // category
+  });
+
+  it('category filter persists across sort and date changes', async () => {
+    const user = userEvent.setup();
+    renderTable(['/history?category=fashion&date_from=2026-01-01']);
+
+    // Click sort by score
+    const scoreButton = screen.getByRole('button', { name: /sort by score/i });
+    await user.click(scoreButton);
+
+    await waitFor(() => {
+      const location = screen.getByTestId('location').textContent ?? '';
+      expect(location).toContain('category=fashion');
+      expect(location).toContain('date_from=2026-01-01');
+      expect(location).toContain('sort_by=final_score');
+    });
+  });
+
+  it('empty state with category filter shows contextual message', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluations: [],
+      total: 0,
+    };
+    renderTable(['/history?category=fashion']);
+
+    expect(
+      screen.getByText('No evaluations found for the selected category'),
+    ).toBeInTheDocument();
+  });
 });
