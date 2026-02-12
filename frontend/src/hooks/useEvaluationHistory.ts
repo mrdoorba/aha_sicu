@@ -28,9 +28,11 @@ export function useEvaluationHistory(
   sortBy: SortBy = 'created_at',
   sortOrder: SortOrder = 'desc',
   search?: string,
+  dateFrom?: string,
+  dateTo?: string,
 ) {
   const query = useQuery<EvaluationListResponse>({
-    queryKey: ['evaluations', page, limit, sortBy, sortOrder, search],
+    queryKey: ['evaluations', page, limit, sortBy, sortOrder, search, dateFrom, dateTo],
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/evaluations', {
         params: {
@@ -40,6 +42,8 @@ export function useEvaluationHistory(
             sort_by: sortBy,
             sort_order: sortOrder,
             ...(search ? { search } : {}),
+            ...(dateFrom ? { date_from: dateFrom } : {}),
+            ...(dateTo ? { date_to: dateTo } : {}),
           },
         },
       });
