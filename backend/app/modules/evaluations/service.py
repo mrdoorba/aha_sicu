@@ -26,18 +26,25 @@ async def list_evaluations(
     limit: int,
     sort_by: Literal["created_at", "final_score"],
     sort_order: Literal["asc", "desc"],
+    search: str | None = None,
 ) -> EvaluationListResponse:
     """Return a paginated list of evaluations.
 
     Handles pagination math and delegates to DB queries.
+    When search is provided, filters by brand name (case-insensitive partial match).
     """
     offset = (page - 1) * limit
 
     async with db.connection() as conn:
         rows = await eval_queries.list_evaluations(
-            conn, limit=limit, offset=offset, sort_by=sort_by, sort_order=sort_order
+            conn,
+            limit=limit,
+            offset=offset,
+            sort_by=sort_by,
+            sort_order=sort_order,
+            search=search,
         )
-        total = await eval_queries.count_evaluations(conn)
+        total = await eval_queries.count_evaluations(conn, search=search)
 
     pages = math.ceil(total / limit) if total > 0 else 0
 
