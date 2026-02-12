@@ -1023,28 +1023,38 @@ def _generate_operational_messages(cat: CategoryScore, manual_data: dict, rules:
     """Fill G-column messages for operational rows 7-11."""
     ops_rules = _get_rule_category(rules, "operational")
 
-    _ROW_RULE_MAP = {
-        7: ("unfulfilled_order_rate", lambda v: f"{v:.1f}%"),
-        8: ("late_shipment_rate", lambda v: f"{v:.1f}%"),
-        9: ("preparation_time", lambda v: f"{v:.2f}"),
-        10: ("chat_response_rate", lambda v: f"{v:.0f}%"),
-        11: ("overall_rating", lambda v: f"{v:.2f}"),
+    # (rule_key, default_threshold, formatter, pass_default, fail_default)
+    _ROW_DEFAULTS = {
+        7: ("unfulfilled_order_rate", 1.0, lambda v: f"{v:.1f}%",
+            "✔️ Tingkat Pesanan Tidak Terselesaikan = {val_str} Sudah Baik",
+            "❌ Tingkat Pesanan Tidak Terselesaikan = {val_str} Kurang Baik, nilai disarankan: <{threshold}%"),
+        8: ("late_shipment_rate", 1.0, lambda v: f"{v:.1f}%",
+            "✔️ Tingkat Keterlambatan Pengiriman = {val_str} Sudah Baik",
+            "❌ Tingkat Keterlambatan Pengiriman = {val_str} Kurang Baik, nilai disarankan: <{threshold}%"),
+        9: ("preparation_time", 1.0, lambda v: f"{v:.2f}",
+            "✔️ Masa Pengemasan = {val_str} hari Sudah Baik",
+            "❌ Masa Pengemasan = {val_str} hari Kurang Baik, nilai disarankan: <{threshold} hari"),
+        10: ("chat_response_rate", 95.0, lambda v: f"{v:.0f}%",
+            "✔️ Persentase Chat Dibalas = {val_str} Sudah Baik",
+            "❌ Persentase Chat Dibalas = {val_str} Kurang Baik, nilai disarankan: >{threshold}%"),
+        11: ("overall_rating", 4.7, lambda v: f"{v:.2f}",
+            "✔️ Keseluruhan Penilaian = {val_str} Sudah Baik",
+            "❌ Keseluruhan Penilaian = {val_str} Kurang Baik, nilai disarankan: >{threshold}"),
     }
 
     for row in cat.rows:
-        if row.row not in _ROW_RULE_MAP:
+        if row.row not in _ROW_DEFAULTS:
             continue
-        rule_key, fmt_fn = _ROW_RULE_MAP[row.row]
+        rule_key, default_threshold, fmt_fn, pass_default, fail_default = _ROW_DEFAULTS[row.row]
         val_str = fmt_fn(row.value)
-        threshold = _get_rule_value(ops_rules, rule_key, "threshold", "")
+        threshold = _get_rule_value(ops_rules, rule_key, "threshold", default_threshold)
+        threshold_str = f"{threshold:g}" if isinstance(threshold, float) else str(threshold)
         if row.verdict == "✔️":
-            tmpl = _get_rule_value(ops_rules, rule_key, "message_pass",
-                f"✔️ {rule_key} = {{val_str}} Sudah Baik")
-            row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
+            tmpl = _get_rule_value(ops_rules, rule_key, "message_pass", pass_default)
+            row.message = _format_message_template(tmpl, val_str=val_str, threshold=threshold_str)
         else:
-            tmpl = _get_rule_value(ops_rules, rule_key, "message_fail",
-                f"❌ {rule_key} = {{val_str}} Kurang Baik")
-            row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
+            tmpl = _get_rule_value(ops_rules, rule_key, "message_fail", fail_default)
+            row.message = _format_message_template(tmpl, val_str=val_str, threshold=threshold_str)
 
 
 def _generate_business_messages(cat: CategoryScore, manual_data: dict, rules: dict | None = None) -> None:
@@ -1100,11 +1110,11 @@ def _generate_content_messages(cat: CategoryScore, rules: dict | None = None) ->
             if row.verdict == "✔️":
                 tmpl = _get_rule_value(content_rules, "quality_ratio", "message_pass",
                     "✔️ % Konten baik = {val_str} Sudah Baik")
-                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
             else:
                 tmpl = _get_rule_value(content_rules, "quality_ratio", "message_fail",
                     "❌ % Konten baik = {val_str} Kurang Baik, nilai disarankan: >{threshold}%")
-                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
 
 
 def _generate_visitors_messages(cat: CategoryScore, rules: dict | None = None) -> None:
@@ -1117,11 +1127,11 @@ def _generate_visitors_messages(cat: CategoryScore, rules: dict | None = None) -
             if row.verdict == "✔️":
                 tmpl = _get_rule_value(vis_rules, "returning_visitors_pct", "message_pass",
                     "✔️ % Pengunjung Lama = {val_str} Sudah Baik")
-                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
             else:
                 tmpl = _get_rule_value(vis_rules, "returning_visitors_pct", "message_fail",
                     "❌ % Pengunjung Lama = {val_str} Kurang Baik, nilai disarankan: >{threshold}%")
-                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
         elif row.row == 29:
             val_str = f"{int(row.value):,}".replace(",", ".")
             if row.verdict == "✔️":
@@ -1173,22 +1183,22 @@ def _generate_promo_messages(cat: CategoryScore, manual_data: dict, rules: dict 
             if row.verdict == "✔️":
                 tmpl = _get_rule_value(promo_rules, "usage_pct_threshold", "message_pass",
                     "✔️ Penggunaan alat promosi = {val_str} Sudah Baik")
-                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
             else:
                 tmpl = _get_rule_value(promo_rules, "usage_pct_threshold", "message_fail",
                     "❌ Penggunaan alat promosi = {val_str} Kurang Baik, nilai disarankan: >{threshold}%")
-                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
         elif row.row == 43:
             val_str = _fmt_pct_0dp(row.value) if isinstance(row.value, float) else str(row.value)
             threshold = _get_rule_value(promo_rules, "effectiveness_pct_threshold", "threshold", 90)
             if row.verdict == "✔️":
                 tmpl = _get_rule_value(promo_rules, "effectiveness_pct_threshold", "message_pass",
                     "✔️ Efektifitas alat promosi = {val_str} Sudah Baik")
-                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
             else:
                 tmpl = _get_rule_value(promo_rules, "effectiveness_pct_threshold", "message_fail",
                     "❌ Efektifitas alat promosi = {val_str} Kurang Baik, nilai disarankan: >{threshold}%")
-                row.message = _format_message_template(tmpl, val_str=val_str, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, val_str=val_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
 
 
 def _generate_products_messages(cat: CategoryScore, rules: dict | None = None) -> None:
@@ -1201,11 +1211,11 @@ def _generate_products_messages(cat: CategoryScore, rules: dict | None = None) -
             if row.verdict == "✔️":
                 tmpl = _get_rule_value(prod_rules, "product_count", "message_pass",
                     "✔️ Jumlah Produk = {value_int} OK")
-                row.message = _format_message_template(tmpl, value_int=value_int, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, value_int=value_int, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
             else:
                 tmpl = _get_rule_value(prod_rules, "product_count", "message_fail",
                     "❌ Jumlah Produk = {value_int} NOT OK, nilai disarankan: >={threshold}")
-                row.message = _format_message_template(tmpl, value_int=value_int, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, value_int=value_int, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
         elif row.row == 46:
             store_status = str(row.value)
             if row.verdict == "✔️":
@@ -1253,11 +1263,11 @@ def _generate_ads_messages(
             elif row.verdict == "✔️":
                 tmpl = _get_rule_value(ads_rules, "gmv_ratio_threshold", "message_pass",
                     "✔️ % GMV Iklan / GMV Toko = {pct_str} Sudah Baik")
-                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
             else:
                 tmpl = _get_rule_value(ads_rules, "gmv_ratio_threshold", "message_fail",
                     "❌ % GMV Iklan / GMV Toko = {pct_str} Terlalu bergantung terhadap Iklan, nilai disarankan: <{threshold}%")
-                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
         elif row.row == 52:
             d52 = d49 / d13 if d13 > 0 else 0.0
             pct_str = _fmt_pct_1dp(d52)
@@ -1299,12 +1309,12 @@ def _generate_campaign_messages(cat: CategoryScore, rules: dict | None = None) -
                 pct_str = _fmt_pct_1dp(row.value)
                 tmpl = _get_rule_value(camp_rules, "participation_pct_threshold", "message_pass",
                     "✔️ % Partisipasi Campaign = {pct_str} Sudah Baik")
-                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
             else:
                 pct_str = _fmt_pct_1dp(row.value) if isinstance(row.value, float) else str(row.value)
                 tmpl = _get_rule_value(camp_rules, "participation_pct_threshold", "message_fail",
                     "❌ % Partisipasi Campaign = {pct_str} Kurang Baik, nilai disarankan: >{threshold}%")
-                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=str(threshold))
+                row.message = _format_message_template(tmpl, pct_str=pct_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
 
 
 def _generate_competition_messages(cat: CategoryScore, manual_data: dict, rules: dict | None = None) -> None:
