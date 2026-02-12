@@ -3,7 +3,7 @@
 project_id          = "YOUR_GCP_PROJECT_ID"
 region              = "asia-southeast1"
 environment         = "dev"
-github_repo         = "AHA-Indonesia/store-icu"
+github_repo         = "HandersThe/aha_sicu"
 firebase_project_id = "YOUR_GCP_PROJECT_ID"
 
 # Cloud Run - dev sizing
