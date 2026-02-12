@@ -30,7 +30,7 @@ async def list_evaluations(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
-    category: str | None = None,
+    category: Literal["fashion", "non_fashion"] | None = None,
 ) -> EvaluationListResponse:
     """Return a paginated list of evaluations.
 

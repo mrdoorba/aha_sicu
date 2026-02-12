@@ -1,6 +1,6 @@
 # Story 4.4: Filter by Category
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -112,6 +112,7 @@ so that **I can review evaluations for a specific product type**.
   - [x] 7.4 Test: Selecting "All" removes `category` from URL
   - [x] 7.5 Test: Category filter combines with search (both params in URL and hook call)
   - [x] 7.6 Test: Category filter persists across sort and date changes
+  - [x] 7.7 Test: Empty state shows category-specific message when category filter returns no results
 
 ## Dev Notes
 
@@ -436,3 +437,10 @@ No debug issues encountered — clean implementation.
 ### Change Log
 
 - **2026-02-12:** Implemented Story 4.4 — Filter by Category. Added category filtering (fashion/non_fashion) across all backend layers (DB query, service, router) and frontend (hook, dropdown UI, URL params). 15 new tests added (8 backend + 7 frontend). All tests pass.
+- **2026-02-12:** Code review fixes applied (2 MEDIUM, 4 LOW):
+  - [M1] Changed `category` type from `str | None` to `Literal["fashion", "non_fashion"] | None` in service.py
+  - [M2] Changed `category` type from `str | None` to `Literal["fashion", "non_fashion"] | None` in DB query layer (_build_filter_clauses, list_evaluations, count_evaluations)
+  - [L1] Empty state message now shows "No evaluations found matching your filters" when multiple filters are active
+  - [L2] Added subtask 7.7 for empty state category test
+  - [L3] Accepted as-is — loading state mechanism (isPlaceholderData) is filter-agnostic, already tested generically
+  - [L4] Changed `if category:` to `if category is not None:` for explicit None check in DB query layer
