@@ -1,6 +1,7 @@
 """Evaluation service for managing evaluation inputs."""
 
 import math
+from datetime import date
 from typing import Any, Literal
 
 from app.calculators.scoring import calculate_score
@@ -27,11 +28,13 @@ async def list_evaluations(
     sort_by: Literal["created_at", "final_score"],
     sort_order: Literal["asc", "desc"],
     search: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
 ) -> EvaluationListResponse:
     """Return a paginated list of evaluations.
 
     Handles pagination math and delegates to DB queries.
-    When search is provided, filters by brand name (case-insensitive partial match).
+    Filters conditionally by brand name search and date range.
     """
     offset = (page - 1) * limit
 
@@ -43,8 +46,12 @@ async def list_evaluations(
             sort_by=sort_by,
             sort_order=sort_order,
             search=search,
+            date_from=date_from,
+            date_to=date_to,
         )
-        total = await eval_queries.count_evaluations(conn, search=search)
+        total = await eval_queries.count_evaluations(
+            conn, search=search, date_from=date_from, date_to=date_to
+        )
 
     pages = math.ceil(total / limit) if total > 0 else 0
 
