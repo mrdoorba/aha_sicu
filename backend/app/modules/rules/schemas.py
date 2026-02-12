@@ -3,7 +3,25 @@
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
+
+
+class ScoringRuleUpdateRequest(BaseModel):
+    """Request body for updating scoring rules."""
+
+    rules: dict[str, Any]
+
+    @field_validator("rules")
+    @classmethod
+    def rules_must_have_valid_structure(cls, v: dict[str, Any]) -> dict[str, Any]:
+        if not v:
+            raise ValueError("rules must be a non-empty dict")
+        for key, value in v.items():
+            if not isinstance(value, dict):
+                raise ValueError(
+                    f"rules['{key}'] must be a dict, got {type(value).__name__}"
+                )
+        return v
 
 
 class ScoringRuleResponse(BaseModel):

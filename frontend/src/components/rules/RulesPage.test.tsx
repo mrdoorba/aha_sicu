@@ -12,9 +12,17 @@ import type { ScoringRule } from '../../hooks/useRules';
 const mockUseRules = vi.fn();
 const mockUseAuth = vi.fn();
 const mockUseCurrentUser = vi.fn();
+const mockUpdateRuleMutateAsync = vi.fn();
 
 vi.mock('../../hooks/useRules', () => ({
   useRules: () => mockUseRules(),
+}));
+
+vi.mock('../../hooks/useUpdateRule', () => ({
+  useUpdateRule: () => ({
+    mutateAsync: mockUpdateRuleMutateAsync,
+    isPending: false,
+  }),
 }));
 
 vi.mock('../../context/AuthContext', () => ({
@@ -30,9 +38,17 @@ vi.mock('../../components/ui/sonner', () => ({
   Toaster: () => null,
 }));
 
-// Suppress toast.error in tests
+// Mock toast
+const mockToastSuccess = vi.fn();
 vi.mock('sonner', () => ({
-  toast: { error: vi.fn(), success: vi.fn() },
+  toast: { error: vi.fn(), success: (...args: unknown[]) => mockToastSuccess(...args) },
+}));
+
+// Mock firebase/auth for PasswordConfirmDialog
+const mockReauthenticateUser = vi.fn();
+vi.mock('../../firebase/auth', () => ({
+  reauthenticateUser: (...args: unknown[]) => mockReauthenticateUser(...args),
+  getCurrentUserToken: vi.fn().mockResolvedValue('mock-token'),
 }));
 
 const FASHION_RULES = {
@@ -316,6 +332,342 @@ describe('RulesPage', () => {
 
     await userEvent.click(retryButton);
     expect(mockRefetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Edit mode', () => {
+  it('shows Edit Rules button for leader', () => {
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    expect(screen.getByRole('button', { name: /edit rules/i })).toBeInTheDocument();
+  });
+
+  it('shows Edit Rules button for admin', () => {
+    mockUseCurrentUser.mockReturnValue({
+      profile: { id: '2', email: 'admin@example.com', role: 'admin', created_at: '', last_login: '' },
+      isLoading: false,
+      isError: false,
+    });
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    expect(screen.getByRole('button', { name: /edit rules/i })).toBeInTheDocument();
+  });
+
+  it('hides Edit Rules button for member', () => {
+    mockUseCurrentUser.mockReturnValue({
+      profile: { id: '3', email: 'member@example.com', role: 'member', created_at: '', last_login: '' },
+      isLoading: false,
+      isError: false,
+    });
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    expect(screen.queryByRole('button', { name: /edit rules/i })).not.toBeInTheDocument();
+  });
+
+  it('enters edit mode on Edit Rules click', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Edit mode shows Cancel and Save Changes buttons
+    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+    // Edit Rules button hidden in edit mode
+    expect(screen.queryByRole('button', { name: /edit rules/i })).not.toBeInTheDocument();
+    // Number inputs should appear
+    const inputs = screen.getAllByRole('spinbutton');
+    expect(inputs.length).toBeGreaterThan(0);
+  });
+
+  it('Save Changes disabled when no changes made', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    expect(saveBtn).toBeDisabled();
+  });
+
+  it('Save Changes enabled after modifying value', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Modify a threshold — find the first number input and change it
+    const firstInput = screen.getAllByRole('spinbutton')[0];
+    await user.clear(firstInput);
+    await user.type(firstInput, '99');
+
+    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    expect(saveBtn).toBeEnabled();
+  });
+
+  it('opens password dialog on Save Changes', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Modify a value first
+    const firstInput = screen.getAllByRole('spinbutton')[0];
+    await user.clear(firstInput);
+    await user.type(firstInput, '99');
+
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+
+    // Password dialog should appear
+    expect(screen.getByText('Confirm Password')).toBeInTheDocument();
+    expect(screen.getByLabelText('Password')).toBeInTheDocument();
+  });
+
+  it('successful password confirmation triggers mutation and exits edit mode', async () => {
+    const user = userEvent.setup();
+    mockReauthenticateUser.mockResolvedValue(undefined);
+    mockUpdateRuleMutateAsync.mockResolvedValue({});
+
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Modify a value
+    const firstInput = screen.getAllByRole('spinbutton')[0];
+    await user.clear(firstInput);
+    await user.type(firstInput, '99');
+
+    // Click Save Changes
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+
+    // Enter password in dialog
+    const passwordInput = screen.getByLabelText('Password');
+    await user.type(passwordInput, 'mypassword');
+
+    // Click Confirm
+    const confirmBtn = screen.getByRole('button', { name: /^confirm$/i });
+    await user.click(confirmBtn);
+
+    // Verify mutation was called
+    expect(mockUpdateRuleMutateAsync).toHaveBeenCalled();
+    // Verify toast
+    expect(mockToastSuccess).toHaveBeenCalledWith('Rules updated successfully');
+  });
+
+  it('incorrect password shows error in dialog', async () => {
+    const user = userEvent.setup();
+    mockReauthenticateUser.mockRejectedValue(new Error('auth/wrong-password'));
+
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Modify a value
+    const firstInput = screen.getAllByRole('spinbutton')[0];
+    await user.clear(firstInput);
+    await user.type(firstInput, '99');
+
+    // Click Save Changes
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+
+    // Enter wrong password
+    const passwordInput = screen.getByLabelText('Password');
+    await user.type(passwordInput, 'wrongpassword');
+
+    // Click Confirm
+    const confirmBtn = screen.getByRole('button', { name: /^confirm$/i });
+    await user.click(confirmBtn);
+
+    // Error shown
+    expect(await screen.findByText('Incorrect password')).toBeInTheDocument();
+    // Mutation NOT called
+    expect(mockUpdateRuleMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('Cancel exits edit mode without saving', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Modify a value
+    const firstInput = screen.getAllByRole('spinbutton')[0];
+    await user.clear(firstInput);
+    await user.type(firstInput, '99');
+
+    // Click Cancel
+    await user.click(screen.getByRole('button', { name: /cancel/i }));
+
+    // Back to view mode — Edit Rules button visible again
+    expect(screen.getByRole('button', { name: /edit rules/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /save changes/i })).not.toBeInTheDocument();
+    // No API call made
+    expect(mockUpdateRuleMutateAsync).not.toHaveBeenCalled();
+  });
+
+  it('can switch tabs while in edit mode', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Verify edit mode is active
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+
+    // Switch to Non-Fashion tab
+    const nonFashionTab = screen.getByRole('tab', { name: /non-fashion/i });
+    await user.click(nonFashionTab);
+
+    // Should still be in edit mode with inputs
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+    const inputs = screen.getAllByRole('spinbutton');
+    expect(inputs.length).toBeGreaterThan(0);
+  });
+
+  it('Save Changes disabled when field is cleared (validation error)', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Clear a value to trigger validation error
+    const firstInput = screen.getAllByRole('spinbutton')[0];
+    await user.clear(firstInput);
+
+    // Save Changes should be disabled
+    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    expect(saveBtn).toBeDisabled();
+
+    // Should show "Required" error
+    expect(screen.getByText('Required')).toBeInTheDocument();
+  });
+
+  it('shows success toast after save', async () => {
+    const user = userEvent.setup();
+    mockReauthenticateUser.mockResolvedValue(undefined);
+    mockUpdateRuleMutateAsync.mockResolvedValue({});
+
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    const firstInput = screen.getAllByRole('spinbutton')[0];
+    await user.clear(firstInput);
+    await user.type(firstInput, '99');
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+    const passwordInput = screen.getByLabelText('Password');
+    await user.type(passwordInput, 'mypassword');
+    await user.click(screen.getByRole('button', { name: /^confirm$/i }));
+
+    expect(mockToastSuccess).toHaveBeenCalledWith('Rules updated successfully');
   });
 });
 
