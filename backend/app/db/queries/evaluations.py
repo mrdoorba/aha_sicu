@@ -5,6 +5,8 @@ from typing import Any, Literal
 
 from asyncpg import Connection
 
+from app.db.queries.brands import _escape_like
+
 
 async def get_evaluation_inputs(
     conn: Connection,
@@ -103,28 +105,55 @@ async def list_evaluations(
     offset: int,
     sort_by: Literal["created_at", "final_score"],
     sort_order: Literal["asc", "desc"],
+    search: str | None = None,
 ) -> list[dict]:
     """List evaluations with JOIN on brand_vp_data and users.
 
     Returns lightweight rows (no heavy JSONB columns).
     sort_by is validated via Literal type at router level — safe for f-string.
+    When search is provided, filters by brand_name ILIKE with escaped special chars.
     """
+    if search:
+        escaped = _escape_like(search)
+        where_clause = "WHERE b.brand_name ILIKE '%' || $1 || '%' ESCAPE '\\'"
+        params: list[Any] = [escaped, limit, offset]
+        limit_param, offset_param = "$2", "$3"
+    else:
+        where_clause = ""
+        params = [limit, offset]
+        limit_param, offset_param = "$1", "$2"
+
     query = f"""
         SELECT e.id, b.brand_name, e.final_score, e.verdict, e.template,
                u.email AS evaluator_email, e.created_at
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
         JOIN users u ON e.user_id = u.id
+        {where_clause}
         ORDER BY e.{sort_by} {sort_order}
-        LIMIT $1 OFFSET $2
+        LIMIT {limit_param} OFFSET {offset_param}
     """
-    rows = await conn.fetch(query, limit, offset)
+    rows = await conn.fetch(query, *params)
     return [dict(row) for row in rows]
 
 
-async def count_evaluations(conn: Connection) -> int:
-    """Return total number of evaluations."""
-    row = await conn.fetchval("SELECT COUNT(*) FROM evaluations")
+async def count_evaluations(
+    conn: Connection, *, search: str | None = None
+) -> int:
+    """Return total number of evaluations, optionally filtered by brand name search."""
+    if search:
+        escaped = _escape_like(search)
+        row = await conn.fetchval(
+            """
+            SELECT COUNT(*)
+            FROM evaluations e
+            JOIN brand_vp_data b ON e.brand_id = b.id
+            WHERE b.brand_name ILIKE '%' || $1 || '%' ESCAPE '\\'
+            """,
+            escaped,
+        )
+    else:
+        row = await conn.fetchval("SELECT COUNT(*) FROM evaluations")
     return row or 0
 
 
