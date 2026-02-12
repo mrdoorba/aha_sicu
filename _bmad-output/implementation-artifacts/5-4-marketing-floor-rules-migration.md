@@ -1,6 +1,6 @@
 # Story 5.4: Marketing Floor Rules Migration
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -59,46 +59,46 @@ so that I can adjust marketing percentage recommendations without requiring code
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create migration 011 to add marketing category to rules JSONB (AC: #1, #2)
-  - [ ] 1.1 Add `marketing` category to Fashion template defaults dict
-  - [ ] 1.2 Add `marketing` category to Non-Fashion template defaults dict (note: `fashion_adjustment: 0.0`, `floor: 0.12`)
-  - [ ] 1.3 Write migration that updates existing rows' JSONB to include marketing category
-  - [ ] 1.4 Increment version for both templates
-  - [ ] 1.5 Write downgrade that removes marketing category from JSONB
+- [x] Task 1: Create migration 011 to add marketing category to rules JSONB (AC: #1, #2)
+  - [x] 1.1 Add `marketing` category to Fashion template defaults dict
+  - [x] 1.2 Add `marketing` category to Non-Fashion template defaults dict (note: `fashion_adjustment: 0.0`, `floor: 0.12`)
+  - [x] 1.3 Write migration that updates existing rows' JSONB to include marketing category
+  - [x] 1.4 Increment version for both templates
+  - [x] 1.5 Write downgrade that removes marketing category from JSONB
 
-- [ ] Task 2: Refactor `_compute_g72()` to use rules (AC: #3)
-  - [ ] 2.1 Add `marketing_rules = _get_rule_category(rules, "marketing")` at function start
-  - [ ] 2.2 Replace `0.15` / `0.12` floor with `_get_rule_value(marketing_rules, "floor", "threshold", 0.15 if is_fashion else 0.12)` — **BUT** note: floor differs by template, so the correct approach is to use template-specific defaults from the rules row, with a single `floor` key per template
-  - [ ] 2.3 Replace `0.03` with `_get_rule_value(marketing_rules, "base_subtraction", "value", 0.03)`
-  - [ ] 2.4 Replace `0.20` with `_get_rule_value(marketing_rules, "upper_limit_base", "value", 0.20)`
-  - [ ] 2.5 Replace `0.05` with `_get_rule_value(marketing_rules, "fashion_adjustment", "value", 0.05 if is_fashion else 0.0)` — same note: use template-specific value
-  - [ ] 2.6 Replace `0.10` minimum with `_get_rule_value(marketing_rules, "minimum_threshold", "value", 0.10)`
-  - [ ] 2.7 Verify the final `max(max(min_val, minimum), floor)` logic is preserved
+- [x] Task 2: Refactor `_compute_g72()` to use rules (AC: #3)
+  - [x] 2.1 Add `marketing_rules = _get_rule_category(rules, "marketing")` at function start
+  - [x] 2.2 Replace `0.15` / `0.12` floor with `_get_rule_value(marketing_rules, "floor", "threshold", 0.15 if is_fashion else 0.12)` — **BUT** note: floor differs by template, so the correct approach is to use template-specific defaults from the rules row, with a single `floor` key per template
+  - [x] 2.3 Replace `0.03` with `_get_rule_value(marketing_rules, "base_subtraction", "value", 0.03)`
+  - [x] 2.4 Replace `0.20` with `_get_rule_value(marketing_rules, "upper_limit_base", "value", 0.20)`
+  - [x] 2.5 Replace `0.05` with `_get_rule_value(marketing_rules, "fashion_adjustment", "value", 0.05 if is_fashion else 0.0)` — same note: use template-specific value
+  - [x] 2.6 Replace `0.10` minimum with `_get_rule_value(marketing_rules, "minimum_threshold", "value", 0.10)`
+  - [x] 2.7 Verify the final `max(max(min_val, minimum), floor)` logic is preserved
 
-- [ ] Task 3: Refactor `_compute_g73()` to use rules (AC: #4)
-  - [ ] 3.1 Read `display_max` and `display_min` from marketing rules with fallback defaults
-  - [ ] 3.2 Replace hardcoded 0.25 and 0.10 clamping values
+- [x] Task 3: Refactor `_compute_g73()` to use rules (AC: #4)
+  - [x] 3.1 Read `display_max` and `display_min` from marketing rules with fallback defaults
+  - [x] 3.2 Replace hardcoded 0.25 and 0.10 clamping values
 
-- [ ] Task 4: Update frontend Rules page to display marketing category (AC: #5)
-  - [ ] 4.1 Add `"marketing"` to `CATEGORY_ORDER` array in `RulesPage.tsx`
-  - [ ] 4.2 Add display labels for marketing rule keys in `RulesCategoryCard.tsx` (`CATEGORY_LABELS` and `RULE_LABELS`)
-  - [ ] 4.3 Verify `RulesCategoryCard` correctly renders marketing fields (threshold/value types)
-  - [ ] 4.4 Add `"floor"` to `DIFFERING_KEYS` Set if Fashion/Non-Fashion values differ
+- [x] Task 4: Update frontend Rules page to display marketing category (AC: #5)
+  - [x] 4.1 Add `"marketing"` to `CATEGORY_ORDER` array in `RulesPage.tsx`
+  - [x] 4.2 Add display labels for marketing rule keys in `RulesCategoryCard.tsx` (`CATEGORY_LABELS` and `RULE_LABELS`)
+  - [x] 4.3 Verify `RulesCategoryCard` correctly renders marketing fields (threshold/value types)
+  - [x] 4.4 Add `"floor"` to `DIFFERING_KEYS` Set if Fashion/Non-Fashion values differ
 
-- [ ] Task 5: Add backend unit tests for marketing rules (AC: #6, #7)
-  - [ ] 5.1 Test `_compute_g72()` with custom marketing rules (all constants overridden)
-  - [ ] 5.2 Test `_compute_g72()` with `rules=None` (fallback path)
-  - [ ] 5.3 Test `_compute_g72()` with rules missing marketing category
-  - [ ] 5.4 Test `_compute_g73()` with custom display bounds
-  - [ ] 5.5 Test `_compute_g73()` with fallback defaults
+- [x] Task 5: Add backend unit tests for marketing rules (AC: #6, #7)
+  - [x] 5.1 Test `_compute_g72()` with custom marketing rules (all constants overridden)
+  - [x] 5.2 Test `_compute_g72()` with `rules=None` (fallback path)
+  - [x] 5.3 Test `_compute_g72()` with rules missing marketing category
+  - [x] 5.4 Test `_compute_g73()` with custom display bounds
+  - [x] 5.5 Test `_compute_g73()` with fallback defaults
 
-- [ ] Task 6: Add integration tests (AC: #7)
-  - [ ] 6.1 Test full `calculate_score()` with custom marketing rules
-  - [ ] 6.2 Verify marketing changes propagate to G72, G73, and email body
+- [x] Task 6: Add integration tests (AC: #7)
+  - [x] 6.1 Test full `calculate_score()` with custom marketing rules
+  - [x] 6.2 Verify marketing changes propagate to G72, G73, and email body
 
-- [ ] Task 7: Add frontend test for marketing category display (AC: #5)
-  - [ ] 7.1 Test RulesPage renders marketing category card
-  - [ ] 7.2 Test marketing fields are editable in edit mode
+- [x] Task 7: Add frontend test for marketing category display (AC: #5)
+  - [x] 7.1 Test RulesPage renders marketing category card
+  - [x] 7.2 Test marketing fields are editable in edit mode
 
 ## Dev Notes
 
@@ -185,10 +185,37 @@ floor = _get_rule_value(mkt_rules, "floor", "value", 0.15)  # Fashion default
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6
 
 ### Debug Log References
 
+No blocking issues encountered during implementation.
+
 ### Completion Notes List
 
+- Migration 011 created using `jsonb_set()` to add marketing category to existing scoring_rules rows, with version increment. Downgrade removes category using `rules - 'marketing'`.
+- `DEFAULT_FASHION_RULES` and `DEFAULT_NON_FASHION_RULES` in scoring.py updated with marketing category for fallback path.
+- `_compute_g72()` refactored: all 5 hardcoded constants (floor, base_subtraction, upper_limit_base, fashion_adjustment, minimum_threshold) now read from `rules["marketing"]` via `_get_rule_value()` with is_fashion-aware defaults as fallback.
+- `_compute_g73()` refactored: `display_max` and `display_min` now read from `rules["marketing"]` with fallback defaults (0.25, 0.10).
+- Frontend: Added `"marketing"` to CATEGORY_ORDER, added CATEGORY_LABELS/RULE_LABELS entries, added `value` to EDITABLE_FIELDS, added `marketing.floor` and `marketing.fashion_adjustment` to DIFFERING_KEYS.
+- Frontend rendering: Updated `formatThreshold`, `formatPoints`, `renderEditableThreshold`, `renderEditablePoints` to handle value-only fields used by marketing category.
+- `RuleThreshold` interface and `ScoringRules` interface updated to include `value` field and `marketing` category.
+- 15 new backend unit tests (10 for G72, 5 for G73) covering custom rules, None fallback, missing category, all constants overridden.
+- 2 new integration tests verifying full `calculate_score()` with custom marketing rules and email body propagation.
+- 3 new frontend tests verifying marketing category renders, fields are editable, and differs badges appear.
+- All 587 backend tests pass. All 291 frontend tests pass. Zero regressions.
+
 ### File List
+
+- backend/app/db/migrations/versions/011_add_marketing_rules.py (new)
+- backend/app/calculators/scoring.py (modified)
+- backend/tests/unit/calculators/test_scoring.py (modified)
+- backend/tests/integration/api/test_scoring.py (modified)
+- frontend/src/pages/RulesPage.tsx (modified)
+- frontend/src/components/rules/RulesCategoryCard.tsx (modified)
+- frontend/src/hooks/useRules.ts (modified)
+- frontend/src/components/rules/RulesPage.test.tsx (modified)
+
+### Change Log
+
+- 2026-02-12: Implemented Story 5.4 — Marketing floor rules migration. Added migration 011 with marketing category to scoring_rules JSONB. Refactored _compute_g72() and _compute_g73() to read marketing constants from rules with fallback defaults. Updated frontend Rules page to display and edit marketing category. Added 20 new tests (15 unit, 2 integration, 3 frontend).

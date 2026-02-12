@@ -27,6 +27,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   campaign: 'Campaign',
   stock: 'Stock',
   discount: 'Discount',
+  marketing: 'Marketing',
 };
 
 const RULE_LABELS: Record<string, string> = {
@@ -53,6 +54,13 @@ const RULE_LABELS: Record<string, string> = {
   mid_threshold: 'Mid Stock',
   low_penalty: 'Low Stock',
   fake_discount_flag: 'Fake Discount',
+  floor: 'Floor',
+  base_subtraction: 'Base Subtraction',
+  upper_limit_base: 'Upper Limit Base',
+  fashion_adjustment: 'Fashion Adjustment',
+  minimum_threshold: 'Minimum Threshold',
+  display_max: 'Display Max',
+  display_min: 'Display Min',
 };
 
 const COMPARISON_SYMBOLS: Record<string, string> = {
@@ -77,9 +85,14 @@ const EDITABLE_FIELDS = new Set([
   'star_plus',
   'star',
   'regular',
+  'value',
 ]);
 
 function formatThreshold(rule: RuleThreshold): string {
+  // Value-only fields (marketing category)
+  if (rule.value !== undefined) {
+    return `${rule.value}`;
+  }
   // Store status — display status type labels instead of "-"
   if (rule.mall !== undefined) {
     return 'By store type';
@@ -99,6 +112,8 @@ function formatThreshold(rule: RuleThreshold): string {
 
 function formatPoints(rule: RuleThreshold): string {
   if (rule.info_only) return 'Info only';
+  // Value-only fields (marketing) — no points column
+  if (rule.value !== undefined) return '-';
   if (rule.points !== undefined) return `${rule.points} pts`;
   if (rule.opportunity_points !== undefined) return `${rule.opportunity_points} opp pts`;
   if (rule.points_no_flag !== undefined) return `${rule.points_no_flag} / ${rule.points_flag} pts`;
@@ -172,6 +187,18 @@ function renderEditableThreshold(
   onRuleChange: (category: string, key: string, field: string, value: number | null) => void,
   validationErrors?: Record<string, string>,
 ) {
+  // Value-only fields (marketing category)
+  if (rule.value !== undefined) {
+    return (
+      <EditableNumber
+        value={rule.value}
+        onChange={(v) => onRuleChange(category, key, 'value', v)}
+        label={`${key} value`}
+        error={validationErrors?.[`${category}.${key}.value`]}
+      />
+    );
+  }
+
   const comparison = rule.comparison ? COMPARISON_SYMBOLS[rule.comparison] || rule.comparison : '';
 
   // Store status — editable per store type
@@ -228,6 +255,9 @@ function renderEditablePoints(
   validationErrors?: Record<string, string>,
 ) {
   if (rule.info_only) return <Badge variant="outline" className="text-muted-foreground">Info only</Badge>;
+
+  // Value-only fields (marketing) — no points to edit
+  if (rule.value !== undefined) return <span>-</span>;
 
   if (rule.points !== undefined) {
     return (

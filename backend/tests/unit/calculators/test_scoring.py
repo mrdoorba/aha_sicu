@@ -1316,3 +1316,147 @@ class TestEndToEndModifiedRules:
         assert result_modified.total_score != result_default.total_score
         assert result_modified.total_score == result_default.total_score + 10
         assert result_modified.rule_version == 2
+
+
+# ---------------------------------------------------------------------------
+# Marketing rules tests (Story 5-4)
+# ---------------------------------------------------------------------------
+
+
+class TestG72WithRules:
+    """Test _compute_g72 reads marketing constants from rules."""
+
+    D73 = "% Diskon TOP SKU: 100.0%\nRange: 10.0% ~ 15.0%\nVoucher 1.0%\nPaket Diskon 0.5%"
+
+    def _g68(self, d73=None, d52=0.03):
+        return _compute_g68(d73 or self.D73, d52)
+
+    def test_custom_floor_fashion(self):
+        """Custom floor overrides default 0.15 for fashion."""
+        rules = {"marketing": {"floor": {"value": 0.18}}}
+        result = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=True, rules=rules)
+        assert result >= 0.18
+
+    def test_custom_floor_non_fashion(self):
+        """Custom floor overrides default 0.12 for non-fashion."""
+        rules = {"marketing": {"floor": {"value": 0.14}}}
+        result = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=False, rules=rules)
+        assert result >= 0.14
+
+    def test_custom_base_subtraction(self):
+        """Custom base_subtraction changes calculation."""
+        rules_default = {"marketing": {
+            "floor": {"value": 0.01},
+            "base_subtraction": {"value": 0.03},
+            "upper_limit_base": {"value": 0.50},
+            "fashion_adjustment": {"value": 0.0},
+            "minimum_threshold": {"value": 0.01},
+        }}
+        rules_custom = {**rules_default, "marketing": {
+            **rules_default["marketing"],
+            "base_subtraction": {"value": 0.10},
+        }}
+        result_default = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=False, rules=rules_default)
+        result_custom = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=False, rules=rules_custom)
+        # Higher subtraction → lower base → potentially lower result
+        assert result_custom <= result_default
+
+    def test_custom_upper_limit_base(self):
+        """Custom upper_limit_base changes upper limit."""
+        rules = {"marketing": {
+            "floor": {"value": 0.01},
+            "upper_limit_base": {"value": 0.30},
+            "fashion_adjustment": {"value": 0.0},
+            "base_subtraction": {"value": 0.03},
+            "minimum_threshold": {"value": 0.01},
+        }}
+        result = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=False, rules=rules)
+        # With higher upper_limit_base (0.30 vs 0.20), should still compute
+        assert isinstance(result, float)
+
+    def test_custom_fashion_adjustment(self):
+        """Custom fashion_adjustment changes upper limit for fashion."""
+        rules = {"marketing": {
+            "floor": {"value": 0.01},
+            "upper_limit_base": {"value": 0.20},
+            "fashion_adjustment": {"value": 0.10},
+            "base_subtraction": {"value": 0.03},
+            "minimum_threshold": {"value": 0.01},
+        }}
+        result = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=True, rules=rules)
+        assert isinstance(result, float)
+
+    def test_custom_minimum_threshold(self):
+        """Custom minimum_threshold changes minimum bound."""
+        rules = {"marketing": {
+            "floor": {"value": 0.01},
+            "minimum_threshold": {"value": 0.15},
+            "upper_limit_base": {"value": 0.20},
+            "fashion_adjustment": {"value": 0.0},
+            "base_subtraction": {"value": 0.03},
+        }}
+        result = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=False, rules=rules)
+        assert result >= 0.15
+
+    def test_rules_none_fallback(self):
+        """rules=None falls back to hardcoded defaults."""
+        result = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=True, rules=None)
+        assert result >= 0.15  # Fashion floor default
+
+    def test_rules_missing_marketing_category(self):
+        """Rules dict without marketing key falls back to defaults."""
+        rules = {"operational": {}}
+        result = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=True, rules=rules)
+        assert result >= 0.15  # Fallback to default fashion floor
+
+    def test_empty_d73_returns_floor_from_rules(self):
+        """Empty d73 returns floor from rules when provided."""
+        rules = {"marketing": {"floor": {"value": 0.20}}}
+        result = _compute_g72("", 0.0, "", is_fashion=True, rules=rules)
+        assert result == 0.20
+
+    def test_all_constants_overridden(self):
+        """All 5 marketing constants overridden at once."""
+        rules = {"marketing": {
+            "floor": {"value": 0.18},
+            "base_subtraction": {"value": 0.05},
+            "upper_limit_base": {"value": 0.25},
+            "fashion_adjustment": {"value": 0.08},
+            "minimum_threshold": {"value": 0.12},
+        }}
+        result = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=True, rules=rules)
+        assert result >= 0.18  # Must be at least the floor
+
+
+class TestG73WithRules:
+    """Test _compute_g73 reads display bounds from rules."""
+
+    def test_custom_display_max(self):
+        """Custom display_max clamps high values."""
+        rules = {"marketing": {"display_max": {"value": 0.20}, "display_min": {"value": 0.10}}}
+        result = _compute_g73("✔️", 0.30, 200_000_000, is_fashion=True, rules=rules)
+        assert "20%" in result  # Clamped to 20% not 30%
+
+    def test_custom_display_min(self):
+        """Custom display_min clamps low values."""
+        rules = {"marketing": {"display_max": {"value": 0.25}, "display_min": {"value": 0.15}}}
+        result = _compute_g73("✔️", 0.05, 200_000_000, is_fashion=True, rules=rules)
+        assert "15%" in result  # Clamped to 15% not 5%
+
+    def test_rules_none_fallback(self):
+        """rules=None uses default display bounds (0.10 - 0.25)."""
+        result = _compute_g73("✔️", 0.15, 200_000_000, is_fashion=True, rules=None)
+        assert "15%" in result
+        assert "💡" in result
+
+    def test_rules_missing_marketing_category(self):
+        """Rules without marketing key falls back to defaults."""
+        rules = {"operational": {}}
+        result = _compute_g73("✔️", 0.15, 200_000_000, is_fashion=True, rules=rules)
+        assert "15%" in result
+
+    def test_suppressed_for_rejected_verdicts_with_rules(self):
+        """Verdict suppression still works with custom rules."""
+        rules = {"marketing": {"display_max": {"value": 0.30}, "display_min": {"value": 0.05}}}
+        assert _compute_g73("❌", 0.15, 200_000_000, is_fashion=True, rules=rules) == ""
+        assert _compute_g73("⭕️", 0.15, 200_000_000, is_fashion=True, rules=rules) == ""

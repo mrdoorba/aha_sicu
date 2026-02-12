@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
-from app.calculators.scoring import DEFAULT_FASHION_RULES
+from app.calculators.scoring import DEFAULT_FASHION_RULES, calculate_score
 
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
 
@@ -471,3 +471,120 @@ def test_score_rules_not_found_falls_back(client):
         data = response.json()
         assert data["rule_version"] == 1  # fallback default
         assert data["total_score"] > 0
+
+
+# ---------------------------------------------------------------------------
+# Integration: marketing rules propagation (Story 5-4)
+# ---------------------------------------------------------------------------
+
+
+def test_calculate_score_with_custom_marketing_rules():
+    """Full calculate_score with custom marketing rules changes G72 and G73."""
+    calc_results = {
+        "discount": {
+            "details": {"fake_discount_flag": False},
+            "output_text": "% Diskon TOP SKU: 25.0%\nRange: 15.0% ~ 35.0%\nVoucher 3.0%\nPaket Diskon 1.0%",
+        },
+        "top_sku": {
+            "details": {
+                "average_stock": 30,
+                "output_1": [
+                    {"rata2_harga_jual": 180_000},
+                    {"rata2_harga_jual": 140_000},
+                ],
+            },
+            "output_text": "",
+        },
+        "ads_keyword": {"details": {}, "output_text": ""},
+    }
+
+    # Default marketing rules
+    result_default = calculate_score(
+        manual_data=SAMPLE_MANUAL_DATA,
+        calculator_results=calc_results,
+        template="fashion",
+        verdict="✔️",
+        store_name="Test Store",
+        period="Jan 2026",
+        brand_name="TestBrand",
+        rules=DEFAULT_FASHION_RULES,
+        rule_version=1,
+    )
+
+    # Custom marketing rules with higher floor
+    custom_rules = {
+        **DEFAULT_FASHION_RULES,
+        "marketing": {
+            "floor": {"value": 0.20},
+            "base_subtraction": {"value": 0.03},
+            "upper_limit_base": {"value": 0.20},
+            "fashion_adjustment": {"value": 0.05},
+            "minimum_threshold": {"value": 0.10},
+            "display_max": {"value": 0.30},
+            "display_min": {"value": 0.05},
+        },
+    }
+    result_custom = calculate_score(
+        manual_data=SAMPLE_MANUAL_DATA,
+        calculator_results=calc_results,
+        template="fashion",
+        verdict="✔️",
+        store_name="Test Store",
+        period="Jan 2026",
+        brand_name="TestBrand",
+        rules=custom_rules,
+        rule_version=2,
+    )
+
+    # Marketing percentage should reflect higher floor
+    assert result_custom.marketing_percentage == "20%"
+    # Budget text should contain "20%"
+    assert "20%" in result_custom.marketing_budget
+
+
+def test_marketing_changes_in_email_body():
+    """Custom marketing rules propagate to email body."""
+    calc_results = {
+        "discount": {
+            "details": {"fake_discount_flag": False},
+            "output_text": "% Diskon TOP SKU: 25.0%\nRange: 15.0% ~ 35.0%\nVoucher 3.0%\nPaket Diskon 1.0%",
+        },
+        "top_sku": {
+            "details": {
+                "average_stock": 30,
+                "output_1": [{"rata2_harga_jual": 180_000}],
+            },
+            "output_text": "",
+        },
+        "ads_keyword": {"details": {}, "output_text": ""},
+    }
+
+    custom_rules = {
+        **DEFAULT_FASHION_RULES,
+        "marketing": {
+            "floor": {"value": 0.22},
+            "base_subtraction": {"value": 0.03},
+            "upper_limit_base": {"value": 0.30},
+            "fashion_adjustment": {"value": 0.05},
+            "minimum_threshold": {"value": 0.10},
+            "display_max": {"value": 0.30},
+            "display_min": {"value": 0.10},
+        },
+    }
+
+    result = calculate_score(
+        manual_data=SAMPLE_MANUAL_DATA,
+        calculator_results=calc_results,
+        template="fashion",
+        verdict="✔️",
+        store_name="Test Store",
+        period="Jan 2026",
+        brand_name="TestBrand",
+        rules=custom_rules,
+        rule_version=2,
+    )
+
+    # G73 marketing budget is included in email body
+    assert result.marketing_budget != ""
+    assert "22%" in result.marketing_budget
+    assert "22%" in result.email_body
