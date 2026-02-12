@@ -7,6 +7,8 @@ import pytest
 
 from app.calculators.scoring import (
     CategoryScore,
+    DEFAULT_FASHION_RULES,
+    DEFAULT_NON_FASHION_RULES,
     RowScore,
     ScoringResult,
     _compute_g68,
@@ -904,3 +906,340 @@ class TestCalculateScore:
         biz_cat = result.category_scores[1]
         conv_row = next(r for r in biz_cat.rows if r.row == 20)
         assert conv_row.benchmark == ">3%"
+
+
+# ---------------------------------------------------------------------------
+# Task 4: Verify default rules produce identical results (AC #6)
+# ---------------------------------------------------------------------------
+
+
+class TestDefaultRulesIdentical:
+    """Default rules from DB must produce identical scores to rules=None fallback."""
+
+    def test_calculate_score_with_default_rules(self, full_manual_data, full_calculator_results):
+        result_none = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+        )
+        result_rules = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=DEFAULT_FASHION_RULES,
+        )
+        assert result_none.total_score == result_rules.total_score
+        for cat_none, cat_rules in zip(result_none.category_scores, result_rules.category_scores):
+            assert cat_none.score == cat_rules.score
+
+    def test_calculate_score_rules_none_fallback(self, full_manual_data, full_calculator_results):
+        result = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=None,
+        )
+        assert isinstance(result, ScoringResult)
+        assert result.total_score > 0
+
+    def test_non_fashion_default_rules_identical(self, full_manual_data, full_calculator_results):
+        result_none = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="non_fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+        )
+        result_rules = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="non_fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=DEFAULT_NON_FASHION_RULES,
+        )
+        assert result_none.total_score == result_rules.total_score
+
+    def test_operational_with_default_rules(self):
+        data = {
+            "operational": {
+                "unfulfilledOrderRate": 0.5,
+                "lateShipmentRate": 0.3,
+                "preparationTime": 0.8,
+                "chatResponseRate": 98.0,
+                "overallRating": 4.9,
+            }
+        }
+        cat_none = _score_operational(data)
+        cat_rules = _score_operational(data, DEFAULT_FASHION_RULES)
+        assert cat_none.score == cat_rules.score
+        for r_none, r_rules in zip(cat_none.rows, cat_rules.rows):
+            assert r_none.score == r_rules.score
+            assert r_none.verdict == r_rules.verdict
+
+
+# ---------------------------------------------------------------------------
+# Task 5: New tests with modified rules (AC #7)
+# ---------------------------------------------------------------------------
+
+
+class TestCustomRulesOperational:
+    """Custom operational thresholds change scores."""
+
+    def test_custom_unfulfilled_threshold(self):
+        data = {"operational": {"unfulfilledOrderRate": 1.5}}
+        # Default: threshold=1.0 → 1.5 > 1.0 → fail
+        cat_default = _score_operational(data)
+        assert cat_default.rows[0].verdict == "❌"
+
+        # Custom: threshold=2.0 → 1.5 <= 2.0 → pass
+        custom_rules = {**DEFAULT_FASHION_RULES, "operational": {
+            **DEFAULT_FASHION_RULES["operational"],
+            "unfulfilled_order_rate": {"threshold": 2.0, "points": 6, "comparison": "lte"},
+        }}
+        cat_custom = _score_operational(data, custom_rules)
+        assert cat_custom.rows[0].verdict == "✔️"
+        assert cat_custom.rows[0].score == 6.0  # Custom points
+
+    def test_custom_late_shipment_points(self):
+        data = {"operational": {"lateShipmentRate": 0.5}}
+        custom_rules = {**DEFAULT_FASHION_RULES, "operational": {
+            **DEFAULT_FASHION_RULES["operational"],
+            "late_shipment_rate": {"threshold": 1.0, "points": 8, "comparison": "lte"},
+        }}
+        cat = _score_operational(data, custom_rules)
+        assert cat.rows[1].score == 8.0  # Custom points instead of default 3
+
+
+class TestCustomRulesAds:
+    """Custom ROI threshold changes verdict."""
+
+    def test_custom_roi_threshold(self):
+        data = {
+            "ads": {"adSales": 30_000_000, "adCost": 5_000_000},  # ROI = 6
+            "business": {"salesMonth0": 200_000_000},
+        }
+        # Default fashion: threshold=8 → ROI 6 < 8 → fail
+        cat_default = _score_ads(data, "fashion")
+        h50 = next(r for r in cat_default.rows if r.row == 50)
+        assert h50.verdict == "❌"
+        assert h50.score == 5.0  # opportunity
+
+        # Custom: threshold=5 → ROI 6 >= 5 → pass
+        custom_rules = {**DEFAULT_FASHION_RULES, "ads": {
+            **DEFAULT_FASHION_RULES["ads"],
+            "roi_threshold": {"threshold": 5.0, "opportunity_points": 5, "comparison": "gt"},
+        }}
+        cat_custom = _score_ads(data, "fashion", custom_rules)
+        h50 = next(r for r in cat_custom.rows if r.row == 50)
+        assert h50.verdict == "✔️"
+        assert h50.score == 0.0
+
+
+class TestCustomRulesStock:
+    """Custom stock thresholds change scoring tiers."""
+
+    def test_custom_stock_thresholds(self):
+        results = {"top_sku": {"details": {"average_stock": 20}}}
+        # Default: >=24 → 10, >=12 → 5 → 20 falls in mid tier = 5
+        cat_default = _score_stock(results)
+        assert cat_default.score == 5.0
+
+        # Custom: high=30, mid=15 → 20 >= 15 → mid = 5 (same tier but different thresholds)
+        custom_rules = {**DEFAULT_FASHION_RULES, "stock": {
+            "high_threshold": {"threshold": 30, "points": 15, "comparison": "gte"},
+            "mid_threshold": {"threshold": 15, "points": 7, "comparison": "gte"},
+            "low_penalty": {"threshold": 15, "points": -10, "comparison": "lt"},
+        }}
+        cat_custom = _score_stock(results, custom_rules)
+        assert cat_custom.score == 7.0  # custom mid points
+
+    def test_stock_reclassified_by_threshold(self):
+        results = {"top_sku": {"details": {"average_stock": 24}}}
+        # Default: 24 >= 24 → high tier = 10
+        cat_default = _score_stock(results)
+        assert cat_default.score == 10.0
+
+        # Custom: high=30 → 24 < 30, mid=20 → 24 >= 20 → mid = 5
+        custom_rules = {**DEFAULT_FASHION_RULES, "stock": {
+            "high_threshold": {"threshold": 30, "points": 10, "comparison": "gte"},
+            "mid_threshold": {"threshold": 20, "points": 5, "comparison": "gte"},
+            "low_penalty": {"threshold": 20, "points": -5, "comparison": "lt"},
+        }}
+        cat_custom = _score_stock(results, custom_rules)
+        assert cat_custom.score == 5.0  # Reclassified from high to mid
+
+
+class TestCustomRulesDiscount:
+    """Custom discount points change category score."""
+
+    def test_custom_no_flag_points(self):
+        results = {"discount": {"details": {"fake_discount_flag": False}, "output_text": "test"}}
+        # Default: no flag = 5 points
+        cat_default = _score_discount_row(results)
+        assert cat_default.score == 5.0
+
+        # Custom: no flag = 10 points
+        custom_rules = {**DEFAULT_FASHION_RULES, "discount": {
+            "fake_discount_flag": {"points_no_flag": 10, "points_flag": -5},
+        }}
+        cat_custom = _score_discount_row(results, custom_rules)
+        assert cat_custom.score == 10.0
+
+    def test_custom_flag_penalty(self):
+        results = {"discount": {"details": {"fake_discount_flag": True}, "output_text": "test"}}
+        # Default: flag = 0 points
+        cat_default = _score_discount_row(results)
+        assert cat_default.score == 0.0
+
+        # Custom: flag = -5 penalty
+        custom_rules = {**DEFAULT_FASHION_RULES, "discount": {
+            "fake_discount_flag": {"points_no_flag": 10, "points_flag": -5},
+        }}
+        cat_custom = _score_discount_row(results, custom_rules)
+        assert cat_custom.score == -5.0
+
+
+class TestCustomRulesVisitors:
+    """Custom visitor thresholds change scores."""
+
+    def test_custom_returning_visitors_threshold(self):
+        data = {"visitors": {
+            "totalVisitors": 100_000,
+            "returningVisitors": 22_000,  # 22% - below default 23%
+            "totalFollowers": 60_000,
+        }}
+        # Default: 22% < 23% → fail
+        cat_default = _score_visitors(data)
+        h28 = next(r for r in cat_default.rows if r.row == 28)
+        assert h28.score == 0.0
+
+        # Custom: threshold=20% → 22% > 20% → pass with 5 points
+        custom_rules = {**DEFAULT_FASHION_RULES, "visitors": {
+            "returning_visitors_pct": {"threshold": 20.0, "points": 5, "comparison": "gte"},
+            "followers": {"threshold": 50000, "points": 2, "comparison": "gte"},
+        }}
+        cat_custom = _score_visitors(data, custom_rules)
+        h28 = next(r for r in cat_custom.rows if r.row == 28)
+        assert h28.score == 5.0
+
+
+class TestCustomRulesPromo:
+    """Custom promo thresholds change opportunity points."""
+
+    def test_custom_usage_opportunity_points(self):
+        data = {
+            "promoTools": {
+                "promoToko": 0, "paketDiskon": 0, "komboHemat": 0,
+                "flashSale": 0, "voucher": 0, "shopeeLive": 0,
+                "gameToko": 0, "brandMembership": 0, "gratisOngkir": 0,
+                "chatBroadcast": 0, "programAfiliasi": 0,
+            },
+            "business": {"salesMonth0": 200_000_000},
+        }
+        # Default: usage fails → opportunity_points = 5
+        cat_default = _score_promo_tools(data)
+        h42 = next(r for r in cat_default.rows if r.row == 42)
+        assert h42.score == 5.0
+
+        # Custom: opportunity_points = 8
+        custom_rules = {**DEFAULT_FASHION_RULES, "promo_tools": {
+            "usage_pct_threshold": {"threshold": 80.0, "opportunity_points": 8},
+            "effectiveness_pct_threshold": {"threshold": 90.0, "opportunity_points": 10},
+        }}
+        cat_custom = _score_promo_tools(data, custom_rules)
+        h42 = next(r for r in cat_custom.rows if r.row == 42)
+        assert h42.score == 8.0
+
+
+class TestCustomRulesCampaign:
+    """Custom campaign threshold changes score."""
+
+    def test_custom_participation_threshold(self):
+        data = {"campaign": {"nominatedSessions": 17, "availableSessions": 20}}
+        # 17/20 = 85% — below default 90% → fail → opportunity 10
+        cat_default = _score_campaign(data)
+        assert cat_default.score == 10.0
+
+        # Custom: threshold=80% → 85% > 80% → pass → 0
+        custom_rules = {**DEFAULT_FASHION_RULES, "campaign": {
+            "participation_pct_threshold": {"threshold": 80.0, "opportunity_points": 10},
+        }}
+        cat_custom = _score_campaign(data, custom_rules)
+        assert cat_custom.score == 0.0
+
+
+class TestCustomRulesProducts:
+    """Custom product count and status points."""
+
+    def test_custom_product_threshold(self):
+        data = {"products": {"productCount": 30, "storeStatus": "Shopee Mall"}}
+        # Default: 30 < 35 → fail
+        cat_default = _score_products(data)
+        h45 = next(r for r in cat_default.rows if r.row == 45)
+        assert h45.score == 0.0
+
+        # Custom: threshold=25 → 30 >= 25 → pass with 8 points
+        custom_rules = {**DEFAULT_FASHION_RULES, "products_status": {
+            "product_count": {"threshold": 25, "points": 8, "comparison": "gte"},
+            "store_status_points": {"mall": 10, "star_plus": 5, "star": 0, "regular": 0},
+        }}
+        cat_custom = _score_products(data, custom_rules)
+        h45 = next(r for r in cat_custom.rows if r.row == 45)
+        assert h45.score == 8.0
+
+
+class TestScoringResultRuleVersion:
+    """ScoringResult dataclass has rule_version field."""
+
+    def test_rule_version_default(self):
+        result = calculate_score(
+            manual_data={}, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+        )
+        assert result.rule_version == 1
+
+    def test_rule_version_custom(self):
+        result = calculate_score(
+            manual_data={}, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=DEFAULT_FASHION_RULES, rule_version=3,
+        )
+        assert result.rule_version == 3
+
+
+class TestEndToEndModifiedRules:
+    """Modified rules produce different total_score."""
+
+    def test_modified_rules_different_total(self, full_manual_data, full_calculator_results):
+        result_default = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+        )
+        # Modify: double operational points, change stock thresholds
+        modified_rules = {
+            **DEFAULT_FASHION_RULES,
+            "operational": {
+                "unfulfilled_order_rate": {"threshold": 1.0, "points": 8, "comparison": "lte"},
+                "late_shipment_rate": {"threshold": 1.0, "points": 6, "comparison": "lte"},
+                "preparation_time": {"threshold": 1.0, "points": 6, "comparison": "lte"},
+                "chat_response_rate": {"threshold": 95.0, "comparison": "gte", "info_only": True},
+                "overall_rating": {"threshold": 4.7, "comparison": "gte", "info_only": True},
+            },
+        }
+        result_modified = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=modified_rules, rule_version=2,
+        )
+        # Operational with default: 4+3+3=10. Modified: 8+6+6=20. Diff=10
+        assert result_modified.total_score != result_default.total_score
+        assert result_modified.total_score == result_default.total_score + 10
+        assert result_modified.rule_version == 2
