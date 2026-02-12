@@ -97,6 +97,36 @@ export const RulesPage = () => {
     });
   };
 
+  const handleMessageChange = (category: string, key: string, field: string, value: string) => {
+    setEditedRules((prev) => {
+      const updated = JSON.parse(JSON.stringify(prev));
+      if (updated[activeTemplate]?.[category]?.[key]) {
+        updated[activeTemplate][category][key][field] = value;
+      }
+      return updated;
+    });
+  };
+
+  const handleClosingMessageChange = (tmpl: string, verdictKey: string, value: string) => {
+    setEditedRules((prev) => {
+      const updated = JSON.parse(JSON.stringify(prev));
+      if (updated[tmpl]?.interpretation?.closing_messages) {
+        updated[tmpl].interpretation.closing_messages[verdictKey] = value;
+      }
+      return updated;
+    });
+  };
+
+  const handleCompetitionMessageChange = (tmpl: string, field: string, value: string) => {
+    setEditedRules((prev) => {
+      const updated = JSON.parse(JSON.stringify(prev));
+      if (updated[tmpl]?.competition) {
+        updated[tmpl].competition[field] = value;
+      }
+      return updated;
+    });
+  };
+
   const hasValidationErrors = Object.keys(validationErrors).length > 0;
 
   const handleInterpretationChange = (tmpl: string, rangeIdx: number, field: 'min' | 'max', value: number | null) => {
@@ -231,10 +261,41 @@ export const RulesPage = () => {
                       differingKeys={DIFFERING_KEYS}
                       isEditing={isEditing}
                       onRuleChange={handleRuleChange}
+                      onMessageChange={handleMessageChange}
                       validationErrors={templateErrors}
                     />
                   );
                 })}
+
+                {/* Competition Messages */}
+                {rulesData.competition && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Competition Messages</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {Object.entries(rulesData.competition).map(([field, value]) => (
+                        <div key={field} className="flex flex-col gap-0.5">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            {field === 'message_pass' ? 'Competitive' : field === 'message_fail' ? 'Not competitive' : field}
+                          </span>
+                          {isEditing ? (
+                            <textarea
+                              value={value ?? ''}
+                              onChange={(e) => handleCompetitionMessageChange(template, field, e.target.value)}
+                              className="w-full min-h-[2.5rem] rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
+                              aria-label={`Competition ${field}`}
+                              rows={1}
+                              maxLength={500}
+                            />
+                          ) : (
+                            <span className="text-sm text-muted-foreground">{value}</span>
+                          )}
+                        </div>
+                      ))}
+                    </CardContent>
+                  </Card>
+                )}
 
                 {/* Score Interpretation */}
                 {rulesData.interpretation?.ranges && (
@@ -305,6 +366,36 @@ export const RulesPage = () => {
                           ))}
                         </TableBody>
                       </Table>
+                    </CardContent>
+                  </Card>
+                )}
+
+                {/* G75 Closing Messages */}
+                {rulesData.interpretation?.closing_messages && (
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-base">Closing Messages (G75)</CardTitle>
+                    </CardHeader>
+                    <CardContent className="space-y-3">
+                      {Object.entries(rulesData.interpretation.closing_messages).map(([verdict, message]) => (
+                        <div key={verdict} className="flex flex-col gap-0.5">
+                          <span className="text-xs font-medium text-muted-foreground">
+                            Verdict: {verdict || '(empty / good performance)'}
+                          </span>
+                          {isEditing ? (
+                            <textarea
+                              value={message ?? ''}
+                              onChange={(e) => handleClosingMessageChange(template, verdict, e.target.value)}
+                              className="w-full min-h-[2.5rem] rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
+                              aria-label={`Closing message for ${verdict || 'good performance'}`}
+                              rows={2}
+                              maxLength={500}
+                            />
+                          ) : (
+                            <span className="text-sm text-muted-foreground">{message || '(empty)'}</span>
+                          )}
+                        </div>
+                      ))}
                     </CardContent>
                   </Card>
                 )}
