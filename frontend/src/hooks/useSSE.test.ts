@@ -47,6 +47,12 @@ class MockEventSource {
 
 vi.stubGlobal('EventSource', MockEventSource);
 
+// Mock sonner toast
+const mockToastInfo = vi.fn();
+vi.mock('sonner', () => ({
+  toast: { info: (...args: unknown[]) => mockToastInfo(...args) },
+}));
+
 // Import after mocks are set up
 import { useSSE } from './useSSE';
 
@@ -223,5 +229,142 @@ describe('useSSE', () => {
     unmount();
 
     expect(es.readyState).toBe(2); // CLOSED
+  });
+
+  it('registers new_evaluation event listener', async () => {
+    renderHook(() => useSSE(), { wrapper: createWrapper() });
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    const es =
+      MockEventSource.instances[MockEventSource.instances.length - 1];
+
+    expect(es.listeners['new_evaluation']).toBeDefined();
+    expect(es.listeners['new_evaluation'].length).toBe(1);
+  });
+
+  it('invalidates evaluations queries on new_evaluation event', async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+
+    const wrapper = ({ children }: { children: React.ReactNode }) =>
+      React.createElement(
+        QueryClientProvider,
+        { client: queryClient },
+        children,
+      );
+
+    renderHook(() => useSSE(), { wrapper });
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    const es =
+      MockEventSource.instances[MockEventSource.instances.length - 1];
+
+    await act(async () => {
+      es.onopen?.();
+      es.simulateEvent(
+        'new_evaluation',
+        JSON.stringify({
+          evaluation_id: 123,
+          brand_name: 'Nike',
+          score: 78.0,
+          evaluator: 'rina@company.com',
+          created_at: '2026-02-04T10:30:00Z',
+        }),
+      );
+    });
+
+    expect(invalidateSpy).toHaveBeenCalledWith({
+      queryKey: ['evaluations'],
+    });
+  });
+
+  it('shows toast for other user new_evaluation event', async () => {
+    renderHook(() => useSSE('me@company.com'), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    const es =
+      MockEventSource.instances[MockEventSource.instances.length - 1];
+
+    await act(async () => {
+      es.onopen?.();
+      es.simulateEvent(
+        'new_evaluation',
+        JSON.stringify({
+          evaluation_id: 123,
+          brand_name: 'Nike',
+          score: 78.0,
+          evaluator: 'rina@company.com',
+          created_at: '2026-02-04T10:30:00Z',
+        }),
+      );
+    });
+
+    expect(mockToastInfo).toHaveBeenCalledWith(
+      'New evaluation: Nike (78) by rina',
+      { duration: 5000 },
+    );
+  });
+
+  it('does NOT show toast for self new_evaluation event', async () => {
+    renderHook(() => useSSE('rina@company.com'), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    const es =
+      MockEventSource.instances[MockEventSource.instances.length - 1];
+
+    await act(async () => {
+      es.onopen?.();
+      es.simulateEvent(
+        'new_evaluation',
+        JSON.stringify({
+          evaluation_id: 123,
+          brand_name: 'Nike',
+          score: 78.0,
+          evaluator: 'rina@company.com',
+          created_at: '2026-02-04T10:30:00Z',
+        }),
+      );
+    });
+
+    expect(mockToastInfo).not.toHaveBeenCalled();
+  });
+
+  it('handles malformed new_evaluation event data gracefully', async () => {
+    renderHook(() => useSSE('me@company.com'), {
+      wrapper: createWrapper(),
+    });
+
+    await act(async () => {
+      await vi.runAllTimersAsync();
+    });
+
+    const es =
+      MockEventSource.instances[MockEventSource.instances.length - 1];
+
+    // Should not throw — malformed data is silently ignored
+    await act(async () => {
+      es.onopen?.();
+      es.simulateEvent('new_evaluation', 'not-valid-json');
+    });
+
+    expect(mockToastInfo).not.toHaveBeenCalled();
   });
 });
