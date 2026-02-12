@@ -1,6 +1,6 @@
 # Story 5.5: Configurable G-Column Message Templates
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -336,6 +336,24 @@ Claude Opus 4.6 (claude-opus-4-6)
 - Migration 012 adds message templates to both fashion and non_fashion rules
 - WhatsApp link is a generic "check email" message and does not contain individual scoring messages (9.2 adjusted accordingly)
 
+### Code Review (Adversarial)
+
+**Reviewer:** Claude Opus 4.6 — Adversarial Senior Dev Review
+**Findings:** 8 issues (1 HIGH, 3 MEDIUM, 4 LOW)
+
+| # | Severity | Issue | Resolution |
+|---|----------|-------|------------|
+| 1 | HIGH | `_format_message_template` crashes on malformed templates (unmatched braces → `ValueError`) | Fixed: added `try/except (ValueError, KeyError)` returning raw template on error |
+| 2 | MEDIUM | `_SafeDict` inner class + import recreated per call | Fixed: moved to module-level `dict` subclass |
+| 3 | MEDIUM | Triple source of truth for message defaults (migration, DEFAULT_*_RULES, inline fallbacks) | Fixed: added cross-referencing comments in all three locations |
+| 4 | MEDIUM | No length validation on message template text inputs | Fixed: added `maxLength={500}` to all 3 textarea locations |
+| 5 | LOW | Deep clone via `JSON.parse(JSON.stringify())` on every keystroke | Deferred: acceptable for this data size |
+| 6 | LOW | Flat competition structure inconsistent with category nesting | Deferred: matches original design spec |
+| 7 | LOW | Limited frontend test coverage for edge cases | Deferred: core paths covered |
+| 8 | LOW | Commit message quality inconsistent | N/A: retrospective observation |
+
+**Post-fix test results:** 161 unit tests pass (3 new malformed-template tests added)
+
 ### File List
 
 **Created:**
@@ -358,3 +376,4 @@ Claude Opus 4.6 (claude-opus-4-6)
 | 2 | Add unit tests for message template functionality (34 new tests) |
 | 3 | Add message template display and editing to Rules page UI |
 | 4 | Add integration and frontend tests for message templates |
+| 5 | Code review fixes: malformed template resilience, maxLength validation, source-of-truth comments |

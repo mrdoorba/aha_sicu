@@ -88,7 +88,7 @@ development_status:
   5-3-apply-configured-rules-in-scoring: done
   epic-5-retrospective: done
   5-4-marketing-floor-rules-migration: done
-  5-5-configurable-g-column-message-templates: review
+  5-5-configurable-g-column-message-templates: done
 
   # Epic 6: Production Deployment & Launch
   epic-6: backlog

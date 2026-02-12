@@ -170,21 +170,37 @@ def _get_rule_value(category_rules: dict, key: str, field: str, default: Any) ->
     return category_rules.get(key, {}).get(field, default)
 
 
+class _SafeDict(dict):
+    """Dict subclass that returns the placeholder markup for missing keys."""
+
+    def __missing__(self, key: str) -> str:
+        return f"{{{key}}}"
+
+
 def _format_message_template(template: str, **kwargs: Any) -> str:
-    """Format a message template safely — missing placeholders stay as-is."""
-    from collections import defaultdict
+    """Format a message template safely — missing placeholders stay as-is.
 
-    class _SafeDict(defaultdict):
-        def __missing__(self, key: str) -> str:
-            return f"{{{key}}}"
-
-    return template.format_map(_SafeDict(None, **kwargs))
+    Resilient to both missing keys AND malformed format strings (unmatched
+    braces from user-edited templates).
+    """
+    try:
+        return template.format_map(_SafeDict(**kwargs))
+    except (ValueError, KeyError):
+        return template
 
 
 # Default rules matching migration 010 seed data — used when rules=None.
 # IMPORTANT: These are module-level constants — treat as immutable.
 # DEFAULT_NON_FASHION_RULES shares nested dicts via shallow spread;
 # never mutate nested values in either dict.
+#
+# NOTE (source of truth): Message templates exist in THREE places:
+#   1. Migration 012 SHARED_MESSAGES — initial DB seed values
+#   2. DEFAULT_*_RULES below — runtime fallback when rules=None
+#   3. Inline defaults in _generate_*_messages() — per-field fallbacks
+# If changing default message text, update ALL THREE locations.
+# The test_default_rules_produce_identical_messages test catches drift
+# between (2) and (3).
 DEFAULT_FASHION_RULES: dict = {
     "operational": {
         "unfulfilled_order_rate": {
@@ -1020,7 +1036,10 @@ def _score_discount_row(calculator_results: dict, rules: dict | None = None) -> 
 # ---------------------------------------------------------------------------
 
 def _generate_operational_messages(cat: CategoryScore, manual_data: dict, rules: dict | None = None) -> None:
-    """Fill G-column messages for operational rows 7-11."""
+    """Fill G-column messages for operational rows 7-11.
+
+    Inline fallback defaults must match DEFAULT_FASHION_RULES message templates.
+    """
     ops_rules = _get_rule_category(rules, "operational")
 
     # (rule_key, default_threshold, formatter, pass_default, fail_default)
