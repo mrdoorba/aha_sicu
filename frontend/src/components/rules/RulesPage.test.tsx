@@ -184,6 +184,7 @@ const renderHeader = (
 
 beforeEach(() => {
   vi.clearAllMocks();
+  queryClient.clear();
   // Default: authenticated leader
   mockUseAuth.mockReturnValue({
     user: { email: 'leader@example.com' },

@@ -7,9 +7,14 @@ import { useEffect, useRef } from 'react';
 interface RoleProtectedRouteProps {
   allowedRoles: string[];
   children: React.ReactNode;
+  accessDeniedMessage?: string;
 }
 
-export const RoleProtectedRoute = ({ allowedRoles, children }: RoleProtectedRouteProps) => {
+export const RoleProtectedRoute = ({
+  allowedRoles,
+  children,
+  accessDeniedMessage = 'Access denied — scoring rules require leader or admin role',
+}: RoleProtectedRouteProps) => {
   const { user, loading: authLoading } = useAuth();
   const { profile, isLoading: profileLoading } = useCurrentUser();
   const location = useLocation();
@@ -19,7 +24,7 @@ export const RoleProtectedRoute = ({ allowedRoles, children }: RoleProtectedRout
 
   useEffect(() => {
     if (shouldRedirect && !toastShown.current) {
-      toast.error('Access denied — scoring rules require leader or admin role');
+      toast.error(accessDeniedMessage);
       toastShown.current = true;
     }
   }, [shouldRedirect]);
