@@ -1,6 +1,6 @@
 # Story 4.1: Evaluation History List
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -524,11 +524,13 @@ Claude Opus 4.6
 - Tasks 5-6 (Frontend): Created `useEvaluationHistory` hook with TanStack Query v5 `placeholderData: keepPreviousData` for smooth page transitions. Built `EvaluationHistoryTable` with `@tanstack/react-table` (`manualPagination`/`manualSorting`), sortable Date/Score columns with arrow indicators, row click navigation to `/history/{id}`, loading skeletons with `aria-busy`, empty state, error state with retry.
 - Task 7 (Navigation): Added `/history` route with `ProtectedRoute` wrapper and "History" link in Header nav alongside Dashboard and Brands with active state highlighting.
 - Task 8 (Frontend Tests): 6 EvaluationHistoryTable tests (data rendering, pagination, sort, loading, empty, error+retry) + 1 Header test for History link. All pass.
-- Full regression: 481 backend tests pass (0 failures), 224 frontend tests pass (2 pre-existing Firebase API key failures in App.test.tsx and EvaluationForms.test.tsx — unrelated to this story).
+- Full regression: 481 backend tests pass (0 failures), 226 frontend tests pass (2 pre-existing Firebase API key failures in App.test.tsx and EvaluationForms.test.tsx — unrelated to this story).
+- Code review (2026-02-12): 7 issues found and fixed — (H1) URL query params not synced to useSearchParams, (H2) missing row click navigation test, (M1) weak pagination test, (M2) aria-busy not set during isPlaceholderData, (M3) sort buttons missing aria-label, (L1) pagination hidden on single page, (L2) no forward-compat optional query params. All fixed and tests pass.
 
 ### Change Log
 
 - 2026-02-12: Implemented evaluation history list — backend endpoint `GET /api/v1/evaluations` with pagination/sorting, frontend history page with table, route, and navigation
+- 2026-02-12: Code review fixes — 7 issues (2H, 3M, 2L): URL query param sync, row click test, pagination test, aria-busy for placeholder data, sort button aria-labels, single-page total count, forward-compat API params
 
 ### File List
 
