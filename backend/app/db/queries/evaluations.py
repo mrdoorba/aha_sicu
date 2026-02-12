@@ -119,13 +119,13 @@ def _build_filter_clauses(
         param_idx += 1
 
     if date_from:
-        conditions.append(f"e.created_at >= ${param_idx}::date")
-        params.append(str(date_from))
+        conditions.append(f"e.created_at >= ${param_idx}")
+        params.append(date_from)
         param_idx += 1
 
     if date_to:
-        conditions.append(f"e.created_at < (${param_idx}::date + interval '1 day')")
-        params.append(str(date_to))
+        conditions.append(f"e.created_at < (${param_idx} + interval '1 day')")
+        params.append(date_to)
         param_idx += 1
 
     where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
