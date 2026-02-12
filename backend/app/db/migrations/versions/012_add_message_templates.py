@@ -21,6 +21,10 @@ depends_on = None
 
 # ---------------------------------------------------------------------------
 # Message template patches — keyed by category, then rule key, then new fields
+#
+# NOTE (source of truth): These messages are also defined as defaults in:
+#   - backend/app/calculators/scoring.py DEFAULT_FASHION_RULES / DEFAULT_NON_FASHION_RULES
+#   - Inline fallback defaults in each _generate_*_messages() function
 # ---------------------------------------------------------------------------
 
 # Shared across both Fashion and Non-Fashion (identical messages)

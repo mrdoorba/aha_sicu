@@ -286,6 +286,7 @@ export const RulesPage = () => {
                               className="w-full min-h-[2.5rem] rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
                               aria-label={`Competition ${field}`}
                               rows={1}
+                              maxLength={500}
                             />
                           ) : (
                             <span className="text-sm text-muted-foreground">{value}</span>
@@ -388,6 +389,7 @@ export const RulesPage = () => {
                               className="w-full min-h-[2.5rem] rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
                               aria-label={`Closing message for ${verdict || 'good performance'}`}
                               rows={2}
+                              maxLength={500}
                             />
                           ) : (
                             <span className="text-sm text-muted-foreground">{message || '(empty)'}</span>

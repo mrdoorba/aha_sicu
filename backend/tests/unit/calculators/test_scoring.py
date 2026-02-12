@@ -1620,6 +1620,18 @@ class TestFormatMessageTemplate:
         result = _format_message_template("✔️ {val_str} Sudah Baik", val_str="0.5%")
         assert result == "✔️ 0.5% Sudah Baik"
 
+    def test_unmatched_opening_brace(self):
+        result = _format_message_template("Value is {broken", val_str="0.5%")
+        assert result == "Value is {broken"
+
+    def test_unmatched_closing_brace(self):
+        result = _format_message_template("50% discount}", val_str="0.5%")
+        assert result == "50% discount}"
+
+    def test_mixed_valid_and_malformed(self):
+        result = _format_message_template("{val_str} and {broken", val_str="0.5%")
+        assert result == "{val_str} and {broken"  # returns raw on error
+
 
 # ---------------------------------------------------------------------------
 # Message template tests — each generator with custom templates (Story 5-5, Task 8)
