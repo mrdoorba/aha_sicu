@@ -6,7 +6,11 @@ terraform {
   required_providers {
     google = {
       source  = "hashicorp/google"
-      version = "~> 5.0"
+      version = "~> 7.0"
+    }
+    google-beta = {
+      source  = "hashicorp/google-beta"
+      version = "~> 7.0"
     }
   }
 }
@@ -14,6 +18,51 @@ terraform {
 provider "google" {
   project = var.project_id
   region  = var.region
+}
+
+provider "google-beta" {
+  project = var.project_id
+  region  = var.region
+}
+
+# =============================================================================
+# GCP API Enablement
+# =============================================================================
+
+resource "google_project_service" "run_api" {
+  project            = var.project_id
+  service            = "run.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "artifact_registry_api" {
+  project            = var.project_id
+  service            = "artifactregistry.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "secret_manager_api" {
+  project            = var.project_id
+  service            = "secretmanager.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "iam_api" {
+  project            = var.project_id
+  service            = "iam.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "firebase_api" {
+  project            = var.project_id
+  service            = "firebase.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "firebase_hosting_api" {
+  project            = var.project_id
+  service            = "firebasehosting.googleapis.com"
+  disable_on_destroy = false
 }
 
 # =============================================================================
