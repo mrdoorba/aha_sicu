@@ -1,5 +1,5 @@
-import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useCallback } from 'react';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useReactTable,
   getCoreRowModel,
@@ -86,14 +86,50 @@ const columns: ColumnDef<EvaluationRow>[] = [
 
 export const EvaluationHistoryTable = () => {
   const navigate = useNavigate();
-  const [page, setPage] = useState(1);
-  const limit = 20;
-  const [sorting, setSorting] = useState<SortingState>([
-    { id: 'created_at', desc: true },
-  ]);
+  const [searchParams, setSearchParams] = useSearchParams();
 
-  const sortBy: SortBy = (sorting[0]?.id as SortBy) || 'created_at';
-  const sortOrder: SortOrder = sorting[0]?.desc ? 'desc' : 'asc';
+  const page = Math.max(1, Number(searchParams.get('page')) || 1);
+  const limit = 20;
+  const sortBy: SortBy =
+    (searchParams.get('sort_by') as SortBy) || 'created_at';
+  const sortOrder: SortOrder =
+    (searchParams.get('sort_order') as SortOrder) || 'desc';
+
+  const sorting: SortingState = [
+    { id: sortBy, desc: sortOrder === 'desc' },
+  ];
+
+  const setPage = useCallback(
+    (updater: number | ((prev: number) => number)) => {
+      const next = typeof updater === 'function' ? updater(page) : updater;
+      setSearchParams((prev) => {
+        const p = new URLSearchParams(prev);
+        if (next <= 1) p.delete('page');
+        else p.set('page', String(next));
+        return p;
+      });
+    },
+    [page, setSearchParams],
+  );
+
+  const setSorting = useCallback(
+    (updater: SortingState | ((old: SortingState) => SortingState)) => {
+      const next = typeof updater === 'function' ? updater(sorting) : updater;
+      const newSortBy = (next[0]?.id as SortBy) || 'created_at';
+      const newSortOrder: SortOrder = next[0]?.desc ? 'desc' : 'asc';
+      setSearchParams((prev) => {
+        const p = new URLSearchParams(prev);
+        // Reset page on sort change
+        p.delete('page');
+        if (newSortBy === 'created_at') p.delete('sort_by');
+        else p.set('sort_by', newSortBy);
+        if (newSortOrder === 'desc') p.delete('sort_order');
+        else p.set('sort_order', newSortOrder);
+        return p;
+      });
+    },
+    [sorting, setSearchParams],
+  );
 
   const {
     evaluations,
@@ -117,10 +153,7 @@ export const EvaluationHistoryTable = () => {
       sorting,
       pagination: { pageIndex: page - 1, pageSize: limit },
     },
-    onSortingChange: (updater) => {
-      setSorting(updater);
-      setPage(1);
-    },
+    onSortingChange: setSorting,
   });
 
   if (isError) {
@@ -152,7 +185,7 @@ export const EvaluationHistoryTable = () => {
     <div>
       <Table
         aria-label="Evaluation history"
-        aria-busy={isLoading}
+        aria-busy={isLoading || isPlaceholderData}
         className={isPlaceholderData ? 'opacity-60 transition-opacity' : ''}
       >
         <TableHeader>
@@ -165,6 +198,7 @@ export const EvaluationHistoryTable = () => {
                       variant="ghost"
                       size="sm"
                       className="-ml-3 h-8 text-xs uppercase"
+                      aria-label={`Sort by ${header.column.columnDef.header}${header.column.getIsSorted() === 'asc' ? ', sorted ascending' : header.column.getIsSorted() === 'desc' ? ', sorted descending' : ''}`}
                       onClick={() =>
                         header.column.toggleSorting(
                           header.column.getIsSorted() === 'asc',
@@ -176,11 +210,11 @@ export const EvaluationHistoryTable = () => {
                         header.getContext(),
                       )}
                       {header.column.getIsSorted() === 'asc' ? (
-                        <ArrowUp className="ml-1 size-3.5" />
+                        <ArrowUp className="ml-1 size-3.5" aria-hidden="true" />
                       ) : header.column.getIsSorted() === 'desc' ? (
-                        <ArrowDown className="ml-1 size-3.5" />
+                        <ArrowDown className="ml-1 size-3.5" aria-hidden="true" />
                       ) : (
-                        <ArrowUpDown className="ml-1 size-3.5" />
+                        <ArrowUpDown className="ml-1 size-3.5" aria-hidden="true" />
                       )}
                     </Button>
                   ) : (
@@ -221,29 +255,33 @@ export const EvaluationHistoryTable = () => {
         </TableBody>
       </Table>
 
-      {pages > 1 && (
+      {!isLoading && total > 0 && (
         <div className="flex items-center justify-center gap-4 py-4">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.max(1, p - 1))}
-            disabled={page <= 1}
-          >
-            <ChevronLeft className="size-4" aria-hidden="true" />
-            Previous
-          </Button>
+          {pages > 1 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+              disabled={page <= 1}
+            >
+              <ChevronLeft className="size-4" aria-hidden="true" />
+              Previous
+            </Button>
+          )}
           <span className="text-sm text-muted-foreground">
-            Page {page} of {pages}
+            {pages > 1 ? `Page ${page} of ${pages}` : `${total} evaluation${total !== 1 ? 's' : ''}`}
           </span>
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={() => setPage((p) => Math.min(pages, p + 1))}
-            disabled={page >= pages}
-          >
-            Next
-            <ChevronRight className="size-4" aria-hidden="true" />
-          </Button>
+          {pages > 1 && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setPage((p) => Math.min(pages, p + 1))}
+              disabled={page >= pages}
+            >
+              Next
+              <ChevronRight className="size-4" aria-hidden="true" />
+            </Button>
+          )}
         </div>
       )}
     </div>
