@@ -75,7 +75,7 @@ development_status:
   epic-4: in-progress
   4-1-evaluation-history-list: done
   4-2-search-by-brand-name: review
-  4-3-filter-by-date-range: backlog
+  4-3-filter-by-date-range: review
   4-4-filter-by-category: backlog
   4-5-evaluation-detail-view: backlog
   4-6-real-time-new-evaluation-notifications: backlog
