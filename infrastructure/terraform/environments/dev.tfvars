@@ -1,10 +1,10 @@
 # Store ICU - Development Environment Variables
 
-project_id          = "aha-sicu-dev"
+project_id          = "YOUR_GCP_PROJECT_ID"
 region              = "asia-southeast1"
 environment         = "dev"
 github_repo         = "AHA-Indonesia/store-icu"
-firebase_project_id = "aha-sicu-dev"
+firebase_project_id = "YOUR_GCP_PROJECT_ID"
 
 # Cloud Run - dev sizing
 cloud_run_url           = ""
