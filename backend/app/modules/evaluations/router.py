@@ -1,6 +1,8 @@
 """Evaluations API endpoints."""
 
-from fastapi import APIRouter, Depends
+from typing import Literal
+
+from fastapi import APIRouter, Depends, Query
 
 from app.calculators.engine import check_calculator_readiness, run_ready_calculators
 from app.core.dependencies import get_current_user
@@ -17,6 +19,7 @@ from app.modules.evaluations.schemas import (
     CalculatorResultsListResponse,
     CalculatorStatusResponse,
     EvaluationInputsUpdate,
+    EvaluationListResponse,
     EvaluationStateResponse,
     RunAllResponse,
     RunCalculatorItem,
@@ -29,11 +32,29 @@ from app.modules.evaluations.schemas import (
 from app.modules.evaluations.service import (
     generate_score,
     get_evaluation_state,
+    list_evaluations,
     save_evaluation,
     save_evaluation_inputs,
 )
 
 router = APIRouter(prefix="/api/v1/evaluations", tags=["evaluations"])
+
+
+@router.get("", response_model=EvaluationListResponse)
+async def list_evaluations_endpoint(
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    sort_by: Literal["created_at", "final_score"] = Query(default="created_at"),
+    sort_order: Literal["asc", "desc"] = Query(default="desc"),
+    current_user: dict = Depends(get_current_user),
+) -> EvaluationListResponse:
+    """List all evaluations with pagination and sorting.
+
+    Returns paginated evaluation history with brand names and evaluator emails.
+    """
+    return await list_evaluations(
+        page=page, limit=limit, sort_by=sort_by, sort_order=sort_order
+    )
 
 
 @router.get("/brands/{brand_id}", response_model=EvaluationStateResponse)

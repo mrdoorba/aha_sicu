@@ -1,6 +1,7 @@
 """Evaluation service for managing evaluation inputs."""
 
-from typing import Any
+import math
+from typing import Any, Literal
 
 from app.calculators.scoring import calculate_score
 from app.core.exceptions import AppException, CalculatorException
@@ -10,11 +11,52 @@ from app.db.queries import calculator_results as calc_queries
 from app.db.queries import evaluations as eval_queries
 from app.modules.evaluations.schemas import (
     CategoryScoreItem,
+    EvaluationListItem,
+    EvaluationListResponse,
     EvaluationStateResponse,
     RowScoreItem,
     SaveEvaluationResponse,
     ScoringResponse,
 )
+
+
+async def list_evaluations(
+    *,
+    page: int,
+    limit: int,
+    sort_by: Literal["created_at", "final_score"],
+    sort_order: Literal["asc", "desc"],
+) -> EvaluationListResponse:
+    """Return a paginated list of evaluations.
+
+    Handles pagination math and delegates to DB queries.
+    """
+    offset = (page - 1) * limit
+
+    async with db.connection() as conn:
+        rows = await eval_queries.list_evaluations(
+            conn, limit=limit, offset=offset, sort_by=sort_by, sort_order=sort_order
+        )
+        total = await eval_queries.count_evaluations(conn)
+
+    pages = math.ceil(total / limit) if total > 0 else 0
+
+    items = [
+        EvaluationListItem(
+            id=row["id"],
+            brand_name=row["brand_name"],
+            final_score=float(row["final_score"]),
+            verdict=row["verdict"],
+            template=row["template"],
+            evaluator_email=row["evaluator_email"],
+            created_at=row["created_at"],
+        )
+        for row in rows
+    ]
+
+    return EvaluationListResponse(
+        items=items, total=total, page=page, limit=limit, pages=pages
+    )
 
 
 async def get_evaluation_state(

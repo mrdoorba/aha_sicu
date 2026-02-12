@@ -147,6 +147,28 @@ class ScoringResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
+class EvaluationListItem(BaseModel):
+    """A single evaluation in the history list."""
+
+    id: int
+    brand_name: str
+    final_score: float
+    verdict: str
+    template: str
+    evaluator_email: str
+    created_at: datetime
+
+
+class EvaluationListResponse(BaseModel):
+    """Paginated list of evaluations."""
+
+    items: list[EvaluationListItem]
+    total: int
+    page: int
+    limit: int
+    pages: int
+
+
 class SaveEvaluationRequest(BaseModel):
     """Request body for saving a completed evaluation as a permanent record."""
 
