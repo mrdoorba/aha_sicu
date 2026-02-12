@@ -27,6 +27,7 @@ const CATEGORY_LABELS: Record<string, string> = {
   campaign: 'Campaign',
   stock: 'Stock',
   discount: 'Discount',
+  marketing: 'Marketing',
 };
 
 const RULE_LABELS: Record<string, string> = {
@@ -53,6 +54,13 @@ const RULE_LABELS: Record<string, string> = {
   mid_threshold: 'Mid Stock',
   low_penalty: 'Low Stock',
   fake_discount_flag: 'Fake Discount',
+  floor: 'Floor',
+  base_subtraction: 'Base Subtraction',
+  upper_limit_base: 'Upper Limit Base',
+  fashion_adjustment: 'Fashion Adjustment',
+  minimum_threshold: 'Minimum Threshold',
+  display_max: 'Display Max',
+  display_min: 'Display Min',
 };
 
 const COMPARISON_SYMBOLS: Record<string, string> = {
@@ -77,9 +85,23 @@ const EDITABLE_FIELDS = new Set([
   'star_plus',
   'star',
   'regular',
+  'value',
 ]);
 
-function formatThreshold(rule: RuleThreshold): string {
+// Marketing value fields represent fractions (0.15 = 15%)
+const MARKETING_FRACTION_KEYS = new Set([
+  'floor', 'base_subtraction', 'upper_limit_base', 'fashion_adjustment',
+  'minimum_threshold', 'display_max', 'display_min',
+]);
+
+function formatThreshold(rule: RuleThreshold, key?: string): string {
+  // Value-only fields (marketing category) — display as percentage
+  if (rule.value !== undefined) {
+    if (key && MARKETING_FRACTION_KEYS.has(key)) {
+      return `${(rule.value * 100).toFixed(1)}%`;
+    }
+    return `${rule.value}`;
+  }
   // Store status — display status type labels instead of "-"
   if (rule.mall !== undefined) {
     return 'By store type';
@@ -99,6 +121,8 @@ function formatThreshold(rule: RuleThreshold): string {
 
 function formatPoints(rule: RuleThreshold): string {
   if (rule.info_only) return 'Info only';
+  // Value-only fields (marketing) — no points column
+  if (rule.value !== undefined) return '-';
   if (rule.points !== undefined) return `${rule.points} pts`;
   if (rule.opportunity_points !== undefined) return `${rule.opportunity_points} opp pts`;
   if (rule.points_no_flag !== undefined) return `${rule.points_no_flag} / ${rule.points_flag} pts`;
@@ -172,6 +196,25 @@ function renderEditableThreshold(
   onRuleChange: (category: string, key: string, field: string, value: number | null) => void,
   validationErrors?: Record<string, string>,
 ) {
+  // Value-only fields (marketing category) — fractions 0-1
+  if (rule.value !== undefined) {
+    const isFraction = MARKETING_FRACTION_KEYS.has(key);
+    return (
+      <span className="flex items-center gap-1">
+        <EditableNumber
+          value={rule.value}
+          onChange={(v) => {
+            if (isFraction && v !== null && (v < 0 || v > 1)) return;
+            onRuleChange(category, key, 'value', v);
+          }}
+          label={`${key} value`}
+          error={validationErrors?.[`${category}.${key}.value`]}
+        />
+        {isFraction && <span className="text-xs text-muted-foreground">({((rule.value ?? 0) * 100).toFixed(0)}%)</span>}
+      </span>
+    );
+  }
+
   const comparison = rule.comparison ? COMPARISON_SYMBOLS[rule.comparison] || rule.comparison : '';
 
   // Store status — editable per store type
@@ -228,6 +271,9 @@ function renderEditablePoints(
   validationErrors?: Record<string, string>,
 ) {
   if (rule.info_only) return <Badge variant="outline" className="text-muted-foreground">Info only</Badge>;
+
+  // Value-only fields (marketing) — no points to edit
+  if (rule.value !== undefined) return <span>-</span>;
 
   if (rule.points !== undefined) {
     return (
@@ -292,9 +338,11 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
                 {isOpen ? <ChevronDown className="h-4 w-4" /> : <ChevronRight className="h-4 w-4" />}
                 {label}
               </span>
-              {maxPoints > 0 && (
+              {maxPoints > 0 ? (
                 <Badge variant="secondary">Max: {maxPoints} pts</Badge>
-              )}
+              ) : category === 'marketing' ? (
+                <Badge variant="outline">Config</Badge>
+              ) : null}
             </CardTitle>
           </CardHeader>
         </CollapsibleTrigger>
@@ -326,7 +374,7 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
                           renderEditableThreshold(rule, category, key, onRuleChange, validationErrors)
                         ) : (
                           <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
-                            {formatThreshold(rule)}
+                            {formatThreshold(rule, key)}
                           </code>
                         )}
                       </TableCell>

@@ -95,6 +95,15 @@ const FASHION_RULES = {
   discount: {
     fake_discount_flag: { points_no_flag: 5, points_flag: 0 },
   },
+  marketing: {
+    floor: { value: 0.15 },
+    base_subtraction: { value: 0.03 },
+    upper_limit_base: { value: 0.20 },
+    fashion_adjustment: { value: 0.05 },
+    minimum_threshold: { value: 0.10 },
+    display_max: { value: 0.25 },
+    display_min: { value: 0.10 },
+  },
   interpretation: {
     ranges: [
       { min: 71, max: null, label: 'Good Candidate', verdict: '\u2714\ufe0f' },
@@ -113,6 +122,11 @@ const NON_FASHION_RULES = {
   ads: {
     ...FASHION_RULES.ads,
     roi_threshold: { threshold: 9.0, opportunity_points: 5, comparison: 'gt' },
+  },
+  marketing: {
+    ...FASHION_RULES.marketing,
+    floor: { value: 0.12 },
+    fashion_adjustment: { value: 0.0 },
   },
 };
 
@@ -741,5 +755,102 @@ describe('Header navigation', () => {
     const navLinks = screen.getAllByRole('link');
     const rulesLink = navLinks.find((link) => link.textContent === 'Rules');
     expect(rulesLink).toBeUndefined();
+  });
+});
+
+describe('Marketing category', () => {
+  it('renders marketing category card with all fields', () => {
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    expect(screen.getByText('Marketing')).toBeInTheDocument();
+    expect(screen.getByText('Config')).toBeInTheDocument();
+    expect(screen.getByText('Floor')).toBeInTheDocument();
+    expect(screen.getByText('Base Subtraction')).toBeInTheDocument();
+    expect(screen.getByText('Upper Limit Base')).toBeInTheDocument();
+    expect(screen.getByText('Fashion Adjustment')).toBeInTheDocument();
+    expect(screen.getByText('Minimum Threshold')).toBeInTheDocument();
+    expect(screen.getByText('Display Max')).toBeInTheDocument();
+    expect(screen.getByText('Display Min')).toBeInTheDocument();
+  });
+
+  it('marketing fields are editable in edit mode', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Find a marketing field input by aria-label
+    const floorInput = screen.getByRole('spinbutton', { name: /floor value/i });
+    expect(floorInput).toBeInTheDocument();
+    expect(floorInput).toHaveValue(0.15);
+  });
+
+  it('marketing floor and fashion_adjustment show differs badge within marketing card', async () => {
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Find the Marketing category card specifically
+    const marketingHeading = screen.getByText('Marketing');
+    const marketingCard = marketingHeading.closest('[data-slot="card"]') ?? marketingHeading.closest('.rounded-xl');
+
+    // Verify differs badges exist within the marketing card context
+    expect(marketingCard).not.toBeNull();
+    const differsBadgesInMarketing = within(marketingCard!).getAllByText('differs');
+    // Exactly 2 differs badges in marketing: floor, fashion_adjustment
+    expect(differsBadgesInMarketing).toHaveLength(2);
+
+    // Verify the specific differing fields are highlighted
+    expect(within(marketingCard!).getByText('Floor')).toBeInTheDocument();
+    expect(within(marketingCard!).getByText('Fashion Adjustment')).toBeInTheDocument();
+
+    // Total differs badges across all categories: conversion_rate, roi_threshold, floor, fashion_adjustment
+    const allDiffersBadges = screen.getAllByText('differs');
+    expect(allDiffersBadges).toHaveLength(4);
+  });
+
+  it('non-fashion tab shows different marketing values', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Fashion tab: floor should display as 15.0%
+    expect(screen.getByText('15.0%')).toBeInTheDocument();
+
+    // Switch to Non-Fashion tab
+    await user.click(screen.getByRole('tab', { name: /non-fashion/i }));
+
+    // Non-fashion: floor = 0.12 (12.0%), fashion_adjustment = 0.0 (0.0%)
+    expect(screen.getByText('12.0%')).toBeInTheDocument();
+    expect(screen.getByText('0.0%')).toBeInTheDocument();
   });
 });
