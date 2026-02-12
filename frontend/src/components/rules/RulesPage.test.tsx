@@ -588,6 +588,61 @@ describe('Edit mode', () => {
     expect(mockUpdateRuleMutateAsync).not.toHaveBeenCalled();
   });
 
+  it('can switch tabs while in edit mode', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Verify edit mode is active
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+
+    // Switch to Non-Fashion tab
+    const nonFashionTab = screen.getByRole('tab', { name: /non-fashion/i });
+    await user.click(nonFashionTab);
+
+    // Should still be in edit mode with inputs
+    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+    const inputs = screen.getAllByRole('spinbutton');
+    expect(inputs.length).toBeGreaterThan(0);
+  });
+
+  it('Save Changes disabled when field is cleared (validation error)', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Clear a value to trigger validation error
+    const firstInput = screen.getAllByRole('spinbutton')[0];
+    await user.clear(firstInput);
+
+    // Save Changes should be disabled
+    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    expect(saveBtn).toBeDisabled();
+
+    // Should show "Required" error
+    expect(screen.getByText('Required')).toBeInTheDocument();
+  });
+
   it('shows success toast after save', async () => {
     const user = userEvent.setup();
     mockReauthenticateUser.mockResolvedValue(undefined);

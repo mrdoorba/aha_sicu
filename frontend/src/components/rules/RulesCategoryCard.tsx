@@ -12,7 +12,8 @@ interface RulesCategoryCardProps {
   rules: Record<string, RuleThreshold>;
   differingKeys?: Set<string>;
   isEditing?: boolean;
-  onRuleChange?: (category: string, key: string, field: string, value: number) => void;
+  onRuleChange?: (category: string, key: string, field: string, value: number | null) => void;
+  validationErrors?: Record<string, string>;
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
@@ -135,23 +136,32 @@ function EditableNumber({
   value,
   onChange,
   label,
+  error,
 }: {
-  value: number | undefined;
-  onChange: (v: number) => void;
+  value: number | null | undefined;
+  onChange: (v: number | null) => void;
   label: string;
+  error?: string;
 }) {
   if (value === undefined) return null;
   return (
-    <Input
-      type="number"
-      value={value}
-      onChange={(e) => {
-        const parsed = parseFloat(e.target.value);
-        if (!isNaN(parsed)) onChange(parsed);
-      }}
-      className="w-20 h-7 text-sm inline-block"
-      aria-label={label}
-    />
+    <div className="inline-flex flex-col">
+      <Input
+        type="number"
+        value={value ?? ''}
+        onChange={(e) => {
+          if (e.target.value === '') {
+            onChange(null);
+            return;
+          }
+          const parsed = parseFloat(e.target.value);
+          if (!isNaN(parsed)) onChange(parsed);
+        }}
+        className={`w-20 h-7 text-sm${error ? ' border-destructive' : ''}`}
+        aria-label={label}
+      />
+      {error && <span className="text-xs text-destructive">{error}</span>}
+    </div>
   );
 }
 
@@ -159,7 +169,8 @@ function renderEditableThreshold(
   rule: RuleThreshold,
   category: string,
   key: string,
-  onRuleChange: (category: string, key: string, field: string, value: number) => void,
+  onRuleChange: (category: string, key: string, field: string, value: number | null) => void,
+  validationErrors?: Record<string, string>,
 ) {
   const comparison = rule.comparison ? COMPARISON_SYMBOLS[rule.comparison] || rule.comparison : '';
 
@@ -173,12 +184,12 @@ function renderEditableThreshold(
   }
 
   // Range (min - max)
-  if (rule.min !== undefined && rule.max !== undefined && rule.min !== null && rule.max !== null) {
+  if (rule.min !== undefined && rule.max !== undefined) {
     return (
       <span className="flex items-center gap-1">
-        <EditableNumber value={rule.min} onChange={(v) => onRuleChange(category, key, 'min', v)} label={`${key} min`} />
+        <EditableNumber value={rule.min} onChange={(v) => onRuleChange(category, key, 'min', v)} label={`${key} min`} error={validationErrors?.[`${category}.${key}.min`]} />
         <span>-</span>
-        <EditableNumber value={rule.max} onChange={(v) => onRuleChange(category, key, 'max', v)} label={`${key} max`} />
+        <EditableNumber value={rule.max} onChange={(v) => onRuleChange(category, key, 'max', v)} label={`${key} max`} error={validationErrors?.[`${category}.${key}.max`]} />
       </span>
     );
   }
@@ -190,7 +201,7 @@ function renderEditableThreshold(
 
   // Standard threshold or threshold_pct
   const thresholdField = rule.threshold !== undefined ? 'threshold' : rule.threshold_pct !== undefined ? 'threshold_pct' : null;
-  const thresholdValue = rule.threshold ?? rule.threshold_pct;
+  const thresholdValue = rule.threshold !== undefined ? rule.threshold : rule.threshold_pct;
 
   if (thresholdField && thresholdValue !== undefined) {
     return (
@@ -200,6 +211,7 @@ function renderEditableThreshold(
           value={thresholdValue}
           onChange={(v) => onRuleChange(category, key, thresholdField, v)}
           label={`${key} threshold`}
+          error={validationErrors?.[`${category}.${key}.${thresholdField}`]}
         />
       </span>
     );
@@ -212,14 +224,15 @@ function renderEditablePoints(
   rule: RuleThreshold,
   category: string,
   key: string,
-  onRuleChange: (category: string, key: string, field: string, value: number) => void,
+  onRuleChange: (category: string, key: string, field: string, value: number | null) => void,
+  validationErrors?: Record<string, string>,
 ) {
   if (rule.info_only) return <Badge variant="outline" className="text-muted-foreground">Info only</Badge>;
 
   if (rule.points !== undefined) {
     return (
       <span className="flex items-center gap-1">
-        <EditableNumber value={rule.points} onChange={(v) => onRuleChange(category, key, 'points', v)} label={`${key} points`} />
+        <EditableNumber value={rule.points} onChange={(v) => onRuleChange(category, key, 'points', v)} label={`${key} points`} error={validationErrors?.[`${category}.${key}.points`]} />
         <span className="text-sm">pts</span>
       </span>
     );
@@ -228,7 +241,7 @@ function renderEditablePoints(
   if (rule.opportunity_points !== undefined) {
     return (
       <span className="flex items-center gap-1">
-        <EditableNumber value={rule.opportunity_points} onChange={(v) => onRuleChange(category, key, 'opportunity_points', v)} label={`${key} opportunity points`} />
+        <EditableNumber value={rule.opportunity_points} onChange={(v) => onRuleChange(category, key, 'opportunity_points', v)} label={`${key} opportunity points`} error={validationErrors?.[`${category}.${key}.opportunity_points`]} />
         <span className="text-sm">opp pts</span>
       </span>
     );
@@ -237,9 +250,9 @@ function renderEditablePoints(
   if (rule.points_no_flag !== undefined) {
     return (
       <span className="flex items-center gap-1">
-        <EditableNumber value={rule.points_no_flag} onChange={(v) => onRuleChange(category, key, 'points_no_flag', v)} label={`${key} points no flag`} />
+        <EditableNumber value={rule.points_no_flag} onChange={(v) => onRuleChange(category, key, 'points_no_flag', v)} label={`${key} points no flag`} error={validationErrors?.[`${category}.${key}.points_no_flag`]} />
         <span className="text-sm">/</span>
-        <EditableNumber value={rule.points_flag} onChange={(v) => onRuleChange(category, key, 'points_flag', v)} label={`${key} points flag`} />
+        <EditableNumber value={rule.points_flag} onChange={(v) => onRuleChange(category, key, 'points_flag', v)} label={`${key} points flag`} error={validationErrors?.[`${category}.${key}.points_flag`]} />
         <span className="text-sm">pts</span>
       </span>
     );
@@ -250,13 +263,13 @@ function renderEditablePoints(
     return (
       <span className="flex items-center gap-1 flex-wrap text-sm">
         <span>Mall:</span>
-        <EditableNumber value={rule.mall} onChange={(v) => onRuleChange(category, key, 'mall', v)} label={`${key} mall`} />
+        <EditableNumber value={rule.mall} onChange={(v) => onRuleChange(category, key, 'mall', v)} label={`${key} mall`} error={validationErrors?.[`${category}.${key}.mall`]} />
         <span>Star+:</span>
-        <EditableNumber value={rule.star_plus} onChange={(v) => onRuleChange(category, key, 'star_plus', v)} label={`${key} star plus`} />
+        <EditableNumber value={rule.star_plus} onChange={(v) => onRuleChange(category, key, 'star_plus', v)} label={`${key} star plus`} error={validationErrors?.[`${category}.${key}.star_plus`]} />
         <span>Star:</span>
-        <EditableNumber value={rule.star} onChange={(v) => onRuleChange(category, key, 'star', v)} label={`${key} star`} />
+        <EditableNumber value={rule.star} onChange={(v) => onRuleChange(category, key, 'star', v)} label={`${key} star`} error={validationErrors?.[`${category}.${key}.star`]} />
         <span>Reg:</span>
-        <EditableNumber value={rule.regular} onChange={(v) => onRuleChange(category, key, 'regular', v)} label={`${key} regular`} />
+        <EditableNumber value={rule.regular} onChange={(v) => onRuleChange(category, key, 'regular', v)} label={`${key} regular`} error={validationErrors?.[`${category}.${key}.regular`]} />
       </span>
     );
   }
@@ -264,7 +277,7 @@ function renderEditablePoints(
   return <span>-</span>;
 }
 
-export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = false, onRuleChange }: RulesCategoryCardProps) => {
+export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = false, onRuleChange, validationErrors }: RulesCategoryCardProps) => {
   const [isOpen, setIsOpen] = useState(true);
   const maxPoints = calculateMaxPoints(rules, category);
   const label = CATEGORY_LABELS[category] || category;
@@ -310,7 +323,7 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
                       </TableCell>
                       <TableCell>
                         {isEditing && onRuleChange ? (
-                          renderEditableThreshold(rule, category, key, onRuleChange)
+                          renderEditableThreshold(rule, category, key, onRuleChange, validationErrors)
                         ) : (
                           <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
                             {formatThreshold(rule)}
@@ -319,7 +332,7 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
                       </TableCell>
                       <TableCell>
                         {isEditing && onRuleChange ? (
-                          renderEditablePoints(rule, category, key, onRuleChange)
+                          renderEditablePoints(rule, category, key, onRuleChange, validationErrors)
                         ) : rule.info_only ? (
                           <Badge variant="outline" className="text-muted-foreground">Info only</Badge>
                         ) : (

@@ -108,6 +108,31 @@ describe('PasswordConfirmDialog', () => {
     expect(mockOnConfirm).not.toHaveBeenCalled();
   });
 
+  it('shows save error when reauthentication succeeds but onConfirm fails', async () => {
+    const user = userEvent.setup();
+    mockReauthenticateUser.mockResolvedValue(undefined);
+    const mockOnConfirm = vi.fn().mockRejectedValue(new Error('Network error'));
+
+    render(
+      <PasswordConfirmDialog
+        open={true}
+        onConfirm={mockOnConfirm}
+        onCancel={vi.fn()}
+        isLoading={false}
+      />,
+    );
+
+    const passwordInput = screen.getByLabelText('Password');
+    await user.type(passwordInput, 'correctpassword');
+
+    const confirmBtn = screen.getByRole('button', { name: /confirm/i });
+    await user.click(confirmBtn);
+
+    expect(mockReauthenticateUser).toHaveBeenCalledWith('correctpassword');
+    expect(mockOnConfirm).toHaveBeenCalled();
+    expect(await screen.findByText('Failed to save changes. Please try again.')).toBeInTheDocument();
+  });
+
   it('calls onCancel when Cancel is clicked', async () => {
     const user = userEvent.setup();
     const mockOnCancel = vi.fn();
