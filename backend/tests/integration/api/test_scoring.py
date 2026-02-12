@@ -442,6 +442,60 @@ def test_score_uses_db_rules(client):
         assert resp_custom.json()["rule_version"] == 2
 
 
+def test_score_with_custom_message_templates(client):
+    """Test scoring uses custom message templates from rules JSONB."""
+    custom_rules = {
+        **DEFAULT_FASHION_RULES,
+        "operational": {
+            **DEFAULT_FASHION_RULES["operational"],
+            "unfulfilled_order_rate": {
+                **DEFAULT_FASHION_RULES["operational"]["unfulfilled_order_rate"],
+                "message_pass": "CUSTOM PASS: UFO rate is {val_str}",
+                "message_fail": "CUSTOM FAIL: UFO rate is {val_str}, should be <{threshold}%",
+            },
+        },
+    }
+    custom_rules_row = {**SAMPLE_RULES_ROW, "rules": custom_rules, "version": 5}
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
+            SAMPLE_BRAND,
+            SAMPLE_EVAL_INPUTS,
+            custom_rules_row,
+        ])
+        mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/score",
+            json=SCORING_REQUEST,
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+
+        # Find the operational category
+        ops_cat = next(
+            c for c in data["category_scores"] if c["category"] == "Kesehatan Operasional Toko"
+        )
+        # UFO rate = 0.5%, threshold = 1.0 → pass
+        ufo_row = next(r for r in ops_cat["rows"] if r["row"] == 7)
+        assert "CUSTOM PASS" in ufo_row["message"]
+        assert "0.5%" in ufo_row["message"]
+
+        # Custom message should propagate to email body
+        assert "CUSTOM PASS" in data["email_body"]
+
+
 def test_score_rules_not_found_falls_back(client):
     """Test scoring falls back to defaults when rules not found in DB."""
     with (

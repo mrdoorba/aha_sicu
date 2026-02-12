@@ -854,3 +854,277 @@ describe('Marketing category', () => {
     expect(screen.getByText('0.0%')).toBeInTheDocument();
   });
 });
+
+// --- Message templates tests (Story 5.5) ---
+
+const RULES_WITH_MESSAGES: ScoringRule[] = [
+  {
+    id: 1,
+    template: 'fashion',
+    rules: {
+      ...FASHION_RULES,
+      operational: {
+        unfulfilled_order_rate: {
+          threshold: 1.0, points: 4, comparison: 'lte',
+          message_pass: '✔️ UFO = {val_str} OK',
+          message_fail: '❌ UFO = {val_str} NOT OK, target: <{threshold}%',
+        },
+        late_shipment_rate: { threshold: 1.0, points: 3, comparison: 'lte' },
+        preparation_time: { threshold: 1.0, points: 3, comparison: 'lte' },
+        chat_response_rate: { threshold: 95.0, comparison: 'gte', info_only: true },
+        overall_rating: { threshold: 4.7, comparison: 'gte', info_only: true },
+      },
+      competition: {
+        message_pass: '✅kompetitif',
+        message_fail: '❌tidak kompetitif (harga kisaran pasaran: Rp. {market_price})',
+      },
+      interpretation: {
+        ...FASHION_RULES.interpretation,
+        closing_messages: {
+          '✔️': 'Closing pass message',
+          '❌': 'Closing fail message',
+          '': 'Closing neutral message',
+        },
+      },
+    } as ScoringRule['rules'],
+    version: 2,
+    updated_by: null,
+    updated_at: '2026-02-12T00:00:00Z',
+  },
+  {
+    id: 2,
+    template: 'non_fashion',
+    rules: {
+      ...NON_FASHION_RULES,
+      competition: {
+        message_pass: '✅kompetitif',
+        message_fail: '❌tidak kompetitif',
+      },
+      interpretation: {
+        ...NON_FASHION_RULES.interpretation,
+        closing_messages: {
+          '✔️': 'Closing pass message NF',
+          '❌': 'Closing fail message NF',
+        },
+      },
+    } as ScoringRule['rules'],
+    version: 2,
+    updated_by: null,
+    updated_at: '2026-02-12T00:00:00Z',
+  },
+];
+
+describe('Message templates', () => {
+  it('renders message toggle button when rule has message fields', () => {
+    mockUseRules.mockReturnValue({
+      rules: RULES_WITH_MESSAGES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // UFO rate has 2 message fields → should show "2 msg" toggle
+    const toggleBtn = screen.getByLabelText('Toggle messages for Unfulfilled Order Rate');
+    expect(toggleBtn).toBeInTheDocument();
+    expect(toggleBtn).toHaveTextContent('2 msg');
+  });
+
+  it('expands message templates on toggle click', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: RULES_WITH_MESSAGES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Click toggle to expand messages
+    const toggleBtn = screen.getByLabelText('Toggle messages for Unfulfilled Order Rate');
+    await user.click(toggleBtn);
+
+    // Message text should now be visible
+    expect(screen.getByText(/UFO = \{val_str\} OK/)).toBeInTheDocument();
+    expect(screen.getByText(/UFO = \{val_str\} NOT OK/)).toBeInTheDocument();
+  });
+
+  it('shows textareas for message templates in edit mode', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: RULES_WITH_MESSAGES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Expand messages
+    const toggleBtn = screen.getByLabelText('Toggle messages for Unfulfilled Order Rate');
+    await user.click(toggleBtn);
+
+    // Should show textareas with message content
+    const passTextarea = screen.getByLabelText('Unfulfilled Order Rate Pass');
+    expect(passTextarea).toBeInTheDocument();
+    expect(passTextarea).toHaveValue('✔️ UFO = {val_str} OK');
+
+    const failTextarea = screen.getByLabelText('Unfulfilled Order Rate Fail');
+    expect(failTextarea).toBeInTheDocument();
+    expect(failTextarea).toHaveValue('❌ UFO = {val_str} NOT OK, target: <{threshold}%');
+  });
+
+  it('shows placeholder hints in edit mode', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: RULES_WITH_MESSAGES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Expand messages
+    const toggleBtn = screen.getByLabelText('Toggle messages for Unfulfilled Order Rate');
+    await user.click(toggleBtn);
+
+    // Should show placeholder hints (multiple instances for pass and fail)
+    const placeholderLabels = screen.getAllByText('Placeholders:');
+    expect(placeholderLabels.length).toBeGreaterThan(0);
+    const valStrHints = screen.getAllByText('{val_str}');
+    expect(valStrHints.length).toBeGreaterThan(0);
+  });
+
+  it('message template edits trigger change detection', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: RULES_WITH_MESSAGES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Expand messages
+    const toggleBtn = screen.getByLabelText('Toggle messages for Unfulfilled Order Rate');
+    await user.click(toggleBtn);
+
+    // Edit message template
+    const passTextarea = screen.getByLabelText('Unfulfilled Order Rate Pass');
+    await user.clear(passTextarea);
+    await user.type(passTextarea, 'EDITED PASS MESSAGE');
+
+    // Save Changes should be enabled now
+    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    expect(saveBtn).toBeEnabled();
+  });
+
+  it('renders Competition Messages section', () => {
+    mockUseRules.mockReturnValue({
+      rules: RULES_WITH_MESSAGES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    expect(screen.getByText('Competition Messages')).toBeInTheDocument();
+    expect(screen.getByText('Competitive')).toBeInTheDocument();
+    expect(screen.getByText('Not competitive')).toBeInTheDocument();
+  });
+
+  it('renders G75 Closing Messages section', () => {
+    mockUseRules.mockReturnValue({
+      rules: RULES_WITH_MESSAGES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    expect(screen.getByText('Closing Messages (G75)')).toBeInTheDocument();
+    expect(screen.getByText('Closing pass message')).toBeInTheDocument();
+    expect(screen.getByText('Closing fail message')).toBeInTheDocument();
+  });
+
+  it('closing messages have textareas in edit mode', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: RULES_WITH_MESSAGES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Closing message textareas should appear
+    const closingTextarea = screen.getByLabelText(/closing message for ✔️/i);
+    expect(closingTextarea).toBeInTheDocument();
+    expect(closingTextarea).toHaveValue('Closing pass message');
+  });
+
+  it('edited message templates are included in save payload', async () => {
+    const user = userEvent.setup();
+    mockReauthenticateUser.mockResolvedValue(undefined);
+    mockUpdateRuleMutateAsync.mockResolvedValue({});
+
+    mockUseRules.mockReturnValue({
+      rules: RULES_WITH_MESSAGES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+
+    // Expand and edit message
+    const toggleBtn = screen.getByLabelText('Toggle messages for Unfulfilled Order Rate');
+    await user.click(toggleBtn);
+
+    const passTextarea = screen.getByLabelText('Unfulfilled Order Rate Pass');
+    await user.clear(passTextarea);
+    await user.type(passTextarea, 'NEW PASS MSG');
+
+    // Save
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+    const passwordInput = screen.getByLabelText('Password');
+    await user.type(passwordInput, 'mypassword');
+    await user.click(screen.getByRole('button', { name: /^confirm$/i }));
+
+    // Verify the mutation was called with the edited message
+    expect(mockUpdateRuleMutateAsync).toHaveBeenCalled();
+    const callArgs = mockUpdateRuleMutateAsync.mock.calls[0][0];
+    expect(callArgs.rules.operational.unfulfilled_order_rate.message_pass).toBe('NEW PASS MSG');
+  });
+});
