@@ -1,6 +1,6 @@
 # Story 5.1: View Current Scoring Rules
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -607,15 +607,34 @@ Claude Opus 4.6
 
 **Modified files:**
 - backend/app/main.py — Register rules_router
+- backend/app/core/dependencies.py — Add shared require_role() dependency (review fix M3)
 - frontend/src/services/apiClient.ts — Add /api/v1/rules path type
 - frontend/src/App.tsx — Add /rules route with RoleProtectedRoute, import RulesPage
 - frontend/src/components/layout/Header.tsx — Add Rules nav link (role-conditional via useCurrentUser)
 - frontend/src/components/layout/Header.test.tsx — Add useCurrentUser mock
 - frontend/src/App.test.tsx — Add RoleProtectedRoute and RulesPage mocks
-- frontend/package.json — Updated dependencies (collapsible, tabs)
-- frontend/package-lock.json — Updated lockfile
 - _bmad-output/implementation-artifacts/sprint-status.yaml — Update 5-1 status
 
 ### Change Log
 
 - **2026-02-12:** Implemented Story 5.1 — View Current Scoring Rules. Created scoring_rules DB table with seed data, backend rules module with role-based access control, and frontend RulesPage with template tabs, collapsible categories, and role gate. 534 backend tests + 268 frontend tests passing.
+- **2026-02-12:** Code review completed (1H + 5M + 2L). All issues fixed: H1 Literal type for template field, M1 removed false File List entries, M2 parameterized SQL in migration, M3 moved require_role to core/dependencies.py, M4 configurable toast in RoleProtectedRoute, M5 fixed calculateMaxPoints for stock tiers, L1 queryClient.clear() in tests, L2 better threshold display for store_status/discount. All 32 tests passing (8 backend + 13 rules frontend + 11 Header/App frontend).
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door
+**Date:** 2026-02-12
+**Outcome:** Approved (all issues fixed)
+
+**Findings (8 total — 1 High, 5 Medium, 2 Low):**
+
+| # | Severity | Issue | Fix Applied |
+|---|----------|-------|-------------|
+| H1 | HIGH | `template` field typed as `str` instead of `Literal` per conventions | Added `Literal["fashion", "non_fashion"]` to schemas.py |
+| M1 | MEDIUM | File List falsely claims package.json/lock changed (no git evidence) | Removed false entries from File List |
+| M2 | MEDIUM | Migration uses f-string SQL interpolation for seed data | Replaced with `sa.text()` bound parameters |
+| M3 | MEDIUM | `require_role` siloed in rules router, not reusable | Moved to `core/dependencies.py` as shared utility |
+| M4 | MEDIUM | `RoleProtectedRoute` toast hardcoded to "scoring rules" | Added `accessDeniedMessage` prop with default |
+| M5 | MEDIUM | `calculateMaxPoints` sums mutually exclusive stock tiers (15 vs correct 10) | Added `TIERED_CATEGORIES` handling for stock |
+| L1 | LOW | QueryClient not cleared between tests (cache leakage risk) | Added `queryClient.clear()` in `beforeEach` |
+| L2 | LOW | `store_status_points` and `fake_discount` show "-" as threshold | Display "By store type" and "Flag check" respectively |

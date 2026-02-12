@@ -60,8 +60,16 @@ const COMPARISON_SYMBOLS: Record<string, string> = {
 };
 
 function formatThreshold(rule: RuleThreshold): string {
+  // Store status — display status type labels instead of "-"
+  if (rule.mall !== undefined) {
+    return 'By store type';
+  }
   if (rule.min !== undefined && rule.max !== undefined && rule.min !== null && rule.max !== null) {
     return `${rule.min} - ${rule.max}`;
+  }
+  // Fake discount — no numeric threshold
+  if (rule.points_no_flag !== undefined) {
+    return 'Flag check';
   }
   const comparison = rule.comparison ? COMPARISON_SYMBOLS[rule.comparison] || rule.comparison : '';
   const value = rule.threshold ?? rule.threshold_pct ?? '';
@@ -81,7 +89,19 @@ function formatPoints(rule: RuleThreshold): string {
   return '-';
 }
 
-function calculateMaxPoints(rules: Record<string, RuleThreshold>): number {
+// Categories where point tiers are mutually exclusive (only the highest applies)
+const TIERED_CATEGORIES = new Set(['stock']);
+
+function calculateMaxPoints(rules: Record<string, RuleThreshold>, category: string): number {
+  if (TIERED_CATEGORIES.has(category)) {
+    // Mutually exclusive tiers — max is the highest single tier value
+    let best = 0;
+    for (const rule of Object.values(rules)) {
+      if (rule.points !== undefined && rule.points > best) best = rule.points;
+    }
+    return best;
+  }
+
   let max = 0;
   for (const rule of Object.values(rules)) {
     if (rule.points && rule.points > 0) max += rule.points;
@@ -94,7 +114,7 @@ function calculateMaxPoints(rules: Record<string, RuleThreshold>): number {
 
 export const RulesCategoryCard = ({ category, rules, differingKeys }: RulesCategoryCardProps) => {
   const [isOpen, setIsOpen] = useState(true);
-  const maxPoints = calculateMaxPoints(rules);
+  const maxPoints = calculateMaxPoints(rules, category);
   const label = CATEGORY_LABELS[category] || category;
 
   return (
