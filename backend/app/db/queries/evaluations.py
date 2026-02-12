@@ -1,7 +1,7 @@
 """Evaluation inputs database queries using parameterized SQL."""
 
 import json
-from typing import Any
+from typing import Any, Literal
 
 from asyncpg import Connection
 
@@ -94,6 +94,38 @@ async def insert_evaluation(
         email_output,
     )
     return dict(row)
+
+
+async def list_evaluations(
+    conn: Connection,
+    *,
+    limit: int,
+    offset: int,
+    sort_by: Literal["created_at", "final_score"],
+    sort_order: Literal["asc", "desc"],
+) -> list[dict]:
+    """List evaluations with JOIN on brand_vp_data and users.
+
+    Returns lightweight rows (no heavy JSONB columns).
+    sort_by is validated via Literal type at router level — safe for f-string.
+    """
+    query = f"""
+        SELECT e.id, b.brand_name, e.final_score, e.verdict, e.template,
+               u.email AS evaluator_email, e.created_at
+        FROM evaluations e
+        JOIN brand_vp_data b ON e.brand_id = b.id
+        JOIN users u ON e.user_id = u.id
+        ORDER BY e.{sort_by} {sort_order}
+        LIMIT $1 OFFSET $2
+    """
+    rows = await conn.fetch(query, limit, offset)
+    return [dict(row) for row in rows]
+
+
+async def count_evaluations(conn: Connection) -> int:
+    """Return total number of evaluations."""
+    row = await conn.fetchval("SELECT COUNT(*) FROM evaluations")
+    return row or 0
 
 
 async def get_any_evaluation_inputs(

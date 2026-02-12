@@ -1,0 +1,276 @@
+"""Integration tests for the evaluation list endpoint."""
+
+from datetime import datetime, timezone
+from decimal import Decimal
+from unittest.mock import AsyncMock, patch
+
+AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
+
+MOCK_USER = {
+    "id": 1,
+    "firebase_uid": "test-uid",
+    "email": "test@example.com",
+    "role": "member",
+    "created_at": datetime(2026, 2, 5, tzinfo=timezone.utc),
+    "last_login": datetime(2026, 2, 5, tzinfo=timezone.utc),
+}
+
+EVAL_ROW_1 = {
+    "id": 1,
+    "brand_name": "Nike Indonesia",
+    "final_score": Decimal("78.50"),
+    "verdict": "✔️",
+    "template": "fashion",
+    "evaluator_email": "rina@company.com",
+    "created_at": datetime(2026, 2, 10, 10, 30, 0, tzinfo=timezone.utc),
+}
+
+EVAL_ROW_2 = {
+    "id": 2,
+    "brand_name": "Unilever ID",
+    "final_score": Decimal("65.00"),
+    "verdict": "❌",
+    "template": "non_fashion",
+    "evaluator_email": "budi@company.com",
+    "created_at": datetime(2026, 2, 9, 14, 0, 0, tzinfo=timezone.utc),
+}
+
+EVAL_ROW_3 = {
+    "id": 3,
+    "brand_name": "Adidas SEA",
+    "final_score": Decimal("82.25"),
+    "verdict": "✔️",
+    "template": "fashion",
+    "evaluator_email": "rina@company.com",
+    "created_at": datetime(2026, 2, 8, 9, 0, 0, tzinfo=timezone.utc),
+}
+
+
+def _setup_auth_mocks(mock_verify, mock_db, mock_user_queries):
+    """Shared auth mock setup."""
+    mock_verify.return_value = {"uid": "test-uid", "email": "test@example.com"}
+    mock_conn = AsyncMock()
+    mock_db.connection.return_value.__aenter__.return_value = mock_conn
+    mock_user_queries.get_user_by_firebase_uid = AsyncMock(return_value=MOCK_USER)
+    mock_user_queries.update_last_login = AsyncMock()
+
+
+def test_list_evaluations_success(client):
+    """Test GET /evaluations returns paginated list with correct fields."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetch = AsyncMock(return_value=[EVAL_ROW_1, EVAL_ROW_2])
+        mock_svc_conn.fetchval = AsyncMock(return_value=2)
+
+        response = client.get(
+            "/api/v1/evaluations",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["total"] == 2
+        assert data["page"] == 1
+        assert data["limit"] == 20
+        assert data["pages"] == 1
+        assert len(data["items"]) == 2
+
+        item = data["items"][0]
+        assert item["id"] == 1
+        assert item["brand_name"] == "Nike Indonesia"
+        assert item["final_score"] == 78.5
+        assert item["verdict"] == "✔️"
+        assert item["template"] == "fashion"
+        assert item["evaluator_email"] == "rina@company.com"
+        assert "created_at" in item
+
+
+def test_list_evaluations_pagination(client):
+    """Test pagination: page=1 vs page=2 return different results."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        # Page 1: returns first 2, Page 2: returns 3rd item
+        mock_svc_conn.fetch = AsyncMock(
+            side_effect=[[EVAL_ROW_1, EVAL_ROW_2], [EVAL_ROW_3]]
+        )
+        mock_svc_conn.fetchval = AsyncMock(return_value=3)
+
+        # Page 1 with limit=2
+        response1 = client.get(
+            "/api/v1/evaluations?page=1&limit=2",
+            headers=AUTH_HEADERS,
+        )
+        assert response1.status_code == 200
+        data1 = response1.json()
+        assert len(data1["items"]) == 2
+        assert data1["total"] == 3
+        assert data1["pages"] == 2
+        assert data1["page"] == 1
+
+        # Page 2 with limit=2
+        response2 = client.get(
+            "/api/v1/evaluations?page=2&limit=2",
+            headers=AUTH_HEADERS,
+        )
+        assert response2.status_code == 200
+        data2 = response2.json()
+        assert len(data2["items"]) == 1
+        assert data2["page"] == 2
+        assert data2["items"][0]["id"] != data1["items"][0]["id"]
+
+
+def test_list_evaluations_sort_date_desc(client):
+    """Test default sort: newest first (created_at desc)."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        # Return in desc order (newest first)
+        mock_svc_conn.fetch = AsyncMock(return_value=[EVAL_ROW_1, EVAL_ROW_2, EVAL_ROW_3])
+        mock_svc_conn.fetchval = AsyncMock(return_value=3)
+
+        response = client.get(
+            "/api/v1/evaluations",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        items = data["items"]
+        # Verify order: id 1 (Feb 10) > id 2 (Feb 9) > id 3 (Feb 8)
+        assert items[0]["id"] == 1
+        assert items[1]["id"] == 2
+        assert items[2]["id"] == 3
+
+
+def test_list_evaluations_sort_date_asc(client):
+    """Test sort_order=asc returns oldest first."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        # Return in asc order (oldest first)
+        mock_svc_conn.fetch = AsyncMock(return_value=[EVAL_ROW_3, EVAL_ROW_2, EVAL_ROW_1])
+        mock_svc_conn.fetchval = AsyncMock(return_value=3)
+
+        response = client.get(
+            "/api/v1/evaluations?sort_order=asc",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        items = data["items"]
+        # Oldest first
+        assert items[0]["id"] == 3
+        assert items[2]["id"] == 1
+
+
+def test_list_evaluations_sort_score(client):
+    """Test sort_by=final_score sorts by score."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        # Return sorted by score desc
+        mock_svc_conn.fetch = AsyncMock(return_value=[EVAL_ROW_3, EVAL_ROW_1, EVAL_ROW_2])
+        mock_svc_conn.fetchval = AsyncMock(return_value=3)
+
+        response = client.get(
+            "/api/v1/evaluations?sort_by=final_score&sort_order=desc",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        items = data["items"]
+        # Highest score first: 82.25 > 78.50 > 65.00
+        assert items[0]["final_score"] == 82.25
+        assert items[1]["final_score"] == 78.5
+        assert items[2]["final_score"] == 65.0
+
+
+def test_list_evaluations_invalid_sort(client):
+    """Test sort_by=invalid_column returns 422."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        response = client.get(
+            "/api/v1/evaluations?sort_by=invalid_column",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 422
+
+
+def test_list_evaluations_empty(client):
+    """Test no evaluations returns empty response with correct shape."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetch = AsyncMock(return_value=[])
+        mock_svc_conn.fetchval = AsyncMock(return_value=0)
+
+        response = client.get(
+            "/api/v1/evaluations",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["items"] == []
+        assert data["total"] == 0
+        assert data["page"] == 1
+        assert data["limit"] == 20
+        assert data["pages"] == 0
+
+
+def test_list_evaluations_auth_required(client):
+    """Test GET /evaluations without auth returns 401."""
+    response = client.get("/api/v1/evaluations")
+    assert response.status_code == 401
