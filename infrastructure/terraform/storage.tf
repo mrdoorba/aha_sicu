@@ -1,7 +1,7 @@
 # GCS: Upload bucket for temporary file storage (parsed data files)
 
 resource "google_storage_bucket" "uploads" {
-  name                        = "aha_sicu_uploads"
+  name                        = "${var.project_id}-aha-sicu-uploads"
   location                    = var.region
   project                     = var.project_id
   uniform_bucket_level_access = true

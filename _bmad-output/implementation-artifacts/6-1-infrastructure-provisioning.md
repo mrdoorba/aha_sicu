@@ -1,6 +1,6 @@
 # Story 6.1: Infrastructure Provisioning
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -571,8 +571,30 @@ Claude Opus 4.6
 - `terraform init -upgrade` ✅, `terraform validate` ✅, `terraform fmt -check -recursive` ✅
 - `terraform plan` requires GCP credentials — code correctness verified via validate
 
+### Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door (Claude Opus 4.6) — 2026-02-12
+**Outcome:** Approved with fixes applied
+
+**Issues Found:** 2 High, 3 Medium, 3 Low — all HIGH and MEDIUM fixed automatically.
+
+**Fixes Applied:**
+1. **[H1] Removed stale v1 Cloud Run IAM binding** (`iam.tf`) — `google_cloud_run_service_iam_member.scheduler_invoker` referenced non-existent v1 service; v2 binding in `cloud_run.tf` is correct replacement
+2. **[H2] Made GCS bucket name globally unique** (`storage.tf`) — changed from hardcoded `aha_sicu_uploads` to `${var.project_id}-aha-sicu-uploads`
+3. **[M1] Removed SA key generation from state** (`main.tf`) — removed `google_service_account_key.gsheets_sync_key` and sensitive key output; gsheets credentials now managed via Secret Manager CLI
+4. **[M2] Stopped gitignoring `.terraform.lock.hcl`** (`.gitignore`) — lock file should be committed for reproducible provider versions
+5. **[M3] Added explicit backend block** (`main.tf`) — `backend "local" {}` with GCS migration comment
+
+**LOW issues (not fixed — nice to have):**
+- [L1] Inconsistent API enablement location (scheduler API in scheduler.tf, others in main.tf)
+- [L2] GCS bucket name uses underscores (architecture-consistent but not GCS best practice)
+- [L3] `cloud_run_service_name` variable is vestigial from v1 era
+
+**Post-fix validation:** `terraform fmt -check -recursive` ✅, `terraform validate` ✅
+
 ### Change Log
 
+- 2026-02-12: Code review — 5 fixes applied (2 HIGH, 3 MEDIUM), all ACs validated, status → done
 - 2026-02-12: Story 6.1 implementation — complete Terraform infrastructure provisioning for production GCP environment
 
 ### File List
@@ -597,6 +619,6 @@ Claude Opus 4.6
 - `.gitignore` — exception for environments/*.tfvars
 
 **Unchanged (preserved):**
-- `infrastructure/terraform/main.tf` — sheets API, sheets SA, sheets key (preserved)
-- `infrastructure/terraform/iam.tf` — scheduler SA, scheduler invoker v1 binding (preserved)
+- `infrastructure/terraform/main.tf` — sheets API, sheets SA (preserved; key generation removed in review)
+- `infrastructure/terraform/iam.tf` — scheduler SA (preserved; v1 invoker binding removed in review)
 - `infrastructure/terraform/scheduler.tf` — daily sync job structure (preserved)

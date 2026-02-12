@@ -10,14 +10,8 @@ resource "google_service_account" "scheduler" {
   project      = var.project_id
 }
 
-# Scheduler invoker binding (v1 — existing from Epic 2) — PRESERVED
-resource "google_cloud_run_service_iam_member" "scheduler_invoker" {
-  service  = var.cloud_run_service_name
-  location = var.region
-  role     = "roles/run.invoker"
-  member   = "serviceAccount:${google_service_account.scheduler.email}"
-  project  = var.project_id
-}
+# NOTE: v1 scheduler invoker binding removed during code review.
+# The v2 binding is in cloud_run.tf (scheduler_invoker_v2).
 
 # Cloud Run API service account — dedicated runtime identity
 resource "google_service_account" "cloud_run" {

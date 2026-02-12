@@ -94,7 +94,7 @@ gcloud secrets versions add aha_sicu_firebase_admin \
 | Cloud Run v2 (`aha-sicu-api`) | `google_cloud_run_v2_service` | Backend API |
 | Artifact Registry (`aha-sicu-registry`) | `google_artifact_registry_repository` | Docker images |
 | Secret Manager (3 secrets) | `google_secret_manager_secret` | DB URL, Sheets creds, Firebase creds |
-| GCS Bucket (`aha_sicu_uploads`) | `google_storage_bucket` | Temporary file uploads (24h lifecycle) |
+| GCS Bucket (`{project_id}-aha-sicu-uploads`) | `google_storage_bucket` | Temporary file uploads (24h lifecycle) |
 | Firebase Hosting (`aha-sicu`) | `google_firebase_hosting_site` | Frontend hosting |
 | Workload Identity Pool | `google_iam_workload_identity_pool` | GitHub Actions OIDC |
 | Cloud Scheduler (`aha_sicu_daily_sync`) | `google_cloud_scheduler_job` | Daily brand sync |
@@ -114,11 +114,10 @@ gcloud secrets versions add aha_sicu_firebase_admin \
 |--------|-------------|
 | `cloud_run_url` | Production API URL |
 | `artifact_registry_url` | Docker image push target |
-| `gcs_upload_bucket` | Upload bucket name |
+| `gcs_upload_bucket` | Upload bucket name (`{project_id}-aha-sicu-uploads`) |
 | `workload_identity_provider` | Full provider path for GitHub Actions |
 | `deploy_service_account_email` | Deploy SA email for CI/CD config |
 | `gsheets_service_account_email` | Email to share with Google Sheets |
-| `gsheets_service_account_key` | Base64-encoded JSON key (sensitive, dev only) |
 
 ## Security Notes
 
