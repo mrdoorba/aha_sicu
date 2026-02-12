@@ -150,6 +150,12 @@ def _extract_pct(pattern: str, text: str) -> float:
 
 # ---------------------------------------------------------------------------
 # Rules helpers — extract configurable thresholds with fallback defaults
+#
+# NOTE: The rules JSONB contains a `comparison` field per rule entry (e.g.,
+# "lte", "gte", "gt") as descriptive metadata. These are NOT dynamically
+# applied — each scoring function hardcodes its comparison operator because
+# the comparison semantics are structural to the scoring logic, not a
+# business-configurable parameter. Only thresholds and points are dynamic.
 # ---------------------------------------------------------------------------
 
 def _get_rule_category(rules: dict | None, category: str) -> dict:
@@ -164,7 +170,10 @@ def _get_rule_value(category_rules: dict, key: str, field: str, default: Any) ->
     return category_rules.get(key, {}).get(field, default)
 
 
-# Default rules matching migration 010 seed data — used when rules=None
+# Default rules matching migration 010 seed data — used when rules=None.
+# IMPORTANT: These are module-level constants — treat as immutable.
+# DEFAULT_NON_FASHION_RULES shares nested dicts via shallow spread;
+# never mutate nested values in either dict.
 DEFAULT_FASHION_RULES: dict = {
     "operational": {
         "unfulfilled_order_rate": {"threshold": 1.0, "points": 4, "comparison": "lte"},
@@ -283,7 +292,7 @@ def _score_operational(manual_data: dict, rules: dict | None = None) -> Category
         f7, h7 = "❌", -d7
     rows.append(RowScore(
         row=7, metric="Tingkat Pesanan Tidak Terselesaikan",
-        value=d7, benchmark="<1%", verdict=f7, message="", score=h7,
+        value=d7, benchmark=f"<{uor_threshold:g}%", verdict=f7, message="", score=h7,
     ))
 
     # H8: Keterlambatan Pengiriman
@@ -296,7 +305,7 @@ def _score_operational(manual_data: dict, rules: dict | None = None) -> Category
         f8, h8 = "❌", -d8
     rows.append(RowScore(
         row=8, metric="Tingkat Keterlambatan Pengiriman",
-        value=d8, benchmark="<1%", verdict=f8, message="", score=h8,
+        value=d8, benchmark=f"<{lsr_threshold:g}%", verdict=f8, message="", score=h8,
     ))
 
     # H9: Masa Pengemasan
@@ -309,7 +318,7 @@ def _score_operational(manual_data: dict, rules: dict | None = None) -> Category
         f9, h9 = "❌", -((d9 - 1) * 100)
     rows.append(RowScore(
         row=9, metric="Masa Pengemasan",
-        value=d9, benchmark="<1", verdict=f9, message="", score=h9,
+        value=d9, benchmark=f"<{pt_threshold:g}", verdict=f9, message="", score=h9,
     ))
 
     # Row 10: Chat Dibalas (no score)
@@ -320,7 +329,7 @@ def _score_operational(manual_data: dict, rules: dict | None = None) -> Category
     f10 = "✔️" if d10_rounded >= chat_threshold else "❌"
     rows.append(RowScore(
         row=10, metric="Persentase Chat Dibalas",
-        value=d10, benchmark=">95%", verdict=f10, message="", score=0.0,
+        value=d10, benchmark=f">{chat_threshold:g}%", verdict=f10, message="", score=0.0,
     ))
 
     # Row 11: Overall Rating (no score)
@@ -329,7 +338,7 @@ def _score_operational(manual_data: dict, rules: dict | None = None) -> Category
     f11 = "✔️" if d11 >= rating_threshold else "❌"
     rows.append(RowScore(
         row=11, metric="Keseluruhan Penilaian",
-        value=d11, benchmark=">4.7", verdict=f11, message="", score=0.0,
+        value=d11, benchmark=f">{rating_threshold:g}", verdict=f11, message="", score=0.0,
     ))
 
     total = sum(r.score for r in rows)
@@ -432,7 +441,7 @@ def _score_content(manual_data: dict, rules: dict | None = None) -> CategoryScor
     f24 = "✔️" if d24 >= quality_threshold else "❌"
     rows.append(RowScore(
         row=24, metric="% Konten baik",
-        value=d24, benchmark=">95%", verdict=f24, message="", score=0.0,
+        value=d24, benchmark=f">{quality_threshold * 100:g}%", verdict=f24, message="", score=0.0,
     ))
 
     return CategoryScore(
@@ -472,7 +481,7 @@ def _score_visitors(manual_data: dict, rules: dict | None = None) -> CategorySco
     h28 = rv_points if d28 > rv_threshold else 0.0
     rows.append(RowScore(
         row=28, metric="% Pengunjung Lama",
-        value=d28, benchmark=">23%", verdict=f28, message="", score=h28,
+        value=d28, benchmark=f">{rv_threshold * 100:g}%", verdict=f28, message="", score=h28,
     ))
 
     # Row 29: Total followers
@@ -482,7 +491,7 @@ def _score_visitors(manual_data: dict, rules: dict | None = None) -> CategorySco
     h29 = fl_points if d29 > fl_threshold else 0.0
     rows.append(RowScore(
         row=29, metric="Total Pengikut",
-        value=d29, benchmark=">50000", verdict=f29, message="", score=h29,
+        value=d29, benchmark=f">{fl_threshold:g}", verdict=f29, message="", score=h29,
     ))
 
     total = h28 + h29
@@ -555,7 +564,7 @@ def _score_promo_tools(manual_data: dict, rules: dict | None = None) -> Category
     h42 = 0.0 if usage_rate > usage_threshold else usage_opp_pts
     rows.append(RowScore(
         row=42, metric="% Penggunaan alat promosi",
-        value=usage_rate, benchmark=">80%", verdict=f42, message="", score=h42,
+        value=usage_rate, benchmark=f">{usage_threshold * 100:g}%", verdict=f42, message="", score=h42,
     ))
 
     # Row 43: % Effectiveness
@@ -566,7 +575,7 @@ def _score_promo_tools(manual_data: dict, rules: dict | None = None) -> Category
     h43 = 0.0 if effectiveness_rate > eff_threshold else eff_opp_pts
     rows.append(RowScore(
         row=43, metric="% Efektifitas alat promosi",
-        value=effectiveness_rate, benchmark=">90%", verdict=f43, message="", score=h43,
+        value=effectiveness_rate, benchmark=f">{eff_threshold * 100:g}%", verdict=f43, message="", score=h43,
     ))
 
     total = h42 + h43
@@ -594,7 +603,7 @@ def _score_products(manual_data: dict, rules: dict | None = None) -> CategorySco
     h45 = pc_points if d45 >= pc_threshold else 0.0
     rows.append(RowScore(
         row=45, metric="Jumlah Produk",
-        value=d45, benchmark=">=35", verdict=f45, message="", score=h45,
+        value=d45, benchmark=f">={pc_threshold:g}", verdict=f45, message="", score=h45,
     ))
 
     # Row 46: Store status
@@ -672,7 +681,7 @@ def _score_ads(manual_data: dict, template: str, rules: dict | None = None) -> C
     h51 = gmv_points if d51 < gmv_threshold else 0.0
     rows.append(RowScore(
         row=51, metric="% GMV Iklan / GMV Toko",
-        value=d51, benchmark="<84%", verdict=f51, message="", score=h51,
+        value=d51, benchmark=f"<{gmv_threshold * 100:g}%", verdict=f51, message="", score=h51,
     ))
 
     # Row 52: Ad cost % = D49/D13
@@ -732,7 +741,7 @@ def _score_campaign(manual_data: dict, rules: dict | None = None) -> CategorySco
     h57 = 0.0 if d57 > part_threshold else part_opp_pts
     rows.append(RowScore(
         row=57, metric="% Partisipasi Campaign",
-        value=d57, benchmark=">90%", verdict=f57, message="", score=h57,
+        value=d57, benchmark=f">{part_threshold * 100:g}%", verdict=f57, message="", score=h57,
     ))
 
     return CategoryScore(
@@ -795,19 +804,19 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
     top_sku_data = _get_nested(calculator_results, "top_sku", "details")
     has_data = top_sku_data is not None and "average_stock" in (top_sku_data or {})
 
+    stock_rules = _get_rule_category(rules, "stock")
+    high_threshold = _get_rule_value(stock_rules, "high_threshold", "threshold", 24)
+
     if not has_data:
         row = RowScore(
             row=70, metric="Rata² Stok",
-            value="N/A", benchmark=">=24", verdict="-",
+            value="N/A", benchmark=f">={high_threshold:g}", verdict="-",
             message="Calculator 2 (Top SKU) belum dijalankan", score=0.0,
         )
         return CategoryScore(
             category="Stok",
             score=0.0, max_score=10.0, rows=[row], available=False,
         )
-
-    stock_rules = _get_rule_category(rules, "stock")
-    high_threshold = _get_rule_value(stock_rules, "high_threshold", "threshold", 24)
     high_points = float(_get_rule_value(stock_rules, "high_threshold", "points", 10.0))
     mid_threshold = _get_rule_value(stock_rules, "mid_threshold", "threshold", 12)
     mid_points = float(_get_rule_value(stock_rules, "mid_threshold", "points", 5.0))
@@ -826,7 +835,7 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
 
     row = RowScore(
         row=70, metric="Rata² Stok",
-        value=avg_stock_int, benchmark=">=24", verdict=f70,
+        value=avg_stock_int, benchmark=f">={high_threshold:g}", verdict=f70,
         message="", score=h70,
     )
     return CategoryScore(

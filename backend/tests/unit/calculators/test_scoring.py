@@ -1190,6 +1190,79 @@ class TestCustomRulesProducts:
         assert h45.score == 8.0
 
 
+class TestCustomRulesBusiness:
+    """Custom business thresholds change scores."""
+
+    def test_custom_sales_trend_threshold(self):
+        data = {
+            "business": {
+                "salesMonth0": 100_000_000,
+                "salesMonth1": 100_000_000,
+                "salesMonth2": 100_000_000,
+                "salesMonth3": 100_000_000,
+                "salesMonth4": 100_000_000,
+                "salesMonth5": 100_000_000,
+            }
+        }
+        # Default: threshold_pct=90 → multiplier=1.10
+        # avg=100M, current=100M → 100M < 100M*1.10=110M → pass (10pts)
+        cat_default = _score_business(data)
+        assert cat_default.rows[0].score == 10.0
+
+        # Custom: threshold_pct=50 → multiplier=1.50
+        # avg=100M, current=100M → 100M < 100M*1.50=150M → pass with 15pts
+        custom_rules = {**DEFAULT_FASHION_RULES, "business": {
+            **DEFAULT_FASHION_RULES["business"],
+            "monthly_sales_trend": {"threshold_pct": 50.0, "points": 15, "comparison": "gte"},
+        }}
+        cat_custom = _score_business(data, custom_rules)
+        assert cat_custom.rows[0].score == 15.0
+
+    def test_custom_avg_threshold(self):
+        data = {
+            "business": {
+                "salesMonth0": 80_000_000,
+                "salesMonth1": 70_000_000,
+                "salesMonth2": 60_000_000,
+                "salesMonth3": 50_000_000,
+                "salesMonth4": 40_000_000,
+                "salesMonth5": 30_000_000,
+            }
+        }
+        # avg = 55M, default threshold=100M → 55M < 100M → fail
+        cat_default = _score_business(data)
+        h19 = next(r for r in cat_default.rows if r.row == 19)
+        assert h19.score == 0.0
+
+        # Custom: threshold=50M → 55M > 50M → pass with 12pts
+        custom_rules = {**DEFAULT_FASHION_RULES, "business": {
+            **DEFAULT_FASHION_RULES["business"],
+            "six_month_avg_threshold": {"threshold": 50_000_000, "points": 12, "comparison": "gte"},
+        }}
+        cat_custom = _score_business(data, custom_rules)
+        h19 = next(r for r in cat_custom.rows if r.row == 19)
+        assert h19.score == 12.0
+
+
+class TestCustomRulesContent:
+    """Custom content quality_ratio threshold changes verdict."""
+
+    def test_custom_quality_threshold(self):
+        data = {"content": {"needsImprovement": 10, "goodQuality": 90}}
+        # ratio = 90/100 = 90%, default threshold=95% → fail
+        cat_default = _score_content(data)
+        d24 = next(r for r in cat_default.rows if r.row == 24)
+        assert d24.verdict == "❌"
+
+        # Custom: threshold=85% → 90% >= 85% → pass
+        custom_rules = {**DEFAULT_FASHION_RULES, "content": {
+            "quality_ratio": {"threshold": 85.0, "comparison": "gte", "info_only": True},
+        }}
+        cat_custom = _score_content(data, custom_rules)
+        d24 = next(r for r in cat_custom.rows if r.row == 24)
+        assert d24.verdict == "✔️"
+
+
 class TestScoringResultRuleVersion:
     """ScoringResult dataclass has rule_version field."""
 
