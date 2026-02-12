@@ -103,7 +103,7 @@ def _build_filter_clauses(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
-    category: str | None = None,
+    category: Literal["fashion", "non_fashion"] | None = None,
 ) -> tuple[str, list[Any], int]:
     """Build conditional WHERE clauses for evaluation list/count queries.
 
@@ -129,7 +129,7 @@ def _build_filter_clauses(
         params.append(date_to)
         param_idx += 1
 
-    if category:
+    if category is not None:
         conditions.append(f"e.template = ${param_idx}")
         params.append(category)
         param_idx += 1
@@ -148,7 +148,7 @@ async def list_evaluations(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
-    category: str | None = None,
+    category: Literal["fashion", "non_fashion"] | None = None,
 ) -> list[dict]:
     """List evaluations with JOIN on brand_vp_data and users.
 
@@ -181,7 +181,7 @@ async def count_evaluations(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
-    category: str | None = None,
+    category: Literal["fashion", "non_fashion"] | None = None,
 ) -> int:
     """Return total number of evaluations, optionally filtered by search, date range, and category."""
     where_clause, params, _ = _build_filter_clauses(search, date_from, date_to, category)

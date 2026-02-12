@@ -414,13 +414,15 @@ export const EvaluationHistoryTable = () => {
         {filterBar}
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <p className="text-muted-foreground">
-            {searchFromUrl
-              ? `No evaluations found for '${searchFromUrl}'`
-              : dateFromUrl || dateToUrl
-                ? `No evaluations found for the selected date range`
-                : categoryFromUrl
-                  ? `No evaluations found for the selected category`
-                  : 'No evaluations found'}
+            {[searchFromUrl, dateFromUrl || dateToUrl, categoryFromUrl].filter(Boolean).length > 1
+              ? 'No evaluations found matching your filters'
+              : searchFromUrl
+                ? `No evaluations found for '${searchFromUrl}'`
+                : dateFromUrl || dateToUrl
+                  ? `No evaluations found for the selected date range`
+                  : categoryFromUrl
+                    ? `No evaluations found for the selected category`
+                    : 'No evaluations found'}
           </p>
           {!searchFromUrl && !dateFromUrl && !dateToUrl && !categoryFromUrl && (
             <p className="text-sm text-muted-foreground">
