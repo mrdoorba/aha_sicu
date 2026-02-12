@@ -17,6 +17,17 @@ export interface RuleThreshold {
   star?: number;
   regular?: number;
   value?: number;
+  // Message templates (Story 5.5)
+  message_pass?: string;
+  message_fail?: string;
+  message_fail_severe?: string;
+  message_no_ads?: string;
+  message_too_minimal?: string;
+  message_no_data?: string;
+  // Promo individual messages (nested object)
+  message_zero?: string;
+  message_dependent?: string;
+  message_pass_afiliasi?: string;
 }
 
 export interface InterpretationRange {
@@ -38,7 +49,11 @@ export interface ScoringRules {
   stock: Record<string, RuleThreshold>;
   discount: Record<string, RuleThreshold>;
   marketing: Record<string, RuleThreshold>;
-  interpretation: { ranges: InterpretationRange[] };
+  competition?: { message_pass?: string; message_fail?: string };
+  interpretation: {
+    ranges: InterpretationRange[];
+    closing_messages?: Record<string, string>;
+  };
 }
 
 export interface ScoringRule {
