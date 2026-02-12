@@ -50,14 +50,14 @@ async def list_evaluations_endpoint(
     search: str | None = Query(default=None, max_length=200),
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
-    # Forward-compat param — accepted but not yet implemented (Story 4.4)
     category: Literal["fashion", "non_fashion"] | None = Query(default=None),
     current_user: dict = Depends(get_current_user),
 ) -> EvaluationListResponse:
     """List all evaluations with pagination and sorting.
 
     Returns paginated evaluation history with brand names and evaluator emails.
-    Supports filtering by search (brand name), date range (date_from, date_to).
+    Supports filtering by search (brand name), date range (date_from, date_to),
+    and category (fashion, non_fashion).
     """
     return await list_evaluations(
         page=page,
@@ -67,6 +67,7 @@ async def list_evaluations_endpoint(
         search=search,
         date_from=date_from,
         date_to=date_to,
+        category=category,
     )
 
 
