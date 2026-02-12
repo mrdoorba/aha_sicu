@@ -102,6 +102,14 @@ describe('Header', () => {
     expect(mockLogout).not.toHaveBeenCalled();
   });
 
+  it('displays History navigation link', () => {
+    renderHeader();
+
+    const historyLink = screen.getByRole('link', { name: /history/i });
+    expect(historyLink).toBeInTheDocument();
+    expect(historyLink).toHaveAttribute('href', '/history');
+  });
+
   it('dialog has accessible title and description', async () => {
     const user = userEvent.setup();
     renderHeader();

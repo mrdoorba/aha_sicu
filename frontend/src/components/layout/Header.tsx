@@ -64,6 +64,16 @@ export const Header = () => {
                 >
                   Brands
                 </Link>
+                <Link
+                  to="/history"
+                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                    location.pathname === '/history'
+                      ? 'bg-white/20 text-white'
+                      : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                  }`}
+                >
+                  History
+                </Link>
               </nav>
             </div>
             <div className="flex items-center gap-4">
