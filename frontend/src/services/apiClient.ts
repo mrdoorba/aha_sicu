@@ -553,6 +553,36 @@ interface paths {
       };
     };
   };
+  '/api/v1/rules/{template}': {
+    put: {
+      parameters: {
+        path: {
+          template: 'fashion' | 'non_fashion';
+        };
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            rules: Record<string, unknown>;
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              id: number;
+              template: string;
+              rules: Record<string, unknown>;
+              version: number;
+              updated_by: number | null;
+              updated_at: string;
+            };
+          };
+        };
+      };
+    };
+  };
   '/api/v1/evaluations/brands/{brand_id}/calculators/status': {
     get: {
       parameters: {

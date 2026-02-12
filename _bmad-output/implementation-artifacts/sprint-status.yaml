@@ -84,7 +84,7 @@ development_status:
   # Epic 5: Rule Configuration
   epic-5: in-progress
   5-1-view-current-scoring-rules: done
-  5-2-edit-scoring-rules-with-password-confirmation: backlog
+  5-2-edit-scoring-rules-with-password-confirmation: done
   5-3-apply-configured-rules-in-scoring: backlog
   epic-5-retrospective: optional
 
