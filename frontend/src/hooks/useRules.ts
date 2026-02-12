@@ -16,6 +16,7 @@ export interface RuleThreshold {
   star_plus?: number;
   star?: number;
   regular?: number;
+  value?: number;
 }
 
 export interface InterpretationRange {
@@ -36,6 +37,7 @@ export interface ScoringRules {
   campaign: Record<string, RuleThreshold>;
   stock: Record<string, RuleThreshold>;
   discount: Record<string, RuleThreshold>;
+  marketing: Record<string, RuleThreshold>;
   interpretation: { ranges: InterpretationRange[] };
 }
 

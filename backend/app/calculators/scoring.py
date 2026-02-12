@@ -218,6 +218,15 @@ DEFAULT_FASHION_RULES: dict = {
     "discount": {
         "fake_discount_flag": {"points_no_flag": 5, "points_flag": 0},
     },
+    "marketing": {
+        "floor": {"value": 0.15},
+        "base_subtraction": {"value": 0.03},
+        "upper_limit_base": {"value": 0.20},
+        "fashion_adjustment": {"value": 0.05},
+        "minimum_threshold": {"value": 0.10},
+        "display_max": {"value": 0.25},
+        "display_min": {"value": 0.10},
+    },
     "interpretation": {
         "ranges": [
             {"min": 71, "max": None, "label": "Good Candidate", "verdict": "✔️"},
@@ -236,6 +245,11 @@ DEFAULT_NON_FASHION_RULES: dict = {
     "ads": {
         **DEFAULT_FASHION_RULES["ads"],
         "roi_threshold": {"threshold": 9.0, "opportunity_points": 5, "comparison": "gt"},
+    },
+    "marketing": {
+        **DEFAULT_FASHION_RULES["marketing"],
+        "floor": {"value": 0.12},
+        "fashion_adjustment": {"value": 0.0},
     },
 }
 
@@ -1175,20 +1189,28 @@ def _compute_g68(d73_text: str, d52: float) -> str:
 
 def _compute_g72(
     g68_text: str, d52: float, d73_text: str, is_fashion: bool,
+    rules: dict | None = None,
 ) -> float:
     """G72: Recommended marketing percentage (as fraction).
 
     Complex MIN/MAX formula with Fashion adjustment.
     """
+    mkt_rules = _get_rule_category(rules, "marketing")
+    floor = _get_rule_value(mkt_rules, "floor", "value", 0.15 if is_fashion else 0.12)
+    base_subtraction = _get_rule_value(mkt_rules, "base_subtraction", "value", 0.03)
+    upper_limit_base = _get_rule_value(mkt_rules, "upper_limit_base", "value", 0.20)
+    fashion_adj = _get_rule_value(mkt_rules, "fashion_adjustment", "value", 0.05 if is_fashion else 0.0)
+    minimum = _get_rule_value(mkt_rules, "minimum_threshold", "value", 0.10)
+
     if not d73_text:
-        return 0.15 if is_fashion else 0.12
+        return floor
 
     t, ra, rb, v, p = _parse_d73_percentages(d73_text)
 
     avg = ((ra * t + v + p + d52) + (rb * t + v + p + d52)) / 2
-    base = _rounddown(avg - 0.03, 2)
+    base = _rounddown(avg - base_subtraction, 2)
 
-    upper_limit = 0.20 + (0.05 if is_fashion else 0.0)
+    upper_limit = upper_limit_base + fashion_adj
 
     # Parse first percentage from G68 text
     g68_first = 0.0
@@ -1198,13 +1220,14 @@ def _compute_g72(
             g68_first = math.ceil(float(match.group(1))) / 100
 
     min_val = min(min(base, upper_limit), g68_first) if g68_first > 0 else min(base, upper_limit)
-    result = max(max(min_val, 0.10), 0.15 if is_fashion else 0.12)
+    result = max(max(min_val, minimum), floor)
 
     return result
 
 
 def _compute_g73(
-    verdict: str, g72_value: float, d13: float, is_fashion: bool,
+    verdict: str, g72_value: float, d13: float,
+    rules: dict | None = None,
 ) -> str:
     """G73: Marketing budget recommendation text.
 
@@ -1213,8 +1236,12 @@ def _compute_g73(
     if verdict.startswith("❌") or verdict == "⭕️":
         return ""
 
+    mkt_rules = _get_rule_category(rules, "marketing")
+    display_max = _get_rule_value(mkt_rules, "display_max", "value", 0.25)
+    display_min = _get_rule_value(mkt_rules, "display_min", "value", 0.10)
+
     # Clamp to range
-    display_pct = max(min(g72_value, 0.25), 0.10)
+    display_pct = max(min(g72_value, display_max), display_min)
     pct_str = f"{display_pct * 100:.0f}%"
 
     budget = d13 * display_pct if d13 > 0 else 0
@@ -1547,8 +1574,8 @@ def calculate_score(
     d73_text = _get_nested(calculator_results, "discount", "output_text") or ""
 
     g68 = _compute_g68(d73_text, d52)
-    g72 = _compute_g72(g68, d52, d73_text, is_fashion)
-    g73 = _compute_g73(verdict, g72, d13, is_fashion)
+    g72 = _compute_g72(g68, d52, d73_text, is_fashion, rules)
+    g73 = _compute_g73(verdict, g72, d13, rules)
 
     marketing_label = f"📌 Estimasi persentase biaya marketing {brand_name} sekarang:"
 

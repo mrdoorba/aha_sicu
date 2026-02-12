@@ -24,11 +24,14 @@ const CATEGORY_ORDER = [
   'campaign',
   'stock',
   'discount',
+  'marketing',
 ] as const;
 
 const DIFFERING_KEYS = new Set([
   'business.conversion_rate',
   'ads.roi_threshold',
+  'marketing.floor',
+  'marketing.fashion_adjustment',
 ]);
 
 export const RulesPage = () => {
