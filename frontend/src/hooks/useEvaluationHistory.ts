@@ -27,13 +27,20 @@ export function useEvaluationHistory(
   limit = 20,
   sortBy: SortBy = 'created_at',
   sortOrder: SortOrder = 'desc',
+  search?: string,
 ) {
   const query = useQuery<EvaluationListResponse>({
-    queryKey: ['evaluations', page, limit, sortBy, sortOrder],
+    queryKey: ['evaluations', page, limit, sortBy, sortOrder, search],
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/evaluations', {
         params: {
-          query: { page, limit, sort_by: sortBy, sort_order: sortOrder },
+          query: {
+            page,
+            limit,
+            sort_by: sortBy,
+            sort_order: sortOrder,
+            ...(search ? { search } : {}),
+          },
         },
       });
       if (error) throw new Error('Failed to fetch evaluation history');
