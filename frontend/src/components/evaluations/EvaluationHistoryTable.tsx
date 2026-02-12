@@ -24,6 +24,13 @@ import { cn } from '../../lib/utils';
 import { Calendar } from '../ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '../ui/select';
+import {
   useEvaluationHistory,
   type SortBy,
   type SortOrder,
@@ -202,6 +209,7 @@ export const EvaluationHistoryTable = () => {
   const searchFromUrl = searchParams.get('search') ?? '';
   const dateFromUrl = searchParams.get('date_from') ?? '';
   const dateToUrl = searchParams.get('date_to') ?? '';
+  const categoryFromUrl = searchParams.get('category') ?? '';
 
   const [searchInput, setSearchInput] = useState(searchFromUrl);
   const isInitialMount = useRef(true);
@@ -264,6 +272,22 @@ export const EvaluationHistoryTable = () => {
     [setSearchParams],
   );
 
+  const setCategory = useCallback(
+    (value: string) => {
+      setSearchParams((prev) => {
+        const p = new URLSearchParams(prev);
+        if (value && value !== 'all') {
+          p.set('category', value);
+        } else {
+          p.delete('category');
+        }
+        p.delete('page');
+        return p;
+      }, { replace: true });
+    },
+    [setSearchParams],
+  );
+
   const sorting: SortingState = [
     { id: sortBy, desc: sortOrder === 'desc' },
   ];
@@ -314,6 +338,7 @@ export const EvaluationHistoryTable = () => {
     searchFromUrl || undefined,
     dateFromUrl || undefined,
     dateToUrl || undefined,
+    categoryFromUrl || undefined,
   );
 
   const table = useReactTable({
@@ -350,6 +375,19 @@ export const EvaluationHistoryTable = () => {
         value={searchInput}
         onChange={setSearchInput}
       />
+      <Select
+        value={categoryFromUrl || 'all'}
+        onValueChange={setCategory}
+      >
+        <SelectTrigger className="w-[180px]" aria-label="Filter by category">
+          <SelectValue placeholder="All Categories" />
+        </SelectTrigger>
+        <SelectContent>
+          <SelectItem value="all">All Categories</SelectItem>
+          <SelectItem value="fashion">Fashion</SelectItem>
+          <SelectItem value="non_fashion">Non-Fashion</SelectItem>
+        </SelectContent>
+      </Select>
       <div className="flex items-center gap-2">
         <DatePickerField
           label="Filter from date"
@@ -380,9 +418,11 @@ export const EvaluationHistoryTable = () => {
               ? `No evaluations found for '${searchFromUrl}'`
               : dateFromUrl || dateToUrl
                 ? `No evaluations found for the selected date range`
-                : 'No evaluations found'}
+                : categoryFromUrl
+                  ? `No evaluations found for the selected category`
+                  : 'No evaluations found'}
           </p>
-          {!searchFromUrl && !dateFromUrl && !dateToUrl && (
+          {!searchFromUrl && !dateFromUrl && !dateToUrl && !categoryFromUrl && (
             <p className="text-sm text-muted-foreground">
               Start evaluating brands to see history here.
             </p>
