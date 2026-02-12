@@ -283,4 +283,110 @@ describe('EvaluationHistoryTable', () => {
       expect(location).toContain('sort_by=final_score');
     });
   });
+
+  // --- Date filter tests (Story 4.3) ---
+
+  it('date pickers render with accessible labels', () => {
+    renderTable();
+
+    const fromPicker = screen.getByRole('button', { name: /filter from date/i });
+    const toPicker = screen.getByRole('button', { name: /filter to date/i });
+    expect(fromPicker).toBeInTheDocument();
+    expect(toPicker).toBeInTheDocument();
+  });
+
+  it('selecting from-date updates URL with date_from param and resets page', async () => {
+    const user = userEvent.setup();
+    renderTable(['/history?page=3']);
+
+    // Click the from-date picker to open it
+    const fromPicker = screen.getByRole('button', { name: /filter from date/i });
+    await user.click(fromPicker);
+
+    // Find the "15th" day button — uses ordinal suffix to avoid ambiguous matches
+    const dayButton = screen.getByRole('button', { name: /15th/ });
+    await user.click(dayButton);
+
+    await waitFor(() => {
+      const location = screen.getByTestId('location').textContent ?? '';
+      expect(location).toContain('date_from=');
+      expect(location).not.toContain('page=3');
+    });
+  });
+
+  it('selecting to-date updates URL with date_to param', async () => {
+    const user = userEvent.setup();
+    renderTable();
+
+    // Click the to-date picker to open it
+    const toPicker = screen.getByRole('button', { name: /filter to date/i });
+    await user.click(toPicker);
+
+    // Find the "18th" day button — uses ordinal suffix to avoid matching "2026"
+    const dayButton = screen.getByRole('button', { name: /18th/ });
+    await user.click(dayButton);
+
+    await waitFor(() => {
+      const location = screen.getByTestId('location').textContent ?? '';
+      expect(location).toContain('date_to=');
+    });
+  });
+
+  it('clearing date picker removes the corresponding URL param', async () => {
+    const user = userEvent.setup();
+    renderTable(['/history?date_from=2026-01-01&date_to=2026-01-31']);
+
+    // Clear from-date
+    const clearFromButton = screen.getByRole('button', { name: /clear from date/i });
+    expect(clearFromButton).toBeInTheDocument();
+    await user.click(clearFromButton);
+
+    await waitFor(() => {
+      const location = screen.getByTestId('location').textContent ?? '';
+      expect(location).not.toContain('date_from=');
+      expect(location).toContain('date_to=2026-01-31');
+    });
+  });
+
+  it('date filter combines with search in URL and hook call', () => {
+    renderTable(['/history?search=Nike&date_from=2026-01-01']);
+
+    const location = screen.getByTestId('location').textContent ?? '';
+    expect(location).toContain('search=Nike');
+    expect(location).toContain('date_from=2026-01-01');
+
+    // Verify hook receives both params
+    const lastCall = mockUseEvaluationHistory.mock.calls.at(-1);
+    expect(lastCall?.[4]).toBe('Nike');       // search
+    expect(lastCall?.[5]).toBe('2026-01-01'); // dateFrom
+  });
+
+  it('empty state with date filter shows contextual message', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluations: [],
+      total: 0,
+    };
+    renderTable(['/history?date_from=2026-01-01&date_to=2026-01-31']);
+
+    expect(
+      screen.getByText('No evaluations found for the selected date range'),
+    ).toBeInTheDocument();
+  });
+
+  it('date filter persists across sort changes', async () => {
+    const user = userEvent.setup();
+    renderTable(['/history?date_from=2026-01-01&date_to=2026-01-31']);
+
+    // Click sort by score
+    const scoreButton = screen.getByRole('button', { name: /sort by score/i });
+    await user.click(scoreButton);
+
+    await waitFor(() => {
+      const location = screen.getByTestId('location').textContent ?? '';
+      expect(location).toContain('date_from=2026-01-01');
+      expect(location).toContain('date_to=2026-01-31');
+      expect(location).toContain('sort_by=final_score');
+    });
+  });
 });

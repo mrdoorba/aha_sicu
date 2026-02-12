@@ -7,7 +7,8 @@ import {
   type SortingState,
   flexRender,
 } from '@tanstack/react-table';
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, AlertCircle, Search, X } from 'lucide-react';
+import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, AlertCircle, Search, X, CalendarIcon } from 'lucide-react';
+import { format, parseISO } from 'date-fns';
 import {
   Table,
   TableHeader,
@@ -19,6 +20,9 @@ import {
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
+import { cn } from '../../lib/utils';
+import { Calendar } from '../ui/calendar';
+import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import {
   useEvaluationHistory,
   type SortBy,
@@ -93,7 +97,7 @@ function SearchInput({
   onChange: (value: string) => void;
 }) {
   return (
-    <div className="relative mb-4 max-w-sm">
+    <div className="relative max-w-sm">
       <Search
         className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground"
         aria-hidden="true"
@@ -120,6 +124,71 @@ function SearchInput({
   );
 }
 
+function DatePickerField({
+  label,
+  value,
+  onChange,
+  clearLabel,
+  disableBefore,
+  disableAfter,
+}: {
+  label: string;
+  value: Date | undefined;
+  onChange: (date: Date | undefined) => void;
+  clearLabel: string;
+  disableBefore?: Date;
+  disableAfter?: Date;
+}) {
+  const [open, setOpen] = useState(false);
+
+  const disabled: Array<{ before: Date } | { after: Date }> = [];
+  if (disableBefore) disabled.push({ before: disableBefore });
+  if (disableAfter) disabled.push({ after: disableAfter });
+
+  return (
+    <div className="flex items-center gap-1">
+      <Popover open={open} onOpenChange={setOpen}>
+        <PopoverTrigger asChild>
+          <Button
+            variant="outline"
+            className={cn(
+              'w-[180px] justify-start text-left font-normal',
+              !value && 'text-muted-foreground',
+            )}
+            aria-label={label}
+          >
+            <CalendarIcon className="mr-2 size-4" aria-hidden="true" />
+            {value ? format(value, 'MMM d, yyyy') : label}
+          </Button>
+        </PopoverTrigger>
+        <PopoverContent className="w-auto p-0" align="start">
+          <Calendar
+            mode="single"
+            selected={value}
+            onSelect={(date) => {
+              onChange(date);
+              setOpen(false);
+            }}
+            autoFocus
+            disabled={disabled.length > 0 ? disabled : undefined}
+          />
+        </PopoverContent>
+      </Popover>
+      {value && (
+        <Button
+          variant="ghost"
+          size="sm"
+          className="size-7 p-0"
+          aria-label={clearLabel}
+          onClick={() => onChange(undefined)}
+        >
+          <X className="size-4" aria-hidden="true" />
+        </Button>
+      )}
+    </div>
+  );
+}
+
 export const EvaluationHistoryTable = () => {
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -131,6 +200,8 @@ export const EvaluationHistoryTable = () => {
   const sortOrder: SortOrder =
     (searchParams.get('sort_order') as SortOrder) || 'desc';
   const searchFromUrl = searchParams.get('search') ?? '';
+  const dateFromUrl = searchParams.get('date_from') ?? '';
+  const dateToUrl = searchParams.get('date_to') ?? '';
 
   const [searchInput, setSearchInput] = useState(searchFromUrl);
   const isInitialMount = useRef(true);
@@ -160,6 +231,38 @@ export const EvaluationHistoryTable = () => {
   useEffect(() => {
     setSearchInput(searchFromUrl);
   }, [searchFromUrl]);
+
+  const setDateFrom = useCallback(
+    (date: Date | undefined) => {
+      setSearchParams((prev) => {
+        const p = new URLSearchParams(prev);
+        if (date) {
+          p.set('date_from', format(date, 'yyyy-MM-dd'));
+        } else {
+          p.delete('date_from');
+        }
+        p.delete('page');
+        return p;
+      }, { replace: true });
+    },
+    [setSearchParams],
+  );
+
+  const setDateTo = useCallback(
+    (date: Date | undefined) => {
+      setSearchParams((prev) => {
+        const p = new URLSearchParams(prev);
+        if (date) {
+          p.set('date_to', format(date, 'yyyy-MM-dd'));
+        } else {
+          p.delete('date_to');
+        }
+        p.delete('page');
+        return p;
+      }, { replace: true });
+    },
+    [setSearchParams],
+  );
 
   const sorting: SortingState = [
     { id: sortBy, desc: sortOrder === 'desc' },
@@ -206,7 +309,12 @@ export const EvaluationHistoryTable = () => {
     error,
     refetch,
     isPlaceholderData,
-  } = useEvaluationHistory(page, limit, sortBy, sortOrder, searchFromUrl || undefined);
+  } = useEvaluationHistory(
+    page, limit, sortBy, sortOrder,
+    searchFromUrl || undefined,
+    dateFromUrl || undefined,
+    dateToUrl || undefined,
+  );
 
   const table = useReactTable({
     data: evaluations,
@@ -236,20 +344,45 @@ export const EvaluationHistoryTable = () => {
     );
   }
 
+  const filterBar = (
+    <div className="mb-4 flex flex-wrap items-end gap-4">
+      <SearchInput
+        value={searchInput}
+        onChange={setSearchInput}
+      />
+      <div className="flex items-center gap-2">
+        <DatePickerField
+          label="Filter from date"
+          value={dateFromUrl ? parseISO(dateFromUrl) : undefined}
+          onChange={setDateFrom}
+          clearLabel="Clear from date"
+          disableAfter={dateToUrl ? parseISO(dateToUrl) : undefined}
+        />
+        <span className="text-muted-foreground text-sm">–</span>
+        <DatePickerField
+          label="Filter to date"
+          value={dateToUrl ? parseISO(dateToUrl) : undefined}
+          onChange={setDateTo}
+          clearLabel="Clear to date"
+          disableBefore={dateFromUrl ? parseISO(dateFromUrl) : undefined}
+        />
+      </div>
+    </div>
+  );
+
   if (!isLoading && evaluations.length === 0 && total === 0) {
     return (
       <div>
-        <SearchInput
-          value={searchInput}
-          onChange={setSearchInput}
-        />
+        {filterBar}
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <p className="text-muted-foreground">
             {searchFromUrl
               ? `No evaluations found for '${searchFromUrl}'`
-              : 'No evaluations found'}
+              : dateFromUrl || dateToUrl
+                ? `No evaluations found for the selected date range`
+                : 'No evaluations found'}
           </p>
-          {!searchFromUrl && (
+          {!searchFromUrl && !dateFromUrl && !dateToUrl && (
             <p className="text-sm text-muted-foreground">
               Start evaluating brands to see history here.
             </p>
@@ -261,11 +394,7 @@ export const EvaluationHistoryTable = () => {
 
   return (
     <div>
-      <SearchInput
-        value={searchInput}
-        onChange={setSearchInput}
-        isLoading={isLoading || isPlaceholderData}
-      />
+      {filterBar}
       <Table
         aria-label="Evaluation history"
         aria-busy={isLoading || isPlaceholderData}

@@ -1,6 +1,7 @@
 """Evaluation inputs database queries using parameterized SQL."""
 
 import json
+from datetime import date
 from typing import Any, Literal
 
 from asyncpg import Connection
@@ -98,6 +99,39 @@ async def insert_evaluation(
     return dict(row)
 
 
+def _build_filter_clauses(
+    search: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> tuple[str, list[Any], int]:
+    """Build conditional WHERE clauses for evaluation list/count queries.
+
+    Returns (where_clause, params, next_param_idx) with dynamic $N numbering.
+    """
+    conditions: list[str] = []
+    params: list[Any] = []
+    param_idx = 1
+
+    if search:
+        escaped = escape_like(search)
+        conditions.append(f"b.brand_name ILIKE '%' || ${param_idx} || '%' ESCAPE '\\'")
+        params.append(escaped)
+        param_idx += 1
+
+    if date_from:
+        conditions.append(f"e.created_at >= ${param_idx}")
+        params.append(date_from)
+        param_idx += 1
+
+    if date_to:
+        conditions.append(f"e.created_at < (${param_idx} + interval '1 day')")
+        params.append(date_to)
+        param_idx += 1
+
+    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
+    return where_clause, params, param_idx
+
+
 async def list_evaluations(
     conn: Connection,
     *,
@@ -106,22 +140,19 @@ async def list_evaluations(
     sort_by: Literal["created_at", "final_score"],
     sort_order: Literal["asc", "desc"],
     search: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
 ) -> list[dict]:
     """List evaluations with JOIN on brand_vp_data and users.
 
     Returns lightweight rows (no heavy JSONB columns).
     sort_by is validated via Literal type at router level — safe for f-string.
-    When search is provided, filters by brand_name ILIKE with escaped special chars.
+    Filters conditionally by search (brand_name ILIKE) and date range (created_at).
     """
-    if search:
-        escaped = escape_like(search)
-        where_clause = "WHERE b.brand_name ILIKE '%' || $1 || '%' ESCAPE '\\'"
-        params: list[Any] = [escaped, limit, offset]
-        limit_param, offset_param = "$2", "$3"
-    else:
-        where_clause = ""
-        params = [limit, offset]
-        limit_param, offset_param = "$1", "$2"
+    where_clause, params, param_idx = _build_filter_clauses(search, date_from, date_to)
+    limit_param = f"${param_idx}"
+    offset_param = f"${param_idx + 1}"
+    params.extend([limit, offset])
 
     query = f"""
         SELECT e.id, b.brand_name, e.final_score, e.verdict, e.template,
@@ -138,22 +169,22 @@ async def list_evaluations(
 
 
 async def count_evaluations(
-    conn: Connection, *, search: str | None = None
+    conn: Connection,
+    *,
+    search: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
 ) -> int:
-    """Return total number of evaluations, optionally filtered by brand name search."""
-    if search:
-        escaped = escape_like(search)
-        row = await conn.fetchval(
-            """
-            SELECT COUNT(*)
-            FROM evaluations e
-            JOIN brand_vp_data b ON e.brand_id = b.id
-            WHERE b.brand_name ILIKE '%' || $1 || '%' ESCAPE '\\'
-            """,
-            escaped,
-        )
-    else:
-        row = await conn.fetchval("SELECT COUNT(*) FROM evaluations")
+    """Return total number of evaluations, optionally filtered by search and date range."""
+    where_clause, params, _ = _build_filter_clauses(search, date_from, date_to)
+
+    query = f"""
+        SELECT COUNT(*)
+        FROM evaluations e
+        JOIN brand_vp_data b ON e.brand_id = b.id
+        {where_clause}
+    """
+    row = await conn.fetchval(query, *params)
     return row or 0
 
 
