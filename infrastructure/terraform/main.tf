@@ -69,6 +69,12 @@ resource "google_project_service" "firebase_hosting_api" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "scheduler_api" {
+  project            = var.project_id
+  service            = "cloudscheduler.googleapis.com"
+  disable_on_destroy = false
+}
+
 # =============================================================================
 # Google Sheets API & Service Account (Epic 2 - Brand Data Availability)
 # =============================================================================

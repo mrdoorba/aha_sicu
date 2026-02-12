@@ -576,7 +576,7 @@ Claude Opus 4.6
 **Reviewer:** Mr. Door (Claude Opus 4.6) — 2026-02-12
 **Outcome:** Approved with fixes applied
 
-**Issues Found:** 2 High, 3 Medium, 3 Low — all HIGH and MEDIUM fixed automatically.
+**Issues Found:** 2 High, 3 Medium, 3 Low — all 8 issues fixed.
 
 **Fixes Applied:**
 1. **[H1] Removed stale v1 Cloud Run IAM binding** (`iam.tf`) — `google_cloud_run_service_iam_member.scheduler_invoker` referenced non-existent v1 service; v2 binding in `cloud_run.tf` is correct replacement
@@ -585,16 +585,15 @@ Claude Opus 4.6
 4. **[M2] Stopped gitignoring `.terraform.lock.hcl`** (`.gitignore`) — lock file should be committed for reproducible provider versions
 5. **[M3] Added explicit backend block** (`main.tf`) — `backend "local" {}` with GCS migration comment
 
-**LOW issues (not fixed — nice to have):**
-- [L1] Inconsistent API enablement location (scheduler API in scheduler.tf, others in main.tf)
-- [L2] GCS bucket name uses underscores (architecture-consistent but not GCS best practice)
-- [L3] `cloud_run_service_name` variable is vestigial from v1 era
+6. **[L1] Consolidated API enablement in main.tf** (`scheduler.tf` → `main.tf`) — moved `scheduler_api` resource to main.tf alongside all other API enablements
+7. **[L2] GCS bucket name uses hyphens** — already resolved by H2 fix (`${var.project_id}-aha-sicu-uploads`)
+8. **[L3] Updated `cloud_run_service_name` description** (`variables.tf`) — removed stale "for IAM binding" wording, now says "Cloud Run v2 service name"
 
 **Post-fix validation:** `terraform fmt -check -recursive` ✅, `terraform validate` ✅
 
 ### Change Log
 
-- 2026-02-12: Code review — 5 fixes applied (2 HIGH, 3 MEDIUM), all ACs validated, status → done
+- 2026-02-12: Code review — 8 fixes applied (2 HIGH, 3 MEDIUM, 3 LOW), all ACs validated, status → done
 - 2026-02-12: Story 6.1 implementation — complete Terraform infrastructure provisioning for production GCP environment
 
 ### File List

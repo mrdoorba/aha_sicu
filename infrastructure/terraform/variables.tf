@@ -29,7 +29,7 @@ variable "cloud_run_url" {
 }
 
 variable "cloud_run_service_name" {
-  description = "Cloud Run service name for IAM binding (e.g., aha-sicu-api)"
+  description = "Cloud Run v2 service name (e.g., aha-sicu-api)"
   type        = string
   default     = "aha-sicu-api"
 }

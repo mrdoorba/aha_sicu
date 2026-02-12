@@ -2,13 +2,6 @@
 # Triggers POST /api/v1/sync at 06:00 WIB (Asia/Jakarta) daily
 # Only created when cloud_run_url is set (prod) or Cloud Run v2 service exists
 
-# Enable Cloud Scheduler API
-resource "google_project_service" "scheduler_api" {
-  project            = var.project_id
-  service            = "cloudscheduler.googleapis.com"
-  disable_on_destroy = false
-}
-
 locals {
   # Use explicitly provided URL if set, otherwise use Cloud Run v2 service URI
   scheduler_target_url = var.cloud_run_url != "" ? var.cloud_run_url : google_cloud_run_v2_service.api.uri
