@@ -17,6 +17,16 @@ from app.calculators.scoring import (
     _compute_g75,
     _extract_pct,
     _fmt_idr,
+    _format_message_template,
+    _generate_ads_messages,
+    _generate_business_messages,
+    _generate_campaign_messages,
+    _generate_competition_messages,
+    _generate_content_messages,
+    _generate_operational_messages,
+    _generate_products_messages,
+    _generate_promo_messages,
+    _generate_visitors_messages,
     _parse_d73_percentages,
     _promo_verdict,
     _safe_num,
@@ -1570,3 +1580,672 @@ class TestMarketingRulesPropagation:
         assert result.marketing_budget != ""
         assert "22%" in result.marketing_budget
         assert "22%" in result.email_body
+
+
+# ---------------------------------------------------------------------------
+# _format_message_template helper tests (Story 5-5, Task 3)
+# ---------------------------------------------------------------------------
+
+
+class TestFormatMessageTemplate:
+    def test_basic_substitution(self):
+        result = _format_message_template("Hello {name}", name="World")
+        assert result == "Hello World"
+
+    def test_multiple_placeholders(self):
+        result = _format_message_template("{a} and {b}", a="X", b="Y")
+        assert result == "X and Y"
+
+    def test_missing_placeholder_stays(self):
+        result = _format_message_template("Value is {missing}")
+        assert result == "Value is {missing}"
+
+    def test_partial_placeholders(self):
+        result = _format_message_template("{present} and {absent}", present="OK")
+        assert result == "OK and {absent}"
+
+    def test_extra_kwargs_ignored(self):
+        result = _format_message_template("{a}", a="1", b="2", c="3")
+        assert result == "1"
+
+    def test_empty_template(self):
+        result = _format_message_template("")
+        assert result == ""
+
+    def test_no_placeholders(self):
+        result = _format_message_template("Static text")
+        assert result == "Static text"
+
+    def test_unicode_in_template(self):
+        result = _format_message_template("✔️ {val_str} Sudah Baik", val_str="0.5%")
+        assert result == "✔️ 0.5% Sudah Baik"
+
+    def test_unmatched_opening_brace(self):
+        result = _format_message_template("Value is {broken", val_str="0.5%")
+        assert result == "Value is {broken"
+
+    def test_unmatched_closing_brace(self):
+        result = _format_message_template("50% discount}", val_str="0.5%")
+        assert result == "50% discount}"
+
+    def test_mixed_valid_and_malformed(self):
+        result = _format_message_template("{val_str} and {broken", val_str="0.5%")
+        assert result == "{val_str} and {broken"  # returns raw on error
+
+
+# ---------------------------------------------------------------------------
+# Message template tests — each generator with custom templates (Story 5-5, Task 8)
+# ---------------------------------------------------------------------------
+
+
+class TestMessageTemplatesOperational:
+    """Test operational message generators read templates from rules."""
+
+    def test_custom_pass_template(self):
+        rules = {**DEFAULT_FASHION_RULES, "operational": {
+            **DEFAULT_FASHION_RULES["operational"],
+            "unfulfilled_order_rate": {
+                **DEFAULT_FASHION_RULES["operational"]["unfulfilled_order_rate"],
+                "message_pass": "CUSTOM PASS: {val_str}",
+            },
+        }}
+        data = {"operational": {"unfulfilledOrderRate": 0.5}}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        ops = result.category_scores[0]
+        g7 = next(r for r in ops.rows if r.row == 7)
+        assert g7.message == "CUSTOM PASS: 0.5%"
+
+    def test_custom_fail_template(self):
+        rules = {**DEFAULT_FASHION_RULES, "operational": {
+            **DEFAULT_FASHION_RULES["operational"],
+            "unfulfilled_order_rate": {
+                **DEFAULT_FASHION_RULES["operational"]["unfulfilled_order_rate"],
+                "message_fail": "BAD: {val_str} needs <{threshold}%",
+            },
+        }}
+        data = {"operational": {"unfulfilledOrderRate": 2.0}}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        ops = result.category_scores[0]
+        g7 = next(r for r in ops.rows if r.row == 7)
+        assert g7.message == "BAD: 2.0% needs <1%"
+
+    def test_all_operational_rows_customizable(self):
+        """All 5 operational rows read from rules."""
+        rules = {**DEFAULT_FASHION_RULES, "operational": {
+            "unfulfilled_order_rate": {**DEFAULT_FASHION_RULES["operational"]["unfulfilled_order_rate"],
+                "message_pass": "R7 PASS {val_str}"},
+            "late_shipment_rate": {**DEFAULT_FASHION_RULES["operational"]["late_shipment_rate"],
+                "message_pass": "R8 PASS {val_str}"},
+            "preparation_time": {**DEFAULT_FASHION_RULES["operational"]["preparation_time"],
+                "message_pass": "R9 PASS {val_str}"},
+            "chat_response_rate": {**DEFAULT_FASHION_RULES["operational"]["chat_response_rate"],
+                "message_pass": "R10 PASS {val_str}"},
+            "overall_rating": {**DEFAULT_FASHION_RULES["operational"]["overall_rating"],
+                "message_pass": "R11 PASS {val_str}"},
+        }}
+        data = {"operational": {
+            "unfulfilledOrderRate": 0.5, "lateShipmentRate": 0.3,
+            "preparationTime": 0.8, "chatResponseRate": 98.0, "overallRating": 4.9,
+        }}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        ops = result.category_scores[0]
+        for row in ops.rows:
+            assert row.message.startswith(f"R{row.row} PASS"), f"Row {row.row}: {row.message}"
+
+    def test_fallback_when_rules_none(self):
+        """rules=None still produces correct default messages."""
+        data = {"operational": {"unfulfilledOrderRate": 0.5}}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=None,
+        )
+        ops = result.category_scores[0]
+        g7 = next(r for r in ops.rows if r.row == 7)
+        assert "Sudah Baik" in g7.message
+
+    def test_fallback_when_template_missing(self):
+        """Rules without message fields still produce correct messages."""
+        rules = {**DEFAULT_FASHION_RULES, "operational": {
+            "unfulfilled_order_rate": {"threshold": 1.0, "points": 4, "comparison": "lte"},
+            "late_shipment_rate": {"threshold": 1.0, "points": 3, "comparison": "lte"},
+            "preparation_time": {"threshold": 1.0, "points": 3, "comparison": "lte"},
+            "chat_response_rate": {"threshold": 95.0, "comparison": "gte", "info_only": True},
+            "overall_rating": {"threshold": 4.7, "comparison": "gte", "info_only": True},
+        }}
+        data = {"operational": {"unfulfilledOrderRate": 0.5}}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        ops = result.category_scores[0]
+        g7 = next(r for r in ops.rows if r.row == 7)
+        assert g7.message != ""  # Fallback should produce a message
+
+
+class TestMessageTemplatesBusiness:
+    """Test business message generators read templates from rules."""
+
+    def test_custom_sales_trend_pass(self):
+        rules = {**DEFAULT_FASHION_RULES, "business": {
+            **DEFAULT_FASHION_RULES["business"],
+            "monthly_sales_trend": {
+                **DEFAULT_FASHION_RULES["business"]["monthly_sales_trend"],
+                "message_pass": "SALES UP: {idr_val} by {change_pct}%",
+            },
+        }}
+        data = {"business": {
+            "salesMonth0": 200_000_000, "salesMonth1": 180_000_000,
+            "salesMonth2": 190_000_000, "salesMonth3": 170_000_000,
+            "salesMonth4": 160_000_000, "salesMonth5": 150_000_000,
+        }}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        biz = result.category_scores[1]
+        g13 = next(r for r in biz.rows if r.row == 13)
+        assert "SALES UP:" in g13.message
+
+    def test_custom_severe_drop_addendum(self):
+        rules = {**DEFAULT_FASHION_RULES, "business": {
+            **DEFAULT_FASHION_RULES["business"],
+            "monthly_sales_trend": {
+                **DEFAULT_FASHION_RULES["business"]["monthly_sales_trend"],
+                "message_fail_severe": "\nCRITICAL: Sales dropped severely!",
+            },
+        }}
+        data = {"business": {
+            "salesMonth0": 50_000_000, "salesMonth1": 200_000_000,
+            "salesMonth2": 200_000_000, "salesMonth3": 200_000_000,
+            "salesMonth4": 200_000_000, "salesMonth5": 200_000_000,
+        }}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        biz = result.category_scores[1]
+        g13 = next(r for r in biz.rows if r.row == 13)
+        assert "CRITICAL: Sales dropped severely!" in g13.message
+
+    def test_custom_conversion_template(self):
+        rules = {**DEFAULT_FASHION_RULES, "business": {
+            **DEFAULT_FASHION_RULES["business"],
+            "conversion_rate": {
+                **DEFAULT_FASHION_RULES["business"]["conversion_rate"],
+                "message_pass": "CONV OK: {val_str}",
+                "message_fail": "CONV BAD: {val_str}, need {benchmark}",
+            },
+        }}
+        data = {"business": {"salesMonth0": 200_000_000},
+                "visitors": {"totalVisitors": 100_000}}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        biz = result.category_scores[1]
+        g20 = next(r for r in biz.rows if r.row == 20)
+        assert "CONV" in g20.message
+
+
+class TestMessageTemplatesContent:
+    """Test content message generators read templates from rules."""
+
+    def test_custom_content_pass(self):
+        rules = {**DEFAULT_FASHION_RULES, "content": {
+            "quality_ratio": {
+                **DEFAULT_FASHION_RULES["content"]["quality_ratio"],
+                "message_pass": "CONTENT GOOD: {val_str}",
+            },
+        }}
+        data = {"content": {"needsImprovement": 2, "goodQuality": 48}}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        content = result.category_scores[2]
+        g24 = next(r for r in content.rows if r.row == 24)
+        assert "CONTENT GOOD:" in g24.message
+
+
+class TestMessageTemplatesVisitors:
+    """Test visitor message generators read templates from rules."""
+
+    def test_custom_returning_visitors(self):
+        rules = {**DEFAULT_FASHION_RULES, "visitors": {
+            **DEFAULT_FASHION_RULES["visitors"],
+            "returning_visitors_pct": {
+                **DEFAULT_FASHION_RULES["visitors"]["returning_visitors_pct"],
+                "message_pass": "VISITORS OK: {val_str}",
+            },
+        }}
+        data = {"visitors": {"totalVisitors": 100_000, "returningVisitors": 30_000, "totalFollowers": 60_000}}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        vis = result.category_scores[3]
+        g28 = next(r for r in vis.rows if r.row == 28)
+        assert "VISITORS OK:" in g28.message
+
+    def test_custom_followers(self):
+        rules = {**DEFAULT_FASHION_RULES, "visitors": {
+            **DEFAULT_FASHION_RULES["visitors"],
+            "followers": {
+                **DEFAULT_FASHION_RULES["visitors"]["followers"],
+                "message_pass": "FOLLOWERS GREAT: {val_str}",
+            },
+        }}
+        data = {"visitors": {"totalVisitors": 100_000, "returningVisitors": 30_000, "totalFollowers": 60_000}}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        vis = result.category_scores[3]
+        g29 = next(r for r in vis.rows if r.row == 29)
+        assert "FOLLOWERS GREAT:" in g29.message
+
+
+class TestMessageTemplatesPromo:
+    """Test promo message generators read templates from rules."""
+
+    def test_custom_individual_messages(self):
+        rules = {**DEFAULT_FASHION_RULES, "promo_tools": {
+            **DEFAULT_FASHION_RULES["promo_tools"],
+            "individual_messages": {
+                "message_zero": "ZERO: {metric}",
+                "message_dependent": "DEP: {metric} = {pct_str}",
+                "message_fail": "FAIL: {metric} = {pct_str}",
+                "message_pass": "PASS: {metric} ({pct_str})",
+                "message_pass_afiliasi": "AFIL: {metric} ({pct_str})",
+            },
+        }}
+        data = {
+            "promoTools": {
+                "promoToko": 0, "paketDiskon": 40_000_000, "komboHemat": 5_000_000,
+                "flashSale": 5_000_000, "voucher": 180_000_000, "shopeeLive": 35_000_000,
+                "gameToko": 3_000_000, "brandMembership": 4_000_000, "gratisOngkir": 10_000_000,
+                "chatBroadcast": 3_000_000, "programAfiliasi": 40_000_000,
+            },
+            "business": {"salesMonth0": 200_000_000},
+        }
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        promo = result.category_scores[4]
+        # First row (promoToko=0) should use message_zero
+        first_promo = next(r for r in promo.rows if r.row == 31)
+        assert "ZERO:" in first_promo.message
+
+    def test_custom_summary_messages(self):
+        rules = {**DEFAULT_FASHION_RULES, "promo_tools": {
+            **DEFAULT_FASHION_RULES["promo_tools"],
+            "usage_pct_threshold": {
+                **DEFAULT_FASHION_RULES["promo_tools"]["usage_pct_threshold"],
+                "message_pass": "USAGE OK: {val_str}",
+                "message_fail": "USAGE BAD: {val_str}",
+            },
+            "effectiveness_pct_threshold": {
+                **DEFAULT_FASHION_RULES["promo_tools"]["effectiveness_pct_threshold"],
+                "message_pass": "EFF OK: {val_str}",
+                "message_fail": "EFF BAD: {val_str}",
+            },
+        }}
+        data = {
+            "promoTools": {
+                "promoToko": 20_000_000, "paketDiskon": 40_000_000, "komboHemat": 5_000_000,
+                "flashSale": 5_000_000, "voucher": 180_000_000, "shopeeLive": 35_000_000,
+                "gameToko": 3_000_000, "brandMembership": 4_000_000, "gratisOngkir": 10_000_000,
+                "chatBroadcast": 3_000_000, "programAfiliasi": 40_000_000,
+            },
+            "business": {"salesMonth0": 200_000_000},
+        }
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        promo = result.category_scores[4]
+        g42 = next(r for r in promo.rows if r.row == 42)
+        assert "USAGE" in g42.message
+
+
+class TestMessageTemplatesProducts:
+    """Test products message generators read templates from rules."""
+
+    def test_custom_product_count_template(self):
+        rules = {**DEFAULT_FASHION_RULES, "products_status": {
+            **DEFAULT_FASHION_RULES["products_status"],
+            "product_count": {
+                **DEFAULT_FASHION_RULES["products_status"]["product_count"],
+                "message_pass": "PROD OK: {value_int} items",
+            },
+        }}
+        data = {"products": {"productCount": 50, "storeStatus": "Shopee Mall"}}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        prod = result.category_scores[5]
+        g45 = next(r for r in prod.rows if r.row == 45)
+        assert g45.message == "PROD OK: 50 items"
+
+    def test_custom_store_status_template(self):
+        rules = {**DEFAULT_FASHION_RULES, "products_status": {
+            **DEFAULT_FASHION_RULES["products_status"],
+            "store_status_points": {
+                **DEFAULT_FASHION_RULES["products_status"]["store_status_points"],
+                "message_pass": "STATUS: {store_status} approved",
+            },
+        }}
+        data = {"products": {"productCount": 50, "storeStatus": "Shopee Mall"}}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        prod = result.category_scores[5]
+        g46 = next(r for r in prod.rows if r.row == 46)
+        assert g46.message == "STATUS: Shopee Mall approved"
+
+
+class TestMessageTemplatesAds:
+    """Test ads message generators read templates from rules."""
+
+    def test_custom_roi_template(self):
+        rules = {**DEFAULT_FASHION_RULES, "ads": {
+            **DEFAULT_FASHION_RULES["ads"],
+            "roi_threshold": {
+                **DEFAULT_FASHION_RULES["ads"]["roi_threshold"],
+                "message_pass": "ROI GOOD: {val_str}",
+            },
+        }}
+        data = {
+            "ads": {"adSales": 50_000_000, "adCost": 5_000_000},
+            "business": {"salesMonth0": 200_000_000},
+        }
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        ads = result.category_scores[6]
+        g50 = next(r for r in ads.rows if r.row == 50)
+        assert "ROI GOOD:" in g50.message
+
+    def test_custom_gmv_no_ads_template(self):
+        rules = {**DEFAULT_FASHION_RULES, "ads": {
+            **DEFAULT_FASHION_RULES["ads"],
+            "gmv_ratio_threshold": {
+                **DEFAULT_FASHION_RULES["ads"]["gmv_ratio_threshold"],
+                "message_no_ads": "NO ADS ACTIVE",
+            },
+        }}
+        data = {
+            "ads": {"adSales": 0, "adCost": 0},
+            "business": {"salesMonth0": 200_000_000},
+        }
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        ads = result.category_scores[6]
+        g51 = next(r for r in ads.rows if r.row == 51)
+        assert g51.message == "NO ADS ACTIVE"
+
+    def test_custom_cost_ratio_too_minimal(self):
+        rules = {**DEFAULT_FASHION_RULES, "ads": {
+            **DEFAULT_FASHION_RULES["ads"],
+            "cost_ratio_range": {
+                **DEFAULT_FASHION_RULES["ads"]["cost_ratio_range"],
+                "message_too_minimal": "TOO LOW: {pct_str}, need {min}%-{max}%",
+            },
+        }}
+        data = {
+            "ads": {"adSales": 50_000_000, "adCost": 1_000_000},
+            "business": {"salesMonth0": 200_000_000},
+        }
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        ads = result.category_scores[6]
+        g52 = next(r for r in ads.rows if r.row == 52)
+        assert "TOO LOW:" in g52.message
+        assert "5%" in g52.message
+        assert "10%" in g52.message
+
+
+class TestMessageTemplatesCampaign:
+    """Test campaign message generators read templates from rules."""
+
+    def test_custom_campaign_pass(self):
+        rules = {**DEFAULT_FASHION_RULES, "campaign": {
+            "participation_pct_threshold": {
+                **DEFAULT_FASHION_RULES["campaign"]["participation_pct_threshold"],
+                "message_pass": "CAMP OK: {pct_str}",
+            },
+        }}
+        data = {"campaign": {"nominatedSessions": 19, "availableSessions": 20}}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        camp = result.category_scores[7]
+        g57 = next(r for r in camp.rows if r.row == 57)
+        assert "CAMP OK:" in g57.message
+
+    def test_custom_campaign_no_data(self):
+        rules = {**DEFAULT_FASHION_RULES, "campaign": {
+            "participation_pct_threshold": {
+                **DEFAULT_FASHION_RULES["campaign"]["participation_pct_threshold"],
+                "message_no_data": "NO CAMPAIGNS",
+            },
+        }}
+        data = {"campaign": {"nominatedSessions": 0, "availableSessions": 0}}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        camp = result.category_scores[7]
+        g57 = next(r for r in camp.rows if r.row == 57)
+        assert g57.message == "NO CAMPAIGNS"
+
+
+class TestMessageTemplatesCompetition:
+    """Test competition message generators read templates from rules."""
+
+    def test_custom_competition_pass(self):
+        rules = {**DEFAULT_FASHION_RULES, "competition": {
+            "message_pass": "COMPETITIVE",
+            "message_fail": "NOT COMPETITIVE: Rp. {market_price}",
+        }}
+        data = {
+            "competition": {
+                "product1": {"keyword": "sepatu", "marketPrice": 200_000},
+            },
+        }
+        calc = {"top_sku": {"details": {
+            "average_stock": 30,
+            "output_1": [{"kode_variasi": "A1", "product_name": "Sepatu A", "rata2_harga_jual": 180_000}],
+        }}}
+        result = calculate_score(
+            manual_data=data, calculator_results=calc,
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        comp = result.category_scores[8]
+        g61 = next(r for r in comp.rows if r.row == 61)
+        assert "COMPETITIVE" in g61.message
+
+    def test_custom_competition_fail(self):
+        rules = {**DEFAULT_FASHION_RULES, "competition": {
+            "message_pass": "COMPETITIVE",
+            "message_fail": "OVERPRICED: Rp. {market_price}",
+        }}
+        data = {
+            "competition": {
+                "product1": {"keyword": "sepatu", "marketPrice": 100_000},
+            },
+        }
+        calc = {"top_sku": {"details": {
+            "average_stock": 30,
+            "output_1": [{"kode_variasi": "A1", "product_name": "Sepatu A", "rata2_harga_jual": 200_000}],
+        }}}
+        result = calculate_score(
+            manual_data=data, calculator_results=calc,
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        comp = result.category_scores[8]
+        g61 = next(r for r in comp.rows if r.row == 61)
+        assert "OVERPRICED:" in g61.message
+
+
+class TestMessageTemplatesG75:
+    """Test G75 closing messages read from rules."""
+
+    def test_custom_closing_messages(self):
+        rules = {**DEFAULT_FASHION_RULES, "interpretation": {
+            **DEFAULT_FASHION_RULES["interpretation"],
+            "closing_messages": {
+                "✔️": "CUSTOM APPROVED MESSAGE",
+                "❌": "CUSTOM REJECTED MESSAGE",
+                "❌ Non Mall": "CUSTOM NON MALL",
+                "❌ No Brand": "CUSTOM NO BRAND",
+                "": "CUSTOM GOOD STORE",
+                "❌ Opex": "CUSTOM OPEX",
+                "⭕️": "",
+            },
+        }}
+        assert _compute_g75("✔️", rules) == "CUSTOM APPROVED MESSAGE"
+        assert _compute_g75("❌", rules) == "CUSTOM REJECTED MESSAGE"
+        assert _compute_g75("❌ Non Mall", rules) == "CUSTOM NON MALL"
+        assert _compute_g75("❌ No Brand", rules) == "CUSTOM NO BRAND"
+        assert _compute_g75("", rules) == "CUSTOM GOOD STORE"
+        assert _compute_g75("❌ Opex", rules) == "CUSTOM OPEX"
+        assert _compute_g75("⭕️", rules) == ""
+
+    def test_g75_rules_none_fallback(self):
+        msg = _compute_g75("✔️", rules=None)
+        assert "potensi" in msg.lower()
+        assert "cal-bd2" in msg
+
+    def test_g75_rules_missing_closing(self):
+        rules = {"interpretation": {"ranges": []}}
+        msg = _compute_g75("✔️", rules=rules)
+        assert "potensi" in msg.lower()  # Falls back to hardcoded
+
+    def test_g75_custom_closing_propagates_to_email(self, full_manual_data, full_calculator_results):
+        rules = {**DEFAULT_FASHION_RULES, "interpretation": {
+            **DEFAULT_FASHION_RULES["interpretation"],
+            "closing_messages": {
+                "✔️": "CUSTOM CLOSING IN EMAIL",
+                "❌": "", "❌ Non Mall": "", "❌ No Brand": "",
+                "": "", "❌ Opex": "", "⭕️": "",
+            },
+        }}
+        result = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        assert "CUSTOM CLOSING IN EMAIL" in result.email_body
+
+
+class TestMessageTemplateEndToEnd:
+    """End-to-end: custom messages propagate to email body and WhatsApp."""
+
+    def test_custom_messages_in_email_body(self, full_manual_data, full_calculator_results):
+        rules = {**DEFAULT_FASHION_RULES, "operational": {
+            **DEFAULT_FASHION_RULES["operational"],
+            "unfulfilled_order_rate": {
+                **DEFAULT_FASHION_RULES["operational"]["unfulfilled_order_rate"],
+                "message_pass": "E2E TEST PASS: {val_str}",
+            },
+        }}
+        result = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=rules,
+        )
+        assert "E2E TEST PASS:" in result.email_body
+
+    def test_default_rules_produce_identical_messages(self, full_manual_data, full_calculator_results):
+        """Default rules with message templates produce identical output to rules=None."""
+        result_none = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=None,
+        )
+        result_default = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+            rules=DEFAULT_FASHION_RULES,
+        )
+        # All messages should be identical
+        for cat_none, cat_default in zip(result_none.category_scores, result_default.category_scores):
+            for row_none, row_default in zip(cat_none.rows, cat_default.rows):
+                assert row_none.message == row_default.message, (
+                    f"Row {row_none.row}: '{row_none.message}' != '{row_default.message}'"
+                )
+        # Email body should be identical
+        assert result_none.email_body == result_default.email_body
+        # Closing message should be identical
+        assert result_none.closing_message == result_default.closing_message

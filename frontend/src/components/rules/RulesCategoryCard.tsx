@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { Badge } from '../ui/badge';
@@ -13,6 +13,7 @@ interface RulesCategoryCardProps {
   differingKeys?: Set<string>;
   isEditing?: boolean;
   onRuleChange?: (category: string, key: string, field: string, value: number | null) => void;
+  onMessageChange?: (category: string, key: string, field: string, value: string) => void;
   validationErrors?: Record<string, string>;
 }
 
@@ -61,6 +62,7 @@ const RULE_LABELS: Record<string, string> = {
   minimum_threshold: 'Minimum Threshold',
   display_max: 'Display Max',
   display_min: 'Display Min',
+  individual_messages: 'Promo Individual Messages',
 };
 
 const COMPARISON_SYMBOLS: Record<string, string> = {
@@ -93,6 +95,37 @@ const MARKETING_FRACTION_KEYS = new Set([
   'floor', 'base_subtraction', 'upper_limit_base', 'fashion_adjustment',
   'minimum_threshold', 'display_max', 'display_min',
 ]);
+
+const MESSAGE_FIELD_LABELS: Record<string, string> = {
+  message_pass: 'Pass',
+  message_fail: 'Fail',
+  message_fail_severe: 'Fail (severe)',
+  message_no_ads: 'No ads',
+  message_too_minimal: 'Too minimal',
+  message_no_data: 'No data',
+  message_zero: 'Zero revenue',
+  message_dependent: 'Too dependent',
+  message_pass_afiliasi: 'Pass (afiliasi)',
+};
+
+const MESSAGE_FIELDS = Object.keys(MESSAGE_FIELD_LABELS);
+
+function getMessageFields(rule: RuleThreshold): [string, string][] {
+  const fields: [string, string][] = [];
+  for (const field of MESSAGE_FIELDS) {
+    const val = rule[field as keyof RuleThreshold];
+    if (typeof val === 'string') {
+      fields.push([field, val]);
+    }
+  }
+  return fields;
+}
+
+function extractPlaceholders(template: string): string[] {
+  const matches = template.match(/\{(\w+)\}/g);
+  if (!matches) return [];
+  return [...new Set(matches)];
+}
 
 function formatThreshold(rule: RuleThreshold, key?: string): string {
   // Value-only fields (marketing category) — display as percentage
@@ -323,10 +356,20 @@ function renderEditablePoints(
   return <span>-</span>;
 }
 
-export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = false, onRuleChange, validationErrors }: RulesCategoryCardProps) => {
+export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = false, onRuleChange, onMessageChange, validationErrors }: RulesCategoryCardProps) => {
   const [isOpen, setIsOpen] = useState(true);
+  const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
   const maxPoints = calculateMaxPoints(rules, category);
   const label = CATEGORY_LABELS[category] || category;
+
+  const toggleMessages = (key: string) => {
+    setExpandedMessages((prev) => {
+      const next = new Set(prev);
+      if (next.has(key)) next.delete(key);
+      else next.add(key);
+      return next;
+    });
+  };
 
   return (
     <Card>
@@ -359,35 +402,92 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
               <TableBody>
                 {Object.entries(rules).map(([key, rule]) => {
                   const isDiffering = differingKeys?.has(`${category}.${key}`);
+                  const messageFields = getMessageFields(rule);
+                  const hasMessages = messageFields.length > 0;
+                  const messagesExpanded = expandedMessages.has(key);
+
                   return (
-                    <TableRow key={key} className={isDiffering ? 'bg-blue-50 dark:bg-blue-950/30' : ''}>
-                      <TableCell className="font-medium">
-                        {RULE_LABELS[key] || key}
-                        {isDiffering && (
-                          <Badge variant="outline" className="ml-2 text-xs text-blue-600 border-blue-300">
-                            differs
-                          </Badge>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {isEditing && onRuleChange ? (
-                          renderEditableThreshold(rule, category, key, onRuleChange, validationErrors)
-                        ) : (
-                          <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
-                            {formatThreshold(rule, key)}
-                          </code>
-                        )}
-                      </TableCell>
-                      <TableCell>
-                        {isEditing && onRuleChange ? (
-                          renderEditablePoints(rule, category, key, onRuleChange, validationErrors)
-                        ) : rule.info_only ? (
-                          <Badge variant="outline" className="text-muted-foreground">Info only</Badge>
-                        ) : (
-                          <span className="text-sm">{formatPoints(rule)}</span>
-                        )}
-                      </TableCell>
-                    </TableRow>
+                    <React.Fragment key={key}>
+                      <TableRow className={isDiffering ? 'bg-blue-50 dark:bg-blue-950/30' : ''}>
+                        <TableCell className="font-medium">
+                          <span className="flex items-center gap-1">
+                            {RULE_LABELS[key] || key}
+                            {isDiffering && (
+                              <Badge variant="outline" className="ml-1 text-xs text-blue-600 border-blue-300">
+                                differs
+                              </Badge>
+                            )}
+                            {hasMessages && (
+                              <button
+                                type="button"
+                                onClick={() => toggleMessages(key)}
+                                className="ml-1 text-xs text-muted-foreground hover:text-foreground"
+                                aria-label={`Toggle messages for ${RULE_LABELS[key] || key}`}
+                              >
+                                {messagesExpanded ? '▼' : '▶'} {messageFields.length} msg
+                              </button>
+                            )}
+                          </span>
+                        </TableCell>
+                        <TableCell>
+                          {isEditing && onRuleChange ? (
+                            renderEditableThreshold(rule, category, key, onRuleChange, validationErrors)
+                          ) : (
+                            <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                              {formatThreshold(rule, key)}
+                            </code>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {isEditing && onRuleChange ? (
+                            renderEditablePoints(rule, category, key, onRuleChange, validationErrors)
+                          ) : rule.info_only ? (
+                            <Badge variant="outline" className="text-muted-foreground">Info only</Badge>
+                          ) : (
+                            <span className="text-sm">{formatPoints(rule)}</span>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                      {hasMessages && messagesExpanded && (
+                        <TableRow className="hover:bg-transparent">
+                          <TableCell colSpan={3} className="pt-0 pb-3 pl-8">
+                            <div className="space-y-2">
+                              {messageFields.map(([field, value]) => {
+                                const placeholders = extractPlaceholders(value);
+                                return (
+                                  <div key={field} className="flex flex-col gap-0.5">
+                                    <span className="text-xs font-medium text-muted-foreground">
+                                      {MESSAGE_FIELD_LABELS[field] || field}
+                                    </span>
+                                    {isEditing && onMessageChange ? (
+                                      <div className="flex flex-col gap-0.5">
+                                        <textarea
+                                          value={value}
+                                          onChange={(e) => onMessageChange(category, key, field, e.target.value)}
+                                          className="w-full min-h-[2.5rem] rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
+                                          aria-label={`${RULE_LABELS[key] || key} ${MESSAGE_FIELD_LABELS[field] || field}`}
+                                          rows={1}
+                                          maxLength={500}
+                                        />
+                                        {placeholders.length > 0 && (
+                                          <span className="text-xs text-muted-foreground">
+                                            Placeholders: {placeholders.map((p) => (
+                                              <code key={p} className="mx-0.5 px-1 py-0.5 bg-muted rounded text-xs">{p}</code>
+                                            ))}
+                                          </span>
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <span className="text-sm text-muted-foreground break-all">{value}</span>
+                                    )}
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      )}
+                    </React.Fragment>
                   );
                 })}
               </TableBody>
