@@ -196,6 +196,28 @@ async def count_evaluations(
     return row or 0
 
 
+async def get_evaluation_by_id(
+    conn: Connection,
+    evaluation_id: int,
+) -> dict | None:
+    """Get full evaluation details by ID, with brand name and evaluator email joins."""
+    row = await conn.fetchrow(
+        """
+        SELECT e.id, e.brand_id, b.brand_name,
+               e.final_score, e.verdict, e.template,
+               e.score_breakdown, e.calculator_results, e.manual_inputs,
+               e.email_output, e.rule_version, e.created_at,
+               u.email AS evaluator_email
+        FROM evaluations e
+        JOIN brand_vp_data b ON e.brand_id = b.id
+        JOIN users u ON e.user_id = u.id
+        WHERE e.id = $1
+        """,
+        evaluation_id,
+    )
+    return dict(row) if row else None
+
+
 async def get_any_evaluation_inputs(
     conn: Connection,
     brand_id: int,
