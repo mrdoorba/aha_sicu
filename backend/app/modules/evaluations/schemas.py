@@ -169,6 +169,24 @@ class EvaluationListResponse(BaseModel):
     pages: int
 
 
+class EvaluationDetailResponse(BaseModel):
+    """Full evaluation detail for the detail view page."""
+
+    id: int
+    brand_id: int
+    brand_name: str
+    final_score: float
+    verdict: str
+    template: str
+    score_breakdown: list[dict[str, Any]]
+    calculator_results: dict[str, Any]
+    manual_inputs: dict[str, Any]
+    email_output: str | None = None
+    evaluator_email: str
+    created_at: datetime
+    rule_version: int
+
+
 class SaveEvaluationRequest(BaseModel):
     """Request body for saving a completed evaluation as a permanent record."""
 

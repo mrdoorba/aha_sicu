@@ -12,6 +12,7 @@ from app.db.queries import calculator_results as calc_queries
 from app.db.queries import evaluations as eval_queries
 from app.modules.evaluations.schemas import (
     CategoryScoreItem,
+    EvaluationDetailResponse,
     EvaluationListItem,
     EvaluationListResponse,
     EvaluationStateResponse,
@@ -79,6 +80,39 @@ async def list_evaluations(
 
     return EvaluationListResponse(
         items=items, total=total, page=page, limit=limit, pages=pages
+    )
+
+
+async def get_evaluation_detail(evaluation_id: int) -> EvaluationDetailResponse:
+    """Get full details of a single evaluation by ID.
+
+    Raises:
+        AppException: If evaluation not found (404).
+    """
+    async with db.connection() as conn:
+        row = await eval_queries.get_evaluation_by_id(conn, evaluation_id)
+
+    if not row:
+        raise AppException(
+            code="EVAL_NOT_FOUND",
+            detail="Evaluation not found",
+            status_code=404,
+        )
+
+    return EvaluationDetailResponse(
+        id=row["id"],
+        brand_id=row["brand_id"],
+        brand_name=row["brand_name"],
+        final_score=float(row["final_score"]),
+        verdict=row["verdict"],
+        template=row["template"],
+        score_breakdown=row["score_breakdown"],
+        calculator_results=row["calculator_results"],
+        manual_inputs=row["manual_inputs"],
+        email_output=row["email_output"],
+        evaluator_email=row["evaluator_email"],
+        created_at=row["created_at"],
+        rule_version=row["rule_version"],
     )
 
 

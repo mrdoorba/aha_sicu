@@ -226,7 +226,6 @@ interface paths {
           limit?: number;
           sort_by?: 'created_at' | 'final_score';
           sort_order?: 'asc' | 'desc';
-          // Forward-compat params — accepted by API but not yet wired (Stories 4.2-4.4)
           search?: string;
           date_from?: string;
           date_to?: string;
@@ -250,6 +249,36 @@ interface paths {
               page: number;
               limit: number;
               pages: number;
+            };
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/evaluations/{evaluation_id}': {
+    get: {
+      parameters: {
+        path: {
+          evaluation_id: number;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              id: number;
+              brand_id: number;
+              brand_name: string;
+              final_score: number;
+              verdict: string;
+              template: string;
+              score_breakdown: Array<Record<string, unknown>>;
+              calculator_results: Record<string, unknown>;
+              manual_inputs: Record<string, unknown>;
+              email_output: string | null;
+              evaluator_email: string;
+              created_at: string;
+              rule_version: number;
             };
           };
         };

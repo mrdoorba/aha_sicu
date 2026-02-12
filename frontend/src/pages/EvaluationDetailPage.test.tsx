@@ -1,0 +1,251 @@
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { EvaluationDetailPage } from './EvaluationDetailPage';
+
+const mockRefetch = vi.fn();
+
+const MOCK_EVALUATION = {
+  id: 42,
+  brand_id: 10,
+  brand_name: 'Nike Indonesia',
+  final_score: 78.5,
+  verdict: '\u2714\uFE0F',
+  template: 'fashion',
+  score_breakdown: [
+    { category: 'Operational', score: 10.0, max_score: 10.0, rows: [], available: true },
+    { category: 'Business', score: 18.0, max_score: 20.0, rows: [], available: true },
+    { category: 'Promo Tools', score: -5.0, max_score: 0, rows: [], available: true },
+  ],
+  calculator_results: {
+    ads_keyword: { details: {}, output_text: 'AK analysis text output' },
+    top_sku: {
+      details: {
+        output_1: [{ kode_variasi: 'V001', product_name: 'Shoe A', total_omzet: 50000000, rata2_harga_jual: 250000 }],
+        output_2: [{ kode_variasi: 'V002', nama_produk: 'Shoe B', varian: 'Red', stok: 120 }],
+        average_stock: 150,
+      },
+      output_text: 'Top SKU text',
+    },
+    discount: { details: {}, output_text: '% Diskon TOP SKU: 2.7%' },
+  },
+  manual_inputs: {
+    operational: { pesanan_tidak_terselesaikan: 0.5, keterlambatan: 0.3 },
+    business: { monthly_sales: [100000000, 120000000], conversion_rate: 2.5 },
+  },
+  email_output: 'Dear Team,\n\nBrand evaluation for Nike Indonesia is complete.',
+  evaluator_email: 'rina@company.com',
+  created_at: '2026-02-10T10:30:00Z',
+  rule_version: 1,
+};
+
+let mockHookReturn = {
+  evaluation: MOCK_EVALUATION as typeof MOCK_EVALUATION | null,
+  isLoading: false,
+  isError: false,
+  isNotFound: false,
+  error: null as Error | null,
+  refetch: mockRefetch,
+};
+
+const mockUseEvaluationDetail = vi.fn(() => mockHookReturn);
+
+vi.mock('../hooks/useEvaluationDetail', () => ({
+  useEvaluationDetail: (...args: unknown[]) => mockUseEvaluationDetail(...args),
+}));
+
+// Mock Header to avoid auth context issues
+vi.mock('../components/layout/Header', () => ({
+  Header: () => <header data-testid="mock-header">Header</header>,
+}));
+
+function LocationDisplay() {
+  const location = useLocation();
+  return <div data-testid="location">{location.pathname}</div>;
+}
+
+const renderPage = (path = '/history/42') => {
+  return render(
+    <MemoryRouter initialEntries={[path]}>
+      <Routes>
+        <Route path="/history/:id" element={<EvaluationDetailPage />} />
+        <Route path="/history" element={<div data-testid="history-page">History</div>} />
+      </Routes>
+      <LocationDisplay />
+    </MemoryRouter>,
+  );
+};
+
+beforeEach(() => {
+  mockHookReturn = {
+    evaluation: MOCK_EVALUATION,
+    isLoading: false,
+    isError: false,
+    isNotFound: false,
+    error: null,
+    refetch: mockRefetch,
+  };
+  mockUseEvaluationDetail.mockImplementation(() => mockHookReturn);
+  vi.clearAllMocks();
+});
+
+describe('EvaluationDetailPage', () => {
+  it('renders brand info header with name, template badge, evaluator, and date', () => {
+    renderPage();
+
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Nike Indonesia');
+    expect(screen.getByText('Fashion')).toBeInTheDocument();
+    expect(screen.getByText(/rina@company\.com/)).toBeInTheDocument();
+    expect(screen.getByText(/2026/)).toBeInTheDocument();
+  });
+
+  it('renders score breakdown table with per-category scores', () => {
+    renderPage();
+
+    expect(screen.getByText('Score Breakdown')).toBeInTheDocument();
+    expect(screen.getByText('Operational')).toBeInTheDocument();
+    expect(screen.getByText('10.0/10')).toBeInTheDocument();
+    expect(screen.getByText('Business')).toBeInTheDocument();
+    expect(screen.getByText('18.0/20')).toBeInTheDocument();
+    expect(screen.getByText('Promo Tools')).toBeInTheDocument();
+  });
+
+  it('renders calculator results (ads keyword text, top SKU tables, discount values)', () => {
+    renderPage();
+
+    expect(screen.getByText('Calculator Results')).toBeInTheDocument();
+    // Ads Keyword
+    expect(screen.getByText('Ads Keyword Analysis')).toBeInTheDocument();
+    expect(screen.getByText('AK analysis text output')).toBeInTheDocument();
+    // Top SKU
+    expect(screen.getByText('Top SKU Analysis')).toBeInTheDocument();
+    expect(screen.getByText('V001')).toBeInTheDocument();
+    expect(screen.getByText('Shoe A')).toBeInTheDocument();
+    // Discount
+    expect(screen.getByText('Discount Check')).toBeInTheDocument();
+    expect(screen.getByText(/Diskon TOP SKU/)).toBeInTheDocument();
+  });
+
+  it('renders manual inputs organized by category', () => {
+    renderPage();
+
+    expect(screen.getByText('Manual Inputs')).toBeInTheDocument();
+    expect(screen.getByText('operational')).toBeInTheDocument();
+    expect(screen.getByText('business')).toBeInTheDocument();
+    expect(screen.getByText('pesanan tidak terselesaikan')).toBeInTheDocument();
+  });
+
+  it('renders email output section with copy button when email_output present', () => {
+    renderPage();
+
+    expect(screen.getByText('Email Output')).toBeInTheDocument();
+    expect(screen.getByText(/Brand evaluation for Nike Indonesia/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /copy email output/i })).toBeInTheDocument();
+  });
+
+  it('hides email section when email_output is null', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: { ...MOCK_EVALUATION, email_output: null },
+    };
+
+    renderPage();
+
+    expect(screen.queryByText('Email Output')).not.toBeInTheDocument();
+  });
+
+  it('copies email output to clipboard on copy button click', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.assign(navigator, {
+      clipboard: { writeText },
+    });
+
+    renderPage();
+
+    const copyBtn = screen.getByRole('button', { name: /copy email output/i });
+    await userEvent.click(copyBtn);
+
+    expect(writeText).toHaveBeenCalledWith(MOCK_EVALUATION.email_output);
+  });
+
+  it('shows loading skeleton', () => {
+    mockHookReturn = {
+      evaluation: null,
+      isLoading: true,
+      isError: false,
+      isNotFound: false,
+      error: null,
+      refetch: mockRefetch,
+    };
+
+    renderPage();
+
+    expect(screen.getByTestId('loading-skeleton')).toBeInTheDocument();
+  });
+
+  it('shows error state with retry button', async () => {
+    mockHookReturn = {
+      evaluation: null,
+      isLoading: false,
+      isError: true,
+      isNotFound: false,
+      error: new Error('Network error'),
+      refetch: mockRefetch,
+    };
+
+    renderPage();
+
+    expect(screen.getByText('Failed to load evaluation details')).toBeInTheDocument();
+    const retryBtn = screen.getByRole('button', { name: /retry/i });
+    expect(retryBtn).toBeInTheDocument();
+
+    await userEvent.click(retryBtn);
+    expect(mockRefetch).toHaveBeenCalledTimes(1);
+  });
+
+  it('shows 404 not found state for invalid ID', () => {
+    mockHookReturn = {
+      evaluation: null,
+      isLoading: false,
+      isError: false,
+      isNotFound: false,
+      error: null,
+      refetch: mockRefetch,
+    };
+
+    renderPage('/history/invalid');
+
+    expect(screen.getByText('Evaluation not found')).toBeInTheDocument();
+    const backButtons = screen.getAllByRole('button', { name: /back to history/i });
+    expect(backButtons.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('shows 404 not found when API returns EVAL_NOT_FOUND', () => {
+    mockHookReturn = {
+      evaluation: null,
+      isLoading: false,
+      isError: true,
+      isNotFound: true,
+      error: new Error('Evaluation not found'),
+      refetch: mockRefetch,
+    };
+
+    renderPage('/history/99999');
+
+    expect(screen.getByText('Evaluation not found')).toBeInTheDocument();
+    const backButtons = screen.getAllByRole('button', { name: /back to history/i });
+    expect(backButtons.length).toBeGreaterThanOrEqual(2);
+  });
+
+  it('back to history button navigates to /history', async () => {
+    renderPage();
+
+    const backBtn = screen.getByRole('button', { name: /back to history/i });
+    await userEvent.click(backBtn);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('/history');
+    });
+  });
+});
