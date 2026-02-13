@@ -1,5 +1,4 @@
 import { CheckCircle, XCircle, AlertTriangle, Circle } from 'lucide-react';
-import { Badge } from '../../ui/badge';
 
 interface FinalScoreDisplayProps {
   totalScore: number;
@@ -17,7 +16,7 @@ const VERDICT_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; 
   '': { icon: AlertTriangle, color: 'text-muted-foreground', label: 'No Verdict' },
 };
 
-export const FinalScoreDisplay = ({ totalScore, verdict, template }: FinalScoreDisplayProps) => {
+export const FinalScoreDisplay = ({ totalScore, verdict, template: _template }: FinalScoreDisplayProps) => {
   const config = VERDICT_CONFIG[verdict] ?? VERDICT_CONFIG[''];
   const Icon = config.icon;
 
@@ -27,14 +26,9 @@ export const FinalScoreDisplay = ({ totalScore, verdict, template }: FinalScoreD
         <div className="text-4xl font-bold tabular-nums">{Math.round(totalScore)}</div>
         <div className="text-xs text-muted-foreground">Total Score</div>
       </div>
-      <div className="flex flex-col gap-1">
-        <div className="flex items-center gap-1.5">
-          <Icon className={`size-5 ${config.color}`} aria-hidden="true" />
-          <span className="text-sm font-medium">{config.label}</span>
-        </div>
-        <Badge variant="outline" className="w-fit text-xs">
-          {template === 'fashion' ? 'Fashion' : 'Non-Fashion'}
-        </Badge>
+      <div className="flex items-center gap-1.5">
+        <Icon className={`size-5 ${config.color}`} aria-hidden="true" />
+        <span className="text-sm font-medium">{config.label}</span>
       </div>
     </div>
   );

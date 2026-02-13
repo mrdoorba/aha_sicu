@@ -41,7 +41,7 @@ UPDATED_RULES = {
 
 UPDATED_ROW = {
     "id": 1,
-    "template": "fashion",
+    "template": "default",
     "rules": UPDATED_RULES,
     "version": 2,
     "updated_by": 1,
@@ -50,7 +50,7 @@ UPDATED_ROW = {
 
 UPDATED_ROW_NF = {
     "id": 2,
-    "template": "non_fashion",
+    "template": "default",
     "rules": UPDATED_RULES,
     "version": 2,
     "updated_by": 2,
@@ -76,7 +76,7 @@ def _setup_service_mock(mock_service_db, return_row):
 
 
 def test_update_rules_fashion_leader(client):
-    """Test PUT /api/v1/rules/fashion returns 200 with updated rules for leader role."""
+    """Test PUT /api/v1/rules/default returns 200 with updated rules for leader role."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
@@ -87,19 +87,19 @@ def test_update_rules_fashion_leader(client):
         _setup_service_mock(mock_service_db, UPDATED_ROW)
 
         response = client.put(
-            "/api/v1/rules/fashion",
+            "/api/v1/rules/default",
             headers=AUTH_HEADERS,
             json={"rules": UPDATED_RULES},
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["template"] == "fashion"
+        assert data["template"] == "default"
         assert data["rules"] == UPDATED_RULES
 
 
 def test_update_rules_non_fashion_admin(client):
-    """Test PUT /api/v1/rules/non_fashion returns 200 for admin role."""
+    """Test PUT /api/v1/rules/default returns 200 for admin role."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
@@ -110,14 +110,14 @@ def test_update_rules_non_fashion_admin(client):
         _setup_service_mock(mock_service_db, UPDATED_ROW_NF)
 
         response = client.put(
-            "/api/v1/rules/non_fashion",
+            "/api/v1/rules/default",
             headers=AUTH_HEADERS,
             json={"rules": UPDATED_RULES},
         )
 
         assert response.status_code == 200
         data = response.json()
-        assert data["template"] == "non_fashion"
+        assert data["template"] == "default"
 
 
 def test_update_rules_version_increments(client):
@@ -132,7 +132,7 @@ def test_update_rules_version_increments(client):
         _setup_service_mock(mock_service_db, UPDATED_ROW)
 
         response = client.put(
-            "/api/v1/rules/fashion",
+            "/api/v1/rules/default",
             headers=AUTH_HEADERS,
             json={"rules": UPDATED_RULES},
         )
@@ -154,7 +154,7 @@ def test_update_rules_updated_by_set(client):
         _setup_service_mock(mock_service_db, UPDATED_ROW)
 
         response = client.put(
-            "/api/v1/rules/fashion",
+            "/api/v1/rules/default",
             headers=AUTH_HEADERS,
             json={"rules": UPDATED_RULES},
         )
@@ -176,7 +176,7 @@ def test_update_rules_updated_at_refreshed(client):
         _setup_service_mock(mock_service_db, UPDATED_ROW)
 
         response = client.put(
-            "/api/v1/rules/fashion",
+            "/api/v1/rules/default",
             headers=AUTH_HEADERS,
             json={"rules": UPDATED_RULES},
         )
@@ -197,7 +197,7 @@ def test_update_rules_member_forbidden(client):
         _setup_mocks(mock_verify, mock_db, mock_user_queries, MOCK_MEMBER)
 
         response = client.put(
-            "/api/v1/rules/fashion",
+            "/api/v1/rules/default",
             headers=AUTH_HEADERS,
             json={"rules": UPDATED_RULES},
         )
@@ -210,7 +210,7 @@ def test_update_rules_member_forbidden(client):
 def test_update_rules_no_auth(client):
     """Test no auth token gets 401."""
     response = client.put(
-        "/api/v1/rules/fashion",
+        "/api/v1/rules/default",
         json={"rules": UPDATED_RULES},
     )
 
@@ -249,7 +249,7 @@ def test_update_rules_response_schema(client):
         _setup_service_mock(mock_service_db, UPDATED_ROW)
 
         response = client.put(
-            "/api/v1/rules/fashion",
+            "/api/v1/rules/default",
             headers=AUTH_HEADERS,
             json={"rules": UPDATED_RULES},
         )
@@ -270,7 +270,7 @@ def test_update_rules_empty_body(client):
         _setup_mocks(mock_verify, mock_db, mock_user_queries, MOCK_LEADER)
 
         response = client.put(
-            "/api/v1/rules/fashion",
+            "/api/v1/rules/default",
             headers=AUTH_HEADERS,
             json={"rules": {}},
         )
@@ -288,7 +288,7 @@ def test_update_rules_invalid_structure(client):
         _setup_mocks(mock_verify, mock_db, mock_user_queries, MOCK_LEADER)
 
         response = client.put(
-            "/api/v1/rules/fashion",
+            "/api/v1/rules/default",
             headers=AUTH_HEADERS,
             json={"rules": {"bad_key": "not_a_dict"}},
         )
@@ -322,7 +322,7 @@ def test_update_rules_preserves_jsonb_structure(client):
         _setup_service_mock(mock_service_db, updated_row)
 
         response = client.put(
-            "/api/v1/rules/fashion",
+            "/api/v1/rules/default",
             headers=AUTH_HEADERS,
             json={"rules": complex_rules},
         )

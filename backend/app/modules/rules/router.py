@@ -24,7 +24,7 @@ async def list_rules(
 
 @router.put("/{template}", response_model=ScoringRuleResponse)
 async def update_rules_endpoint(
-    template: Literal["fashion", "non_fashion"],
+    template: Literal["fashion", "non_fashion", "default"],
     body: ScoringRuleUpdateRequest,
     current_user: dict = Depends(require_role("leader", "admin")),
 ) -> ScoringRuleResponse:

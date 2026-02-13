@@ -151,7 +151,6 @@ export const EvaluationSections = ({
         </h3>
         <BusinessForm
           data={manualData.business}
-          categoryType={categoryType}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />

@@ -229,7 +229,7 @@ interface paths {
           search?: string;
           date_from?: string;
           date_to?: string;
-          category?: 'fashion' | 'non_fashion';
+
         };
       };
       responses: {
@@ -557,7 +557,7 @@ interface paths {
     put: {
       parameters: {
         path: {
-          template: 'fashion' | 'non_fashion';
+          template: 'fashion' | 'non_fashion' | 'default';
         };
       };
       requestBody: {

@@ -36,12 +36,11 @@ async def list_evaluations(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
-    category: Literal["fashion", "non_fashion"] | None = None,
 ) -> EvaluationListResponse:
     """Return a paginated list of evaluations.
 
     Handles pagination math and delegates to DB queries.
-    Filters conditionally by brand name search, date range, and category.
+    Filters conditionally by brand name search and date range.
     """
     if date_from and date_to and date_from > date_to:
         raise AppException(
@@ -62,10 +61,9 @@ async def list_evaluations(
             search=search,
             date_from=date_from,
             date_to=date_to,
-            category=category,
         )
         total = await eval_queries.count_evaluations(
-            conn, search=search, date_from=date_from, date_to=date_to, category=category
+            conn, search=search, date_from=date_from, date_to=date_to,
         )
 
     pages = math.ceil(total / limit) if total > 0 else 0
@@ -184,8 +182,8 @@ async def generate_score(
         # Load calculator results
         calc_rows = await calc_queries.get_results_by_brand(conn, brand_id)
 
-        # Load scoring rules for template
-        rule_row = await rules_queries.get_rules_by_template(conn, template)
+        # Load scoring rules — always use the unified "default" template
+        rule_row = await rules_queries.get_rules_by_template(conn, "default")
 
     rules_jsonb = rule_row["rules"] if rule_row else None
     rule_version = rule_row["version"] if rule_row else 1

@@ -6,8 +6,7 @@ Tests against the spec in logic/scoring-system-template-sicu.md.
 import pytest
 
 from app.calculators.scoring import (
-    DEFAULT_FASHION_RULES,
-    DEFAULT_NON_FASHION_RULES,
+    DEFAULT_RULES,
     ScoringResult,
     _compute_g68,
     _compute_g72,
@@ -413,27 +412,27 @@ class TestScoreProducts:
 
 
 class TestScoreAds:
-    def test_fashion_roi_threshold(self):
+    def test_roi_below_threshold(self):
         data = {
             "ads": {"adSales": 50_000_000, "adCost": 6_000_000},  # ROI ~8.3
             "business": {"salesMonth0": 200_000_000},
         }
         cat = _score_ads(data, "fashion")
         h50_row = next(r for r in cat.rows if r.row == 50)
-        # ROI = 50M/6M = 8.33, threshold 8 → pass → H50=0
-        assert h50_row.score == 0.0
-        assert h50_row.verdict == "✔️"
+        # ROI = 50M/6M = 8.33, unified threshold 9 → fail → H50=5 (opportunity)
+        assert h50_row.score == 5.0
+        assert h50_row.verdict == "❌"
 
-    def test_non_fashion_roi_threshold(self):
+    def test_roi_above_threshold(self):
         data = {
-            "ads": {"adSales": 50_000_000, "adCost": 6_000_000},  # ROI ~8.3
+            "ads": {"adSales": 100_000_000, "adCost": 10_000_000},  # ROI = 10
             "business": {"salesMonth0": 200_000_000},
         }
         cat = _score_ads(data, "non_fashion")
         h50_row = next(r for r in cat.rows if r.row == 50)
-        # ROI = 8.33, threshold 9 → fail → H50=5 (opportunity)
-        assert h50_row.score == 5.0
-        assert h50_row.verdict == "❌"
+        # ROI = 10, unified threshold 9 → pass → H50=0
+        assert h50_row.score == 0.0
+        assert h50_row.verdict == "✔️"
 
     def test_gmv_ratio_low(self):
         data = {
@@ -530,24 +529,28 @@ class TestScoreDiscount:
 # ---------------------------------------------------------------------------
 
 
-class TestFashionThresholds:
-    def test_roi_fashion_passes_at_8(self):
+class TestUnifiedThresholds:
+    def test_roi_fails_at_8_for_both_templates(self):
+        """ROI=8 fails for both fashion and non_fashion (unified threshold=9)."""
         data = {
             "ads": {"adSales": 80_000_000, "adCost": 10_000_000},  # ROI = 8
             "business": {"salesMonth0": 200_000_000},
         }
-        cat = _score_ads(data, "fashion")
-        h50 = next(r for r in cat.rows if r.row == 50)
-        assert h50.verdict == "✔️"
+        for template in ("fashion", "non_fashion"):
+            cat = _score_ads(data, template)
+            h50 = next(r for r in cat.rows if r.row == 50)
+            assert h50.verdict == "❌", f"Expected fail for {template}"
 
-    def test_roi_non_fashion_fails_at_8(self):
+    def test_roi_passes_at_9_for_both_templates(self):
+        """ROI=9 passes for both fashion and non_fashion (unified threshold=9)."""
         data = {
-            "ads": {"adSales": 80_000_000, "adCost": 10_000_000},  # ROI = 8
+            "ads": {"adSales": 90_000_000, "adCost": 10_000_000},  # ROI = 9
             "business": {"salesMonth0": 200_000_000},
         }
-        cat = _score_ads(data, "non_fashion")
-        h50 = next(r for r in cat.rows if r.row == 50)
-        assert h50.verdict == "❌"
+        for template in ("fashion", "non_fashion"):
+            cat = _score_ads(data, template)
+            h50 = next(r for r in cat.rows if r.row == 50)
+            assert h50.verdict == "✔️", f"Expected pass for {template}"
 
 
 # ---------------------------------------------------------------------------
@@ -922,7 +925,7 @@ class TestDefaultRulesIdentical:
             calculator_results=full_calculator_results,
             template="fashion", verdict="✔️",
             store_name="S", period="P", brand_name="B",
-            rules=DEFAULT_FASHION_RULES,
+            rules=DEFAULT_RULES,
         )
         assert result_none.total_score == result_rules.total_score
         for cat_none, cat_rules in zip(result_none.category_scores, result_rules.category_scores):
@@ -951,7 +954,7 @@ class TestDefaultRulesIdentical:
             calculator_results=full_calculator_results,
             template="non_fashion", verdict="✔️",
             store_name="S", period="P", brand_name="B",
-            rules=DEFAULT_NON_FASHION_RULES,
+            rules=DEFAULT_RULES,
         )
         assert result_none.total_score == result_rules.total_score
 
@@ -966,7 +969,7 @@ class TestDefaultRulesIdentical:
             }
         }
         cat_none = _score_operational(data)
-        cat_rules = _score_operational(data, DEFAULT_FASHION_RULES)
+        cat_rules = _score_operational(data, DEFAULT_RULES)
         assert cat_none.score == cat_rules.score
         for r_none, r_rules in zip(cat_none.rows, cat_rules.rows):
             assert r_none.score == r_rules.score
@@ -988,8 +991,8 @@ class TestCustomRulesOperational:
         assert cat_default.rows[0].verdict == "❌"
 
         # Custom: threshold=2.0 → 1.5 <= 2.0 → pass
-        custom_rules = {**DEFAULT_FASHION_RULES, "operational": {
-            **DEFAULT_FASHION_RULES["operational"],
+        custom_rules = {**DEFAULT_RULES, "operational": {
+            **DEFAULT_RULES["operational"],
             "unfulfilled_order_rate": {"threshold": 2.0, "points": 6, "comparison": "lte"},
         }}
         cat_custom = _score_operational(data, custom_rules)
@@ -998,8 +1001,8 @@ class TestCustomRulesOperational:
 
     def test_custom_late_shipment_points(self):
         data = {"operational": {"lateShipmentRate": 0.5}}
-        custom_rules = {**DEFAULT_FASHION_RULES, "operational": {
-            **DEFAULT_FASHION_RULES["operational"],
+        custom_rules = {**DEFAULT_RULES, "operational": {
+            **DEFAULT_RULES["operational"],
             "late_shipment_rate": {"threshold": 1.0, "points": 8, "comparison": "lte"},
         }}
         cat = _score_operational(data, custom_rules)
@@ -1014,15 +1017,15 @@ class TestCustomRulesAds:
             "ads": {"adSales": 30_000_000, "adCost": 5_000_000},  # ROI = 6
             "business": {"salesMonth0": 200_000_000},
         }
-        # Default fashion: threshold=8 → ROI 6 < 8 → fail
+        # Default: threshold=9 → ROI 6 < 9 → fail
         cat_default = _score_ads(data, "fashion")
         h50 = next(r for r in cat_default.rows if r.row == 50)
         assert h50.verdict == "❌"
         assert h50.score == 5.0  # opportunity
 
         # Custom: threshold=5 → ROI 6 >= 5 → pass
-        custom_rules = {**DEFAULT_FASHION_RULES, "ads": {
-            **DEFAULT_FASHION_RULES["ads"],
+        custom_rules = {**DEFAULT_RULES, "ads": {
+            **DEFAULT_RULES["ads"],
             "roi_threshold": {"threshold": 5.0, "opportunity_points": 5, "comparison": "gt"},
         }}
         cat_custom = _score_ads(data, "fashion", custom_rules)
@@ -1041,7 +1044,7 @@ class TestCustomRulesStock:
         assert cat_default.score == 5.0
 
         # Custom: high=30, mid=15 → 20 >= 15 → mid = 5 (same tier but different thresholds)
-        custom_rules = {**DEFAULT_FASHION_RULES, "stock": {
+        custom_rules = {**DEFAULT_RULES, "stock": {
             "high_threshold": {"threshold": 30, "points": 15, "comparison": "gte"},
             "mid_threshold": {"threshold": 15, "points": 7, "comparison": "gte"},
             "low_penalty": {"threshold": 15, "points": -10, "comparison": "lt"},
@@ -1056,7 +1059,7 @@ class TestCustomRulesStock:
         assert cat_default.score == 10.0
 
         # Custom: high=30 → 24 < 30, mid=20 → 24 >= 20 → mid = 5
-        custom_rules = {**DEFAULT_FASHION_RULES, "stock": {
+        custom_rules = {**DEFAULT_RULES, "stock": {
             "high_threshold": {"threshold": 30, "points": 10, "comparison": "gte"},
             "mid_threshold": {"threshold": 20, "points": 5, "comparison": "gte"},
             "low_penalty": {"threshold": 20, "points": -5, "comparison": "lt"},
@@ -1075,7 +1078,7 @@ class TestCustomRulesDiscount:
         assert cat_default.score == 5.0
 
         # Custom: no flag = 10 points
-        custom_rules = {**DEFAULT_FASHION_RULES, "discount": {
+        custom_rules = {**DEFAULT_RULES, "discount": {
             "fake_discount_flag": {"points_no_flag": 10, "points_flag": -5},
         }}
         cat_custom = _score_discount_row(results, custom_rules)
@@ -1088,7 +1091,7 @@ class TestCustomRulesDiscount:
         assert cat_default.score == 0.0
 
         # Custom: flag = -5 penalty
-        custom_rules = {**DEFAULT_FASHION_RULES, "discount": {
+        custom_rules = {**DEFAULT_RULES, "discount": {
             "fake_discount_flag": {"points_no_flag": 10, "points_flag": -5},
         }}
         cat_custom = _score_discount_row(results, custom_rules)
@@ -1110,7 +1113,7 @@ class TestCustomRulesVisitors:
         assert h28.score == 0.0
 
         # Custom: threshold=20% → 22% > 20% → pass with 5 points
-        custom_rules = {**DEFAULT_FASHION_RULES, "visitors": {
+        custom_rules = {**DEFAULT_RULES, "visitors": {
             "returning_visitors_pct": {"threshold": 20.0, "points": 5, "comparison": "gte"},
             "followers": {"threshold": 50000, "points": 2, "comparison": "gte"},
         }}
@@ -1138,7 +1141,7 @@ class TestCustomRulesPromo:
         assert h42.score == 5.0
 
         # Custom: opportunity_points = 8
-        custom_rules = {**DEFAULT_FASHION_RULES, "promo_tools": {
+        custom_rules = {**DEFAULT_RULES, "promo_tools": {
             "usage_pct_threshold": {"threshold": 80.0, "opportunity_points": 8},
             "effectiveness_pct_threshold": {"threshold": 90.0, "opportunity_points": 10},
         }}
@@ -1157,7 +1160,7 @@ class TestCustomRulesCampaign:
         assert cat_default.score == 10.0
 
         # Custom: threshold=80% → 85% > 80% → pass → 0
-        custom_rules = {**DEFAULT_FASHION_RULES, "campaign": {
+        custom_rules = {**DEFAULT_RULES, "campaign": {
             "participation_pct_threshold": {"threshold": 80.0, "opportunity_points": 10},
         }}
         cat_custom = _score_campaign(data, custom_rules)
@@ -1175,7 +1178,7 @@ class TestCustomRulesProducts:
         assert h45.score == 0.0
 
         # Custom: threshold=25 → 30 >= 25 → pass with 8 points
-        custom_rules = {**DEFAULT_FASHION_RULES, "products_status": {
+        custom_rules = {**DEFAULT_RULES, "products_status": {
             "product_count": {"threshold": 25, "points": 8, "comparison": "gte"},
             "store_status_points": {"mall": 10, "star_plus": 5, "star": 0, "regular": 0},
         }}
@@ -1205,8 +1208,8 @@ class TestCustomRulesBusiness:
 
         # Custom: threshold_pct=50 → multiplier=1.50
         # avg=100M, current=100M → 100M < 100M*1.50=150M → pass with 15pts
-        custom_rules = {**DEFAULT_FASHION_RULES, "business": {
-            **DEFAULT_FASHION_RULES["business"],
+        custom_rules = {**DEFAULT_RULES, "business": {
+            **DEFAULT_RULES["business"],
             "monthly_sales_trend": {"threshold_pct": 50.0, "points": 15, "comparison": "gte"},
         }}
         cat_custom = _score_business(data, custom_rules)
@@ -1229,8 +1232,8 @@ class TestCustomRulesBusiness:
         assert h19.score == 0.0
 
         # Custom: threshold=50M → 55M > 50M → pass with 12pts
-        custom_rules = {**DEFAULT_FASHION_RULES, "business": {
-            **DEFAULT_FASHION_RULES["business"],
+        custom_rules = {**DEFAULT_RULES, "business": {
+            **DEFAULT_RULES["business"],
             "six_month_avg_threshold": {"threshold": 50_000_000, "points": 12, "comparison": "gte"},
         }}
         cat_custom = _score_business(data, custom_rules)
@@ -1249,7 +1252,7 @@ class TestCustomRulesContent:
         assert d24.verdict == "❌"
 
         # Custom: threshold=85% → 90% >= 85% → pass
-        custom_rules = {**DEFAULT_FASHION_RULES, "content": {
+        custom_rules = {**DEFAULT_RULES, "content": {
             "quality_ratio": {"threshold": 85.0, "comparison": "gte", "info_only": True},
         }}
         cat_custom = _score_content(data, custom_rules)
@@ -1273,7 +1276,7 @@ class TestScoringResultRuleVersion:
             manual_data={}, calculator_results={},
             template="fashion", verdict="✔️",
             store_name="S", period="P", brand_name="B",
-            rules=DEFAULT_FASHION_RULES, rule_version=3,
+            rules=DEFAULT_RULES, rule_version=3,
         )
         assert result.rule_version == 3
 
@@ -1290,7 +1293,7 @@ class TestEndToEndModifiedRules:
         )
         # Modify: double operational points, change stock thresholds
         modified_rules = {
-            **DEFAULT_FASHION_RULES,
+            **DEFAULT_RULES,
             "operational": {
                 "unfulfilled_order_rate": {"threshold": 1.0, "points": 8, "comparison": "lte"},
                 "late_shipment_rate": {"threshold": 1.0, "points": 6, "comparison": "lte"},
@@ -1326,8 +1329,8 @@ class TestG72WithRules:
         return _compute_g68(d73 or self.D73, d52)
 
     def test_custom_floor_fashion(self):
-        """Custom floor overrides default 0.15 for fashion."""
-        rules = {"marketing": {"floor": {"value": 0.18}}}
+        """Custom floor_fashion overrides default 0.15 for fashion."""
+        rules = {"marketing": {"floor_fashion": {"value": 0.18}}}
         result = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=True, rules=rules)
         assert result >= 0.18
 
@@ -1371,7 +1374,7 @@ class TestG72WithRules:
     def test_custom_fashion_adjustment(self):
         """Custom fashion_adjustment changes upper limit for fashion."""
         rules = {"marketing": {
-            "floor": {"value": 0.01},
+            "floor_fashion": {"value": 0.01},
             "upper_limit_base": {"value": 0.20},
             "fashion_adjustment": {"value": 0.10},
             "base_subtraction": {"value": 0.03},
@@ -1404,22 +1407,22 @@ class TestG72WithRules:
         assert result >= 0.15  # Fallback to default fashion floor
 
     def test_empty_d73_returns_floor_from_rules(self):
-        """Empty d73 returns floor from rules when provided."""
-        rules = {"marketing": {"floor": {"value": 0.20}}}
+        """Empty d73 returns floor_fashion from rules when is_fashion."""
+        rules = {"marketing": {"floor_fashion": {"value": 0.20}}}
         result = _compute_g72("", 0.0, "", is_fashion=True, rules=rules)
         assert result == 0.20
 
     def test_all_constants_overridden(self):
-        """All 5 marketing constants overridden at once."""
+        """All marketing constants overridden at once."""
         rules = {"marketing": {
-            "floor": {"value": 0.18},
+            "floor_fashion": {"value": 0.18},
             "base_subtraction": {"value": 0.05},
             "upper_limit_base": {"value": 0.25},
             "fashion_adjustment": {"value": 0.08},
             "minimum_threshold": {"value": 0.12},
         }}
         result = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=True, rules=rules)
-        assert result >= 0.18  # Must be at least the floor
+        assert result >= 0.18  # Must be at least the floor_fashion
 
 
 class TestG73WithRules:
@@ -1492,14 +1495,15 @@ class TestMarketingRulesPropagation:
             store_name="Test Store",
             period="Jan 2026",
             brand_name="TestBrand",
-            rules=DEFAULT_FASHION_RULES,
+            rules=DEFAULT_RULES,
             rule_version=1,
         )
 
         custom_rules = {
-            **DEFAULT_FASHION_RULES,
+            **DEFAULT_RULES,
             "marketing": {
-                "floor": {"value": 0.20},
+                "floor": {"value": 0.12},
+                "floor_fashion": {"value": 0.20},
                 "base_subtraction": {"value": 0.03},
                 "upper_limit_base": {"value": 0.20},
                 "fashion_adjustment": {"value": 0.05},
@@ -1537,9 +1541,10 @@ class TestMarketingRulesPropagation:
         }
 
         custom_rules = {
-            **DEFAULT_FASHION_RULES,
+            **DEFAULT_RULES,
             "marketing": {
-                "floor": {"value": 0.22},
+                "floor": {"value": 0.12},
+                "floor_fashion": {"value": 0.22},
                 "base_subtraction": {"value": 0.03},
                 "upper_limit_base": {"value": 0.30},
                 "fashion_adjustment": {"value": 0.05},
@@ -1626,10 +1631,10 @@ class TestMessageTemplatesOperational:
     """Test operational message generators read templates from rules."""
 
     def test_custom_pass_template(self):
-        rules = {**DEFAULT_FASHION_RULES, "operational": {
-            **DEFAULT_FASHION_RULES["operational"],
+        rules = {**DEFAULT_RULES, "operational": {
+            **DEFAULT_RULES["operational"],
             "unfulfilled_order_rate": {
-                **DEFAULT_FASHION_RULES["operational"]["unfulfilled_order_rate"],
+                **DEFAULT_RULES["operational"]["unfulfilled_order_rate"],
                 "message_pass": "CUSTOM PASS: {val_str}",
             },
         }}
@@ -1645,10 +1650,10 @@ class TestMessageTemplatesOperational:
         assert g7.message == "CUSTOM PASS: 0.5%"
 
     def test_custom_fail_template(self):
-        rules = {**DEFAULT_FASHION_RULES, "operational": {
-            **DEFAULT_FASHION_RULES["operational"],
+        rules = {**DEFAULT_RULES, "operational": {
+            **DEFAULT_RULES["operational"],
             "unfulfilled_order_rate": {
-                **DEFAULT_FASHION_RULES["operational"]["unfulfilled_order_rate"],
+                **DEFAULT_RULES["operational"]["unfulfilled_order_rate"],
                 "message_fail": "BAD: {val_str} needs <{threshold}%",
             },
         }}
@@ -1665,16 +1670,16 @@ class TestMessageTemplatesOperational:
 
     def test_all_operational_rows_customizable(self):
         """All 5 operational rows read from rules."""
-        rules = {**DEFAULT_FASHION_RULES, "operational": {
-            "unfulfilled_order_rate": {**DEFAULT_FASHION_RULES["operational"]["unfulfilled_order_rate"],
+        rules = {**DEFAULT_RULES, "operational": {
+            "unfulfilled_order_rate": {**DEFAULT_RULES["operational"]["unfulfilled_order_rate"],
                 "message_pass": "R7 PASS {val_str}"},
-            "late_shipment_rate": {**DEFAULT_FASHION_RULES["operational"]["late_shipment_rate"],
+            "late_shipment_rate": {**DEFAULT_RULES["operational"]["late_shipment_rate"],
                 "message_pass": "R8 PASS {val_str}"},
-            "preparation_time": {**DEFAULT_FASHION_RULES["operational"]["preparation_time"],
+            "preparation_time": {**DEFAULT_RULES["operational"]["preparation_time"],
                 "message_pass": "R9 PASS {val_str}"},
-            "chat_response_rate": {**DEFAULT_FASHION_RULES["operational"]["chat_response_rate"],
+            "chat_response_rate": {**DEFAULT_RULES["operational"]["chat_response_rate"],
                 "message_pass": "R10 PASS {val_str}"},
-            "overall_rating": {**DEFAULT_FASHION_RULES["operational"]["overall_rating"],
+            "overall_rating": {**DEFAULT_RULES["operational"]["overall_rating"],
                 "message_pass": "R11 PASS {val_str}"},
         }}
         data = {"operational": {
@@ -1706,7 +1711,7 @@ class TestMessageTemplatesOperational:
 
     def test_fallback_when_template_missing(self):
         """Rules without message fields still produce correct messages."""
-        rules = {**DEFAULT_FASHION_RULES, "operational": {
+        rules = {**DEFAULT_RULES, "operational": {
             "unfulfilled_order_rate": {"threshold": 1.0, "points": 4, "comparison": "lte"},
             "late_shipment_rate": {"threshold": 1.0, "points": 3, "comparison": "lte"},
             "preparation_time": {"threshold": 1.0, "points": 3, "comparison": "lte"},
@@ -1729,10 +1734,10 @@ class TestMessageTemplatesBusiness:
     """Test business message generators read templates from rules."""
 
     def test_custom_sales_trend_pass(self):
-        rules = {**DEFAULT_FASHION_RULES, "business": {
-            **DEFAULT_FASHION_RULES["business"],
+        rules = {**DEFAULT_RULES, "business": {
+            **DEFAULT_RULES["business"],
             "monthly_sales_trend": {
-                **DEFAULT_FASHION_RULES["business"]["monthly_sales_trend"],
+                **DEFAULT_RULES["business"]["monthly_sales_trend"],
                 "message_pass": "SALES UP: {idr_val} by {change_pct}%",
             },
         }}
@@ -1752,10 +1757,10 @@ class TestMessageTemplatesBusiness:
         assert "SALES UP:" in g13.message
 
     def test_custom_severe_drop_addendum(self):
-        rules = {**DEFAULT_FASHION_RULES, "business": {
-            **DEFAULT_FASHION_RULES["business"],
+        rules = {**DEFAULT_RULES, "business": {
+            **DEFAULT_RULES["business"],
             "monthly_sales_trend": {
-                **DEFAULT_FASHION_RULES["business"]["monthly_sales_trend"],
+                **DEFAULT_RULES["business"]["monthly_sales_trend"],
                 "message_fail_severe": "\nCRITICAL: Sales dropped severely!",
             },
         }}
@@ -1775,10 +1780,10 @@ class TestMessageTemplatesBusiness:
         assert "CRITICAL: Sales dropped severely!" in g13.message
 
     def test_custom_conversion_template(self):
-        rules = {**DEFAULT_FASHION_RULES, "business": {
-            **DEFAULT_FASHION_RULES["business"],
+        rules = {**DEFAULT_RULES, "business": {
+            **DEFAULT_RULES["business"],
             "conversion_rate": {
-                **DEFAULT_FASHION_RULES["business"]["conversion_rate"],
+                **DEFAULT_RULES["business"]["conversion_rate"],
                 "message_pass": "CONV OK: {val_str}",
                 "message_fail": "CONV BAD: {val_str}, need {benchmark}",
             },
@@ -1800,9 +1805,9 @@ class TestMessageTemplatesContent:
     """Test content message generators read templates from rules."""
 
     def test_custom_content_pass(self):
-        rules = {**DEFAULT_FASHION_RULES, "content": {
+        rules = {**DEFAULT_RULES, "content": {
             "quality_ratio": {
-                **DEFAULT_FASHION_RULES["content"]["quality_ratio"],
+                **DEFAULT_RULES["content"]["quality_ratio"],
                 "message_pass": "CONTENT GOOD: {val_str}",
             },
         }}
@@ -1822,10 +1827,10 @@ class TestMessageTemplatesVisitors:
     """Test visitor message generators read templates from rules."""
 
     def test_custom_returning_visitors(self):
-        rules = {**DEFAULT_FASHION_RULES, "visitors": {
-            **DEFAULT_FASHION_RULES["visitors"],
+        rules = {**DEFAULT_RULES, "visitors": {
+            **DEFAULT_RULES["visitors"],
             "returning_visitors_pct": {
-                **DEFAULT_FASHION_RULES["visitors"]["returning_visitors_pct"],
+                **DEFAULT_RULES["visitors"]["returning_visitors_pct"],
                 "message_pass": "VISITORS OK: {val_str}",
             },
         }}
@@ -1841,10 +1846,10 @@ class TestMessageTemplatesVisitors:
         assert "VISITORS OK:" in g28.message
 
     def test_custom_followers(self):
-        rules = {**DEFAULT_FASHION_RULES, "visitors": {
-            **DEFAULT_FASHION_RULES["visitors"],
+        rules = {**DEFAULT_RULES, "visitors": {
+            **DEFAULT_RULES["visitors"],
             "followers": {
-                **DEFAULT_FASHION_RULES["visitors"]["followers"],
+                **DEFAULT_RULES["visitors"]["followers"],
                 "message_pass": "FOLLOWERS GREAT: {val_str}",
             },
         }}
@@ -1864,8 +1869,8 @@ class TestMessageTemplatesPromo:
     """Test promo message generators read templates from rules."""
 
     def test_custom_individual_messages(self):
-        rules = {**DEFAULT_FASHION_RULES, "promo_tools": {
-            **DEFAULT_FASHION_RULES["promo_tools"],
+        rules = {**DEFAULT_RULES, "promo_tools": {
+            **DEFAULT_RULES["promo_tools"],
             "individual_messages": {
                 "message_zero": "ZERO: {metric}",
                 "message_dependent": "DEP: {metric} = {pct_str}",
@@ -1895,15 +1900,15 @@ class TestMessageTemplatesPromo:
         assert "ZERO:" in first_promo.message
 
     def test_custom_summary_messages(self):
-        rules = {**DEFAULT_FASHION_RULES, "promo_tools": {
-            **DEFAULT_FASHION_RULES["promo_tools"],
+        rules = {**DEFAULT_RULES, "promo_tools": {
+            **DEFAULT_RULES["promo_tools"],
             "usage_pct_threshold": {
-                **DEFAULT_FASHION_RULES["promo_tools"]["usage_pct_threshold"],
+                **DEFAULT_RULES["promo_tools"]["usage_pct_threshold"],
                 "message_pass": "USAGE OK: {val_str}",
                 "message_fail": "USAGE BAD: {val_str}",
             },
             "effectiveness_pct_threshold": {
-                **DEFAULT_FASHION_RULES["promo_tools"]["effectiveness_pct_threshold"],
+                **DEFAULT_RULES["promo_tools"]["effectiveness_pct_threshold"],
                 "message_pass": "EFF OK: {val_str}",
                 "message_fail": "EFF BAD: {val_str}",
             },
@@ -1932,10 +1937,10 @@ class TestMessageTemplatesProducts:
     """Test products message generators read templates from rules."""
 
     def test_custom_product_count_template(self):
-        rules = {**DEFAULT_FASHION_RULES, "products_status": {
-            **DEFAULT_FASHION_RULES["products_status"],
+        rules = {**DEFAULT_RULES, "products_status": {
+            **DEFAULT_RULES["products_status"],
             "product_count": {
-                **DEFAULT_FASHION_RULES["products_status"]["product_count"],
+                **DEFAULT_RULES["products_status"]["product_count"],
                 "message_pass": "PROD OK: {value_int} items",
             },
         }}
@@ -1951,10 +1956,10 @@ class TestMessageTemplatesProducts:
         assert g45.message == "PROD OK: 50 items"
 
     def test_custom_store_status_template(self):
-        rules = {**DEFAULT_FASHION_RULES, "products_status": {
-            **DEFAULT_FASHION_RULES["products_status"],
+        rules = {**DEFAULT_RULES, "products_status": {
+            **DEFAULT_RULES["products_status"],
             "store_status_points": {
-                **DEFAULT_FASHION_RULES["products_status"]["store_status_points"],
+                **DEFAULT_RULES["products_status"]["store_status_points"],
                 "message_pass": "STATUS: {store_status} approved",
             },
         }}
@@ -1974,10 +1979,10 @@ class TestMessageTemplatesAds:
     """Test ads message generators read templates from rules."""
 
     def test_custom_roi_template(self):
-        rules = {**DEFAULT_FASHION_RULES, "ads": {
-            **DEFAULT_FASHION_RULES["ads"],
+        rules = {**DEFAULT_RULES, "ads": {
+            **DEFAULT_RULES["ads"],
             "roi_threshold": {
-                **DEFAULT_FASHION_RULES["ads"]["roi_threshold"],
+                **DEFAULT_RULES["ads"]["roi_threshold"],
                 "message_pass": "ROI GOOD: {val_str}",
             },
         }}
@@ -1996,10 +2001,10 @@ class TestMessageTemplatesAds:
         assert "ROI GOOD:" in g50.message
 
     def test_custom_gmv_no_ads_template(self):
-        rules = {**DEFAULT_FASHION_RULES, "ads": {
-            **DEFAULT_FASHION_RULES["ads"],
+        rules = {**DEFAULT_RULES, "ads": {
+            **DEFAULT_RULES["ads"],
             "gmv_ratio_threshold": {
-                **DEFAULT_FASHION_RULES["ads"]["gmv_ratio_threshold"],
+                **DEFAULT_RULES["ads"]["gmv_ratio_threshold"],
                 "message_no_ads": "NO ADS ACTIVE",
             },
         }}
@@ -2018,10 +2023,10 @@ class TestMessageTemplatesAds:
         assert g51.message == "NO ADS ACTIVE"
 
     def test_custom_cost_ratio_too_minimal(self):
-        rules = {**DEFAULT_FASHION_RULES, "ads": {
-            **DEFAULT_FASHION_RULES["ads"],
+        rules = {**DEFAULT_RULES, "ads": {
+            **DEFAULT_RULES["ads"],
             "cost_ratio_range": {
-                **DEFAULT_FASHION_RULES["ads"]["cost_ratio_range"],
+                **DEFAULT_RULES["ads"]["cost_ratio_range"],
                 "message_too_minimal": "TOO LOW: {pct_str}, need {min}%-{max}%",
             },
         }}
@@ -2046,9 +2051,9 @@ class TestMessageTemplatesCampaign:
     """Test campaign message generators read templates from rules."""
 
     def test_custom_campaign_pass(self):
-        rules = {**DEFAULT_FASHION_RULES, "campaign": {
+        rules = {**DEFAULT_RULES, "campaign": {
             "participation_pct_threshold": {
-                **DEFAULT_FASHION_RULES["campaign"]["participation_pct_threshold"],
+                **DEFAULT_RULES["campaign"]["participation_pct_threshold"],
                 "message_pass": "CAMP OK: {pct_str}",
             },
         }}
@@ -2064,9 +2069,9 @@ class TestMessageTemplatesCampaign:
         assert "CAMP OK:" in g57.message
 
     def test_custom_campaign_no_data(self):
-        rules = {**DEFAULT_FASHION_RULES, "campaign": {
+        rules = {**DEFAULT_RULES, "campaign": {
             "participation_pct_threshold": {
-                **DEFAULT_FASHION_RULES["campaign"]["participation_pct_threshold"],
+                **DEFAULT_RULES["campaign"]["participation_pct_threshold"],
                 "message_no_data": "NO CAMPAIGNS",
             },
         }}
@@ -2086,7 +2091,7 @@ class TestMessageTemplatesCompetition:
     """Test competition message generators read templates from rules."""
 
     def test_custom_competition_pass(self):
-        rules = {**DEFAULT_FASHION_RULES, "competition": {
+        rules = {**DEFAULT_RULES, "competition": {
             "message_pass": "COMPETITIVE",
             "message_fail": "NOT COMPETITIVE: Rp. {market_price}",
         }}
@@ -2110,7 +2115,7 @@ class TestMessageTemplatesCompetition:
         assert "COMPETITIVE" in g61.message
 
     def test_custom_competition_fail(self):
-        rules = {**DEFAULT_FASHION_RULES, "competition": {
+        rules = {**DEFAULT_RULES, "competition": {
             "message_pass": "COMPETITIVE",
             "message_fail": "OVERPRICED: Rp. {market_price}",
         }}
@@ -2138,8 +2143,8 @@ class TestMessageTemplatesG75:
     """Test G75 closing messages read from rules."""
 
     def test_custom_closing_messages(self):
-        rules = {**DEFAULT_FASHION_RULES, "interpretation": {
-            **DEFAULT_FASHION_RULES["interpretation"],
+        rules = {**DEFAULT_RULES, "interpretation": {
+            **DEFAULT_RULES["interpretation"],
             "closing_messages": {
                 "✔️": "CUSTOM APPROVED MESSAGE",
                 "❌": "CUSTOM REJECTED MESSAGE",
@@ -2169,8 +2174,8 @@ class TestMessageTemplatesG75:
         assert "potensi" in msg.lower()  # Falls back to hardcoded
 
     def test_g75_custom_closing_propagates_to_email(self, full_manual_data, full_calculator_results):
-        rules = {**DEFAULT_FASHION_RULES, "interpretation": {
-            **DEFAULT_FASHION_RULES["interpretation"],
+        rules = {**DEFAULT_RULES, "interpretation": {
+            **DEFAULT_RULES["interpretation"],
             "closing_messages": {
                 "✔️": "CUSTOM CLOSING IN EMAIL",
                 "❌": "", "❌ Non Mall": "", "❌ No Brand": "",
@@ -2191,10 +2196,10 @@ class TestMessageTemplateEndToEnd:
     """End-to-end: custom messages propagate to email body and WhatsApp."""
 
     def test_custom_messages_in_email_body(self, full_manual_data, full_calculator_results):
-        rules = {**DEFAULT_FASHION_RULES, "operational": {
-            **DEFAULT_FASHION_RULES["operational"],
+        rules = {**DEFAULT_RULES, "operational": {
+            **DEFAULT_RULES["operational"],
             "unfulfilled_order_rate": {
-                **DEFAULT_FASHION_RULES["operational"]["unfulfilled_order_rate"],
+                **DEFAULT_RULES["operational"]["unfulfilled_order_rate"],
                 "message_pass": "E2E TEST PASS: {val_str}",
             },
         }}
@@ -2221,7 +2226,7 @@ class TestMessageTemplateEndToEnd:
             calculator_results=full_calculator_results,
             template="fashion", verdict="✔️",
             store_name="S", period="P", brand_name="B",
-            rules=DEFAULT_FASHION_RULES,
+            rules=DEFAULT_RULES,
         )
         # All messages should be identical
         for cat_none, cat_default in zip(result_none.category_scores, result_default.category_scores):
