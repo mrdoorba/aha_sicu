@@ -1,16 +1,23 @@
 # Store ICU - CI Workflow
+# Runs backend tests + lint and frontend tests + lint + type-check on every PR.
+#
+# REQUIRED REPOSITORY SETUP:
+#   Branch protection rules must be configured on `develop` and `main`:
+#     1. Go to Settings → Branches → Add branch protection rule
+#     2. Branch name pattern: `develop` (repeat for `main`)
+#     3. Enable "Require status checks to pass before merging"
+#     4. Add required checks: "Backend Tests & Lint", "Frontend Tests & Lint"
+#     5. Enable "Require branches to be up to date before merging"
 
 name: CI
 
 on:
-  push:
-    branches: [main]
   pull_request:
-    branches: [main]
+    branches: [develop, main]
 
 jobs:
   backend:
-    name: Backend Tests
+    name: Backend Tests & Lint
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -23,6 +30,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
+          enable-cache: true
 
       - name: Set up Python
         run: uv python install 3.14
@@ -30,11 +38,14 @@ jobs:
       - name: Install dependencies
         run: uv sync --all-extras
 
+      - name: Lint
+        run: uv run ruff check .
+
       - name: Run tests
         run: uv run pytest -v
 
   frontend:
-    name: Frontend Build
+    name: Frontend Tests & Lint
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -53,11 +64,14 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
+      - name: Lint
+        run: npm run lint
+
       - name: Type check
         run: npx tsc --noEmit
 
+      - name: Run tests
+        run: npx vitest run
+
       - name: Build
         run: npm run build
-
-      - name: Lint
-        run: npm run lint

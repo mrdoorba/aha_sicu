@@ -74,7 +74,7 @@ export const EvaluationSections = ({
   isSaving,
   isSaved,
   saveError,
-  onResetSave,
+  onResetSave: _onResetSave, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: EvaluationSectionsProps) => {
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
 

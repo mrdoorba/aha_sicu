@@ -2,7 +2,7 @@
 
 from contextlib import asynccontextmanager
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}

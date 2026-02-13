@@ -3,7 +3,6 @@
 Uses MND (AK1=80) and KYPSO (AK1=54) sample data from the spec as fixtures.
 """
 
-import pytest
 
 from app.calculators.ads_keyword import (
     AdsKeywordResult,
@@ -377,7 +376,7 @@ class TestSheet1AK4:
         result = calculate_sheet1(data, total_products=100)
         ak4_lines = result["ak4"].split("\n")
         # Should only have flag1 (kurang maksimal) — flag2 suppressed
-        flag2_lines = [l for l in ak4_lines if "status aktif" in l]
+        flag2_lines = [line for line in ak4_lines if "status aktif" in line]
         assert len(flag2_lines) == 0
 
     def test_flag2_good_when_both_good(self):

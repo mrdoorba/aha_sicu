@@ -1,7 +1,7 @@
 """Pydantic schemas for sync module."""
 
 from datetime import datetime
-from typing import Any, Literal, Self
+from typing import Any, Literal
 
 from pydantic import BaseModel, model_validator
 

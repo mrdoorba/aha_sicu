@@ -1,4 +1,4 @@
-import { useBrandUploads, useUploadFile } from '../../hooks/useUpload';
+import { useBrandUploads, useUploadFile, type UploadInfo } from '../../hooks/useUpload';
 import { FileUploadSlot, type FileSlotConfig } from './FileUploadSlot';
 import { toast } from 'sonner';
 
@@ -63,7 +63,7 @@ function SlotWrapper({
 }: {
   config: FileSlotConfig;
   brandId: number;
-  uploadInfo: ReturnType<typeof useBrandUploads>['data'] extends { uploads: (infer U)[] } ? U : never;
+  uploadInfo: UploadInfo | null;
 }) {
   const { upload, progress, status, error, reset } = useUploadFile(brandId);
 

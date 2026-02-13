@@ -3,7 +3,6 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
 
 from app.modules.sync.schemas import SyncTriggerResponse
 
@@ -56,7 +55,7 @@ def test_post_sync_returns_202_with_sync_id(client):
         patch("app.modules.sync.router.db") as mock_router_db,
         patch("app.modules.sync.router.is_sync_in_progress") as mock_in_progress,
         patch("app.modules.sync.router.sync_queries") as mock_sync_queries,
-        patch("app.modules.sync.router.run_sync") as mock_run_sync,
+        patch("app.modules.sync.router.run_sync"),
     ):
         # Auth mocks
         mock_verify.return_value = {"uid": "test-uid", "email": "test@example.com"}
@@ -223,12 +222,12 @@ def test_post_sync_oidc_skips_db_user_lookup(client):
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_firebase,
         patch("app.core.dependencies.verify_oidc_token") as mock_oidc,
-        patch("app.core.dependencies.db") as mock_auth_db,
+        patch("app.core.dependencies.db") as mock_auth_db,  # noqa: F841
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.sync.router.db") as mock_router_db,
         patch("app.modules.sync.router.is_sync_in_progress") as mock_in_progress,
         patch("app.modules.sync.router.sync_queries") as mock_sync_queries,
-        patch("app.modules.sync.router.run_sync") as mock_run_sync,
+        patch("app.modules.sync.router.run_sync"),
     ):
         # Firebase fails, OIDC succeeds
         mock_firebase.side_effect = AuthException(

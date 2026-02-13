@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "dev": "YOUR_GCP_PROJECT_ID",
+    "prod": "YOUR_GCP_PROJECT_ID"
+  },
+  "targets": {
+    "YOUR_GCP_PROJECT_ID": {
+      "hosting": {
+        "aha-sicu-dev": ["aha-sicu-dev"],
+        "aha-sicu-prod": ["aha-sicu-prod"]
+      }
+    }
+  }
+}

@@ -12,6 +12,7 @@ from app.modules.upload.parser import (
     parse_excel,
     validate_columns,
 )
+from tests.unit.conftest import make_excel_bytes as _make_excel_bytes
 
 
 # ---------------------------------------------------------------------------
@@ -62,8 +63,6 @@ def test_parse_csv_invalid():
 # ---------------------------------------------------------------------------
 # Excel parsing
 # ---------------------------------------------------------------------------
-
-from tests.unit.conftest import make_excel_bytes as _make_excel_bytes
 
 
 def test_parse_excel_valid():

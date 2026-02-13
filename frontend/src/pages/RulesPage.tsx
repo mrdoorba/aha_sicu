@@ -84,7 +84,8 @@ export const RulesPage = () => {
       setValidationErrors((prev) => ({ ...prev, [errorKey]: 'Required' }));
     } else {
       setValidationErrors((prev) => {
-        const { [errorKey]: _, ...rest } = prev;
+        const { [errorKey]: _removed, ...rest } = prev;
+        void _removed;
         return rest;
       });
     }
@@ -235,7 +236,7 @@ export const RulesPage = () => {
             if (!rule) return null;
 
             const rulesData = displayRules
-              ? displayRules[template] as ScoringRule['rules']
+              ? displayRules[template] as unknown as ScoringRule['rules']
               : rule.rules;
 
             // Filter validation errors for this template
