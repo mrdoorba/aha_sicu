@@ -11,6 +11,7 @@
 name: Deploy Frontend
 
 on:
+  workflow_dispatch:
   push:
     branches: [develop, main]
     paths:
