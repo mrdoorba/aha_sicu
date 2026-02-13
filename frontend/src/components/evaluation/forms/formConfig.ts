@@ -131,7 +131,7 @@ export const BUSINESS_FIELDS: FieldDefinition[] = [
   { key: 'salesMonth3', label: 'Penjualan Bulan -3', inputType: 'currency', unit: 'IDR' },
   { key: 'salesMonth4', label: 'Penjualan Bulan -4', inputType: 'currency', unit: 'IDR' },
   { key: 'salesMonth5', label: 'Penjualan Bulan -5', inputType: 'currency', unit: 'IDR' },
-  { key: 'conversionRate', label: 'Conversion Rate', inputType: 'number', unit: '%', benchmark: '>3%', benchmarkFashion: '>2%' },
+  { key: 'conversionRate', label: 'Tingkat Konversi', inputType: 'number', unit: '%', benchmark: '>3%', benchmarkFashion: '>2%' },
 ];
 
 export const CONTENT_FIELDS: FieldDefinition[] = [
@@ -186,15 +186,15 @@ export const COMPETITION_FIELDS: FieldDefinition[] = [
 // ── Category definitions (maps categories to their fields) ─────────────────
 
 export const MANUAL_DATA_FIELDS: CategoryDefinition[] = [
-  { key: 'operational', displayName: 'Operational', fields: OPERATIONAL_FIELDS },
-  { key: 'business', displayName: 'Business', fields: BUSINESS_FIELDS },
-  { key: 'content', displayName: 'Content', fields: CONTENT_FIELDS },
-  { key: 'visitors', displayName: 'Visitors', fields: VISITORS_FIELDS },
-  { key: 'promoTools', displayName: 'Promo Tools', fields: PROMO_TOOLS_FIELDS },
-  { key: 'products', displayName: 'Products/Status', fields: PRODUCTS_FIELDS },
-  { key: 'ads', displayName: 'Ads', fields: ADS_FIELDS },
-  { key: 'campaign', displayName: 'Campaign', fields: CAMPAIGN_FIELDS },
-  { key: 'competition', displayName: 'Competition', fields: COMPETITION_FIELDS },
+  { key: 'operational', displayName: 'Operasional', fields: OPERATIONAL_FIELDS },
+  { key: 'business', displayName: 'Bisnis', fields: BUSINESS_FIELDS },
+  { key: 'content', displayName: 'Konten', fields: CONTENT_FIELDS },
+  { key: 'visitors', displayName: 'Pengunjung', fields: VISITORS_FIELDS },
+  { key: 'promoTools', displayName: 'Alat Promo', fields: PROMO_TOOLS_FIELDS },
+  { key: 'products', displayName: 'Produk/Status', fields: PRODUCTS_FIELDS },
+  { key: 'ads', displayName: 'Iklan', fields: ADS_FIELDS },
+  { key: 'campaign', displayName: 'Kampanye', fields: CAMPAIGN_FIELDS },
+  { key: 'competition', displayName: 'Kompetisi', fields: COMPETITION_FIELDS },
 ];
 
 // ── IDR formatting utilities ───────────────────────────────────────────────

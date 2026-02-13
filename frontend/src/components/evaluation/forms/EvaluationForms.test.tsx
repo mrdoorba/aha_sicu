@@ -61,7 +61,7 @@ describe('EvaluationForms Integration', () => {
 
     // Section 2: Business, Content, Visitors
     expect(screen.getByLabelText(/Penjualan Bulan Ini/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Conversion Rate/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Tingkat Konversi/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Perlu Ditingkatkan/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Total Pengunjung/)).toBeInTheDocument();
 
