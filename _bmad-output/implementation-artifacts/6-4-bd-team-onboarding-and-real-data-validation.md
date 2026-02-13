@@ -31,21 +31,21 @@ so that **we validate calculator accuracy with actual client data and confirm th
   - [x] 1.4 Document provisioning process in script headers: (1) fill in users-config.yaml, (2) run provision-users.py, (3) run assign-roles.sql against production DB
   - [x] 1.5 Add `scripts/users-config.yaml` to `.gitignore`
 
-- [ ] Task 2: Create comprehensive onboarding guide (AC: #2)
-  - [ ] 2.1 Create `docs/onboarding-guide.md`
-  - [ ] 2.2 Write Section 1 — Getting Started: production URL, how to log in with Firebase Auth, first-time login experience, password reset flow
-  - [ ] 2.3 Write Section 2 — Brand Data & Sync: navigating to brands page, understanding sync status, triggering manual sync, searching for a brand
-  - [ ] 2.4 Write Section 3 — Starting an Evaluation: selecting a brand, understanding the evaluation page layout (file upload slots, manual input sections, calculator results, final score)
-  - [ ] 2.5 Write Section 4 — File Upload Guide: detailed format requirements for each of the 4 file types with column expectations:
+- [x] Task 2: Create comprehensive onboarding guide (AC: #2)
+  - [x] 2.1 Create `docs/onboarding-guide.md`
+  - [x] 2.2 Write Section 1 — Getting Started: production URL, how to log in with Firebase Auth, first-time login experience, password reset flow
+  - [x] 2.3 Write Section 2 — Brand Data & Sync: navigating to brands page, understanding sync status, triggering manual sync, searching for a brand
+  - [x] 2.4 Write Section 3 — Starting an Evaluation: selecting a brand, understanding the evaluation page layout (file upload slots, manual input sections, calculator results, final score)
+  - [x] 2.5 Write Section 4 — File Upload Guide: detailed format requirements for each of the 4 file types with column expectations:
     - CPC Ad Report CSV: Nama Produk, Nama Iklan, Tipe Iklan, Penempatan, Tipe Biaya, Biaya
     - Keyword Report CSV: Kata Kunci Pencarian, Klik, Kunjungan, Pesanan, Pendapatan, Biaya Iklan, ROAS
     - Order Export XLSX: No. Pesanan, Nama Produk, Nama Variasi, Harga Awal, Harga Setelah Diskon, Jumlah, etc.
     - Mass Update XLSX: Kode Variasi, Nama Produk, Nama Variasi, SKU, Stok (headers at row 3)
-  - [ ] 2.6 Write Section 5 — Manual Data Entry: field reference table organized by scoring category (Operational, Business, Content, Visitors, Promo Tools, Products/Status, Ads, Campaign, Competition, Stock, Discount), input types, benchmark values, percentage convention (0.5 = 0.5%)
-  - [ ] 2.7 Write Section 6 — Understanding Results: how to read Ads Keyword text output (AK2 overview, AK3 breakdown, AK4 flags, top/bottom keywords), Discount Check values (5 outputs + flag), Top SKU tables (revenue + stock), average stock
-  - [ ] 2.8 Write Section 7 — Final Scoring & Verdict: how Fashion vs Non-Fashion templates differ, per-category score breakdown, verdict meanings (checkmark/X/circle), email and WhatsApp output generation
-  - [ ] 2.9 Write Section 8 — Saving & History: saving evaluation, viewing history, searching by brand/date/category, evaluation detail view
-  - [ ] 2.10 Write Section 9 — FAQ & Troubleshooting: common issues (upload format errors, sync failures, "stale" scoring, login problems) with resolutions
+  - [x] 2.6 Write Section 5 — Manual Data Entry: field reference table organized by scoring category (Operational, Business, Content, Visitors, Promo Tools, Products/Status, Ads, Campaign, Competition, Stock, Discount), input types, benchmark values, percentage convention (0.5 = 0.5%)
+  - [x] 2.7 Write Section 6 — Understanding Results: how to read Ads Keyword text output (AK2 overview, AK3 breakdown, AK4 flags, top/bottom keywords), Discount Check values (5 outputs + flag), Top SKU tables (revenue + stock), average stock
+  - [x] 2.8 Write Section 7 — Final Scoring & Verdict: how Fashion vs Non-Fashion templates differ, per-category score breakdown, verdict meanings (checkmark/X/circle), email and WhatsApp output generation
+  - [x] 2.9 Write Section 8 — Saving & History: saving evaluation, viewing history, searching by brand/date/category, evaluation detail view
+  - [x] 2.10 Write Section 9 — FAQ & Troubleshooting: common issues (upload format errors, sync failures, "stale" scoring, login problems) with resolutions
 
 - [ ] Task 3: Create calculator validation checklist template (AC: #4)
   - [ ] 3.1 Create `docs/validation-report-template.md` — reusable template for per-brand validation
