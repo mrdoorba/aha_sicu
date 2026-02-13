@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
 from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.config import settings
 from app.core.exceptions import AppException
@@ -33,6 +34,22 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 
 app = FastAPI(title="Store ICU API", version="0.1.0", lifespan=lifespan)
+
+# CORS — allow Firebase Hosting origins
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:5173",
+        "http://localhost:4173",
+        "https://aha-sicu-dev.web.app",
+        "https://aha-sicu-dev.firebaseapp.com",
+        "https://aha-sicu-prod.web.app",
+        "https://aha-sicu-prod.firebaseapp.com",
+    ],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 # Register exception handlers
 app.add_exception_handler(AppException, app_exception_handler)
