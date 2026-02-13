@@ -281,7 +281,7 @@ describe('RulesPage', () => {
   });
 
   it('highlights differing values between templates', async () => {
-    const user = userEvent.setup();
+    userEvent.setup();
     mockUseRules.mockReturnValue({
       rules: SAMPLE_RULES,
       isLoading: false,

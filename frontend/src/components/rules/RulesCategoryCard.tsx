@@ -73,23 +73,6 @@ const COMPARISON_SYMBOLS: Record<string, string> = {
   eq: '=',
 };
 
-// Fields that are editable numeric values
-const EDITABLE_FIELDS = new Set([
-  'threshold',
-  'threshold_pct',
-  'points',
-  'opportunity_points',
-  'min',
-  'max',
-  'points_no_flag',
-  'points_flag',
-  'mall',
-  'star_plus',
-  'star',
-  'regular',
-  'value',
-]);
-
 // Marketing value fields represent fractions (0.15 = 15%)
 const MARKETING_FRACTION_KEYS = new Set([
   'floor', 'base_subtraction', 'upper_limit_base', 'fashion_adjustment',

@@ -1,6 +1,6 @@
 """Unit tests for sync status database queries."""
 
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 import pytest
 
