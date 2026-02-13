@@ -201,7 +201,7 @@ export const MANUAL_DATA_FIELDS: CategoryDefinition[] = [
 
 export function formatIDR(value: number | null | undefined): string {
   if (value == null || isNaN(value)) return '';
-  return Math.round(value).toLocaleString('id-ID');
+  return String(Math.round(value));
 }
 
 export function parseIDR(formatted: string): number | null {
