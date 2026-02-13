@@ -18,51 +18,51 @@ interface RulesCategoryCardProps {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  operational: 'Operational',
-  business: 'Business',
-  content: 'Content',
-  visitors: 'Visitors',
-  promo_tools: 'Promo Tools',
-  products_status: 'Products & Status',
-  ads: 'Ads',
-  campaign: 'Campaign',
-  stock: 'Stock',
-  discount: 'Discount',
+  operational: 'Operasional',
+  business: 'Bisnis',
+  content: 'Konten',
+  visitors: 'Pengunjung',
+  promo_tools: 'Alat Promo',
+  products_status: 'Produk & Status',
+  ads: 'Iklan',
+  campaign: 'Kampanye',
+  stock: 'Stok',
+  discount: 'Diskon',
   marketing: 'Marketing',
 };
 
 const RULE_LABELS: Record<string, string> = {
-  unfulfilled_order_rate: 'Unfulfilled Order Rate',
-  late_shipment_rate: 'Late Shipment Rate',
-  preparation_time: 'Preparation Time',
-  chat_response_rate: 'Chat Response Rate',
-  overall_rating: 'Overall Rating',
-  monthly_sales_trend: 'Monthly Sales Trend',
-  six_month_avg_threshold: '6-Month Average',
-  conversion_rate: 'Conversion Rate',
-  quality_ratio: 'Quality Ratio',
-  returning_visitors_pct: 'Returning Visitors %',
-  followers: 'Followers',
-  usage_pct_threshold: 'Usage %',
-  effectiveness_pct_threshold: 'Effectiveness %',
-  product_count: 'Product Count',
-  store_status_points: 'Store Status',
+  unfulfilled_order_rate: 'Tingkat Pesanan Tidak Terselesaikan',
+  late_shipment_rate: 'Tingkat Keterlambatan Pengiriman',
+  preparation_time: 'Masa Pengemasan',
+  chat_response_rate: 'Persentase Chat Dibalas',
+  overall_rating: 'Keseluruhan Penilaian',
+  monthly_sales_trend: 'Tren Penjualan Bulanan',
+  six_month_avg_threshold: 'Rata-rata 6 Bulan',
+  conversion_rate: 'Tingkat Konversi',
+  quality_ratio: 'Rasio Kualitas',
+  returning_visitors_pct: 'Pengunjung Kembali %',
+  followers: 'Pengikut',
+  usage_pct_threshold: 'Penggunaan %',
+  effectiveness_pct_threshold: 'Efektivitas %',
+  product_count: 'Jumlah Produk',
+  store_status_points: 'Status Toko',
   roi_threshold: 'ROI',
-  gmv_ratio_threshold: 'GMV Ratio',
-  cost_ratio_range: 'Cost Ratio Range',
-  participation_pct_threshold: 'Participation %',
-  high_threshold: 'High Stock',
-  mid_threshold: 'Mid Stock',
-  low_penalty: 'Low Stock',
-  fake_discount_flag: 'Fake Discount',
-  floor: 'Floor',
-  base_subtraction: 'Base Subtraction',
-  upper_limit_base: 'Upper Limit Base',
-  fashion_adjustment: 'Fashion Adjustment',
-  minimum_threshold: 'Minimum Threshold',
-  display_max: 'Display Max',
-  display_min: 'Display Min',
-  individual_messages: 'Promo Individual Messages',
+  gmv_ratio_threshold: 'Rasio GMV',
+  cost_ratio_range: 'Rentang Rasio Biaya',
+  participation_pct_threshold: 'Partisipasi %',
+  high_threshold: 'Stok Tinggi',
+  mid_threshold: 'Stok Sedang',
+  low_penalty: 'Stok Rendah',
+  fake_discount_flag: 'Diskon Palsu',
+  floor: 'Batas Bawah',
+  base_subtraction: 'Pengurangan Dasar',
+  upper_limit_base: 'Batas Atas Dasar',
+  fashion_adjustment: 'Penyesuaian Fashion',
+  minimum_threshold: 'Ambang Minimum',
+  display_max: 'Tampilan Maks',
+  display_min: 'Tampilan Min',
+  individual_messages: 'Pesan Individual Promo',
 };
 
 const COMPARISON_SYMBOLS: Record<string, string> = {
@@ -80,15 +80,15 @@ const MARKETING_FRACTION_KEYS = new Set([
 ]);
 
 const MESSAGE_FIELD_LABELS: Record<string, string> = {
-  message_pass: 'Pass',
-  message_fail: 'Fail',
-  message_fail_severe: 'Fail (severe)',
-  message_no_ads: 'No ads',
-  message_too_minimal: 'Too minimal',
-  message_no_data: 'No data',
-  message_zero: 'Zero revenue',
-  message_dependent: 'Too dependent',
-  message_pass_afiliasi: 'Pass (afiliasi)',
+  message_pass: 'Lulus',
+  message_fail: 'Gagal',
+  message_fail_severe: 'Gagal (parah)',
+  message_no_ads: 'Tanpa iklan',
+  message_too_minimal: 'Terlalu minimal',
+  message_no_data: 'Tidak ada data',
+  message_zero: 'Pendapatan nol',
+  message_dependent: 'Terlalu bergantung',
+  message_pass_afiliasi: 'Lulus (afiliasi)',
 };
 
 const MESSAGE_FIELDS = Object.keys(MESSAGE_FIELD_LABELS);
@@ -120,14 +120,14 @@ function formatThreshold(rule: RuleThreshold, key?: string): string {
   }
   // Store status — display status type labels instead of "-"
   if (rule.mall !== undefined) {
-    return 'By store type';
+    return 'Per tipe toko';
   }
   if (rule.min !== undefined && rule.max !== undefined && rule.min !== null && rule.max !== null) {
     return `${rule.min} - ${rule.max}`;
   }
   // Fake discount — no numeric threshold
   if (rule.points_no_flag !== undefined) {
-    return 'Flag check';
+    return 'Cek flag';
   }
   const comparison = rule.comparison ? COMPARISON_SYMBOLS[rule.comparison] || rule.comparison : '';
   const value = rule.threshold ?? rule.threshold_pct ?? '';
@@ -136,7 +136,7 @@ function formatThreshold(rule: RuleThreshold, key?: string): string {
 }
 
 function formatPoints(rule: RuleThreshold): string {
-  if (rule.info_only) return 'Info only';
+  if (rule.info_only) return 'Info saja';
   // Value-only fields (marketing) — no points column
   if (rule.value !== undefined) return '-';
   if (rule.points !== undefined) return `${rule.points} pts`;
@@ -237,7 +237,7 @@ function renderEditableThreshold(
   if (rule.mall !== undefined) {
     return (
       <span className="flex items-center gap-1 flex-wrap">
-        By store type
+        Per tipe toko
       </span>
     );
   }
@@ -255,7 +255,7 @@ function renderEditableThreshold(
 
   // Fake discount — no threshold to edit
   if (rule.points_no_flag !== undefined) {
-    return <span>Flag check</span>;
+    return <span>Cek flag</span>;
   }
 
   // Standard threshold or threshold_pct
@@ -286,7 +286,7 @@ function renderEditablePoints(
   onRuleChange: (category: string, key: string, field: string, value: number | null) => void,
   validationErrors?: Record<string, string>,
 ) {
-  if (rule.info_only) return <Badge variant="outline" className="text-muted-foreground">Info only</Badge>;
+  if (rule.info_only) return <Badge variant="outline" className="text-muted-foreground">Info saja</Badge>;
 
   // Value-only fields (marketing) — no points to edit
   if (rule.value !== undefined) return <span>-</span>;
@@ -377,9 +377,9 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Metric</TableHead>
-                  <TableHead>Threshold</TableHead>
-                  <TableHead>Points</TableHead>
+                  <TableHead>Metrik</TableHead>
+                  <TableHead>Ambang Batas</TableHead>
+                  <TableHead>Poin</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -397,7 +397,7 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
                             {RULE_LABELS[key] || key}
                             {isDiffering && (
                               <Badge variant="outline" className="ml-1 text-xs text-blue-600 border-blue-300">
-                                differs
+                                berbeda
                               </Badge>
                             )}
                             {hasMessages && (
@@ -425,7 +425,7 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
                           {isEditing && onRuleChange ? (
                             renderEditablePoints(rule, category, key, onRuleChange, validationErrors)
                           ) : rule.info_only ? (
-                            <Badge variant="outline" className="text-muted-foreground">Info only</Badge>
+                            <Badge variant="outline" className="text-muted-foreground">Info saja</Badge>
                           ) : (
                             <span className="text-sm">{formatPoints(rule)}</span>
                           )}
@@ -454,7 +454,7 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
                                         />
                                         {placeholders.length > 0 && (
                                           <span className="text-xs text-muted-foreground">
-                                            Placeholders: {placeholders.map((p) => (
+                                            Placeholder: {placeholders.map((p) => (
                                               <code key={p} className="mx-0.5 px-1 py-0.5 bg-muted rounded text-xs">{p}</code>
                                             ))}
                                           </span>

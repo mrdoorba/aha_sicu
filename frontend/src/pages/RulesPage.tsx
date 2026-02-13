@@ -154,7 +154,7 @@ export const RulesPage = () => {
     setShowPasswordDialog(false);
     setIsEditing(false);
     setEditedRules({});
-    toast.success('Rules updated successfully');
+    toast.success('Aturan berhasil diperbarui');
   };
 
   if (isLoading) {
@@ -180,12 +180,12 @@ export const RulesPage = () => {
         <Header />
         <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="text-center py-12">
-            <p className="text-destructive mb-4">Failed to load scoring rules.</p>
+            <p className="text-destructive mb-4">Gagal memuat aturan penilaian.</p>
             <button
               onClick={() => refetch()}
               className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
             >
-              Retry
+              Coba Lagi
             </button>
           </div>
         </main>
@@ -200,7 +200,7 @@ export const RulesPage = () => {
       <Header />
       <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold tracking-tight">Scoring Rules</h2>
+          <h2 className="text-2xl font-bold tracking-tight">Aturan Penilaian</h2>
           <div className="flex items-center gap-3">
             {activeRule && !isEditing && (
               <span className="text-sm text-muted-foreground">
@@ -209,16 +209,16 @@ export const RulesPage = () => {
               </span>
             )}
             {canEdit && !isEditing && (
-              <Button onClick={enterEditMode}>Edit Rules</Button>
+              <Button onClick={enterEditMode}>Edit Aturan</Button>
             )}
             {isEditing && (
               <>
-                <Button variant="outline" onClick={cancelEdit}>Cancel</Button>
+                <Button variant="outline" onClick={cancelEdit}>Batal</Button>
                 <Button
                   onClick={() => setShowPasswordDialog(true)}
                   disabled={!hasChanges() || hasValidationErrors}
                 >
-                  Save Changes
+                  Simpan Perubahan
                 </Button>
               </>
             )}
@@ -272,13 +272,13 @@ export const RulesPage = () => {
                 {rulesData.competition && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Competition Messages</CardTitle>
+                      <CardTitle className="text-base">Pesan Kompetisi</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {Object.entries(rulesData.competition).map(([field, value]) => (
                         <div key={field} className="flex flex-col gap-0.5">
                           <span className="text-xs font-medium text-muted-foreground">
-                            {field === 'message_pass' ? 'Competitive' : field === 'message_fail' ? 'Not competitive' : field}
+                            {field === 'message_pass' ? 'Kompetitif' : field === 'message_fail' ? 'Tidak kompetitif' : field}
                           </span>
                           {isEditing ? (
                             <textarea
@@ -302,15 +302,15 @@ export const RulesPage = () => {
                 {rulesData.interpretation?.ranges && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Score Interpretation</CardTitle>
+                      <CardTitle className="text-base">Interpretasi Skor</CardTitle>
                     </CardHeader>
                     <CardContent>
                       <Table>
                         <TableHeader>
                           <TableRow>
-                            <TableHead>Score Range</TableHead>
+                            <TableHead>Rentang Skor</TableHead>
                             <TableHead>Label</TableHead>
-                            <TableHead>Verdict</TableHead>
+                            <TableHead>Keputusan</TableHead>
                           </TableRow>
                         </TableHeader>
                         <TableBody>
@@ -375,13 +375,13 @@ export const RulesPage = () => {
                 {rulesData.interpretation?.closing_messages && (
                   <Card>
                     <CardHeader>
-                      <CardTitle className="text-base">Closing Messages (G75)</CardTitle>
+                      <CardTitle className="text-base">Pesan Penutup (G75)</CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       {Object.entries(rulesData.interpretation.closing_messages).map(([verdict, message]) => (
                         <div key={verdict} className="flex flex-col gap-0.5">
                           <span className="text-xs font-medium text-muted-foreground">
-                            Verdict: {verdict || '(empty / good performance)'}
+                            Keputusan: {verdict || '(kosong / performa baik)'}
                           </span>
                           {isEditing ? (
                             <textarea
@@ -393,7 +393,7 @@ export const RulesPage = () => {
                               maxLength={500}
                             />
                           ) : (
-                            <span className="text-sm text-muted-foreground">{message || '(empty)'}</span>
+                            <span className="text-sm text-muted-foreground">{message || '(kosong)'}</span>
                           )}
                         </div>
                       ))}
