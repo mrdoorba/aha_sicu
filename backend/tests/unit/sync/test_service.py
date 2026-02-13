@@ -331,7 +331,7 @@ async def test_run_sync_broadcasts_failure_on_sheet_errors(
     mock_sheets_client.fetch_meeting_data.side_effect = RuntimeError("Fatal error")
 
     # Individual sheet errors are caught gracefully — sync completes with failed status
-    result = await run_sync()
+    await run_sync()
 
     calls = mock_broadcaster.broadcast.call_args_list
     statuses = [c[0][1]["status"] for c in calls]

@@ -4,13 +4,11 @@ Tests against the spec in logic/calculator-2-penjualan.md
 with KYPSO and MND sample data patterns.
 """
 
-import pytest
 
 from app.calculators.top_sku import (
     AggregatedProduct,
     EnrichedProduct,
     LineItem,
-    TopSkuResult,
     _aggregate_by_product,
     _build_mass_update_lookup,
     _build_output_tables,

@@ -6,30 +6,16 @@ Tests against the spec in logic/scoring-system-template-sicu.md.
 import pytest
 
 from app.calculators.scoring import (
-    CategoryScore,
     DEFAULT_FASHION_RULES,
     DEFAULT_NON_FASHION_RULES,
-    RowScore,
     ScoringResult,
     _compute_g68,
     _compute_g72,
     _compute_g73,
     _compute_g75,
-    _extract_pct,
-    _fmt_idr,
     _format_message_template,
-    _generate_ads_messages,
-    _generate_business_messages,
-    _generate_campaign_messages,
-    _generate_competition_messages,
-    _generate_content_messages,
-    _generate_operational_messages,
-    _generate_products_messages,
-    _generate_promo_messages,
-    _generate_visitors_messages,
     _parse_d73_percentages,
     _promo_verdict,
-    _safe_num,
     _score_ads,
     _score_business,
     _score_campaign,
@@ -222,7 +208,6 @@ class TestScoreBusiness:
             }
         }
         cat = _score_business(data)
-        avg = sum([200, 180, 190, 170, 160, 150]) * 1_000_000 / 6
         # avg = 175M, current = 200M, 175M < 200M * 1.10 = 220M → pass (H13=10)
         assert cat.rows[0].score == 10.0
         # avg = 175M > 100M → pass (H19=10)
@@ -242,8 +227,7 @@ class TestScoreBusiness:
             }
         }
         cat = _score_business(data)
-        avg = (50 + 200 * 5) * 1_000_000 / 6  # ~175M
-        # 175M >= 50M * 1.10 = 55M → FAIL (H13=0)
+        # avg ~175M, 175M >= 50M * 1.10 = 55M → FAIL (H13=0)
         assert cat.rows[0].score == 0.0
         # avg = 175M > 100M → H19=10
         h19_row = next(r for r in cat.rows if r.row == 19)
@@ -261,7 +245,7 @@ class TestScoreBusiness:
             }
         }
         cat = _score_business(data)
-        avg = (80 + 70 + 60 + 50 + 40 + 30) * 1_000_000 / 6  # 55M
+        # avg = 55M
         h19_row = next(r for r in cat.rows if r.row == 19)
         assert h19_row.score == 0.0  # 55M < 100M
 
@@ -1500,7 +1484,7 @@ class TestMarketingRulesPropagation:
 
     def test_custom_marketing_rules_change_g72_g73(self, full_manual_data):
         """Custom marketing rules with higher floor change marketing percentage and budget."""
-        result_default = calculate_score(
+        calculate_score(
             manual_data=full_manual_data,
             calculator_results=self.CALC_RESULTS,
             template="fashion",

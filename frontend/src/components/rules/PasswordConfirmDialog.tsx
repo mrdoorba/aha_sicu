@@ -30,9 +30,10 @@ export const PasswordConfirmDialog = ({
 
   const isBusy = isLoading || isReauthing;
 
+  // Reset form state when dialog opens
   useEffect(() => {
     if (open) {
-      setPassword('');
+      setPassword(''); // eslint-disable-line react-hooks/set-state-in-effect -- intentional reset on open
       setError('');
     }
   }, [open]);

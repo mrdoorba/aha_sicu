@@ -3,7 +3,6 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
-import pytest
 
 
 def test_sync_status_without_token(client):

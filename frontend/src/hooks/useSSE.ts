@@ -25,9 +25,9 @@ export function useSSE(currentUserEmail?: string) {
   const retryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   // Refs avoid stale closures for mutable state in event handlers
   const queryClientRef = useRef(queryClient);
-  queryClientRef.current = queryClient;
   const currentUserEmailRef = useRef(currentUserEmail);
-  currentUserEmailRef.current = currentUserEmail;
+  useEffect(() => { queryClientRef.current = queryClient; }, [queryClient]);
+  useEffect(() => { currentUserEmailRef.current = currentUserEmail; }, [currentUserEmail]);
 
   useEffect(() => {
     const cleanup = () => {
@@ -124,7 +124,7 @@ export function useSSE(currentUserEmail?: string) {
 
     connect();
     return cleanup;
-  }, []); // eslint-disable-line react-hooks/exhaustive-deps -- refs handle mutable state
+  }, []);
 
   return { connectionState };
 }

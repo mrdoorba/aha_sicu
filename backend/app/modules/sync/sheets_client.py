@@ -118,7 +118,7 @@ class GoogleSheetsClient:
                     logger.error(f"SYNC_PERMISSION_DENIED: No access to spreadsheet {spreadsheet_id}")
                     raise SyncException(
                         code="SYNC_PERMISSION_DENIED",
-                        detail=f"Permission denied. Share the sheet with the service account.",
+                        detail="Permission denied. Share the sheet with the service account.",
                         status_code=403,
                     )
                 else:

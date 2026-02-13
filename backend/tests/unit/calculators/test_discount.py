@@ -4,7 +4,6 @@ Tests against the spec in logic/calculator-3-discount-checkup.md
 with SUKA, KYPSO, and MND sample data.
 """
 
-import math
 
 import pytest
 

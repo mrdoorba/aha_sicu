@@ -84,7 +84,8 @@ export const RulesPage = () => {
       setValidationErrors((prev) => ({ ...prev, [errorKey]: 'Required' }));
     } else {
       setValidationErrors((prev) => {
-        const { [errorKey]: _, ...rest } = prev;
+        const { [errorKey]: _removed, ...rest } = prev;
+        void _removed;
         return rest;
       });
     }

@@ -27,7 +27,7 @@ export const RoleProtectedRoute = ({
       toast.error(accessDeniedMessage);
       toastShown.current = true;
     }
-  }, [shouldRedirect]);
+  }, [shouldRedirect, accessDeniedMessage]);
 
   if (authLoading || profileLoading) {
     return (

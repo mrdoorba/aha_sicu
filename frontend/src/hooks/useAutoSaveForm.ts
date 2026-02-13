@@ -62,7 +62,7 @@ export function useAutoSaveForm({ brandId, categoryType, initialData }: UseAutoS
 
   // Store latest values in refs so callbacks stay stable (M3 fix)
   const manualDataRef = useRef(manualData);
-  manualDataRef.current = manualData;
+  useEffect(() => { manualDataRef.current = manualData; }, [manualData]);
 
   const [localOverrides, setLocalOverrides] = useState<Partial<ManualData>>({});
 

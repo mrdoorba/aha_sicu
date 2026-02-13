@@ -3,7 +3,6 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
-import pytest
 
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
 
