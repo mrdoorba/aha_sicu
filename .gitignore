@@ -82,5 +82,9 @@ logic/
 logs/
 *.log
 
+# Smoke Tests
+smoke-tests/node_modules/
+smoke-tests/smoke-results.json
+
 # OS
 Thumbs.db
