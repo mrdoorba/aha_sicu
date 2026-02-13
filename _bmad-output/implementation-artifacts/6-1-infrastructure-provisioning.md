@@ -218,7 +218,7 @@ so that **the application has a secure, scalable production environment**.
 **Secret Management Rules:**
 - Secret **resources** (the "container") are created via Terraform
 - Secret **values** (the actual credentials) are NEVER in Terraform state or code
-- Values injected via `gcloud secrets versions add aha_sicu_db_url --data-file=-` (pipe from stdin)
+- Values injected via `gcloud secrets versions add aha_sicu_{env}_db_url --data-file=-` (pipe from stdin, where `{env}` is `dev` or `prod`)
 - Cloud Run references secrets as environment variables via `secretKeyRef`
 - Local dev uses `.env` file (not committed to git)
 
