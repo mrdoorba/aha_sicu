@@ -1,11 +1,18 @@
 """Pydantic schemas for evaluations module."""
 
+import json
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 CategoryType = Literal["fashion", "non_fashion"]
+
+
+def _parse_json(v: Any) -> Any:
+    if isinstance(v, str):
+        return json.loads(v)
+    return v
 
 
 class EvaluationStateResponse(BaseModel):
@@ -15,6 +22,13 @@ class EvaluationStateResponse(BaseModel):
     category_type: CategoryType | None = None
     manual_data: dict[str, Any] | None = None
     updated_at: datetime | None = None
+
+    @field_validator("manual_data", mode="before")
+    @classmethod
+    def parse_jsonb(cls, v: Any) -> dict[str, Any] | None:
+        if v is None:
+            return None
+        return _parse_json(v)
 
 
 class EvaluationInputsUpdate(BaseModel):
@@ -31,6 +45,11 @@ class CalculatorResultResponse(BaseModel):
     output_text: str
     details: dict[str, Any]
     calculated_at: datetime
+
+    @field_validator("details", mode="before")
+    @classmethod
+    def parse_jsonb(cls, v: Any) -> dict[str, Any]:
+        return _parse_json(v)
 
 
 class SingleCalculatorStatus(BaseModel):
@@ -61,6 +80,11 @@ class CalculatorResultItem(BaseModel):
     details: dict[str, Any]
     calculated_at: datetime
 
+    @field_validator("details", mode="before")
+    @classmethod
+    def parse_jsonb(cls, v: Any) -> dict[str, Any]:
+        return _parse_json(v)
+
 
 class CalculatorResultsListResponse(BaseModel):
     """Response for fetching all stored calculator results for a brand."""
@@ -76,6 +100,13 @@ class RunCalculatorItem(BaseModel):
     status: str  # "success", "skipped", "error"
     result: dict[str, Any] | None = None
     reason: str | None = None
+
+    @field_validator("result", mode="before")
+    @classmethod
+    def parse_jsonb(cls, v: Any) -> dict[str, Any] | None:
+        if v is None:
+            return None
+        return _parse_json(v)
 
 
 class RunAllResponse(BaseModel):
@@ -186,6 +217,11 @@ class EvaluationDetailResponse(BaseModel):
     evaluator_email: str
     created_at: datetime
     rule_version: int
+
+    @field_validator("score_breakdown", "calculator_results", "manual_inputs", mode="before")
+    @classmethod
+    def parse_jsonb(cls, v: Any) -> Any:
+        return _parse_json(v)
 
 
 class SaveEvaluationRequest(BaseModel):

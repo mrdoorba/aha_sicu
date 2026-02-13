@@ -1,9 +1,10 @@
 """Pydantic schemas for sync module."""
 
+import json
 from datetime import datetime
 from typing import Any, Literal
 
-from pydantic import BaseModel, model_validator
+from pydantic import BaseModel, field_validator, model_validator
 
 
 SheetType = Literal["vp", "meeting"]
@@ -55,6 +56,15 @@ class SyncStatusResponse(BaseModel):
     brands_synced: int
     error_message: str | None
     sync_details: dict[str, Any] | None = None
+
+    @field_validator("sync_details", mode="before")
+    @classmethod
+    def parse_jsonb(cls, v: Any) -> dict[str, Any] | None:
+        if v is None:
+            return None
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
 
     @model_validator(mode="before")
     @classmethod

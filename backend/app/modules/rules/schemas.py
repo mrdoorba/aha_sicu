@@ -1,5 +1,6 @@
 """Pydantic schemas for rules module."""
 
+import json
 from datetime import datetime
 from typing import Any, Literal
 
@@ -33,3 +34,10 @@ class ScoringRuleResponse(BaseModel):
     version: int
     updated_by: int | None = None
     updated_at: datetime
+
+    @field_validator("rules", mode="before")
+    @classmethod
+    def parse_jsonb(cls, v: Any) -> dict[str, Any]:
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
