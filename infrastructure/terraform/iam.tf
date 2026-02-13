@@ -49,6 +49,12 @@ resource "google_project_iam_member" "deploy_artifact_writer" {
   member  = "serviceAccount:${google_service_account.deploy.email}"
 }
 
+resource "google_project_iam_member" "deploy_firebase_hosting" {
+  project = var.project_id
+  role    = "roles/firebasehosting.admin"
+  member  = "serviceAccount:${google_service_account.deploy.email}"
+}
+
 # Deploy SA can impersonate Cloud Run SA (actAs) for deploying services
 resource "google_service_account_iam_member" "deploy_acts_as_api" {
   service_account_id = google_service_account.cloud_run.name
