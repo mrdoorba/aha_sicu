@@ -44,7 +44,16 @@ Resources have dependencies. Terraform handles ordering automatically, but for i
 8. **Firebase Hosting** — Frontend hosting site (firebase.tf)
 9. **Cloud Scheduler** — Daily sync job targeting Cloud Run URL (scheduler.tf)
 
-## Setup
+## Quick Setup
+
+Run the interactive setup script — it handles init, plan, apply, and secret injection:
+
+```bash
+cd infrastructure/terraform
+./setup.sh
+```
+
+## Manual Setup
 
 ### 1. Initialize Terraform
 
