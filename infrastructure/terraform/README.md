@@ -44,7 +44,16 @@ Resources have dependencies. Terraform handles ordering automatically, but for i
 8. **Firebase Hosting** — Frontend hosting site (firebase.tf)
 9. **Cloud Scheduler** — Daily sync job targeting Cloud Run URL (scheduler.tf)
 
-## Setup
+## Quick Setup
+
+Run the interactive setup script — it handles init, plan, apply, and secret injection:
+
+```bash
+cd infrastructure/terraform
+./setup.sh
+```
+
+## Manual Setup
 
 ### 1. Initialize Terraform
 
@@ -71,19 +80,34 @@ terraform apply -var-file=environments/dev.tfvars
 
 ### 4. Inject secret values (after apply)
 
-Secret **resources** are created by Terraform, but **values** must be injected manually:
+Secret **resources** are created by Terraform, but **values** must be injected manually.
+
+Secret names include the environment prefix: `aha_sicu_{env}_*`
 
 ```bash
+# === Development environment ===
+
 # Database URL (Neon PostgreSQL connection string)
 echo -n "postgresql://user:pass@host/db?sslmode=require" | \
-  gcloud secrets versions add aha_sicu_db_url --data-file=-
+  gcloud secrets versions add aha_sicu_dev_db_url --data-file=-
 
-# Google Sheets service account credentials (JSON key)
-gcloud secrets versions add aha_sicu_gsheets_credentials \
+# Google Sheets service account credentials (JSON key file)
+gcloud secrets versions add aha_sicu_dev_gsheets_credentials \
   --data-file=path/to/gsheets-service-account.json
 
-# Firebase Admin SDK credentials (JSON key)
-gcloud secrets versions add aha_sicu_firebase_admin \
+# Firebase Admin SDK credentials (JSON key file)
+gcloud secrets versions add aha_sicu_dev_firebase_admin \
+  --data-file=path/to/firebase-admin-credentials.json
+
+# === Production environment ===
+
+echo -n "postgresql://user:pass@host/db?sslmode=require" | \
+  gcloud secrets versions add aha_sicu_prod_db_url --data-file=-
+
+gcloud secrets versions add aha_sicu_prod_gsheets_credentials \
+  --data-file=path/to/gsheets-service-account.json
+
+gcloud secrets versions add aha_sicu_prod_firebase_admin \
   --data-file=path/to/firebase-admin-credentials.json
 ```
 

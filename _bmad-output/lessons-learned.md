@@ -67,6 +67,15 @@ Accumulated knowledge from code reviews, retrospectives, and implementation expe
 - SSE pattern reusable: `new_evaluation` event in Story 4.6 cleanly reused Epic 2's SSE infrastructure
 - Epic 3 retro self-check habit (AC coverage + error handling) did not fully stick — same patterns still flagged
 
+## Infrastructure / Terraform (Epic 6)
+
+- Secret names include environment prefix: `aha_sicu_{env}_*` (e.g., `aha_sicu_dev_db_url`) — docs and comments must match
+- Cloud Run requires secret **versions** to exist before deployment — secrets created by Terraform have no values, so inject placeholders before Cloud Run can start
+- Bootstrap ordering: run `./setup.sh` which handles init → plan → apply → secret placeholder injection in correct order
+- Google's placeholder images (`cloudrun/container/hello`) only exist at `us-docker.pkg.dev`, not `asia-docker.pkg.dev`
+- Workload Identity Pool `display_name` has a 32-char limit — keep names short
+- `gcloud secrets versions add` uses `--data-file /path` (space separator) — `--data-file=` with pipe from stdin may fail in zsh
+
 ## Epic 5 Retrospective Insights (2026-02-12)
 
 - ~19 code review issues across 3 stories (~6.3/story) — HIGH issues down to ~1.3/story (from ~3.8 in Epic 2 → ~6 in Epic 3 → ~7 in Epic 4)

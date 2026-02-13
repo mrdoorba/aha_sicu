@@ -514,9 +514,9 @@ def process_zip(zip_bytes: bytes) -> pl.DataFrame:
 - Secrets:
   | Secret Name | Purpose |
   |-------------|---------|
-  | `aha_sicu_db_url` | Neon PostgreSQL connection string |
-  | `aha_sicu_gsheets_credentials` | Google Sheets API service account key |
-  | `aha_sicu_firebase_admin` | Firebase Admin SDK credentials (for token verification) |
+  | `aha_sicu_{env}_db_url` | Neon PostgreSQL connection string |
+  | `aha_sicu_{env}_gsheets_credentials` | Google Sheets API service account key |
+  | `aha_sicu_{env}_firebase_admin` | Firebase Admin SDK credentials (for token verification) |
 - Cloud Run accesses secrets via `secretKeyRef` in service config
 - Local dev uses `.env` file (not committed to git)
 
@@ -663,7 +663,7 @@ jobs:
 
 **Naming Convention:**
 - Resource prefix: `aha_sicu_`
-- Examples: `aha_sicu_api`, `aha_sicu_registry`, `aha_sicu_db_url`
+- Examples: `aha_sicu_api`, `aha_sicu_registry`, `aha_sicu_{env}_db_url`
 - Firebase uses hyphens: `aha-sicu`
 
 **Region:** `asia-southeast1` (Singapore)

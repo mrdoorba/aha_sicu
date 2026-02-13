@@ -2,7 +2,7 @@
 
 resource "google_iam_workload_identity_pool" "github" {
   workload_identity_pool_id = "aha-sicu-${var.environment}-github-pool"
-  display_name              = "Store ICU ${var.environment} GitHub Actions Pool"
+  display_name              = "Aha SICU ${var.environment} GitHub Pool"
   description               = "Workload Identity Pool for GitHub Actions CI/CD"
   project                   = var.project_id
 
