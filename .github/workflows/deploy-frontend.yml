@@ -57,6 +57,16 @@ jobs:
       - name: Deploy to Firebase Hosting
         run: npx firebase-tools deploy --only hosting:${{ vars.FIREBASE_HOSTING_SITE }} --project ${{ vars.GCP_PROJECT_ID }}
 
+      - name: Verify deployment
+        run: |
+          URL="https://${{ vars.FIREBASE_HOSTING_SITE }}.web.app"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" --max-time 30 || true)
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "Health check passed (HTTP $STATUS) at $URL"
+          else
+            echo "::warning::Health check returned HTTP $STATUS at $URL"
+          fi
+
   deploy-prod:
     if: github.ref == 'refs/heads/main'
     name: Deploy to Production
@@ -92,3 +102,13 @@ jobs:
 
       - name: Deploy to Firebase Hosting
         run: npx firebase-tools deploy --only hosting:${{ vars.FIREBASE_HOSTING_SITE }} --project ${{ vars.GCP_PROJECT_ID }}
+
+      - name: Verify deployment
+        run: |
+          URL="https://${{ vars.FIREBASE_HOSTING_SITE }}.web.app"
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" --max-time 30 || true)
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "Health check passed (HTTP $STATUS) at $URL"
+          else
+            echo "::warning::Health check returned HTTP $STATUS at $URL"
+          fi

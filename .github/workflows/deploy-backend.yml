@@ -51,6 +51,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: backend
+          file: backend/Dockerfile
           push: true
           tags: |
             ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
@@ -59,11 +60,21 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Deploy to Cloud Run
+        id: deploy
         uses: google-github-actions/deploy-cloudrun@v3
         with:
           service: ${{ vars.CLOUD_RUN_SERVICE }}
           region: ${{ vars.GCP_REGION }}
           image: ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
+
+      - name: Verify deployment
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.deploy.outputs.url }}/docs" --max-time 30 || true)
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "Health check passed (HTTP $STATUS) at ${{ steps.deploy.outputs.url }}"
+          else
+            echo "::warning::Health check returned HTTP $STATUS at ${{ steps.deploy.outputs.url }}/docs"
+          fi
 
   deploy-prod:
     if: github.ref == 'refs/heads/main'
@@ -93,6 +104,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: backend
+          file: backend/Dockerfile
           push: true
           tags: |
             ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
@@ -101,8 +113,18 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Deploy to Cloud Run
+        id: deploy
         uses: google-github-actions/deploy-cloudrun@v3
         with:
           service: ${{ vars.CLOUD_RUN_SERVICE }}
           region: ${{ vars.GCP_REGION }}
           image: ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
+
+      - name: Verify deployment
+        run: |
+          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.deploy.outputs.url }}/docs" --max-time 30 || true)
+          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
+            echo "Health check passed (HTTP $STATUS) at ${{ steps.deploy.outputs.url }}"
+          else
+            echo "::warning::Health check returned HTTP $STATUS at ${{ steps.deploy.outputs.url }}/docs"
+          fi

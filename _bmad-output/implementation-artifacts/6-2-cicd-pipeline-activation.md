@@ -1,6 +1,6 @@
 # Story 6.2: CI/CD Pipeline Activation
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -34,6 +34,8 @@ so that **code changes reach Cloud Run and Firebase Hosting reliably without man
   - [x] 1.3 Add frontend test step: `npx vitest run`
   - [x] 1.4 Add frontend lint/format check: `npm run lint`
   - [x] 1.5 Verify all checks run in parallel (backend-tests + frontend-tests as separate jobs)
+  - [x] 1.6 Add frontend build step: `npm run build` (catches build errors in CI)
+  - [x] 1.7 Enable uv dependency caching via `enable-cache: true` (AC: #7)
 
 - [x] Task 2: Create backend deploy workflow (AC: #2, #5, #6, #7)
   - [x] 2.1 Create `.github/workflows/deploy-backend.yml`
@@ -64,13 +66,12 @@ so that **code changes reach Cloud Run and Firebase Hosting reliably without man
 - [x] Task 5: Configure GitHub repository secrets/variables (AC: #5)
   - [x] 5.1 Document required GitHub Actions variables (from Terraform outputs):
     - `GCP_PROJECT_ID` (YOUR_GCP_PROJECT_ID)
-    - `GCP_PROJECT_NUMBER` (from `gcloud projects describe`)
     - `GCP_REGION` (asia-southeast1)
     - `WORKLOAD_IDENTITY_PROVIDER` (from terraform output)
     - `DEPLOY_SERVICE_ACCOUNT` (from terraform output)
-    - `CLOUD_RUN_SERVICE` (aha-sicu-dev-api / aha-sicu-prod-api)
-    - `ARTIFACT_REGISTRY_URL` (from terraform output)
-    - `FIREBASE_PROJECT_ID` (same as GCP_PROJECT_ID)
+    - `CLOUD_RUN_SERVICE` (aha-sicu-dev-api / aha-sicu-prod-api) — backend deploy only
+    - `ARTIFACT_REGISTRY_URL` (from terraform output) — backend deploy only
+    - `FIREBASE_HOSTING_SITE` (aha-sicu-dev / aha-sicu-prod) — frontend deploy only
   - [x] 5.2 Create setup documentation in workflow file comments
 
 - [x] Task 6: End-to-end validation (AC: #1-#7)
@@ -353,13 +354,94 @@ Claude Opus 4.6
 ### Change Log
 
 - 2026-02-13: Implemented CI/CD pipeline activation — enhanced CI workflow, created backend deploy and frontend deploy workflows, created Firebase config files, documented GitHub environment/variable setup
+- 2026-02-13: Code review fixes — fixed firebase.json multi-site config (H1), added uv caching (H2), added branch protection docs (H3), added deploy health checks (M4), fixed variable list (M2), updated file list (M1), added explicit Dockerfile path (L2), documented build step (L1)
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door | **Date:** 2026-02-13 | **Model:** Claude Opus 4.6
+
+### Review Outcome: Changes Requested → Fixed
+
+**Issues Found:** 3 High, 5 Medium, 3 Low (11 total)
+**Issues Fixed:** 8 (all HIGH, 3 MEDIUM, 2 LOW)
+**Accepted as-is:** 3 (M3 DRY — standard pattern; M5 scope creep — documented; L3 notifications — future enhancement)
+
+### Findings Summary
+
+| ID | Severity | Description | Resolution |
+|----|----------|-------------|------------|
+| H1 | HIGH | firebase.json used `"site"` instead of `"target"` — prod deploy broken | Fixed: converted to array format with targets for dev + prod |
+| H2 | HIGH | UV dependency caching missing in CI (AC7 partial) | Fixed: added `enable-cache: true` to `astral-sh/setup-uv@v5` |
+| H3 | HIGH | Branch protection not documented (AC1 partial) | Fixed: added setup instructions as ci.yml header comments |
+| M1 | MEDIUM | 39 files in git but not in story File List | Fixed: updated File List with all files grouped by purpose |
+| M2 | MEDIUM | Task 5.1 variable list mismatched actual workflow variables | Fixed: removed unused vars, added `FIREBASE_HOSTING_SITE` |
+| M3 | MEDIUM | DRY violation in deploy workflows (~50% duplication) | Accepted: separate dev/prod jobs is the standard GitHub Actions pattern for environment-gated deploys |
+| M4 | MEDIUM | No health check after deployment | Fixed: added verify deployment steps to all 4 deploy jobs |
+| M5 | MEDIUM | Scope creep — 3 commits fixing pre-existing lint/test/TS issues | Documented: File List now groups files by purpose; noted as tech debt addressed |
+| L1 | LOW | Undocumented frontend build step in CI | Fixed: added Task 1.6 documenting the build step |
+| L2 | LOW | Missing explicit Dockerfile path in build action | Fixed: added `file: backend/Dockerfile` to build-push-action |
+| L3 | LOW | No deploy failure notification | Deferred: requires external webhook/Slack setup — future enhancement |
 
 ### File List
 
+**CI/CD Pipeline Files (Story 6.2 core scope):**
 - .github/workflows/ci.yml (modified)
 - .github/workflows/deploy-backend.yml (new)
 - .github/workflows/deploy-frontend.yml (new)
 - firebase.json (new)
 - .firebaserc (new)
+
+**Pre-existing Lint Fixes (31 files — required for CI to pass):**
+- backend/app/modules/sync/schemas.py (modified)
+- backend/app/modules/sync/sheets_client.py (modified)
+- backend/app/modules/upload/gcs_client.py (modified)
+- backend/pyproject.toml (modified)
+- backend/uv.lock (modified)
+- backend/tests/integration/api/test_auth.py (modified)
+- backend/tests/integration/api/test_calculators.py (modified)
+- backend/tests/integration/api/test_evaluations.py (modified)
+- backend/tests/integration/api/test_rules_update.py (modified)
+- backend/tests/integration/api/test_sync.py (modified)
+- backend/tests/integration/api/test_sync_trigger.py (modified)
+- backend/tests/integration/api/test_upload.py (modified)
+- backend/tests/unit/calculators/test_ads_keyword.py (modified)
+- backend/tests/unit/calculators/test_discount.py (modified)
+- backend/tests/unit/calculators/test_scoring.py (modified)
+- backend/tests/unit/calculators/test_top_sku.py (modified)
+- backend/tests/unit/sync/test_service.py (modified)
+- backend/tests/unit/sync/test_sync_status_queries.py (modified)
+- backend/tests/unit/test_parser.py (modified)
+- backend/tests/unit/test_security.py (modified)
+- frontend/src/components/auth/RoleProtectedRoute.tsx (modified)
+- frontend/src/components/evaluation/EvaluationSections.tsx (modified)
+- frontend/src/components/evaluation/FileUploadSlot.test.tsx (modified)
+- frontend/src/components/rules/PasswordConfirmDialog.tsx (modified)
+- frontend/src/components/rules/RulesCategoryCard.tsx (modified)
+- frontend/src/components/rules/RulesPage.test.tsx (modified)
+- frontend/src/components/ui/button.tsx (modified)
+- frontend/src/components/ui/tabs.tsx (modified)
+- frontend/src/hooks/useAutoSaveForm.ts (modified)
+- frontend/src/hooks/useSSE.ts (modified)
+- frontend/src/pages/RulesPage.tsx (modified)
+
+**Pre-existing Test Fixes (4 files — required for CI to pass):**
+- frontend/.env.test (new)
+- frontend/src/components/evaluation/forms/EvaluationForms.test.tsx (modified)
+- frontend/src/pages/DashboardPage.test.tsx (modified)
+- frontend/src/test/setup.ts (modified)
+
+**Pre-existing TypeScript Fixes (10 files — required for CI to pass):**
+- frontend/src/components/evaluation/EvaluationSections.tsx (modified)
+- frontend/src/components/evaluation/FileUploadSection.tsx (modified)
+- frontend/src/components/evaluation/forms/formConfig.ts (modified)
+- frontend/src/components/sync/SyncStatus.tsx (modified)
+- frontend/src/hooks/useAutoSaveForm.ts (modified)
+- frontend/src/hooks/useBrandDetail.ts (modified)
+- frontend/src/hooks/useCalculator.ts (modified)
+- frontend/src/hooks/useEvaluationHistory.ts (modified)
+- frontend/src/hooks/useRules.ts (modified)
+- frontend/src/pages/RulesPage.tsx (modified)
+
+**Tracking Files:**
 - _bmad-output/implementation-artifacts/sprint-status.yaml (modified)
 - _bmad-output/implementation-artifacts/6-2-cicd-pipeline-activation.md (modified)

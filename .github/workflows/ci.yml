@@ -1,5 +1,13 @@
 # Store ICU - CI Workflow
 # Runs backend tests + lint and frontend tests + lint + type-check on every PR.
+#
+# REQUIRED REPOSITORY SETUP:
+#   Branch protection rules must be configured on `develop` and `main`:
+#     1. Go to Settings → Branches → Add branch protection rule
+#     2. Branch name pattern: `develop` (repeat for `main`)
+#     3. Enable "Require status checks to pass before merging"
+#     4. Add required checks: "Backend Tests & Lint", "Frontend Tests & Lint"
+#     5. Enable "Require branches to be up to date before merging"
 
 name: CI
 
@@ -22,6 +30,7 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           version: "latest"
+          enable-cache: true
 
       - name: Set up Python
         run: uv python install 3.14
