@@ -330,10 +330,29 @@ Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
+- Baseline regression: 627 backend + 321 frontend tests passing before and after changes
+- No application code modified — story is purely additive (scripts + docs)
+
 ### Completion Notes List
 
 - Ultimate context engine analysis completed — comprehensive developer guide created
+- Task 1: Created `scripts/provision-users.py` (Firebase Admin SDK account provisioning), `scripts/assign-roles.sql` (role UPDATE after first login), `scripts/users-config.example.yaml` (placeholder config). Added `scripts/users-config.yaml` to `.gitignore` for credential safety.
+- Task 2: Created `docs/onboarding-guide.md` — 9-section guide covering login, brand sync, evaluation workflow, file upload format requirements (4 file types with column specs), manual data entry fields organized by 11 scoring categories, calculator result interpretation (Ads Keyword AK2-AK4, Discount Check 5 outputs, Top SKU tables), final scoring/verdict, history/search, and FAQ/troubleshooting. References `smoke-tests/MANUAL_CHECKLIST.md` for quick reference. Percentage convention (0.5 = 0.5%) emphasized per lessons learned.
+- Task 3: Created `docs/validation-report-template.md` — per-brand validation template covering all 3 calculators with field-by-field comparison tables, AK4 seven flags checklist, tolerance specifications (±0.5% discount, ±2 stock, ±1 score), final scoring per-category validation, discrepancy log with severity definitions (Critical/Minor/Cosmetic).
+- Task 4: Created `docs/launch-readiness.md` — go/no-go document with 5 explicit criteria, discrepancy log, bug fast-track process (report → fix → deploy → re-validate), phased vs big-bang rollout options, user account verification table, and sign-off section.
+- Tasks 5-6: HALTED — require human collaboration (BD team coordination, real Shopee data files, manual Google Sheets ground truth, and BD team leader sign-off). Cannot be completed by dev agent alone.
 
 ### Change Log
 
+- 2026-02-13: Tasks 1-4 completed — provisioning scripts, onboarding guide, validation template, launch readiness doc
+- 2026-02-13: Tasks 5-6 HALTED — awaiting human collaboration for real brand validation and sign-off
+
 ### File List
+
+- `scripts/provision-users.py` (new) — Firebase Admin SDK user provisioning script
+- `scripts/assign-roles.sql` (new) — SQL script for user role assignment
+- `scripts/users-config.example.yaml` (new) — Example user config with placeholders
+- `docs/onboarding-guide.md` (new) — Comprehensive BD team onboarding guide
+- `docs/validation-report-template.md` (new) — Per-brand calculator validation template
+- `docs/launch-readiness.md` (new) — Go/no-go launch readiness document
+- `.gitignore` (modified) — Added `scripts/users-config.yaml` exclusion
