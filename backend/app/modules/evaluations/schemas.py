@@ -127,10 +127,10 @@ class ScoringRequest(BaseModel):
     """Request body for generating a final score."""
 
     template: CategoryType
-    verdict: VerdictType
-    store_name: str = Field(max_length=200)
-    period: str = Field(max_length=50)
-    brand_name: str = Field(max_length=200)
+    verdict: VerdictType = ""
+    store_name: str = Field(default="", max_length=200)
+    period: str = Field(default="", max_length=50)
+    brand_name: str = Field(default="", max_length=200)
     email: str | None = Field(default=None, max_length=254)
 
 

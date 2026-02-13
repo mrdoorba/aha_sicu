@@ -39,7 +39,8 @@ export const ScoringSection = ({
   const [verdict, setVerdict] = useState('✔️');
   const [period, setPeriod] = useState('');
 
-  const canGenerate = !!categoryType && !!verdict && !!period;
+  const canGenerate = !!categoryType;
+  const canSave = !!verdict && !!period;
 
   const handleGenerate = () => {
     if (!canGenerate) return;
@@ -59,22 +60,6 @@ export const ScoringSection = ({
           <p className="mb-4 font-semibold">Final Score</p>
 
           <div className="flex flex-wrap items-end gap-4">
-            <VerdictSelector value={verdict} onChange={setVerdict} />
-
-            <div className="space-y-1">
-              <label className="text-sm font-medium" htmlFor="scoring-period">
-                Period
-              </label>
-              <input
-                id="scoring-period"
-                type="text"
-                value={period}
-                onChange={(e) => setPeriod(e.target.value)}
-                placeholder="e.g., Jan 2026"
-                className="h-9 w-40 rounded-md border border-input bg-background px-3 text-sm"
-              />
-            </div>
-
             <Button
               onClick={handleGenerate}
               disabled={!canGenerate || isGenerating}
@@ -82,20 +67,20 @@ export const ScoringSection = ({
               {isGenerating ? (
                 <RefreshCw className="mr-1 size-4 animate-spin" aria-hidden="true" />
               ) : null}
-              {scoringResult && !isStale ? 'Recalculate' : 'Generate Score'}
+              {scoringResult && !isStale ? 'Hitung Ulang' : 'Hitung Skor'}
             </Button>
           </div>
 
           {!categoryType && (
             <p className="mt-2 text-sm text-muted-foreground">
-              Please select a category type (Fashion/Non-Fashion) first.
+              Pilih tipe kategori (Fashion/Non-Fashion) terlebih dahulu.
             </p>
           )}
 
           {isStale && scoringResult && (
             <div className="mt-3 flex items-center gap-2 rounded-md bg-yellow-50 p-2 text-sm text-yellow-800">
               <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
-              Score is stale — data has changed since last calculation.
+              Skor sudah tidak akurat — data telah berubah sejak perhitungan terakhir.
             </div>
           )}
 
@@ -103,6 +88,39 @@ export const ScoringSection = ({
             <p className="mt-2 text-sm text-destructive">
               Error: {error.message}
             </p>
+          )}
+
+          {scoringResult && (
+            <div className="mt-4 flex flex-wrap items-end gap-4 border-t pt-4">
+              <VerdictSelector value={verdict} onChange={setVerdict} />
+
+              <div className="space-y-1">
+                <label className="text-sm font-medium" htmlFor="scoring-period">
+                  Periode
+                </label>
+                <input
+                  id="scoring-period"
+                  type="text"
+                  value={period}
+                  onChange={(e) => setPeriod(e.target.value)}
+                  placeholder="cth., Jan 2026"
+                  className="h-9 w-40 rounded-md border border-input bg-background px-3 text-sm"
+                />
+              </div>
+
+              {canSave && (
+                <Button
+                  variant="outline"
+                  onClick={handleGenerate}
+                  disabled={isGenerating}
+                >
+                  {isGenerating ? (
+                    <RefreshCw className="mr-1 size-4 animate-spin" aria-hidden="true" />
+                  ) : null}
+                  Hitung Ulang dengan Keputusan
+                </Button>
+              )}
+            </div>
           )}
         </CardContent>
       </Card>
