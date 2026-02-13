@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
-from app.calculators.scoring import DEFAULT_FASHION_RULES
+from app.calculators.scoring import DEFAULT_RULES
 
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
 
@@ -112,8 +112,8 @@ SCORING_REQUEST = {
 
 SAMPLE_RULES_ROW = {
     "id": 1,
-    "template": "fashion",
-    "rules": DEFAULT_FASHION_RULES,
+    "template": "default",
+    "rules": DEFAULT_RULES,
     "version": 1,
     "updated_by": None,
     "updated_at": datetime(2026, 2, 5, tzinfo=timezone.utc),
@@ -386,7 +386,7 @@ def test_score_uses_db_rules(client):
     """Test scoring uses rules from DB (not just defaults)."""
     # Custom rules with doubled operational points
     custom_rules = {
-        **DEFAULT_FASHION_RULES,
+        **DEFAULT_RULES,
         "operational": {
             "unfulfilled_order_rate": {"threshold": 1.0, "points": 8, "comparison": "lte"},
             "late_shipment_rate": {"threshold": 1.0, "points": 6, "comparison": "lte"},
@@ -445,11 +445,11 @@ def test_score_uses_db_rules(client):
 def test_score_with_custom_message_templates(client):
     """Test scoring uses custom message templates from rules JSONB."""
     custom_rules = {
-        **DEFAULT_FASHION_RULES,
+        **DEFAULT_RULES,
         "operational": {
-            **DEFAULT_FASHION_RULES["operational"],
+            **DEFAULT_RULES["operational"],
             "unfulfilled_order_rate": {
-                **DEFAULT_FASHION_RULES["operational"]["unfulfilled_order_rate"],
+                **DEFAULT_RULES["operational"]["unfulfilled_order_rate"],
                 "message_pass": "CUSTOM PASS: UFO rate is {val_str}",
                 "message_fail": "CUSTOM FAIL: UFO rate is {val_str}, should be <{threshold}%",
             },

@@ -412,27 +412,27 @@ class TestScoreProducts:
 
 
 class TestScoreAds:
-    def test_fashion_roi_threshold(self):
+    def test_roi_below_threshold(self):
         data = {
             "ads": {"adSales": 50_000_000, "adCost": 6_000_000},  # ROI ~8.3
             "business": {"salesMonth0": 200_000_000},
         }
         cat = _score_ads(data, "fashion")
         h50_row = next(r for r in cat.rows if r.row == 50)
-        # ROI = 50M/6M = 8.33, threshold 8 → pass → H50=0
-        assert h50_row.score == 0.0
-        assert h50_row.verdict == "✔️"
+        # ROI = 50M/6M = 8.33, unified threshold 9 → fail → H50=5 (opportunity)
+        assert h50_row.score == 5.0
+        assert h50_row.verdict == "❌"
 
-    def test_non_fashion_roi_threshold(self):
+    def test_roi_above_threshold(self):
         data = {
-            "ads": {"adSales": 50_000_000, "adCost": 6_000_000},  # ROI ~8.3
+            "ads": {"adSales": 100_000_000, "adCost": 10_000_000},  # ROI = 10
             "business": {"salesMonth0": 200_000_000},
         }
         cat = _score_ads(data, "non_fashion")
         h50_row = next(r for r in cat.rows if r.row == 50)
-        # ROI = 8.33, threshold 9 → fail → H50=5 (opportunity)
-        assert h50_row.score == 5.0
-        assert h50_row.verdict == "❌"
+        # ROI = 10, unified threshold 9 → pass → H50=0
+        assert h50_row.score == 0.0
+        assert h50_row.verdict == "✔️"
 
     def test_gmv_ratio_low(self):
         data = {
@@ -529,24 +529,28 @@ class TestScoreDiscount:
 # ---------------------------------------------------------------------------
 
 
-class TestFashionThresholds:
-    def test_roi_fashion_passes_at_8(self):
+class TestUnifiedThresholds:
+    def test_roi_fails_at_8_for_both_templates(self):
+        """ROI=8 fails for both fashion and non_fashion (unified threshold=9)."""
         data = {
             "ads": {"adSales": 80_000_000, "adCost": 10_000_000},  # ROI = 8
             "business": {"salesMonth0": 200_000_000},
         }
-        cat = _score_ads(data, "fashion")
-        h50 = next(r for r in cat.rows if r.row == 50)
-        assert h50.verdict == "✔️"
+        for template in ("fashion", "non_fashion"):
+            cat = _score_ads(data, template)
+            h50 = next(r for r in cat.rows if r.row == 50)
+            assert h50.verdict == "❌", f"Expected fail for {template}"
 
-    def test_roi_non_fashion_fails_at_8(self):
+    def test_roi_passes_at_9_for_both_templates(self):
+        """ROI=9 passes for both fashion and non_fashion (unified threshold=9)."""
         data = {
-            "ads": {"adSales": 80_000_000, "adCost": 10_000_000},  # ROI = 8
+            "ads": {"adSales": 90_000_000, "adCost": 10_000_000},  # ROI = 9
             "business": {"salesMonth0": 200_000_000},
         }
-        cat = _score_ads(data, "non_fashion")
-        h50 = next(r for r in cat.rows if r.row == 50)
-        assert h50.verdict == "❌"
+        for template in ("fashion", "non_fashion"):
+            cat = _score_ads(data, template)
+            h50 = next(r for r in cat.rows if r.row == 50)
+            assert h50.verdict == "✔️", f"Expected pass for {template}"
 
 
 # ---------------------------------------------------------------------------
@@ -1013,7 +1017,7 @@ class TestCustomRulesAds:
             "ads": {"adSales": 30_000_000, "adCost": 5_000_000},  # ROI = 6
             "business": {"salesMonth0": 200_000_000},
         }
-        # Default fashion: threshold=8 → ROI 6 < 8 → fail
+        # Default: threshold=9 → ROI 6 < 9 → fail
         cat_default = _score_ads(data, "fashion")
         h50 = next(r for r in cat_default.rows if r.row == 50)
         assert h50.verdict == "❌"
@@ -1325,8 +1329,8 @@ class TestG72WithRules:
         return _compute_g68(d73 or self.D73, d52)
 
     def test_custom_floor_fashion(self):
-        """Custom floor overrides default 0.15 for fashion."""
-        rules = {"marketing": {"floor": {"value": 0.18}}}
+        """Custom floor_fashion overrides default 0.15 for fashion."""
+        rules = {"marketing": {"floor_fashion": {"value": 0.18}}}
         result = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=True, rules=rules)
         assert result >= 0.18
 
@@ -1370,7 +1374,7 @@ class TestG72WithRules:
     def test_custom_fashion_adjustment(self):
         """Custom fashion_adjustment changes upper limit for fashion."""
         rules = {"marketing": {
-            "floor": {"value": 0.01},
+            "floor_fashion": {"value": 0.01},
             "upper_limit_base": {"value": 0.20},
             "fashion_adjustment": {"value": 0.10},
             "base_subtraction": {"value": 0.03},
@@ -1403,22 +1407,22 @@ class TestG72WithRules:
         assert result >= 0.15  # Fallback to default fashion floor
 
     def test_empty_d73_returns_floor_from_rules(self):
-        """Empty d73 returns floor from rules when provided."""
-        rules = {"marketing": {"floor": {"value": 0.20}}}
+        """Empty d73 returns floor_fashion from rules when is_fashion."""
+        rules = {"marketing": {"floor_fashion": {"value": 0.20}}}
         result = _compute_g72("", 0.0, "", is_fashion=True, rules=rules)
         assert result == 0.20
 
     def test_all_constants_overridden(self):
-        """All 5 marketing constants overridden at once."""
+        """All marketing constants overridden at once."""
         rules = {"marketing": {
-            "floor": {"value": 0.18},
+            "floor_fashion": {"value": 0.18},
             "base_subtraction": {"value": 0.05},
             "upper_limit_base": {"value": 0.25},
             "fashion_adjustment": {"value": 0.08},
             "minimum_threshold": {"value": 0.12},
         }}
         result = _compute_g72(self._g68(), 0.03, self.D73, is_fashion=True, rules=rules)
-        assert result >= 0.18  # Must be at least the floor
+        assert result >= 0.18  # Must be at least the floor_fashion
 
 
 class TestG73WithRules:
@@ -1498,7 +1502,8 @@ class TestMarketingRulesPropagation:
         custom_rules = {
             **DEFAULT_RULES,
             "marketing": {
-                "floor": {"value": 0.20},
+                "floor": {"value": 0.12},
+                "floor_fashion": {"value": 0.20},
                 "base_subtraction": {"value": 0.03},
                 "upper_limit_base": {"value": 0.20},
                 "fashion_adjustment": {"value": 0.05},
@@ -1538,7 +1543,8 @@ class TestMarketingRulesPropagation:
         custom_rules = {
             **DEFAULT_RULES,
             "marketing": {
-                "floor": {"value": 0.22},
+                "floor": {"value": 0.12},
+                "floor_fashion": {"value": 0.22},
                 "base_subtraction": {"value": 0.03},
                 "upper_limit_base": {"value": 0.30},
                 "fashion_adjustment": {"value": 0.05},

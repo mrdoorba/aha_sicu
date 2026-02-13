@@ -43,7 +43,7 @@ DEFAULT_RULES = {
     "business": {
         "monthly_sales_trend": {"threshold_pct": 90.0, "points": 10, "comparison": "gte"},
         "six_month_avg_threshold": {"threshold": 100000000, "points": 10, "comparison": "gte"},
-        "conversion_rate": {"threshold": 2.0, "comparison": "gte", "info_only": True},
+        "conversion_rate": {"threshold": 3.0, "comparison": "gte", "info_only": True},
     },
     "content": {
         "quality_ratio": {"threshold": 95.0, "comparison": "gte", "info_only": True},
@@ -61,7 +61,7 @@ DEFAULT_RULES = {
         "store_status_points": {"mall": 10, "star_plus": 5, "star": 0, "regular": 0},
     },
     "ads": {
-        "roi_threshold": {"threshold": 8.0, "opportunity_points": 5, "comparison": "gt"},
+        "roi_threshold": {"threshold": 9.0, "opportunity_points": 5, "comparison": "gt"},
         "gmv_ratio_threshold": {"threshold": 84.0, "points": 5, "comparison": "lt"},
         "cost_ratio_range": {"min": 5.0, "max": 10.0, "info_only": True},
     },
@@ -234,8 +234,8 @@ def test_get_rules_default_thresholds(client):
         default_rules = data[0]["rules"]
 
         # Check key thresholds in default template
-        assert default_rules["business"]["conversion_rate"]["threshold"] == 2.0
-        assert default_rules["ads"]["roi_threshold"]["threshold"] == 8.0
+        assert default_rules["business"]["conversion_rate"]["threshold"] == 3.0
+        assert default_rules["ads"]["roi_threshold"]["threshold"] == 9.0
         assert default_rules["operational"]["unfulfilled_order_rate"]["threshold"] == 1.0
         assert default_rules["visitors"]["followers"]["threshold"] == 50000
 
