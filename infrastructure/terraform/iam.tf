@@ -61,3 +61,10 @@ resource "google_service_account_iam_member" "deploy_acts_as_api" {
   role               = "roles/iam.serviceAccountUser"
   member             = "serviceAccount:${google_service_account.deploy.email}"
 }
+
+# Cloud Run SA can sign its own tokens (required for GCS signed URLs)
+resource "google_service_account_iam_member" "api_sa_token_creator" {
+  service_account_id = google_service_account.cloud_run.name
+  role               = "roles/iam.serviceAccountTokenCreator"
+  member             = "serviceAccount:${google_service_account.cloud_run.email}"
+}
