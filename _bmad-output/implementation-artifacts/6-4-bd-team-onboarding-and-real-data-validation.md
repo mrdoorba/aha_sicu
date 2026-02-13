@@ -55,11 +55,11 @@ so that **we validate calculator accuracy with actual client data and confirm th
   - [x] 3.5 Include Final Scoring validation section: per-category scores, total score (tolerance ±1), verdict agreement, email output sanity check
   - [x] 3.6 Include discrepancy log table (field, expected, actual, delta, severity, root cause)
 
-- [ ] Task 4: Create launch readiness document template (AC: #5)
-  - [ ] 4.1 Create `docs/launch-readiness.md` with sections: Executive Summary, Validation Summary, Discrepancy Log, Go/No-Go Criteria, Recommendation, Sign-off
-  - [ ] 4.2 Define go/no-go criteria explicitly: zero critical discrepancies, all calculator outputs within tolerance, all 5 users can log in, full workflow completes E2E, no data loss on save
-  - [ ] 4.3 Include bug/fix fast-track process: create GitHub issue with `bug/critical` label → feature branch → fix → deploy → re-validate
-  - [ ] 4.4 Include rollout plan section: phased rollout (pilot with 1 user → expand to team) or big-bang (all users at once)
+- [x] Task 4: Create launch readiness document template (AC: #5)
+  - [x] 4.1 Create `docs/launch-readiness.md` with sections: Executive Summary, Validation Summary, Discrepancy Log, Go/No-Go Criteria, Recommendation, Sign-off
+  - [x] 4.2 Define go/no-go criteria explicitly: zero critical discrepancies, all calculator outputs within tolerance, all 5 users can log in, full workflow completes E2E, no data loss on save
+  - [x] 4.3 Include bug/fix fast-track process: create GitHub issue with `bug/critical` label → feature branch → fix → deploy → re-validate
+  - [x] 4.4 Include rollout plan section: phased rollout (pilot with 1 user → expand to team) or big-bang (all users at once)
 
 - [ ] Task 5: Execute real brand evaluation (AC: #3, #4) — REQUIRES HUMAN COLLABORATION
   - [ ] 5.1 Coordinate with BD team to select 1–2 real brands for validation
