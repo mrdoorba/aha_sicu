@@ -97,7 +97,7 @@ resource "google_service_account" "gsheets_sync" {
 }
 
 # NOTE: SA key generation removed during code review — use Secret Manager instead.
-# Inject gsheets credentials via: gcloud secrets versions add aha_sicu_gsheets_credentials --data-file=path/to/key.json
+# Inject gsheets credentials via: gcloud secrets versions add aha_sicu_{env}_gsheets_credentials --data-file path/to/key.json
 
 # Output the service account email (share this with Google Sheet)
 output "gsheets_service_account_email" {
