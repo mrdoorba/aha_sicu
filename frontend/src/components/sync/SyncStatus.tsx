@@ -29,7 +29,7 @@ export const SyncStatus = () => {
   const { data: syncStatus, isLoading, isError } = useSyncStatus();
   const triggerSync = useTriggerSync();
   const { user } = useAuth();
-  const { connectionState } = useSSE(user?.email);
+  const { connectionState } = useSSE(user?.email ?? undefined);
 
   const handleSyncNow = () => {
     triggerSync.mutate(undefined, {

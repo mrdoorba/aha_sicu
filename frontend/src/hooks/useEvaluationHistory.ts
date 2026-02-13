@@ -45,7 +45,7 @@ export function useEvaluationHistory(
             ...(search ? { search } : {}),
             ...(dateFrom ? { date_from: dateFrom } : {}),
             ...(dateTo ? { date_to: dateTo } : {}),
-            ...(category ? { category } : {}),
+            ...(category ? { category: category as 'fashion' | 'non_fashion' } : {}),
           },
         },
       });
