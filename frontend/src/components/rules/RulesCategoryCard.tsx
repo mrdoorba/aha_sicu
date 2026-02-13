@@ -56,6 +56,7 @@ const RULE_LABELS: Record<string, string> = {
   low_penalty: 'Stok Rendah',
   fake_discount_flag: 'Diskon Palsu',
   floor: 'Batas Bawah',
+  floor_fashion: 'Batas Bawah (Fashion)',
   base_subtraction: 'Pengurangan Dasar',
   upper_limit_base: 'Batas Atas Dasar',
   fashion_adjustment: 'Penyesuaian Fashion',
@@ -75,7 +76,7 @@ const COMPARISON_SYMBOLS: Record<string, string> = {
 
 // Marketing value fields represent fractions (0.15 = 15%)
 const MARKETING_FRACTION_KEYS = new Set([
-  'floor', 'base_subtraction', 'upper_limit_base', 'fashion_adjustment',
+  'floor', 'floor_fashion', 'base_subtraction', 'upper_limit_base', 'fashion_adjustment',
   'minimum_threshold', 'display_max', 'display_min',
 ]);
 

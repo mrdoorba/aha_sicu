@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import client from '../services/apiClient';
 
 export interface UpdateRuleParams {
-  template: 'fashion' | 'non_fashion';
+  template: 'fashion' | 'non_fashion' | 'default';
   rules: Record<string, unknown>;
 }
 

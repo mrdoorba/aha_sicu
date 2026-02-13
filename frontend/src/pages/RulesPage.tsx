@@ -4,7 +4,6 @@ import { Header } from '../components/layout/Header';
 import { useRules, type ScoringRule } from '../hooks/useRules';
 import { useUpdateRule } from '../hooks/useUpdateRule';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -27,18 +26,10 @@ const CATEGORY_ORDER = [
   'marketing',
 ] as const;
 
-const DIFFERING_KEYS = new Set([
-  'business.conversion_rate',
-  'ads.roi_threshold',
-  'marketing.floor',
-  'marketing.fashion_adjustment',
-]);
-
 export const RulesPage = () => {
   const { rules, isLoading, isError, refetch } = useRules();
   const { profile } = useCurrentUser();
   const updateRule = useUpdateRule();
-  const [activeTemplate, setActiveTemplate] = useState('fashion');
   const [isEditing, setIsEditing] = useState(false);
   const [editedRules, setEditedRules] = useState<Record<string, Record<string, unknown>>>({});
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
@@ -46,18 +37,15 @@ export const RulesPage = () => {
 
   const canEdit = profile?.role === 'leader' || profile?.role === 'admin';
 
-  const rulesByTemplate: Record<string, ScoringRule> = {};
-  for (const rule of rules) {
-    rulesByTemplate[rule.template] = rule;
-  }
-
-  const activeRule = rulesByTemplate[activeTemplate];
+  // Find the default rule (or fall back to first available)
+  const activeRule = rules.find((r) => r.template === 'default') ?? rules[0] ?? null;
+  const template = (activeRule?.template ?? 'default') as 'fashion' | 'non_fashion' | 'default';
 
   const enterEditMode = () => {
-    const cloned: Record<string, Record<string, unknown>> = {};
-    for (const rule of rules) {
-      cloned[rule.template] = JSON.parse(JSON.stringify(rule.rules));
-    }
+    if (!activeRule) return;
+    const cloned: Record<string, Record<string, unknown>> = {
+      [template]: JSON.parse(JSON.stringify(activeRule.rules)),
+    };
     setEditedRules(cloned);
     setValidationErrors({});
     setIsEditing(true);
@@ -70,16 +58,12 @@ export const RulesPage = () => {
   };
 
   const hasChanges = () => {
-    for (const rule of rules) {
-      if (JSON.stringify(rule.rules) !== JSON.stringify(editedRules[rule.template])) {
-        return true;
-      }
-    }
-    return false;
+    if (!activeRule) return false;
+    return JSON.stringify(activeRule.rules) !== JSON.stringify(editedRules[template]);
   };
 
   const handleRuleChange = (category: string, key: string, field: string, value: number | null) => {
-    const errorKey = `${activeTemplate}.${category}.${key}.${field}`;
+    const errorKey = `${template}.${category}.${key}.${field}`;
     if (value === null) {
       setValidationErrors((prev) => ({ ...prev, [errorKey]: 'Required' }));
     } else {
@@ -91,8 +75,8 @@ export const RulesPage = () => {
     }
     setEditedRules((prev) => {
       const updated = JSON.parse(JSON.stringify(prev));
-      if (updated[activeTemplate]?.[category]?.[key]) {
-        updated[activeTemplate][category][key][field] = value;
+      if (updated[template]?.[category]?.[key]) {
+        updated[template][category][key][field] = value;
       }
       return updated;
     });
@@ -101,28 +85,28 @@ export const RulesPage = () => {
   const handleMessageChange = (category: string, key: string, field: string, value: string) => {
     setEditedRules((prev) => {
       const updated = JSON.parse(JSON.stringify(prev));
-      if (updated[activeTemplate]?.[category]?.[key]) {
-        updated[activeTemplate][category][key][field] = value;
+      if (updated[template]?.[category]?.[key]) {
+        updated[template][category][key][field] = value;
       }
       return updated;
     });
   };
 
-  const handleClosingMessageChange = (tmpl: string, verdictKey: string, value: string) => {
+  const handleClosingMessageChange = (_tmpl: string, verdictKey: string, value: string) => {
     setEditedRules((prev) => {
       const updated = JSON.parse(JSON.stringify(prev));
-      if (updated[tmpl]?.interpretation?.closing_messages) {
-        updated[tmpl].interpretation.closing_messages[verdictKey] = value;
+      if (updated[template]?.interpretation?.closing_messages) {
+        updated[template].interpretation.closing_messages[verdictKey] = value;
       }
       return updated;
     });
   };
 
-  const handleCompetitionMessageChange = (tmpl: string, field: string, value: string) => {
+  const handleCompetitionMessageChange = (_tmpl: string, field: string, value: string) => {
     setEditedRules((prev) => {
       const updated = JSON.parse(JSON.stringify(prev));
-      if (updated[tmpl]?.competition) {
-        updated[tmpl].competition[field] = value;
+      if (updated[template]?.competition) {
+        updated[template].competition[field] = value;
       }
       return updated;
     });
@@ -130,26 +114,24 @@ export const RulesPage = () => {
 
   const hasValidationErrors = Object.keys(validationErrors).length > 0;
 
-  const handleInterpretationChange = (tmpl: string, rangeIdx: number, field: 'min' | 'max', value: number | null) => {
+  const handleInterpretationChange = (_tmpl: string, rangeIdx: number, field: 'min' | 'max', value: number | null) => {
     setEditedRules((prev) => {
       const updated = JSON.parse(JSON.stringify(prev));
-      if (updated[tmpl]?.interpretation?.ranges?.[rangeIdx]) {
-        updated[tmpl].interpretation.ranges[rangeIdx][field] = value;
+      if (updated[template]?.interpretation?.ranges?.[rangeIdx]) {
+        updated[template].interpretation.ranges[rangeIdx][field] = value;
       }
       return updated;
     });
   };
 
   const handleSaveConfirm = async () => {
-    // Save all templates that changed
-    for (const rule of rules) {
-      const edited = editedRules[rule.template];
-      if (JSON.stringify(rule.rules) !== JSON.stringify(edited)) {
-        await updateRule.mutateAsync({
-          template: rule.template as 'fashion' | 'non_fashion',
-          rules: edited,
-        });
-      }
+    if (!activeRule) return;
+    const edited = editedRules[template];
+    if (JSON.stringify(activeRule.rules) !== JSON.stringify(edited)) {
+      await updateRule.mutateAsync({
+        template,
+        rules: edited,
+      });
     }
     setShowPasswordDialog(false);
     setIsEditing(false);
@@ -193,7 +175,29 @@ export const RulesPage = () => {
     );
   }
 
-  const displayRules = isEditing ? editedRules : undefined;
+  if (!activeRule) {
+    return (
+      <>
+        <Header />
+        <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+          <p className="text-muted-foreground text-center py-12">Tidak ada aturan penilaian ditemukan.</p>
+        </main>
+      </>
+    );
+  }
+
+  const rulesData = isEditing
+    ? editedRules[template] as unknown as ScoringRule['rules']
+    : activeRule.rules;
+
+  // Filter validation errors for this template
+  const templatePrefix = `${template}.`;
+  const templateErrors: Record<string, string> = {};
+  for (const [errKey, msg] of Object.entries(validationErrors)) {
+    if (errKey.startsWith(templatePrefix)) {
+      templateErrors[errKey.slice(templatePrefix.length)] = msg;
+    }
+  }
 
   return (
     <>
@@ -202,7 +206,7 @@ export const RulesPage = () => {
         <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold tracking-tight">Aturan Penilaian</h2>
           <div className="flex items-center gap-3">
-            {activeRule && !isEditing && (
+            {!isEditing && (
               <span className="text-sm text-muted-foreground">
                 v{activeRule.version} &middot; Updated{' '}
                 {new Date(activeRule.updated_at).toLocaleDateString()}
@@ -225,185 +229,157 @@ export const RulesPage = () => {
           </div>
         </div>
 
-        <Tabs value={activeTemplate} onValueChange={setActiveTemplate} className="space-y-6">
-          <TabsList>
-            <TabsTrigger value="fashion">Fashion</TabsTrigger>
-            <TabsTrigger value="non_fashion">Non-Fashion</TabsTrigger>
-          </TabsList>
-
-          {['fashion', 'non_fashion'].map((template) => {
-            const rule = rulesByTemplate[template];
-            if (!rule) return null;
-
-            const rulesData = displayRules
-              ? displayRules[template] as unknown as ScoringRule['rules']
-              : rule.rules;
-
-            // Filter validation errors for this template
-            const templatePrefix = `${template}.`;
-            const templateErrors: Record<string, string> = {};
-            for (const [errKey, msg] of Object.entries(validationErrors)) {
-              if (errKey.startsWith(templatePrefix)) {
-                templateErrors[errKey.slice(templatePrefix.length)] = msg;
-              }
-            }
+        <div className="space-y-4">
+          {CATEGORY_ORDER.map((category) => {
+            const categoryRules = rulesData[category];
+            if (!categoryRules) return null;
 
             return (
-              <TabsContent key={template} value={template} className="space-y-4">
-                {CATEGORY_ORDER.map((category) => {
-                  const categoryRules = rulesData[category];
-                  if (!categoryRules) return null;
-
-                  return (
-                    <RulesCategoryCard
-                      key={category}
-                      category={category}
-                      rules={categoryRules as Record<string, import('../hooks/useRules').RuleThreshold>}
-                      differingKeys={DIFFERING_KEYS}
-                      isEditing={isEditing}
-                      onRuleChange={handleRuleChange}
-                      onMessageChange={handleMessageChange}
-                      validationErrors={templateErrors}
-                    />
-                  );
-                })}
-
-                {/* Competition Messages */}
-                {rulesData.competition && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Pesan Kompetisi</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {Object.entries(rulesData.competition).map(([field, value]) => (
-                        <div key={field} className="flex flex-col gap-0.5">
-                          <span className="text-xs font-medium text-muted-foreground">
-                            {field === 'message_pass' ? 'Kompetitif' : field === 'message_fail' ? 'Tidak kompetitif' : field}
-                          </span>
-                          {isEditing ? (
-                            <textarea
-                              value={value ?? ''}
-                              onChange={(e) => handleCompetitionMessageChange(template, field, e.target.value)}
-                              className="w-full min-h-[2.5rem] rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
-                              aria-label={`Competition ${field}`}
-                              rows={1}
-                              maxLength={500}
-                            />
-                          ) : (
-                            <span className="text-sm text-muted-foreground">{value}</span>
-                          )}
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* Score Interpretation */}
-                {rulesData.interpretation?.ranges && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Interpretasi Skor</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <Table>
-                        <TableHeader>
-                          <TableRow>
-                            <TableHead>Rentang Skor</TableHead>
-                            <TableHead>Label</TableHead>
-                            <TableHead>Keputusan</TableHead>
-                          </TableRow>
-                        </TableHeader>
-                        <TableBody>
-                          {rulesData.interpretation.ranges.map((range, idx) => (
-                            <TableRow key={idx}>
-                              <TableCell>
-                                {isEditing ? (
-                                  <span className="flex items-center gap-1">
-                                    <Input
-                                      type="number"
-                                      value={range.min ?? ''}
-                                      onChange={(e) => {
-                                        const val = e.target.value === '' ? null : parseFloat(e.target.value);
-                                        if (e.target.value !== '' && isNaN(val as number)) return;
-                                        handleInterpretationChange(template, idx, 'min', val);
-                                      }}
-                                      className="w-16 h-7 text-sm"
-                                      aria-label={`Range ${idx + 1} min`}
-                                    />
-                                    <span>-</span>
-                                    <Input
-                                      type="number"
-                                      value={range.max ?? ''}
-                                      onChange={(e) => {
-                                        const val = e.target.value === '' ? null : parseFloat(e.target.value);
-                                        if (e.target.value !== '' && isNaN(val as number)) return;
-                                        handleInterpretationChange(template, idx, 'max', val);
-                                      }}
-                                      className="w-16 h-7 text-sm"
-                                      aria-label={`Range ${idx + 1} max`}
-                                    />
-                                  </span>
-                                ) : (
-                                  <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
-                                    {range.min ?? 0} - {range.max ?? '100+'}
-                                  </code>
-                                )}
-                              </TableCell>
-                              <TableCell>
-                                <Badge
-                                  variant={
-                                    range.label === 'Good Candidate'
-                                      ? 'default'
-                                      : range.label === 'Needs Review'
-                                        ? 'secondary'
-                                        : 'destructive'
-                                  }
-                                >
-                                  {range.label}
-                                </Badge>
-                              </TableCell>
-                              <TableCell className="text-lg">{range.verdict}</TableCell>
-                            </TableRow>
-                          ))}
-                        </TableBody>
-                      </Table>
-                    </CardContent>
-                  </Card>
-                )}
-
-                {/* G75 Closing Messages */}
-                {rulesData.interpretation?.closing_messages && (
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-base">Pesan Penutup (G75)</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      {Object.entries(rulesData.interpretation.closing_messages).map(([verdict, message]) => (
-                        <div key={verdict} className="flex flex-col gap-0.5">
-                          <span className="text-xs font-medium text-muted-foreground">
-                            Keputusan: {verdict || '(kosong / performa baik)'}
-                          </span>
-                          {isEditing ? (
-                            <textarea
-                              value={message ?? ''}
-                              onChange={(e) => handleClosingMessageChange(template, verdict, e.target.value)}
-                              className="w-full min-h-[2.5rem] rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
-                              aria-label={`Closing message for ${verdict || 'good performance'}`}
-                              rows={2}
-                              maxLength={500}
-                            />
-                          ) : (
-                            <span className="text-sm text-muted-foreground">{message || '(kosong)'}</span>
-                          )}
-                        </div>
-                      ))}
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
+              <RulesCategoryCard
+                key={category}
+                category={category}
+                rules={categoryRules as Record<string, import('../hooks/useRules').RuleThreshold>}
+                isEditing={isEditing}
+                onRuleChange={handleRuleChange}
+                onMessageChange={handleMessageChange}
+                validationErrors={templateErrors}
+              />
             );
           })}
-        </Tabs>
+
+          {/* Competition Messages */}
+          {rulesData.competition && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Pesan Kompetisi</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {Object.entries(rulesData.competition).map(([field, value]) => (
+                  <div key={field} className="flex flex-col gap-0.5">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      {field === 'message_pass' ? 'Kompetitif' : field === 'message_fail' ? 'Tidak kompetitif' : field}
+                    </span>
+                    {isEditing ? (
+                      <textarea
+                        value={value ?? ''}
+                        onChange={(e) => handleCompetitionMessageChange(template, field, e.target.value)}
+                        className="w-full min-h-[2.5rem] rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
+                        aria-label={`Competition ${field}`}
+                        rows={1}
+                        maxLength={500}
+                      />
+                    ) : (
+                      <span className="text-sm text-muted-foreground">{value}</span>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
+          {/* Score Interpretation */}
+          {rulesData.interpretation?.ranges && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Interpretasi Skor</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Rentang Skor</TableHead>
+                      <TableHead>Label</TableHead>
+                      <TableHead>Keputusan</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {rulesData.interpretation.ranges.map((range, idx) => (
+                      <TableRow key={idx}>
+                        <TableCell>
+                          {isEditing ? (
+                            <span className="flex items-center gap-1">
+                              <Input
+                                type="number"
+                                value={range.min ?? ''}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                                  if (e.target.value !== '' && isNaN(val as number)) return;
+                                  handleInterpretationChange(template, idx, 'min', val);
+                                }}
+                                className="w-16 h-7 text-sm"
+                                aria-label={`Range ${idx + 1} min`}
+                              />
+                              <span>-</span>
+                              <Input
+                                type="number"
+                                value={range.max ?? ''}
+                                onChange={(e) => {
+                                  const val = e.target.value === '' ? null : parseFloat(e.target.value);
+                                  if (e.target.value !== '' && isNaN(val as number)) return;
+                                  handleInterpretationChange(template, idx, 'max', val);
+                                }}
+                                className="w-16 h-7 text-sm"
+                                aria-label={`Range ${idx + 1} max`}
+                              />
+                            </span>
+                          ) : (
+                            <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
+                              {range.min ?? 0} - {range.max ?? '100+'}
+                            </code>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge
+                            variant={
+                              range.label === 'Good Candidate'
+                                ? 'default'
+                                : range.label === 'Needs Review'
+                                  ? 'secondary'
+                                  : 'destructive'
+                            }
+                          >
+                            {range.label}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-lg">{range.verdict}</TableCell>
+                      </TableRow>
+                    ))}
+                  </TableBody>
+                </Table>
+              </CardContent>
+            </Card>
+          )}
+
+          {/* G75 Closing Messages */}
+          {rulesData.interpretation?.closing_messages && (
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-base">Pesan Penutup (G75)</CardTitle>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {Object.entries(rulesData.interpretation.closing_messages).map(([verdict, message]) => (
+                  <div key={verdict} className="flex flex-col gap-0.5">
+                    <span className="text-xs font-medium text-muted-foreground">
+                      Keputusan: {verdict || '(kosong / performa baik)'}
+                    </span>
+                    {isEditing ? (
+                      <textarea
+                        value={message ?? ''}
+                        onChange={(e) => handleClosingMessageChange(template, verdict, e.target.value)}
+                        className="w-full min-h-[2.5rem] rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
+                        aria-label={`Closing message for ${verdict || 'good performance'}`}
+                        rows={2}
+                        maxLength={500}
+                      />
+                    ) : (
+                      <span className="text-sm text-muted-foreground">{message || '(kosong)'}</span>
+                    )}
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+        </div>
       </main>
 
       <PasswordConfirmDialog

@@ -17,19 +17,11 @@ import {
   TableHead,
   TableCell,
 } from '../ui/table';
-import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { cn } from '../../lib/utils';
 import { Calendar } from '../ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from '../ui/select';
 import {
   useEvaluationHistory,
   type SortBy,
@@ -44,10 +36,6 @@ const dateFormatter = new Intl.DateTimeFormat('id-ID', {
   minute: '2-digit',
   timeZone: 'Asia/Jakarta',
 });
-
-function formatTemplate(template: string): string {
-  return template === 'non_fashion' ? 'Non-Fashion' : 'Fashion';
-}
 
 interface EvaluationRow {
   id: number;
@@ -73,14 +61,6 @@ const columns: ColumnDef<EvaluationRow>[] = [
       <span className="font-mono">
         {row.original.final_score.toFixed(2)} {row.original.verdict}
       </span>
-    ),
-  },
-  {
-    accessorKey: 'template',
-    header: 'Template',
-    enableSorting: false,
-    cell: ({ row }) => (
-      <Badge variant="secondary">{formatTemplate(row.original.template)}</Badge>
     ),
   },
   {
@@ -209,8 +189,6 @@ export const EvaluationHistoryTable = () => {
   const searchFromUrl = searchParams.get('search') ?? '';
   const dateFromUrl = searchParams.get('date_from') ?? '';
   const dateToUrl = searchParams.get('date_to') ?? '';
-  const categoryFromUrl = searchParams.get('category') ?? '';
-
   const [searchInput, setSearchInput] = useState(searchFromUrl);
   const isInitialMount = useRef(true);
 
@@ -272,22 +250,6 @@ export const EvaluationHistoryTable = () => {
     [setSearchParams],
   );
 
-  const setCategory = useCallback(
-    (value: string) => {
-      setSearchParams((prev) => {
-        const p = new URLSearchParams(prev);
-        if (value && value !== 'all') {
-          p.set('category', value);
-        } else {
-          p.delete('category');
-        }
-        p.delete('page');
-        return p;
-      }, { replace: true });
-    },
-    [setSearchParams],
-  );
-
   const sorting: SortingState = [
     { id: sortBy, desc: sortOrder === 'desc' },
   ];
@@ -338,7 +300,6 @@ export const EvaluationHistoryTable = () => {
     searchFromUrl || undefined,
     dateFromUrl || undefined,
     dateToUrl || undefined,
-    categoryFromUrl || undefined,
   );
 
   const table = useReactTable({
@@ -375,19 +336,6 @@ export const EvaluationHistoryTable = () => {
         value={searchInput}
         onChange={setSearchInput}
       />
-      <Select
-        value={categoryFromUrl || 'all'}
-        onValueChange={setCategory}
-      >
-        <SelectTrigger className="w-[180px]" aria-label="Filter by category">
-          <SelectValue placeholder="All Categories" />
-        </SelectTrigger>
-        <SelectContent>
-          <SelectItem value="all">All Categories</SelectItem>
-          <SelectItem value="fashion">Fashion</SelectItem>
-          <SelectItem value="non_fashion">Non-Fashion</SelectItem>
-        </SelectContent>
-      </Select>
       <div className="flex items-center gap-2">
         <DatePickerField
           label="Filter from date"
@@ -414,17 +362,15 @@ export const EvaluationHistoryTable = () => {
         {filterBar}
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <p className="text-muted-foreground">
-            {[searchFromUrl, dateFromUrl || dateToUrl, categoryFromUrl].filter(Boolean).length > 1
+            {[searchFromUrl, dateFromUrl || dateToUrl].filter(Boolean).length > 1
               ? 'No evaluations found matching your filters'
               : searchFromUrl
                 ? `No evaluations found for '${searchFromUrl}'`
                 : dateFromUrl || dateToUrl
                   ? `No evaluations found for the selected date range`
-                  : categoryFromUrl
-                    ? `No evaluations found for the selected category`
-                    : 'No evaluations found'}
+                  : 'No evaluations found'}
           </p>
-          {!searchFromUrl && !dateFromUrl && !dateToUrl && !categoryFromUrl && (
+          {!searchFromUrl && !dateFromUrl && !dateToUrl && (
             <p className="text-sm text-muted-foreground">
               Start evaluating brands to see history here.
             </p>
@@ -487,7 +433,6 @@ export const EvaluationHistoryTable = () => {
             ? Array.from({ length: 10 }).map((_, i) => (
                 <TableRow key={i}>
                   <TableCell><div className="h-4 w-32 animate-pulse rounded bg-muted" /></TableCell>
-                  <TableCell><div className="h-4 w-20 animate-pulse rounded bg-muted" /></TableCell>
                   <TableCell><div className="h-4 w-20 animate-pulse rounded bg-muted" /></TableCell>
                   <TableCell><div className="h-4 w-36 animate-pulse rounded bg-muted" /></TableCell>
                   <TableCell><div className="h-4 w-28 animate-pulse rounded bg-muted" /></TableCell>

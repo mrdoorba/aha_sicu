@@ -91,7 +91,6 @@ export interface FieldDefinition {
   inputType: InputType;
   unit?: string;
   benchmark?: string;
-  benchmarkFashion?: string;
 }
 
 export interface SelectOption {
@@ -131,7 +130,7 @@ export const BUSINESS_FIELDS: FieldDefinition[] = [
   { key: 'salesMonth3', label: 'Penjualan Bulan -3', inputType: 'currency', unit: 'IDR' },
   { key: 'salesMonth4', label: 'Penjualan Bulan -4', inputType: 'currency', unit: 'IDR' },
   { key: 'salesMonth5', label: 'Penjualan Bulan -5', inputType: 'currency', unit: 'IDR' },
-  { key: 'conversionRate', label: 'Tingkat Konversi', inputType: 'number', unit: '%', benchmark: '>3%', benchmarkFashion: '>2%' },
+  { key: 'conversionRate', label: 'Tingkat Konversi', inputType: 'number', unit: '%', benchmark: '>3%' },
 ];
 
 export const CONTENT_FIELDS: FieldDefinition[] = [
