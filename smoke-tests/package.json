@@ -1,0 +1,19 @@
+{
+  "name": "aha-sicu-smoke-tests",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Production smoke tests for AHA SICU application",
+  "scripts": {
+    "test": "npx playwright test",
+    "test:health": "npx playwright test tests/backend-health.spec.ts",
+    "test:auth": "npx playwright test tests/auth-enforcement.spec.ts",
+    "test:frontend": "npx playwright test tests/frontend-spa.spec.ts",
+    "test:db": "npx playwright test tests/database-connectivity.spec.ts",
+    "test:signed-url": "npx playwright test tests/signed-url.spec.ts",
+    "test:sse": "npx playwright test tests/sse-endpoint.spec.ts"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.58",
+    "typescript": "^5.9"
+  }
+}
