@@ -55,15 +55,15 @@ def init_firebase(cred_path: str | None = None) -> None:
 
     if cred_json:
         cred = credentials.Certificate(json.loads(cred_json))
+        firebase_admin.initialize_app(cred)
     elif cred_file:
         cred = credentials.Certificate(cred_file)
+        firebase_admin.initialize_app(cred)
     else:
-        print("ERROR: No Firebase credentials found.")
-        print("Set FIREBASE_CREDENTIALS_PATH or FIREBASE_CREDENTIALS_JSON env var,")
-        print("or use --credentials flag.")
-        sys.exit(1)
-
-    firebase_admin.initialize_app(cred)
+        # Fallback: use Application Default Credentials (gcloud auth)
+        print("INFO: No explicit credentials found, using Application Default Credentials (gcloud auth)")
+        cred = credentials.ApplicationDefault()
+        firebase_admin.initialize_app(cred)
 
 
 def load_config(config_path: str) -> list[dict]:

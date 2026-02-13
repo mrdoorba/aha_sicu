@@ -2,7 +2,7 @@
 --
 -- Provisioning Process:
 --   1. Run provision-users.py to create Firebase Auth accounts
---   2. Have ALL users log in once at https://aha-sicu-prod.web.app
+--   2. Have ALL users log in once at the app URL (dev: https://aha-sicu-dev.web.app)
 --      (the backend auto-creates user records with role='member' on first login)
 --   3. Replace the placeholder UIDs below with real UIDs from provision-users.py output
 --   4. Run this script against the production Neon PostgreSQL database:
@@ -22,21 +22,18 @@
 
 BEGIN;
 
--- System owner (admin role)
+-- System owner (admin role) — handers@ahaace.com
 UPDATE users SET role = 'admin'
-WHERE firebase_uid = 'REPLACE_WITH_ADMIN_UID'
+WHERE firebase_uid = 'J7S2Y4A8W9XcyvKxR8OCnCNL8Ry2'
   AND role != 'admin';
 
--- BD team leader
+-- BD team leader — marwah@ahabd.com
 UPDATE users SET role = 'leader'
-WHERE firebase_uid = 'REPLACE_WITH_LEADER_UID'
+WHERE firebase_uid = 'aPoacvrKhlhZHVgJCPKhCHdmc7Q2'
   AND role != 'leader';
 
 -- BD team members (keep default 'member' role — no UPDATE needed)
--- These are listed for documentation purposes:
--- Member 1: firebase_uid = 'REPLACE_WITH_MEMBER1_UID'
--- Member 2: firebase_uid = 'REPLACE_WITH_MEMBER2_UID'
--- Member 3: firebase_uid = 'REPLACE_WITH_MEMBER3_UID'
+-- Member: yusuf@ahabd.com — firebase_uid = '59cBh87nfhgqWe3VVQ3RPKYXo5s2'
 
 COMMIT;
 
