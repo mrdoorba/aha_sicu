@@ -4,6 +4,7 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
+  --font-sans: 'Manrope', sans-serif;
   --radius-sm: calc(var(--radius) - 4px);
   --radius-md: calc(var(--radius) - 2px);
   --radius-lg: var(--radius);
@@ -49,42 +50,42 @@
 
 :root {
   --radius: 0.625rem;
-  /* Project palette: Store ICU UX Spec */
-  --background: #FAFAFA;           /* Neutral 50 */
-  --foreground: #18181B;           /* Neutral 900 */
+  /* Project palette: AHA Brand Guidelines */
+  --background: #FFFFFF;           /* White */
+  --foreground: #1D388B;           /* Dark Navy */
   --card: #FFFFFF;                 /* White */
-  --card-foreground: #18181B;      /* Neutral 900 */
+  --card-foreground: #1D388B;      /* Dark Navy */
   --popover: #FFFFFF;              /* White */
-  --popover-foreground: #18181B;   /* Neutral 900 */
-  --primary: #4361EE;              /* AHA Blue */
+  --popover-foreground: #1D388B;   /* Dark Navy */
+  --primary: #325FEC;              /* Primary Blue */
   --primary-foreground: #FFFFFF;   /* White */
   --secondary: #F4F4F5;            /* Neutral 100 */
-  --secondary-foreground: #18181B; /* Neutral 900 */
+  --secondary-foreground: #1D388B; /* Dark Navy */
   --muted: #F4F4F5;                /* Neutral 100 */
   --muted-foreground: #71717A;     /* Neutral 500 */
-  --accent: #F4F4F5;               /* Neutral 100 */
-  --accent-foreground: #18181B;    /* Neutral 900 */
+  --accent: #96ADF5;               /* Light Blue */
+  --accent-foreground: #1D388B;    /* Dark Navy */
   --destructive: #EF4444;          /* Red */
   --border: #E4E4E7;               /* Neutral 200 */
   --input: #E4E4E7;                /* Neutral 200 */
-  --ring: #4361EE;                 /* AHA Blue */
-  --chart-1: #4361EE;              /* AHA Blue */
+  --ring: #325FEC;                 /* Primary Blue */
+  --chart-1: #325FEC;              /* Primary Blue */
   --chart-2: #22C55E;              /* Green */
-  --chart-3: #F59E0B;              /* Amber */
+  --chart-3: #F4C144;              /* Gold */
   --chart-4: #EF4444;              /* Red */
-  --chart-5: #71717A;              /* Neutral 500 */
+  --chart-5: #6D50B8;              /* Purple */
   --sidebar: #FFFFFF;
-  --sidebar-foreground: #18181B;
-  --sidebar-primary: #4361EE;
+  --sidebar-foreground: #1D388B;
+  --sidebar-primary: #325FEC;
   --sidebar-primary-foreground: #FFFFFF;
-  --sidebar-accent: #F4F4F5;
-  --sidebar-accent-foreground: #18181B;
+  --sidebar-accent: #759EEE;
+  --sidebar-accent-foreground: #1D388B;
   --sidebar-border: #E4E4E7;
-  --sidebar-ring: #4361EE;
+  --sidebar-ring: #325FEC;
   /* Custom project variables */
   --success: #22C55E;              /* Green */
-  --warning: #F59E0B;              /* Amber */
-  --info: #4361EE;                 /* AHA Blue */
+  --warning: #F4C144;              /* Gold */
+  --info: #325FEC;                 /* Primary Blue */
 }
 
 .dark {
@@ -94,7 +95,7 @@
   --card-foreground: #FAFAFA;
   --popover: #27272A;
   --popover-foreground: #FAFAFA;
-  --primary: #4361EE;
+  --primary: #325FEC;
   --primary-foreground: #FFFFFF;
   --secondary: #27272A;
   --secondary-foreground: #FAFAFA;
@@ -105,23 +106,23 @@
   --destructive: #EF4444;
   --border: #3F3F46;
   --input: #3F3F46;
-  --ring: #4361EE;
-  --chart-1: #4361EE;
+  --ring: #325FEC;
+  --chart-1: #325FEC;
   --chart-2: #22C55E;
-  --chart-3: #F59E0B;
+  --chart-3: #F4C144;
   --chart-4: #EF4444;
-  --chart-5: #A1A1AA;
+  --chart-5: #6D50B8;
   --sidebar: #27272A;
   --sidebar-foreground: #FAFAFA;
-  --sidebar-primary: #4361EE;
+  --sidebar-primary: #325FEC;
   --sidebar-primary-foreground: #FFFFFF;
   --sidebar-accent: #27272A;
   --sidebar-accent-foreground: #FAFAFA;
   --sidebar-border: #3F3F46;
-  --sidebar-ring: #4361EE;
+  --sidebar-ring: #325FEC;
   --success: #22C55E;
-  --warning: #F59E0B;
-  --info: #4361EE;
+  --warning: #F4C144;
+  --info: #325FEC;
 }
 
 @layer base {
@@ -129,6 +130,6 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans;
   }
 }
