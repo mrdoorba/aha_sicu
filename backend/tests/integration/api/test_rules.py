@@ -32,7 +32,7 @@ MOCK_MEMBER = {
     "last_login": datetime(2026, 2, 5, tzinfo=timezone.utc),
 }
 
-FASHION_RULES = {
+DEFAULT_RULES = {
     "operational": {
         "unfulfilled_order_rate": {"threshold": 1.0, "points": 4, "comparison": "lte"},
         "late_shipment_rate": {"threshold": 1.0, "points": 3, "comparison": "lte"},
@@ -85,31 +85,11 @@ FASHION_RULES = {
     },
 }
 
-NON_FASHION_RULES = {
-    **FASHION_RULES,
-    "business": {
-        **FASHION_RULES["business"],
-        "conversion_rate": {"threshold": 3.0, "comparison": "gte", "info_only": True},
-    },
-    "ads": {
-        **FASHION_RULES["ads"],
-        "roi_threshold": {"threshold": 9.0, "opportunity_points": 5, "comparison": "gt"},
-    },
-}
-
 SAMPLE_RULES = [
     {
         "id": 1,
-        "template": "fashion",
-        "rules": FASHION_RULES,
-        "version": 1,
-        "updated_by": None,
-        "updated_at": datetime(2026, 2, 12, tzinfo=timezone.utc),
-    },
-    {
-        "id": 2,
-        "template": "non_fashion",
-        "rules": NON_FASHION_RULES,
+        "template": "default",
+        "rules": DEFAULT_RULES,
         "version": 1,
         "updated_by": None,
         "updated_at": datetime(2026, 2, 12, tzinfo=timezone.utc),
@@ -199,8 +179,8 @@ def test_get_rules_member_role_forbidden(client):
         assert "leaders and admins" in data["detail"].lower()
 
 
-def test_get_rules_returns_both_templates(client):
-    """Test GET /api/v1/rules returns 200 with two rule objects (fashion + non_fashion)."""
+def test_get_rules_returns_default_template(client):
+    """Test GET /api/v1/rules returns 200 with one rule object (default template)."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
@@ -212,9 +192,8 @@ def test_get_rules_returns_both_templates(client):
 
         assert response.status_code == 200
         data = response.json()
-        assert len(data) == 2
-        templates = {r["template"] for r in data}
-        assert templates == {"fashion", "non_fashion"}
+        assert len(data) == 1
+        assert data[0]["template"] == "default"
 
 
 def test_get_rules_schema_structure(client):
@@ -240,8 +219,8 @@ def test_get_rules_schema_structure(client):
             assert rule["version"] == 1
 
 
-def test_get_rules_fashion_non_fashion_differences(client):
-    """Test fashion and non_fashion rules have correct differing thresholds."""
+def test_get_rules_default_thresholds(client):
+    """Test default rules have correct threshold values."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
@@ -252,17 +231,13 @@ def test_get_rules_fashion_non_fashion_differences(client):
         response = client.get("/api/v1/rules", headers=AUTH_HEADERS)
 
         data = response.json()
-        rules_by_template = {r["template"]: r["rules"] for r in data}
+        default_rules = data[0]["rules"]
 
-        # Fashion: conversion_rate threshold = 2.0, roi_threshold = 8.0
-        fashion = rules_by_template["fashion"]
-        assert fashion["business"]["conversion_rate"]["threshold"] == 2.0
-        assert fashion["ads"]["roi_threshold"]["threshold"] == 8.0
-
-        # Non-fashion: conversion_rate threshold = 3.0, roi_threshold = 9.0
-        non_fashion = rules_by_template["non_fashion"]
-        assert non_fashion["business"]["conversion_rate"]["threshold"] == 3.0
-        assert non_fashion["ads"]["roi_threshold"]["threshold"] == 9.0
+        # Check key thresholds in default template
+        assert default_rules["business"]["conversion_rate"]["threshold"] == 2.0
+        assert default_rules["ads"]["roi_threshold"]["threshold"] == 8.0
+        assert default_rules["operational"]["unfulfilled_order_rate"]["threshold"] == 1.0
+        assert default_rules["visitors"]["followers"]["threshold"] == 50000
 
 
 def test_get_rules_jsonb_categories(client):
