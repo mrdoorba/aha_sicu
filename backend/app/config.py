@@ -33,6 +33,7 @@ class Settings(BaseSettings):
 
     # Google Sheets API - Credentials
     gsheets_credentials_path: str | None = None
+    gsheets_credentials_json: str | None = None
 
     # VP Sheet (brand_vp_data)
     gsheets_vp_spreadsheet_id: str | None = None

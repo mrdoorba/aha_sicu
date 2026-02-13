@@ -1,6 +1,7 @@
 """Google Sheets client for fetching brand data."""
 
 import asyncio
+import json
 import logging
 from typing import Any
 
@@ -25,15 +26,22 @@ class GoogleSheetsClient:
     def _get_service(self):
         """Lazy initialization of Google Sheets service."""
         if self._service is None:
-            if not settings.gsheets_credentials_path:
+            if settings.gsheets_credentials_json:
+                cred_dict = json.loads(settings.gsheets_credentials_json)
+                creds = service_account.Credentials.from_service_account_info(
+                    cred_dict,
+                    scopes=SCOPES,
+                )
+            elif settings.gsheets_credentials_path:
+                creds = service_account.Credentials.from_service_account_file(
+                    settings.gsheets_credentials_path,
+                    scopes=SCOPES,
+                )
+            else:
                 raise SyncException(
                     code="SYNC_CREDENTIALS_MISSING",
-                    detail="Google Sheets credentials path not configured",
+                    detail="Google Sheets credentials not configured",
                 )
-            creds = service_account.Credentials.from_service_account_file(
-                settings.gsheets_credentials_path,
-                scopes=SCOPES,
-            )
             self._service = build("sheets", "v4", credentials=creds)
         return self._service
 
