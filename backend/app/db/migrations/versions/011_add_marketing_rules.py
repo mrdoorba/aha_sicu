@@ -41,11 +41,13 @@ NON_FASHION_MARKETING = {
 
 
 def upgrade() -> None:
+    conn = op.get_bind()
+
     # Add marketing category to Fashion template
-    op.execute(
+    conn.execute(
         sa.text(
             "UPDATE scoring_rules "
-            "SET rules = jsonb_set(rules, '{marketing}', :marketing::jsonb), "
+            "SET rules = jsonb_set(rules, '{marketing}', CAST(:marketing AS jsonb)), "
             "    version = version + 1 "
             "WHERE template = :template"
         ),
@@ -53,10 +55,10 @@ def upgrade() -> None:
     )
 
     # Add marketing category to Non-Fashion template
-    op.execute(
+    conn.execute(
         sa.text(
             "UPDATE scoring_rules "
-            "SET rules = jsonb_set(rules, '{marketing}', :marketing::jsonb), "
+            "SET rules = jsonb_set(rules, '{marketing}', CAST(:marketing AS jsonb)), "
             "    version = version + 1 "
             "WHERE template = :template"
         ),
@@ -65,8 +67,10 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
+    conn = op.get_bind()
+
     # Remove marketing category from both templates
-    op.execute(
+    conn.execute(
         sa.text(
             "UPDATE scoring_rules "
             "SET rules = rules - 'marketing', "

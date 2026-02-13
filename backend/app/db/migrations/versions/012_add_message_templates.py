@@ -192,10 +192,10 @@ def upgrade() -> None:
         rules["interpretation"]["closing_messages"] = CLOSING_MESSAGES
 
         # Write back
-        op.execute(
+        conn.execute(
             sa.text(
                 "UPDATE scoring_rules "
-                "SET rules = :rules::jsonb, "
+                "SET rules = CAST(:rules AS jsonb), "
                 "    version = version + 1 "
                 "WHERE template = :template"
             ),
@@ -243,10 +243,10 @@ def downgrade() -> None:
             rules["interpretation"].pop("closing_messages", None)
 
         # Write back with decremented version
-        op.execute(
+        conn.execute(
             sa.text(
                 "UPDATE scoring_rules "
-                "SET rules = :rules::jsonb, "
+                "SET rules = CAST(:rules AS jsonb), "
                 "    version = version - 1 "
                 "WHERE template = :template"
             ),
