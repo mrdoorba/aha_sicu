@@ -1,0 +1,41 @@
+# BD Team User Accounts Configuration
+#
+# Usage:
+#   1. Copy this file to users-config.yaml
+#   2. Replace placeholder values with real user information
+#   3. Run: python scripts/provision-users.py
+#
+# SECURITY WARNING:
+#   - NEVER commit users-config.yaml (it's in .gitignore)
+#   - Use strong initial passwords (min 6 chars, Firebase requirement)
+#   - Distribute credentials securely to users (not via email/chat)
+#   - Users should change their password on first login
+
+users:
+  # System owner (admin role)
+  - email: "admin@example.com"
+    password: "change-me-admin-123"
+    display_name: "System Admin"
+    role: admin
+
+  # BD team leader
+  - email: "leader@example.com"
+    password: "change-me-leader-123"
+    display_name: "BD Team Leader"
+    role: leader
+
+  # BD team members
+  - email: "member1@example.com"
+    password: "change-me-member1-123"
+    display_name: "BD Member 1"
+    role: member
+
+  - email: "member2@example.com"
+    password: "change-me-member2-123"
+    display_name: "BD Member 2"
+    role: member
+
+  - email: "member3@example.com"
+    password: "change-me-member3-123"
+    display_name: "BD Member 3"
+    role: member

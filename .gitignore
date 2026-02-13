@@ -71,6 +71,9 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 
+# Provisioning (real user credentials)
+scripts/users-config.yaml
+
 # Local development
 docker-compose.override.yml
 *.local.yaml

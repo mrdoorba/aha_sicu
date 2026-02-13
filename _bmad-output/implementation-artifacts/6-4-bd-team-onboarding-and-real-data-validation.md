@@ -1,6 +1,6 @@
 # Story 6.4: BD Team Onboarding & Real-Data Validation
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,12 +24,12 @@ so that **we validate calculator accuracy with actual client data and confirm th
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Create account provisioning script and guide (AC: #1)
-  - [ ] 1.1 Create `scripts/provision-users.py` — Python script using Firebase Admin SDK to create user accounts from a YAML/JSON config file, with email, password, and display name
-  - [ ] 1.2 Create `scripts/assign-roles.sql` — SQL script to insert/update user roles in the `users` table (leader, admin, member) matching provisioned Firebase UIDs
-  - [ ] 1.3 Create `scripts/users-config.example.yaml` — Example config file with placeholder accounts (DO NOT commit real credentials — add `scripts/users-config.yaml` to `.gitignore`)
-  - [ ] 1.4 Document provisioning process in script headers: (1) fill in users-config.yaml, (2) run provision-users.py, (3) run assign-roles.sql against production DB
-  - [ ] 1.5 Add `scripts/users-config.yaml` to `.gitignore`
+- [x] Task 1: Create account provisioning script and guide (AC: #1)
+  - [x] 1.1 Create `scripts/provision-users.py` — Python script using Firebase Admin SDK to create user accounts from a YAML/JSON config file, with email, password, and display name
+  - [x] 1.2 Create `scripts/assign-roles.sql` — SQL script to insert/update user roles in the `users` table (leader, admin, member) matching provisioned Firebase UIDs
+  - [x] 1.3 Create `scripts/users-config.example.yaml` — Example config file with placeholder accounts (DO NOT commit real credentials — add `scripts/users-config.yaml` to `.gitignore`)
+  - [x] 1.4 Document provisioning process in script headers: (1) fill in users-config.yaml, (2) run provision-users.py, (3) run assign-roles.sql against production DB
+  - [x] 1.5 Add `scripts/users-config.yaml` to `.gitignore`
 
 - [ ] Task 2: Create comprehensive onboarding guide (AC: #2)
   - [ ] 2.1 Create `docs/onboarding-guide.md`
