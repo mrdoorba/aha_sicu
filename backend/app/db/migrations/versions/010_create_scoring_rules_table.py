@@ -101,11 +101,12 @@ def upgrade() -> None:
     fashion_json = json.dumps(FASHION_RULES)
     non_fashion_json = json.dumps(NON_FASHION_RULES)
 
-    op.execute(
+    conn = op.get_bind()
+    conn.execute(
         sa.text(
             "INSERT INTO scoring_rules (template, rules) VALUES"
-            " (:t1, :r1::jsonb),"
-            " (:t2, :r2::jsonb)"
+            " (:t1, CAST(:r1 AS jsonb)),"
+            " (:t2, CAST(:r2 AS jsonb))"
         ),
         {"t1": "fashion", "r1": fashion_json, "t2": "non_fashion", "r2": non_fashion_json},
     )

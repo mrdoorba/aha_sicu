@@ -79,16 +79,23 @@ export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
   );
 };
 
-// Case-insensitive filter via toLowerCase() handles inconsistent key casing from Google Sheets JSONB
-const META_KEYS = new Set(['id', 'created_at', 'updated_at', 'synced_at']);
+// Priority fields to display from VP raw_data (in order of importance)
+const PRIORITY_KEYS = [
+  'Kategori',
+  'Score\nVP',
+  'Signed up',
+  'Shopee Mall',
+  'No OPEX Issue',
+  'Approach',
+];
 
 function summarizeRawData(rawData: Record<string, unknown>): string {
-  const entries = Object.entries(rawData)
-    .filter(([key]) => !META_KEYS.has(key.toLowerCase()))
-    .sort(([a], [b]) => a.localeCompare(b));
-  const summary = entries
-    .slice(0, 3)
-    .map(([key, value]) => `${key}: ${String(value ?? '')}`)
-    .join(' | ');
-  return summary || 'No data';
+  const parts: string[] = [];
+  for (const key of PRIORITY_KEYS) {
+    if (key in rawData && rawData[key] !== '' && rawData[key] != null) {
+      parts.push(`${key.replace('\n', ' ')}: ${String(rawData[key])}`);
+    }
+    if (parts.length >= 3) break;
+  }
+  return parts.join(' | ') || 'No data';
 }

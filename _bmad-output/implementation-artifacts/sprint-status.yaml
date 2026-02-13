@@ -95,5 +95,5 @@ development_status:
   6-1-infrastructure-provisioning: done
   6-2-cicd-pipeline-activation: done
   6-3-production-smoke-testing: done
-  6-4-bd-team-onboarding-and-real-data-validation: backlog
-  epic-6-retrospective: optional
+  6-4-bd-team-onboarding-and-real-data-validation: in-progress
+  epic-6-retrospective: done

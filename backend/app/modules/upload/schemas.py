@@ -1,9 +1,10 @@
 """Pydantic schemas for upload endpoints."""
 
+import json
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel
+from pydantic import BaseModel, field_validator
 
 
 class SignedUrlRequest(BaseModel):
@@ -40,6 +41,15 @@ class AutoCalculatedItem(BaseModel):
     status: str  # "success", "skipped", "error"
     result: dict[str, Any] | None = None
     reason: str | None = None
+
+    @field_validator("result", mode="before")
+    @classmethod
+    def parse_jsonb(cls, v: Any) -> dict[str, Any] | None:
+        if v is None:
+            return None
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
 
 
 class ProcessUploadResponse(BaseModel):

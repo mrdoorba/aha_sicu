@@ -9,6 +9,7 @@ import pytest
 def mock_settings():
     """Mock settings with Google Sheets configuration."""
     with patch("app.modules.sync.sheets_client.settings") as mock:
+        mock.gsheets_credentials_json = None
         mock.gsheets_credentials_path = "./test-credentials.json"
         mock.gsheets_vp_spreadsheet_id = "test-vp-spreadsheet-id"
         mock.gsheets_vp_range = "VP!A:Y"
@@ -201,6 +202,7 @@ async def test_missing_credentials_path_raises_exception():
     from app.modules.sync.sheets_client import GoogleSheetsClient
 
     with patch("app.modules.sync.sheets_client.settings") as mock_settings:
+        mock_settings.gsheets_credentials_json = None
         mock_settings.gsheets_credentials_path = None
 
         client = GoogleSheetsClient()

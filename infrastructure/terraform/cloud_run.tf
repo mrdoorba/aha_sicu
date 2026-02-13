@@ -27,7 +27,7 @@ resource "google_cloud_run_v2_service" "api" {
       }
 
       env {
-        name = "GSHEETS_CREDENTIALS"
+        name = "GSHEETS_CREDENTIALS_JSON"
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.gsheets_credentials.secret_id
@@ -37,7 +37,7 @@ resource "google_cloud_run_v2_service" "api" {
       }
 
       env {
-        name = "FIREBASE_ADMIN_CREDENTIALS"
+        name = "FIREBASE_CREDENTIALS_JSON"
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.firebase_admin.secret_id

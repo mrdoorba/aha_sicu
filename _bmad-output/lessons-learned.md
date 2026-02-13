@@ -89,6 +89,19 @@ Accumulated knowledge from code reviews, retrospectives, and implementation expe
 - Seed data as source of truth: migration seed data served as both configuration and living documentation of all thresholds
 - Tech debt items D1 (marketing floor) and D2 (G-column message templates) completed as Stories 5.4 and 5.5 before Epic 6
 
+## Epic 6 Retrospective Insights (2026-02-13)
+
+- Epic named "Production Deployment & Launch" never actually deployed to production — Mr. Door (Project Lead) had to deploy and debug personally
+- 8 production-blocking bugs found post-completion: CORS origins missing, JSONB codec not registered, JSONB string parsing broken across all schemas, Alembic migration SQLAlchemy 2.x incompatibility, GSheets credentials cloud-only failure, provisioning scripts untested, no deployment documentation
+- 948 automated tests + 19 smoke tests all passing, yet app broken when deployed — "tests passing" ≠ "it works"
+- Smoke tests for "Production Smoke Testing" story ran against dev/localhost, not production — defeating their purpose
+- Documentation (onboarding guide, launch readiness) written before verifying app works — describes assumed behavior, not actual behavior
+- Team's implicit Definition of Done was code-complete (tests pass + code review passes), missing deployment verification step
+- Code review caught 28 code quality issues but zero deployment verification gaps — review process validates correctness, not operational readiness
+- Dev agents cannot access cloud environments or deployed services — workflow must explicitly flag "requires manual deployment verification" instead of marking done
+- Correct sequence for deployment stories: Build → Deploy → Verify → Fix bugs → Update docs → Onboard users (NOT: Build → Document → Mark done)
+- Critical process addition needed: deployment stories require "deployed and manually verified" as part of Definition of Done
+
 ## Epic 3 Retrospective Insights (2026-02-11)
 
 - ~60 code review issues across 10 stories — issue rate improved from ~11/story (Epic 2) to ~6/story
