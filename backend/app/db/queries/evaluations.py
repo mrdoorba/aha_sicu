@@ -103,7 +103,6 @@ def _build_filter_clauses(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
-    category: Literal["fashion", "non_fashion"] | None = None,
 ) -> tuple[str, list[Any], int]:
     """Build conditional WHERE clauses for evaluation list/count queries.
 
@@ -129,11 +128,6 @@ def _build_filter_clauses(
         params.append(date_to)
         param_idx += 1
 
-    if category is not None:
-        conditions.append(f"e.template = ${param_idx}")
-        params.append(category)
-        param_idx += 1
-
     where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
     return where_clause, params, param_idx
 
@@ -148,15 +142,14 @@ async def list_evaluations(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
-    category: Literal["fashion", "non_fashion"] | None = None,
 ) -> list[dict]:
     """List evaluations with JOIN on brand_vp_data and users.
 
     Returns lightweight rows (no heavy JSONB columns).
     sort_by is validated via Literal type at router level — safe for f-string.
-    Filters conditionally by search (brand_name ILIKE), date range, and category.
+    Filters conditionally by search (brand_name ILIKE) and date range.
     """
-    where_clause, params, param_idx = _build_filter_clauses(search, date_from, date_to, category)
+    where_clause, params, param_idx = _build_filter_clauses(search, date_from, date_to)
     limit_param = f"${param_idx}"
     offset_param = f"${param_idx + 1}"
     params.extend([limit, offset])
@@ -181,10 +174,9 @@ async def count_evaluations(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
-    category: Literal["fashion", "non_fashion"] | None = None,
 ) -> int:
-    """Return total number of evaluations, optionally filtered by search, date range, and category."""
-    where_clause, params, _ = _build_filter_clauses(search, date_from, date_to, category)
+    """Return total number of evaluations, optionally filtered by search and date range."""
+    where_clause, params, _ = _build_filter_clauses(search, date_from, date_to)
 
     query = f"""
         SELECT COUNT(*)

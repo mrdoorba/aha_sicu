@@ -52,14 +52,12 @@ async def list_evaluations_endpoint(
     search: str | None = Query(default=None, max_length=200),
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
-    category: Literal["fashion", "non_fashion"] | None = Query(default=None),
     current_user: dict = Depends(get_current_user),
 ) -> EvaluationListResponse:
     """List all evaluations with pagination and sorting.
 
     Returns paginated evaluation history with brand names and evaluator emails.
-    Supports filtering by search (brand name), date range (date_from, date_to),
-    and category (fashion, non_fashion).
+    Supports filtering by search (brand name) and date range (date_from, date_to).
     """
     return await list_evaluations(
         page=page,
@@ -69,7 +67,6 @@ async def list_evaluations_endpoint(
         search=search,
         date_from=date_from,
         date_to=date_to,
-        category=category,
     )
 
 

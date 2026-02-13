@@ -2,7 +2,7 @@
 
 import json
 from datetime import datetime
-from typing import Any, Literal
+from typing import Any
 
 from pydantic import BaseModel, field_validator
 
@@ -29,7 +29,7 @@ class ScoringRuleResponse(BaseModel):
     """Scoring rule response matching the scoring_rules table."""
 
     id: int
-    template: Literal["fashion", "non_fashion"]
+    template: str
     rules: dict[str, Any]
     version: int
     updated_by: int | None = None

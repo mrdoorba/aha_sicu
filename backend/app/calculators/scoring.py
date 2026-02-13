@@ -189,19 +189,17 @@ def _format_message_template(template: str, **kwargs: Any) -> str:
         return template
 
 
-# Default rules matching migration 010 seed data — used when rules=None.
+# Default rules matching migration 013 unified data — used when rules=None.
 # IMPORTANT: These are module-level constants — treat as immutable.
-# DEFAULT_NON_FASHION_RULES shares nested dicts via shallow spread;
-# never mutate nested values in either dict.
 #
 # NOTE (source of truth): Message templates exist in THREE places:
-#   1. Migration 012 SHARED_MESSAGES — initial DB seed values
-#   2. DEFAULT_*_RULES below — runtime fallback when rules=None
+#   1. Migration 012/013 — DB seed values
+#   2. DEFAULT_RULES below — runtime fallback when rules=None
 #   3. Inline defaults in _generate_*_messages() — per-field fallbacks
 # If changing default message text, update ALL THREE locations.
 # The test_default_rules_produce_identical_messages test catches drift
 # between (2) and (3).
-DEFAULT_FASHION_RULES: dict = {
+DEFAULT_RULES: dict = {
     "operational": {
         "unfulfilled_order_rate": {
             "threshold": 1.0, "points": 4, "comparison": "lte",
@@ -238,7 +236,7 @@ DEFAULT_FASHION_RULES: dict = {
         },
         "six_month_avg_threshold": {"threshold": 100000000, "points": 10, "comparison": "gte"},
         "conversion_rate": {
-            "threshold": 2.0, "comparison": "gte", "info_only": True,
+            "threshold": 3.0, "comparison": "gte", "info_only": True,
             "message_pass": "✔️ Tingkat Konversi = {val_str} Sudah Baik",
             "message_fail": "❌ Tingkat Konversi = {val_str} Kurang Baik, nilai disarankan: {benchmark}",
         },
@@ -295,7 +293,7 @@ DEFAULT_FASHION_RULES: dict = {
     },
     "ads": {
         "roi_threshold": {
-            "threshold": 8.0, "opportunity_points": 5, "comparison": "gt",
+            "threshold": 9.0, "opportunity_points": 5, "comparison": "gt",
             "message_pass": "✔️ ROI = {val_str} Sudah Baik",
             "message_fail": "❌ ROI = {val_str} Kurang Baik, nilai disarankan: {benchmark}",
         },
@@ -330,7 +328,8 @@ DEFAULT_FASHION_RULES: dict = {
         "fake_discount_flag": {"points_no_flag": 5, "points_flag": 0},
     },
     "marketing": {
-        "floor": {"value": 0.15},
+        "floor": {"value": 0.12},
+        "floor_fashion": {"value": 0.15},
         "base_subtraction": {"value": 0.03},
         "upper_limit_base": {"value": 0.20},
         "fashion_adjustment": {"value": 0.05},
@@ -357,31 +356,6 @@ DEFAULT_FASHION_RULES: dict = {
             "❌ Opex": "Tingkat keterlambatan cukup tinggi. Disarankan untuk memperbaiki pengiriman (<2%) dan masa pengemasan (<1 hari) terlebih dahulu.",
             "⭕️": "",
         },
-    },
-}
-
-DEFAULT_NON_FASHION_RULES: dict = {
-    **DEFAULT_FASHION_RULES,
-    "business": {
-        **DEFAULT_FASHION_RULES["business"],
-        "conversion_rate": {
-            "threshold": 3.0, "comparison": "gte", "info_only": True,
-            "message_pass": "✔️ Tingkat Konversi = {val_str} Sudah Baik",
-            "message_fail": "❌ Tingkat Konversi = {val_str} Kurang Baik, nilai disarankan: {benchmark}",
-        },
-    },
-    "ads": {
-        **DEFAULT_FASHION_RULES["ads"],
-        "roi_threshold": {
-            "threshold": 9.0, "opportunity_points": 5, "comparison": "gt",
-            "message_pass": "✔️ ROI = {val_str} Sudah Baik",
-            "message_fail": "❌ ROI = {val_str} Kurang Baik, nilai disarankan: {benchmark}",
-        },
-    },
-    "marketing": {
-        **DEFAULT_FASHION_RULES["marketing"],
-        "floor": {"value": 0.12},
-        "fashion_adjustment": {"value": 0.0},
     },
 }
 
@@ -808,8 +782,7 @@ def _score_ads(manual_data: dict, template: str, rules: dict | None = None) -> C
 
     # Row 50: ROI = D48/D49
     d50 = d48 / d49 if d49 > 0 else 0.0
-    roi_default = 8.0 if template == "fashion" else 9.0
-    roi_threshold = _get_rule_value(ads_rules, "roi_threshold", "threshold", roi_default)
+    roi_threshold = _get_rule_value(ads_rules, "roi_threshold", "threshold", 9.0)
     roi_opp_pts = float(_get_rule_value(ads_rules, "roi_threshold", "opportunity_points", 5.0))
     f50 = "✔️" if d50 >= roi_threshold else "❌"
     h50 = 0.0 if d50 >= roi_threshold else roi_opp_pts
@@ -1038,7 +1011,7 @@ def _score_discount_row(calculator_results: dict, rules: dict | None = None) -> 
 def _generate_operational_messages(cat: CategoryScore, manual_data: dict, rules: dict | None = None) -> None:
     """Fill G-column messages for operational rows 7-11.
 
-    Inline fallback defaults must match DEFAULT_FASHION_RULES message templates.
+    Inline fallback defaults must match DEFAULT_RULES message templates.
     """
     ops_rules = _get_rule_category(rules, "operational")
 
@@ -1403,10 +1376,13 @@ def _compute_g72(
     Complex MIN/MAX formula with Fashion adjustment.
     """
     mkt_rules = _get_rule_category(rules, "marketing")
-    floor = _get_rule_value(mkt_rules, "floor", "value", 0.15 if is_fashion else 0.12)
+    if is_fashion:
+        floor = _get_rule_value(mkt_rules, "floor_fashion", "value", 0.15)
+    else:
+        floor = _get_rule_value(mkt_rules, "floor", "value", 0.12)
     base_subtraction = _get_rule_value(mkt_rules, "base_subtraction", "value", 0.03)
     upper_limit_base = _get_rule_value(mkt_rules, "upper_limit_base", "value", 0.20)
-    fashion_adj = _get_rule_value(mkt_rules, "fashion_adjustment", "value", 0.05 if is_fashion else 0.0)
+    fashion_adj = _get_rule_value(mkt_rules, "fashion_adjustment", "value", 0.05) if is_fashion else 0.0
     minimum = _get_rule_value(mkt_rules, "minimum_threshold", "value", 0.10)
 
     if not d73_text:
@@ -1725,7 +1701,7 @@ def calculate_score(
         manual_data: All manual input data (ManualData structure).
         calculator_results: Dict keyed by calculator_type with
             {details, output_text} for each.
-        template: "fashion" or "non_fashion".
+        template: "fashion" or "non_fashion" (used only for is_fashion marketing flag).
         verdict: F75 user-selected verdict string.
         store_name: Store display name (G2).
         period: Period string (e.g., "Jan 2026").
@@ -1754,8 +1730,7 @@ def calculate_score(
 
     # Apply Fashion-specific threshold for conversion rate (row 20)
     biz_rules = _get_rule_category(rules, "business")
-    conv_default = 2.0 if is_fashion else 3.0
-    conv_threshold = _get_rule_value(biz_rules, "conversion_rate", "threshold", conv_default)
+    conv_threshold = _get_rule_value(biz_rules, "conversion_rate", "threshold", 3.0)
     conv_row = next((r for r in cat_business.rows if r.row == 20), None)
     if conv_row:
         conv_row.benchmark = f">{conv_threshold:.0f}%"
