@@ -7,7 +7,6 @@ export default defineConfig({
   fullyParallel: true,
   reporter: [["list"], ["json", { outputFile: "smoke-results.json" }]],
   use: {
-    baseURL: process.env.SMOKE_BACKEND_URL || "http://localhost:8000",
     extraHTTPHeaders: {
       Accept: "application/json",
     },

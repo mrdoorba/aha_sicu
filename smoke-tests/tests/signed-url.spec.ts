@@ -5,6 +5,7 @@ const BACKEND_URL =
 const AUTH_TOKEN = process.env.SMOKE_AUTH_TOKEN;
 
 test.describe("GCS Signed URL (AC5)", { tag: "@smoke" }, () => {
+  // Also tested in auth-enforcement.spec.ts (AC2) — duplicated here for AC5 completeness
   test("POST /api/v1/upload/signed-url without auth returns 401 or 403", async ({
     request,
   }) => {

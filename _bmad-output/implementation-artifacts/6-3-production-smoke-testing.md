@@ -1,6 +1,6 @@
 # Story 6.3: Production Smoke Testing
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -342,11 +342,12 @@ Claude Opus 4.6 (claude-opus-4-6)
 - Task 8: Created `MANUAL_CHECKLIST.md` — 10-step manual walkthrough covering login, sync, evaluation, uploads, calculators, manual data, scoring, save, history, and SSE notifications with pass/fail checkboxes.
 - Task 9: Created `README.md` with setup instructions, environment variable documentation, token acquisition guide, test execution modes, and coverage matrix.
 - Regression check: 627 backend tests pass, 321 frontend tests pass — zero regressions.
-- Total: 18 smoke tests (11 unauthenticated, 7 authenticated). All compile and execute correctly against Playwright test runner.
+- Total: 19 smoke tests (14 unauthenticated, 5 authenticated). All compile and execute correctly against Playwright test runner.
 
 ### Change Log
 
 - 2026-02-13: Implemented all 9 tasks for Story 6.3 — Production Smoke Testing. Created standalone `smoke-tests/` directory with Playwright API-only test suite (18 tests across 6 spec files), manual walkthrough checklist, and comprehensive documentation. No existing code modified except `.gitignore`.
+- 2026-02-13: Code review — 9 issues found (1H, 5M, 3L), all fixed. SSE test race condition fixed, frontend URL validation added, sync status assertions strengthened, test count docs corrected, deep link test added, dead baseURL removed, File List updated.
 
 ### File List
 
@@ -363,3 +364,27 @@ Claude Opus 4.6 (claude-opus-4-6)
 - smoke-tests/tests/signed-url.spec.ts (new)
 - smoke-tests/tests/sse-endpoint.spec.ts (new)
 - .gitignore (modified)
+- _bmad-output/implementation-artifacts/sprint-status.yaml (modified)
+
+## Senior Developer Review (AI)
+
+**Reviewer:** Mr. Door
+**Date:** 2026-02-13
+**Outcome:** Changes Requested → All Fixed
+
+### Findings Summary
+
+| # | Severity | Issue | File | Fixed |
+|---|----------|-------|------|-------|
+| H1 | HIGH | SSE test race condition — AbortError silently passes without response validation | sse-endpoint.spec.ts | ✅ |
+| M1 | MEDIUM | SMOKE_FRONTEND_URL silently defaults to localhost — skip guard added | frontend-spa.spec.ts | ✅ |
+| M2 | MEDIUM | Sync status assertion too weak (`toBeDefined`) — now checks `status` + `last_sync` | database-connectivity.spec.ts | ✅ |
+| M3 | MEDIUM | sprint-status.yaml not in File List | story file | ✅ |
+| M4 | MEDIUM | Test count docs wrong (claimed 11+7, actual 14+5) | README.md, story | ✅ |
+| M5 | MEDIUM | Hardcoded `brand_id: 1` fragile for fresh envs — documented assumption | README.md | ✅ |
+| L1 | LOW | Dead `baseURL` in playwright config — removed | playwright.config.ts | ✅ |
+| L2 | LOW | Missing `/evaluation/1` deep link test from AC3 — added | frontend-spa.spec.ts | ✅ |
+| L3 | LOW | Duplicate unauth signed-url test — added clarifying comment | signed-url.spec.ts | ✅ |
+
+**Issues Fixed:** 9/9
+**Action Items Created:** 0

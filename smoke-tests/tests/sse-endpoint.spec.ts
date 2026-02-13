@@ -27,6 +27,7 @@ test.describe("SSE Endpoint (AC6)", { tag: "@smoke" }, () => {
       // so we use fetch with an AbortController timeout.
       const controller = new AbortController();
       const timeout = setTimeout(() => controller.abort(), 5_000);
+      let responseValidated = false;
 
       try {
         const response = await fetch(
@@ -38,10 +39,15 @@ test.describe("SSE Endpoint (AC6)", { tag: "@smoke" }, () => {
 
         const contentType = response.headers.get("content-type");
         expect(contentType).toContain("text/event-stream");
+        responseValidated = true;
       } catch (error: unknown) {
-        // AbortError is expected — connection stays open (SSE)
-        if (error instanceof Error && error.name === "AbortError") {
-          // SSE connection was successfully established and then aborted
+        // AbortError is only acceptable if the response was already validated.
+        // If the abort fired before the response arrived, the test must fail.
+        if (
+          error instanceof Error &&
+          error.name === "AbortError" &&
+          responseValidated
+        ) {
           return;
         }
         throw error;

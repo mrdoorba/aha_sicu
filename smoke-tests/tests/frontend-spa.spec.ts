@@ -4,6 +4,8 @@ const FRONTEND_URL =
   process.env.SMOKE_FRONTEND_URL || "http://localhost:5173";
 
 test.describe("Frontend SPA (AC3)", { tag: "@smoke" }, () => {
+  test.skip(!process.env.SMOKE_FRONTEND_URL, "Skipped: SMOKE_FRONTEND_URL not set");
+
   test("Root URL returns 200 with text/html", async ({ request }) => {
     const response = await request.get(`${FRONTEND_URL}/`);
 
@@ -28,6 +30,13 @@ test.describe("Frontend SPA (AC3)", { tag: "@smoke" }, () => {
 
   test("Deep link /history returns 200 (SPA rewrite)", async ({ request }) => {
     const response = await request.get(`${FRONTEND_URL}/history`);
+    expect(response.status()).toBe(200);
+  });
+
+  test("Deep link /evaluation/1 returns 200 (parameterized SPA rewrite)", async ({
+    request,
+  }) => {
+    const response = await request.get(`${FRONTEND_URL}/evaluation/1`);
     expect(response.status()).toBe(200);
   });
 });

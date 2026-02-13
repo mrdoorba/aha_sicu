@@ -80,13 +80,15 @@ npm run test:sse          # SSE endpoint only
 |-----------|----|----|-------|
 | `backend-health.spec.ts` | AC1 | No | 2 |
 | `auth-enforcement.spec.ts` | AC2 | No | 4 |
-| `frontend-spa.spec.ts` | AC3 | No | 4 |
+| `frontend-spa.spec.ts` | AC3 | No | 5 |
 | `database-connectivity.spec.ts` | AC4 | Yes | 2 |
 | `signed-url.spec.ts` | AC5 | Partial | 3 |
 | `sse-endpoint.spec.ts` | AC6 | Partial | 3 |
-| **Total** | | | **18** |
+| **Total** | | | **19** |
 
-Unauthenticated tests (~11) always run. Authenticated tests (~7) are automatically skipped when `SMOKE_AUTH_TOKEN` is not set.
+Unauthenticated tests (14) always run. Authenticated tests (5) are automatically skipped when `SMOKE_AUTH_TOKEN` is not set.
+
+> **Note:** `frontend-spa.spec.ts` requires `SMOKE_FRONTEND_URL` to be set; tests are skipped otherwise. Authenticated signed-url tests assume at least one brand exists in the database (`brand_id: 1`).
 
 ## Manual Checklist
 

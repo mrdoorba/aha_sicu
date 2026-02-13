@@ -35,6 +35,7 @@ test.describe("Database Connectivity (AC4)", { tag: "@smoke" }, () => {
     expect(response.status()).toBe(200);
 
     const body = await response.json();
-    expect(body).toBeDefined();
+    expect(body).toHaveProperty("status");
+    expect(body).toHaveProperty("last_sync");
   });
 });
