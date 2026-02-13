@@ -47,13 +47,13 @@ so that **we validate calculator accuracy with actual client data and confirm th
   - [x] 2.9 Write Section 8 — Saving & History: saving evaluation, viewing history, searching by brand/date/category, evaluation detail view
   - [x] 2.10 Write Section 9 — FAQ & Troubleshooting: common issues (upload format errors, sync failures, "stale" scoring, login problems) with resolutions
 
-- [ ] Task 3: Create calculator validation checklist template (AC: #4)
-  - [ ] 3.1 Create `docs/validation-report-template.md` — reusable template for per-brand validation
-  - [ ] 3.2 Include Ads Keyword validation section: fields to compare (AK2 product count, AK3 type breakdown, AK4 seven flags, top/bottom keyword lists, ROAS median flag)
-  - [ ] 3.3 Include Discount Check validation section: fields to compare (% Diskon TOP SKU, Range, Voucher %, Paket Diskon %, fake discount flag) with tolerance ±0.5%
-  - [ ] 3.4 Include Top SKU validation section: fields to compare (top product list matches, revenue ranking order, average stock) with tolerance ±2 for stock
-  - [ ] 3.5 Include Final Scoring validation section: per-category scores, total score (tolerance ±1), verdict agreement, email output sanity check
-  - [ ] 3.6 Include discrepancy log table (field, expected, actual, delta, severity, root cause)
+- [x] Task 3: Create calculator validation checklist template (AC: #4)
+  - [x] 3.1 Create `docs/validation-report-template.md` — reusable template for per-brand validation
+  - [x] 3.2 Include Ads Keyword validation section: fields to compare (AK2 product count, AK3 type breakdown, AK4 seven flags, top/bottom keyword lists, ROAS median flag)
+  - [x] 3.3 Include Discount Check validation section: fields to compare (% Diskon TOP SKU, Range, Voucher %, Paket Diskon %, fake discount flag) with tolerance ±0.5%
+  - [x] 3.4 Include Top SKU validation section: fields to compare (top product list matches, revenue ranking order, average stock) with tolerance ±2 for stock
+  - [x] 3.5 Include Final Scoring validation section: per-category scores, total score (tolerance ±1), verdict agreement, email output sanity check
+  - [x] 3.6 Include discrepancy log table (field, expected, actual, delta, severity, root cause)
 
 - [ ] Task 4: Create launch readiness document template (AC: #5)
   - [ ] 4.1 Create `docs/launch-readiness.md` with sections: Executive Summary, Validation Summary, Discrepancy Log, Go/No-Go Criteria, Recommendation, Sign-off
