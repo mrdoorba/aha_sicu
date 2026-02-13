@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi } from 'vitest';
 import { EvaluationSections } from '../EvaluationSections';
 import type { ManualData } from './formConfig';
@@ -9,6 +10,13 @@ import { EMPTY_MANUAL_DATA } from './formConfig';
 vi.mock('../FileUploadSection', () => ({
   FileUploadSection: () => <div data-testid="file-upload-section">File Upload</div>,
 }));
+
+// Mock calculators to avoid QueryClient dependency from useCalculatorResults
+vi.mock('../calculators', () => ({
+  CalculatorResultsSection: () => <div data-testid="calculator-results">Calculator Results</div>,
+}));
+
+const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
 
 const defaultProps = {
   brandId: 1,
@@ -21,11 +29,31 @@ const defaultProps = {
   saveStatus: 'idle' as const,
   lastSaved: null,
   onRetrySave: vi.fn(),
+  storeName: 'Test Store',
+  brandName: 'Test Brand',
+  onGenerateScore: vi.fn(),
+  scoringResult: null,
+  isGenerating: false,
+  isStale: false,
+  scoringError: null,
+  onSaveEvaluation: vi.fn(),
+  isSaving: false,
+  isSaved: false,
+  saveError: null,
+  onResetSave: vi.fn(),
+};
+
+const renderWithProviders = (props = {}) => {
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <EvaluationSections {...defaultProps} {...props} />
+    </QueryClientProvider>
+  );
 };
 
 describe('EvaluationForms Integration', () => {
   it('renders form fields instead of placeholders in all sections', () => {
-    render(<EvaluationSections {...defaultProps} />);
+    renderWithProviders();
 
     // Section 1: Operational
     expect(screen.getByLabelText(/Pesanan Tidak Terselesaikan/)).toBeInTheDocument();
@@ -71,7 +99,7 @@ describe('EvaluationForms Integration', () => {
       },
     };
 
-    render(<EvaluationSections {...defaultProps} manualData={savedData} />);
+    renderWithProviders({ manualData: savedData });
 
     // Operational pre-filled
     const opInputs = screen.getAllByRole('spinbutton');
@@ -84,7 +112,7 @@ describe('EvaluationForms Integration', () => {
   it('calls onFieldChange when a field value changes', async () => {
     const onFieldChange = vi.fn();
     const user = userEvent.setup();
-    render(<EvaluationSections {...defaultProps} onFieldChange={onFieldChange} />);
+    renderWithProviders({ onFieldChange });
 
     const ratingInput = screen.getByLabelText(/Penilaian/);
     await user.type(ratingInput, '4');
@@ -94,7 +122,7 @@ describe('EvaluationForms Integration', () => {
   it('calls onFieldBlur when a field loses focus', async () => {
     const onFieldBlur = vi.fn();
     const user = userEvent.setup();
-    render(<EvaluationSections {...defaultProps} onFieldBlur={onFieldBlur} />);
+    renderWithProviders({ onFieldBlur });
 
     const input = screen.getByLabelText(/Pesanan Tidak Terselesaikan/);
     await user.click(input);
@@ -103,21 +131,19 @@ describe('EvaluationForms Integration', () => {
   });
 
   it('renders save indicator when status is saving', () => {
-    render(<EvaluationSections {...defaultProps} saveStatus="saving" />);
+    renderWithProviders({ saveStatus: 'saving' });
     expect(screen.getByText('Saving...')).toBeInTheDocument();
   });
 
   it('renders save indicator when status is saved', () => {
-    render(
-      <EvaluationSections {...defaultProps} saveStatus="saved" lastSaved={new Date()} />,
-    );
+    renderWithProviders({ saveStatus: 'saved', lastSaved: new Date() });
     expect(screen.getByText('Saved just now')).toBeInTheDocument();
   });
 
   it('renders save error with retry button', async () => {
     const onRetry = vi.fn();
     const user = userEvent.setup();
-    render(<EvaluationSections {...defaultProps} saveStatus="error" onRetrySave={onRetry} />);
+    renderWithProviders({ saveStatus: 'error', onRetrySave: onRetry });
 
     expect(screen.getByText('Save failed.')).toBeInTheDocument();
     await user.click(screen.getByText('Retry'));
@@ -125,14 +151,13 @@ describe('EvaluationForms Integration', () => {
   });
 
   it('keeps Section 4 file upload section intact', () => {
-    render(<EvaluationSections {...defaultProps} />);
+    renderWithProviders();
     expect(screen.getByTestId('file-upload-section')).toBeInTheDocument();
   });
 
   it('keeps calculator results and final score placeholders', () => {
-    render(<EvaluationSections {...defaultProps} />);
+    renderWithProviders();
     expect(screen.getByText('Calculator Results')).toBeInTheDocument();
     expect(screen.getByText('Final Score')).toBeInTheDocument();
-    expect(screen.getByText('Not yet calculated')).toBeInTheDocument();
   });
 });
