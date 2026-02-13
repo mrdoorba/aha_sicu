@@ -1,6 +1,6 @@
 # Story 6.3: Production Smoke Testing
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -30,70 +30,70 @@ so that **we verify the full workflow works in production before user onboarding
 
 ## Tasks / Subtasks
 
-- [ ] Task 1: Set up Playwright smoke test infrastructure (AC: #8)
-  - [ ] 1.1 Create `smoke-tests/` directory at project root
-  - [ ] 1.2 Create `smoke-tests/package.json` with `@playwright/test` dependency (standalone from frontend package.json — smoke tests are project-level, not frontend-specific)
-  - [ ] 1.3 Create `smoke-tests/playwright.config.ts` with API-only configuration (no browser binaries needed): 30s timeout, 1 retry, `SMOKE_BACKEND_URL` and `SMOKE_FRONTEND_URL` env vars, JSON reporter for CI output
-  - [ ] 1.4 Create `smoke-tests/tsconfig.json` for TypeScript support
-  - [ ] 1.5 Add `smoke-tests/node_modules/` to `.gitignore`
+- [x] Task 1: Set up Playwright smoke test infrastructure (AC: #8)
+  - [x] 1.1 Create `smoke-tests/` directory at project root
+  - [x] 1.2 Create `smoke-tests/package.json` with `@playwright/test` dependency (standalone from frontend package.json — smoke tests are project-level, not frontend-specific)
+  - [x] 1.3 Create `smoke-tests/playwright.config.ts` with API-only configuration (no browser binaries needed): 30s timeout, 1 retry, `SMOKE_BACKEND_URL` and `SMOKE_FRONTEND_URL` env vars, JSON reporter for CI output
+  - [x] 1.4 Create `smoke-tests/tsconfig.json` for TypeScript support
+  - [x] 1.5 Add `smoke-tests/node_modules/` to `.gitignore`
 
-- [ ] Task 2: Implement backend health smoke tests (AC: #1)
-  - [ ] 2.1 Create `smoke-tests/tests/backend-health.spec.ts`
-  - [ ] 2.2 Test: `GET /health` returns 200 with `{"status": "healthy"}`
-  - [ ] 2.3 Test: `GET /docs` returns 200 (FastAPI Swagger UI accessible)
+- [x] Task 2: Implement backend health smoke tests (AC: #1)
+  - [x] 2.1 Create `smoke-tests/tests/backend-health.spec.ts`
+  - [x] 2.2 Test: `GET /health` returns 200 with `{"status": "healthy"}`
+  - [x] 2.3 Test: `GET /docs` returns 200 (FastAPI Swagger UI accessible)
 
-- [ ] Task 3: Implement auth enforcement smoke tests (AC: #2)
-  - [ ] 3.1 Create `smoke-tests/tests/auth-enforcement.spec.ts`
-  - [ ] 3.2 Test: `GET /api/v1/brands` without auth returns 401/403
-  - [ ] 3.3 Test: `GET /api/v1/evaluations` without auth returns 401/403
-  - [ ] 3.4 Test: `POST /api/v1/sync` without auth returns 401/403
-  - [ ] 3.5 Test: `POST /api/v1/upload/signed-url` without auth returns 401/403
+- [x] Task 3: Implement auth enforcement smoke tests (AC: #2)
+  - [x] 3.1 Create `smoke-tests/tests/auth-enforcement.spec.ts`
+  - [x] 3.2 Test: `GET /api/v1/brands` without auth returns 401/403
+  - [x] 3.3 Test: `GET /api/v1/evaluations` without auth returns 401/403
+  - [x] 3.4 Test: `POST /api/v1/sync` without auth returns 401/403
+  - [x] 3.5 Test: `POST /api/v1/upload/signed-url` without auth returns 401/403
 
-- [ ] Task 4: Implement frontend SPA smoke tests (AC: #3)
-  - [ ] 4.1 Create `smoke-tests/tests/frontend-spa.spec.ts`
-  - [ ] 4.2 Test: Root URL (`/`) returns 200 with `text/html` content-type
-  - [ ] 4.3 Test: HTML body contains `<script` tags and `<div id="root"`
-  - [ ] 4.4 Test: Deep link `/brands` returns 200 (SPA rewrite working)
-  - [ ] 4.5 Test: Deep link `/history` returns 200 (SPA rewrite working)
+- [x] Task 4: Implement frontend SPA smoke tests (AC: #3)
+  - [x] 4.1 Create `smoke-tests/tests/frontend-spa.spec.ts`
+  - [x] 4.2 Test: Root URL (`/`) returns 200 with `text/html` content-type
+  - [x] 4.3 Test: HTML body contains `<script` tags and `<div id="root"`
+  - [x] 4.4 Test: Deep link `/brands` returns 200 (SPA rewrite working)
+  - [x] 4.5 Test: Deep link `/history` returns 200 (SPA rewrite working)
 
-- [ ] Task 5: Implement database connectivity smoke tests (AC: #4)
-  - [ ] 5.1 Create `smoke-tests/tests/database-connectivity.spec.ts`
-  - [ ] 5.2 Test (authenticated): `GET /api/v1/brands?page=1&limit=1` returns 200 with JSON containing `items` array
-  - [ ] 5.3 Test (authenticated): `GET /api/v1/sync/status` returns 200 with sync status JSON
-  - [ ] 5.4 Add skip annotation for authenticated tests when `SMOKE_AUTH_TOKEN` env var is not set, with clear instructions in test file comments
+- [x] Task 5: Implement database connectivity smoke tests (AC: #4)
+  - [x] 5.1 Create `smoke-tests/tests/database-connectivity.spec.ts`
+  - [x] 5.2 Test (authenticated): `GET /api/v1/brands?page=1&limit=1` returns 200 with JSON containing `items` array
+  - [x] 5.3 Test (authenticated): `GET /api/v1/sync/status` returns 200 with sync status JSON
+  - [x] 5.4 Add skip annotation for authenticated tests when `SMOKE_AUTH_TOKEN` env var is not set, with clear instructions in test file comments
 
-- [ ] Task 6: Implement GCS signed URL smoke tests (AC: #5)
-  - [ ] 6.1 Create `smoke-tests/tests/signed-url.spec.ts`
-  - [ ] 6.2 Test (unauthenticated): `POST /api/v1/upload/signed-url` returns 401/403
-  - [ ] 6.3 Test (authenticated): `POST /api/v1/upload/signed-url` with valid payload returns response with `upload_url`, `upload_id`, `expires_at`
-  - [ ] 6.4 Test (authenticated): Verify `upload_url` contains `storage.googleapis.com`
-  - [ ] 6.5 Add skip annotation for authenticated tests when token not available
+- [x] Task 6: Implement GCS signed URL smoke tests (AC: #5)
+  - [x] 6.1 Create `smoke-tests/tests/signed-url.spec.ts`
+  - [x] 6.2 Test (unauthenticated): `POST /api/v1/upload/signed-url` returns 401/403
+  - [x] 6.3 Test (authenticated): `POST /api/v1/upload/signed-url` with valid payload returns response with `upload_url`, `upload_id`, `expires_at`
+  - [x] 6.4 Test (authenticated): Verify `upload_url` contains `storage.googleapis.com`
+  - [x] 6.5 Add skip annotation for authenticated tests when token not available
 
-- [ ] Task 7: Implement SSE endpoint smoke tests (AC: #6)
-  - [ ] 7.1 Create `smoke-tests/tests/sse-endpoint.spec.ts`
-  - [ ] 7.2 Test: `GET /api/v1/events` without token query param returns 422
-  - [ ] 7.3 Test: `GET /api/v1/events?token=invalid` returns 401/403
-  - [ ] 7.4 Test (authenticated): Verify response `Content-Type` is `text/event-stream` (skip if no token)
+- [x] Task 7: Implement SSE endpoint smoke tests (AC: #6)
+  - [x] 7.1 Create `smoke-tests/tests/sse-endpoint.spec.ts`
+  - [x] 7.2 Test: `GET /api/v1/events` without token query param returns 422
+  - [x] 7.3 Test: `GET /api/v1/events?token=invalid` returns 401/403
+  - [x] 7.4 Test (authenticated): Verify response `Content-Type` is `text/event-stream` (skip if no token)
 
-- [ ] Task 8: Create manual walkthrough checklist (AC: #7)
-  - [ ] 8.1 Create `smoke-tests/MANUAL_CHECKLIST.md`
-  - [ ] 8.2 Document pre-requisites: production URLs, test user credentials, sample data files (CPC Ad Report CSV, Keyword Report CSV, Order Export XLSX, Mass Update XLSX)
-  - [ ] 8.3 Document step-by-step login flow (Firebase Auth)
-  - [ ] 8.4 Document brand sync verification (trigger sync, verify SSE updates, check brand list)
-  - [ ] 8.5 Document brand selection and evaluation start
-  - [ ] 8.6 Document file upload flow (4 file types, verify each uploads successfully via GCS signed URL)
-  - [ ] 8.7 Document calculator execution verification (Ads Keyword, Discount Check, Top SKU)
-  - [ ] 8.8 Document manual data entry (spot check 3-5 fields across categories)
-  - [ ] 8.9 Document final scoring (Fashion + Non-Fashion template, verify score + verdict)
-  - [ ] 8.10 Document save evaluation and verify in history page
-  - [ ] 8.11 Document SSE notification verification (save evaluation → other session sees toast)
-  - [ ] 8.12 Add pass/fail checkbox for each step
+- [x] Task 8: Create manual walkthrough checklist (AC: #7)
+  - [x] 8.1 Create `smoke-tests/MANUAL_CHECKLIST.md`
+  - [x] 8.2 Document pre-requisites: production URLs, test user credentials, sample data files (CPC Ad Report CSV, Keyword Report CSV, Order Export XLSX, Mass Update XLSX)
+  - [x] 8.3 Document step-by-step login flow (Firebase Auth)
+  - [x] 8.4 Document brand sync verification (trigger sync, verify SSE updates, check brand list)
+  - [x] 8.5 Document brand selection and evaluation start
+  - [x] 8.6 Document file upload flow (4 file types, verify each uploads successfully via GCS signed URL)
+  - [x] 8.7 Document calculator execution verification (Ads Keyword, Discount Check, Top SKU)
+  - [x] 8.8 Document manual data entry (spot check 3-5 fields across categories)
+  - [x] 8.9 Document final scoring (Fashion + Non-Fashion template, verify score + verdict)
+  - [x] 8.10 Document save evaluation and verify in history page
+  - [x] 8.11 Document SSE notification verification (save evaluation → other session sees toast)
+  - [x] 8.12 Add pass/fail checkbox for each step
 
-- [ ] Task 9: Add smoke test npm scripts and documentation (AC: #8)
-  - [ ] 9.1 Add `README.md` in `smoke-tests/` with setup and run instructions
-  - [ ] 9.2 Document how to obtain `SMOKE_AUTH_TOKEN` (Firebase Auth REST API with test user credentials)
-  - [ ] 9.3 Document environment variables: `SMOKE_BACKEND_URL`, `SMOKE_FRONTEND_URL`, `SMOKE_AUTH_TOKEN`
-  - [ ] 9.4 Verify all unauthenticated smoke tests pass against dev environment
+- [x] Task 9: Add smoke test npm scripts and documentation (AC: #8)
+  - [x] 9.1 Add `README.md` in `smoke-tests/` with setup and run instructions
+  - [x] 9.2 Document how to obtain `SMOKE_AUTH_TOKEN` (Firebase Auth REST API with test user credentials)
+  - [x] 9.3 Document environment variables: `SMOKE_BACKEND_URL`, `SMOKE_FRONTEND_URL`, `SMOKE_AUTH_TOKEN`
+  - [x] 9.4 Verify all unauthenticated smoke tests pass against dev environment
 
 ## Dev Notes
 
@@ -325,14 +325,41 @@ curl -s "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword?k
 
 ### Agent Model Used
 
-{{agent_model_name_version}}
+Claude Opus 4.6 (claude-opus-4-6)
 
 ### Debug Log References
 
 ### Completion Notes List
 
 - Ultimate context engine analysis completed - comprehensive developer guide created
+- Task 1: Created standalone `smoke-tests/` directory with `package.json` (@playwright/test ^1.58, typescript ^5.9), `playwright.config.ts` (API-only, 30s timeout, 1 retry, JSON reporter), `tsconfig.json`. Added `smoke-tests/node_modules/` and `smoke-tests/smoke-results.json` to `.gitignore`.
+- Task 2: Implemented `backend-health.spec.ts` — 2 tests verifying `GET /health` returns `{"status": "healthy"}` and `GET /docs` returns 200.
+- Task 3: Implemented `auth-enforcement.spec.ts` — 4 tests verifying all `/api/v1/*` endpoints reject unauthenticated requests with 401/403.
+- Task 4: Implemented `frontend-spa.spec.ts` — 4 tests verifying root URL returns HTML with script tags and root div, deep links `/brands` and `/history` return 200.
+- Task 5: Implemented `database-connectivity.spec.ts` — 2 authenticated tests for brands list and sync status. Uses `test.skip()` when `SMOKE_AUTH_TOKEN` not set.
+- Task 6: Implemented `signed-url.spec.ts` — 3 tests: 1 unauthenticated (401/403), 2 authenticated (response fields + storage.googleapis.com URL). Skip annotation for auth tests.
+- Task 7: Implemented `sse-endpoint.spec.ts` — 3 tests: missing token 422, invalid token 401/403, authenticated text/event-stream. Uses `fetch()` with `AbortController` for SSE streaming limitation.
+- Task 8: Created `MANUAL_CHECKLIST.md` — 10-step manual walkthrough covering login, sync, evaluation, uploads, calculators, manual data, scoring, save, history, and SSE notifications with pass/fail checkboxes.
+- Task 9: Created `README.md` with setup instructions, environment variable documentation, token acquisition guide, test execution modes, and coverage matrix.
+- Regression check: 627 backend tests pass, 321 frontend tests pass — zero regressions.
+- Total: 18 smoke tests (11 unauthenticated, 7 authenticated). All compile and execute correctly against Playwright test runner.
 
 ### Change Log
 
+- 2026-02-13: Implemented all 9 tasks for Story 6.3 — Production Smoke Testing. Created standalone `smoke-tests/` directory with Playwright API-only test suite (18 tests across 6 spec files), manual walkthrough checklist, and comprehensive documentation. No existing code modified except `.gitignore`.
+
 ### File List
+
+- smoke-tests/package.json (new)
+- smoke-tests/package-lock.json (new)
+- smoke-tests/tsconfig.json (new)
+- smoke-tests/playwright.config.ts (new)
+- smoke-tests/README.md (new)
+- smoke-tests/MANUAL_CHECKLIST.md (new)
+- smoke-tests/tests/backend-health.spec.ts (new)
+- smoke-tests/tests/auth-enforcement.spec.ts (new)
+- smoke-tests/tests/frontend-spa.spec.ts (new)
+- smoke-tests/tests/database-connectivity.spec.ts (new)
+- smoke-tests/tests/signed-url.spec.ts (new)
+- smoke-tests/tests/sse-endpoint.spec.ts (new)
+- .gitignore (modified)
