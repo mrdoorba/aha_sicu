@@ -1,0 +1,108 @@
+# Store ICU - Backend Deploy Workflow
+# Builds Docker image, pushes to Artifact Registry, deploys to Cloud Run.
+# Dev: auto-deploys on push to develop.  Prod: requires manual approval.
+#
+# Required GitHub Actions variables (set per environment):
+#   GCP_PROJECT_ID            – GCP project ID (e.g. YOUR_GCP_PROJECT_ID)
+#   GCP_REGION                – GCP region (asia-southeast1)
+#   WORKLOAD_IDENTITY_PROVIDER – Full WIF provider path from terraform output
+#   DEPLOY_SERVICE_ACCOUNT    – Deploy SA email from terraform output
+#   CLOUD_RUN_SERVICE         – Cloud Run service name (aha-sicu-dev-api / aha-sicu-prod-api)
+#   ARTIFACT_REGISTRY_URL     – Docker push URL from terraform output
+
+name: Deploy Backend
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'backend/**'
+
+concurrency:
+  group: deploy-backend-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-dev:
+    if: github.ref == 'refs/heads/develop'
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: |
+            ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
+            ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          service: ${{ vars.CLOUD_RUN_SERVICE }}
+          region: ${{ vars.GCP_REGION }}
+          image: ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
+
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v6
+        with:
+          context: backend
+          push: true
+          tags: |
+            ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
+            ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to Cloud Run
+        uses: google-github-actions/deploy-cloudrun@v3
+        with:
+          service: ${{ vars.CLOUD_RUN_SERVICE }}
+          region: ${{ vars.GCP_REGION }}
+          image: ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}

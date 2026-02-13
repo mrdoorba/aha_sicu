@@ -1,0 +1,94 @@
+# Store ICU - Frontend Deploy Workflow
+# Builds Vite app and deploys to Firebase Hosting.
+# Dev: auto-deploys on push to develop.  Prod: requires manual approval.
+#
+# Required GitHub Actions variables (set per environment):
+#   GCP_PROJECT_ID            – GCP project ID (e.g. YOUR_GCP_PROJECT_ID)
+#   WORKLOAD_IDENTITY_PROVIDER – Full WIF provider path from terraform output
+#   DEPLOY_SERVICE_ACCOUNT    – Deploy SA email from terraform output
+#   FIREBASE_HOSTING_SITE     – Firebase Hosting site ID (aha-sicu-dev / aha-sicu-prod)
+
+name: Deploy Frontend
+
+on:
+  push:
+    branches: [develop, main]
+    paths:
+      - 'frontend/**'
+
+concurrency:
+  group: deploy-frontend-${{ github.ref_name }}
+  cancel-in-progress: false
+
+jobs:
+  deploy-dev:
+    if: github.ref == 'refs/heads/develop'
+    name: Deploy to Dev
+    runs-on: ubuntu-latest
+    environment: dev
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Deploy to Firebase Hosting
+        run: npx firebase-tools deploy --only hosting:${{ vars.FIREBASE_HOSTING_SITE }} --project ${{ vars.GCP_PROJECT_ID }}
+
+  deploy-prod:
+    if: github.ref == 'refs/heads/main'
+    name: Deploy to Production
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+      id-token: write
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install dependencies
+        run: npm ci
+        working-directory: frontend
+
+      - name: Build
+        run: npm run build
+        working-directory: frontend
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Deploy to Firebase Hosting
+        run: npx firebase-tools deploy --only hosting:${{ vars.FIREBASE_HOSTING_SITE }} --project ${{ vars.GCP_PROJECT_ID }}
