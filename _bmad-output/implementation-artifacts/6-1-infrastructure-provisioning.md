@@ -38,9 +38,9 @@ so that **the application has a secure, scalable production environment**.
    - Given the GCP project exists
    - When `terraform apply` runs with `secrets.tf`
    - Then three secrets are created in Secret Manager:
-     - `aha_sicu_db_url` — Neon PostgreSQL connection string
-     - `aha_sicu_gsheets_credentials` — Google Sheets API service account key
-     - `aha_sicu_firebase_admin` — Firebase Admin SDK credentials
+     - `aha_sicu_{env}_db_url` — Neon PostgreSQL connection string (where `{env}` is `dev` or `prod`)
+     - `aha_sicu_{env}_gsheets_credentials` — Google Sheets API service account key
+     - `aha_sicu_{env}_firebase_admin` — Firebase Admin SDK credentials
    - And the Cloud Run service account (`aha-sicu-api-sa`) has `secretmanager.secretAccessor` role on each secret
    - And secret values are NOT stored in Terraform state (use `google_secret_manager_secret` resource only, values set manually via CLI)
 
@@ -116,7 +116,7 @@ so that **the application has a secure, scalable production environment**.
   - [x] 2.4 Enable Artifact Registry API (`artifactregistry.googleapis.com`)
 
 - [x] Task 3: Create Secret Manager secrets (AC: #4)
-  - [x] 3.1 Create `secrets.tf` with 3 `google_secret_manager_secret` resources (aha_sicu_db_url, aha_sicu_gsheets_credentials, aha_sicu_firebase_admin)
+  - [x] 3.1 Create `secrets.tf` with 3 `google_secret_manager_secret` resources (aha_sicu_{env}_db_url, aha_sicu_{env}_gsheets_credentials, aha_sicu_{env}_firebase_admin)
   - [x] 3.2 Enable Secret Manager API (`secretmanager.googleapis.com`)
   - [x] 3.3 Grant `secretmanager.secretAccessor` to `aha-sicu-api-sa` on each secret via `google_secret_manager_secret_iam_member`
   - [x] 3.4 Document in README that secret **values** must be set via `gcloud` CLI (not in Terraform state)
@@ -218,7 +218,7 @@ so that **the application has a secure, scalable production environment**.
 **Secret Management Rules:**
 - Secret **resources** (the "container") are created via Terraform
 - Secret **values** (the actual credentials) are NEVER in Terraform state or code
-- Values injected via `gcloud secrets versions add aha_sicu_db_url --data-file=-` (pipe from stdin)
+- Values injected via `gcloud secrets versions add aha_sicu_{env}_db_url --data-file=-` (pipe from stdin, where `{env}` is `dev` or `prod`)
 - Cloud Run references secrets as environment variables via `secretKeyRef`
 - Local dev uses `.env` file (not committed to git)
 
