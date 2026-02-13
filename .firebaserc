@@ -1,0 +1,14 @@
+{
+  "projects": {
+    "dev": "fbi-dev-484410",
+    "prod": "fbi-dev-484410"
+  },
+  "targets": {
+    "fbi-dev-484410": {
+      "hosting": {
+        "aha-sicu-dev": ["aha-sicu-dev"],
+        "aha-sicu-prod": ["aha-sicu-prod"]
+      }
+    }
+  }
+}
