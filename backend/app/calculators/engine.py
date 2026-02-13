@@ -55,9 +55,18 @@ _CALCULATOR_RUNNERS = {
 
 def _has_total_products(manual_data: Any) -> bool:
     """Check if total_products (productCount) exists in manual_data."""
-    if not isinstance(manual_data, dict):
+    import json
+
+    data = manual_data
+    # Handle JSONB double-encoding (string instead of dict)
+    if isinstance(data, str):
+        try:
+            data = json.loads(data)
+        except (json.JSONDecodeError, TypeError):
+            return False
+    if not isinstance(data, dict):
         return False
-    products = manual_data.get("products")
+    products = data.get("products")
     if not isinstance(products, dict):
         return False
     return products.get("productCount") is not None

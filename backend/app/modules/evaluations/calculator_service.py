@@ -102,6 +102,12 @@ def _extract_parsed_data(upload: dict, file_type: str) -> list[dict[str, Any]]:
         CalculatorException: CALC_MISSING_DATA if parsed_data structure is invalid.
     """
     parsed_data = upload.get("parsed_data")
+    if isinstance(parsed_data, str):
+        import json
+        try:
+            parsed_data = json.loads(parsed_data)
+        except (json.JSONDecodeError, TypeError):
+            parsed_data = None
     if not isinstance(parsed_data, dict):
         raise CalculatorException(
             code="CALC_MISSING_DATA",
@@ -194,6 +200,12 @@ def _extract_total_products(eval_inputs: dict | None) -> int:
         )
 
     manual_data = eval_inputs.get("manual_data")
+    if isinstance(manual_data, str):
+        import json
+        try:
+            manual_data = json.loads(manual_data)
+        except (json.JSONDecodeError, TypeError):
+            manual_data = None
     if not manual_data:
         raise CalculatorException(
             code="CALC_MISSING_DATA",
