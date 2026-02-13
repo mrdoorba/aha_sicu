@@ -130,8 +130,8 @@ export function useAutoSaveForm({ brandId, categoryType, initialData }: UseAutoS
           updated.competition = currentComp;
         } else {
           const currentCat = {
-            ...(base as Record<string, Record<string, unknown>>)[category],
-            ...(prev as Record<string, Record<string, unknown>>)[category],
+            ...(base as unknown as Record<string, Record<string, unknown>>)[category],
+            ...(prev as unknown as Record<string, Record<string, unknown>>)[category],
           };
           currentCat[key] = value;
           (updated as Record<string, unknown>)[category] = currentCat;

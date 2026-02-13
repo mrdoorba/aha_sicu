@@ -71,7 +71,7 @@ export function useRules() {
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/rules');
       if (error) throw new Error('Failed to fetch scoring rules');
-      return data as ScoringRule[];
+      return data as unknown as ScoringRule[];
     },
   });
 

@@ -218,7 +218,7 @@ export interface SectionProgress {
   total: number;
 }
 
-function countFilledInFlat(obj: Record<string, unknown>): { filled: number; total: number } {
+function countFilledInFlat(obj: object): { filled: number; total: number } {
   const values = Object.values(obj);
   return {
     total: values.length,

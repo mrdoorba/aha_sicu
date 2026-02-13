@@ -96,7 +96,7 @@ export function useRunCalculator(brandId: number, calculatorType: CalculatorType
         params: { path: { brand_id: brandId } },
       });
       if (error) throw error;
-      return data as CalculatorResult;
+      return data as unknown as CalculatorResult;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });
@@ -118,7 +118,7 @@ export function useCalculatorResults(brandId: number) {
         { params: { path: { brand_id: brandId } } },
       );
       if (error) throw error;
-      return data as CalculatorResultsListResponse;
+      return data as unknown as CalculatorResultsListResponse;
     },
     enabled: brandId > 0,
   });
