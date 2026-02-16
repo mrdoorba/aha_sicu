@@ -43,7 +43,10 @@ export function useRequestSignedUrl() {
       const { data, error } = await client.POST('/api/v1/upload/signed-url', {
         body,
       });
-      if (error) throw new Error('Failed to get signed URL');
+      if (error) {
+        const detail = (error as Record<string, unknown>).detail;
+        throw new Error(typeof detail === 'string' ? detail : 'Failed to get signed URL');
+      }
       return data as { upload_url: string; upload_id: string; expires_at: string };
     },
   });
@@ -71,7 +74,10 @@ export function useProcessUpload() {
       const { data, error } = await client.POST('/api/v1/upload/process', {
         body,
       });
-      if (error) throw new Error('Failed to process upload');
+      if (error) {
+        const detail = (error as Record<string, unknown>).detail;
+        throw new Error(typeof detail === 'string' ? detail : 'Failed to process upload');
+      }
       return data as ProcessUploadResponse;
     },
   });
