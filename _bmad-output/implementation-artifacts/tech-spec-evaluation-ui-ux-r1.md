@@ -2,7 +2,7 @@
 title: 'Evaluation UI/UX Revision R1'
 slug: 'evaluation-ui-ux-r1'
 created: '2026-02-16'
-status: 'implementation-complete'
+status: 'completed'
 stepsCompleted: [1, 2, 3, 4]
 tech_stack: ['React 19', 'TypeScript', 'TailwindCSS', 'Radix UI', 'React Query', 'Python/FastAPI', 'PostgreSQL', 'Vitest', 'Pytest']
 files_to_modify:
@@ -497,3 +497,11 @@ Rename labels to match Shopee Seller Center terminology, add computed auto-calcu
 - **Section progress counts** in SectionNav will change: Section 2 loses 2 fields (content), Section 5 gains 9 fields (competition expansion from 6 to 15)
 - **High-risk item:** Month selector persistence — ensure `salesStartMonth` survives the auto-save round-trip (save to JSONB → reload → display). The `buildManualData` merge in `useAutoSaveForm` must include `salesStartMonth` in the `BusinessData` type.
 - **Scoring engine month labels:** Task 13 updates `scoring.py` to use dynamic month labels (e.g., "Penjualan Bulan Jan 2026") instead of static "Penjualan Bulan -1" labels. The `salesStartMonth` value is extracted from `manual_data["business"]["salesStartMonth"]` within the scoring function — no API changes needed. This ensures consistency between the frontend form labels and the generated score breakdown / email output.
+
+## Review Notes
+
+- Adversarial review completed (25 findings)
+- Findings: 13 real, 12 noise — 10 fixed, 3 skipped (hypothetical/over-engineering)
+- Resolution approach: auto-fix
+- Fixed: aria-labels on links (F3), backend month label tests (F7), % cap at 100 (F9), aria-live on computed fields (F10), GENERIC_LABELS spread copy (F11), marketPrice=0 guard (F13), ROI→ROAS label (F16), onBlur timing (F19)
+- Skipped: competition link XSS (F2, not rendered as href), thresholdType refactor (F6, over-engineering), VisitorsForm.test.tsx (F14, integration tests cover it)
