@@ -17,19 +17,23 @@ export function PromoToolsForm({ data, salesMonth0, onChange, onBlur }: PromoToo
     const val = data[f.key as keyof PromoToolsData];
     return val != null && val > 0;
   }).length;
-  const usagePct = (usageCount / PROMO_TOOLS_FIELDS.length) * 100;
+  const usagePct = Math.round((usageCount / PROMO_TOOLS_FIELDS.length) * 100);
 
   // % Efektifitas: count of tools exceeding threshold / 11
+  // Mirrors backend _promo_verdict(): D=0→❌, D/D13≥50%→❌ (too dependent), then benchmark check
   const effectivenessResult = (() => {
     if (!salesMonth0) return null; // 0 or null → show "—"
     const passingCount = PROMO_TOOLS_FIELDS.filter((f) => {
       const val = data[f.key as keyof PromoToolsData] ?? 0;
       if (f.threshold == null) return false;
+      if (val === 0) return false;
       // gratisOngkir is absolute threshold (>0), not percentage-based
       if (f.key === 'gratisOngkir') return val > f.threshold;
-      return val > salesMonth0 * f.threshold;
+      // Too dependent: single tool ≥ 50% of total sales → fail
+      if (val / salesMonth0 >= 0.5) return false;
+      return val >= salesMonth0 * f.threshold;
     }).length;
-    return (passingCount / PROMO_TOOLS_FIELDS.length) * 100;
+    return Math.round((passingCount / PROMO_TOOLS_FIELDS.length) * 100);
   })();
 
   return (
@@ -68,13 +72,13 @@ export function PromoToolsForm({ data, salesMonth0, onChange, onBlur }: PromoToo
           <div>
             <p className="mb-1 text-sm font-medium">% Penggunaan alat promosi</p>
             <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
-              {usagePct.toFixed(1)}%
+              {usagePct}%
             </div>
           </div>
           <div>
             <p className="mb-1 text-sm font-medium">% Efektifitas alat promosi</p>
             <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
-              {effectivenessResult == null ? '—' : `${effectivenessResult.toFixed(1)}%`}
+              {effectivenessResult == null ? '—' : `${effectivenessResult}%`}
             </div>
           </div>
         </div>

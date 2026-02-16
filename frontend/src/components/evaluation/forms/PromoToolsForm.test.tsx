@@ -79,6 +79,28 @@ describe('PromoToolsForm', () => {
       programAfiliasi: null,
     };
     render(<PromoToolsForm data={dataWith7Tools} salesMonth0={100000000} onChange={vi.fn()} onBlur={vi.fn()} />);
-    expect(screen.getByText('63.6%')).toBeInTheDocument();
+    expect(screen.getByText('64%')).toBeInTheDocument();
+  });
+
+  it('computes % Efektifitas excluding tools >= 50% of sales (too dependent)', () => {
+    // salesMonth0 = 1,000,000. promoToko = 600,000 (60% of sales → too dependent, even though > 8%)
+    // gratisOngkir = 1 (passes absolute >0 check)
+    // chatBroadcast = 20,000 (2% > 1% threshold → passes)
+    // Expected: 2 pass out of 11 = round(18.18%) = 18%
+    const data: PromoToolsData = {
+      promoToko: 600000,      // 60% of sales → too dependent → ❌
+      paketDiskon: null,
+      komboHemat: null,
+      flashSale: null,
+      voucher: null,
+      shopeeLive: null,
+      gameToko: null,
+      brandMembership: null,
+      gratisOngkir: 1,        // >0 → ✔️
+      chatBroadcast: 20000,   // 2% > 1% → ✔️
+      programAfiliasi: null,
+    };
+    render(<PromoToolsForm data={data} salesMonth0={1000000} onChange={vi.fn()} onBlur={vi.fn()} />);
+    expect(screen.getByText('18%')).toBeInTheDocument();
   });
 });
