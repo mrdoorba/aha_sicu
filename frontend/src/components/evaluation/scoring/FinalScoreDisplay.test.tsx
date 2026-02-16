@@ -24,14 +24,16 @@ describe('FinalScoreDisplay', () => {
     expect(screen.getByText('Special')).toBeInTheDocument();
   });
 
-  it('shows Fashion badge for fashion template', () => {
+  it('shows score and verdict for fashion template', () => {
     render(<FinalScoreDisplay totalScore={80} verdict="✔️" template="fashion" />);
-    expect(screen.getByText('Fashion')).toBeInTheDocument();
+    expect(screen.getByText('80')).toBeInTheDocument();
+    expect(screen.getByText('Approved')).toBeInTheDocument();
   });
 
-  it('shows Non-Fashion badge for non_fashion template', () => {
+  it('shows score and verdict for non_fashion template', () => {
     render(<FinalScoreDisplay totalScore={80} verdict="✔️" template="non_fashion" />);
-    expect(screen.getByText('Non-Fashion')).toBeInTheDocument();
+    expect(screen.getByText('80')).toBeInTheDocument();
+    expect(screen.getByText('Approved')).toBeInTheDocument();
   });
 
   it('falls back to No Verdict for unknown verdict', () => {

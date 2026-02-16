@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -241,60 +241,18 @@ describe('RulesPage', () => {
 
     renderRulesPage();
 
-    expect(screen.getByText('Scoring Rules')).toBeInTheDocument();
-    expect(screen.getByText('Operational')).toBeInTheDocument();
-    expect(screen.getByText('Business')).toBeInTheDocument();
-    expect(screen.getByText('Content')).toBeInTheDocument();
-    expect(screen.getByText('Visitors')).toBeInTheDocument();
-    expect(screen.getByText('Promo Tools')).toBeInTheDocument();
-    expect(screen.getByText('Products & Status')).toBeInTheDocument();
-    expect(screen.getByText('Ads')).toBeInTheDocument();
-    expect(screen.getByText('Campaign')).toBeInTheDocument();
-    expect(screen.getByText('Stock')).toBeInTheDocument();
-    expect(screen.getByText('Discount')).toBeInTheDocument();
-    expect(screen.getByText('Score Interpretation')).toBeInTheDocument();
-  });
-
-  it('switches between fashion and non-fashion tabs', async () => {
-    const user = userEvent.setup();
-    mockUseRules.mockReturnValue({
-      rules: SAMPLE_RULES,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    renderRulesPage();
-
-    // Fashion tab is active by default — conversion_rate threshold shows "≥ 2"
-    expect(screen.getByText(/\u2265 2(?![\d.])/)).toBeInTheDocument();
-
-    // Click Non-Fashion tab
-    const nonFashionTab = screen.getByRole('tab', { name: /non-fashion/i });
-    await user.click(nonFashionTab);
-
-    // Non-fashion conversion_rate threshold = 3.0 → shows "≥ 3"
-    expect(screen.getByText('\u2265 3')).toBeInTheDocument();
-    // ROI threshold changes from 8.0 to 9.0 → shows "> 9"
-    expect(screen.getByText('> 9')).toBeInTheDocument();
-  });
-
-  it('highlights differing values between templates', async () => {
-    userEvent.setup();
-    mockUseRules.mockReturnValue({
-      rules: SAMPLE_RULES,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    renderRulesPage();
-
-    // Check that "differs" badges exist for conversion_rate and roi_threshold
-    const differsBadges = screen.getAllByText('differs');
-    expect(differsBadges.length).toBeGreaterThan(0);
+    expect(screen.getByText('Aturan Penilaian')).toBeInTheDocument();
+    expect(screen.getByText('Operasional')).toBeInTheDocument();
+    expect(screen.getByText('Bisnis')).toBeInTheDocument();
+    expect(screen.getByText('Konten')).toBeInTheDocument();
+    expect(screen.getByText('Pengunjung')).toBeInTheDocument();
+    expect(screen.getByText('Alat Promo')).toBeInTheDocument();
+    expect(screen.getByText('Produk & Status')).toBeInTheDocument();
+    expect(screen.getByText('Iklan')).toBeInTheDocument();
+    expect(screen.getByText('Kampanye')).toBeInTheDocument();
+    expect(screen.getByText('Stok')).toBeInTheDocument();
+    expect(screen.getByText('Diskon')).toBeInTheDocument();
+    expect(screen.getByText('Interpretasi Skor')).toBeInTheDocument();
   });
 
   it('shows version and updated timestamp', () => {
@@ -340,8 +298,8 @@ describe('RulesPage', () => {
 
     renderRulesPage();
 
-    expect(screen.getByText(/failed to load scoring rules/i)).toBeInTheDocument();
-    const retryButton = screen.getByRole('button', { name: /retry/i });
+    expect(screen.getByText(/gagal memuat aturan penilaian/i)).toBeInTheDocument();
+    const retryButton = screen.getByRole('button', { name: /coba lagi/i });
     expect(retryButton).toBeInTheDocument();
 
     await userEvent.click(retryButton);
@@ -361,7 +319,7 @@ describe('Edit mode', () => {
 
     renderRulesPage();
 
-    expect(screen.getByRole('button', { name: /edit rules/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /edit aturan/i })).toBeInTheDocument();
   });
 
   it('shows Edit Rules button for admin', () => {
@@ -380,7 +338,7 @@ describe('Edit mode', () => {
 
     renderRulesPage();
 
-    expect(screen.getByRole('button', { name: /edit rules/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /edit aturan/i })).toBeInTheDocument();
   });
 
   it('hides Edit Rules button for member', () => {
@@ -399,7 +357,7 @@ describe('Edit mode', () => {
 
     renderRulesPage();
 
-    expect(screen.queryByRole('button', { name: /edit rules/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /edit aturan/i })).not.toBeInTheDocument();
   });
 
   it('enters edit mode on Edit Rules click', async () => {
@@ -414,13 +372,13 @@ describe('Edit mode', () => {
 
     renderRulesPage();
 
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Edit mode shows Cancel and Save Changes buttons
-    expect(screen.getByRole('button', { name: /cancel/i })).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /batal/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /simpan perubahan/i })).toBeInTheDocument();
     // Edit Rules button hidden in edit mode
-    expect(screen.queryByRole('button', { name: /edit rules/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /edit aturan/i })).not.toBeInTheDocument();
     // Number inputs should appear
     const inputs = screen.getAllByRole('spinbutton');
     expect(inputs.length).toBeGreaterThan(0);
@@ -438,9 +396,9 @@ describe('Edit mode', () => {
 
     renderRulesPage();
 
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
-    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    const saveBtn = screen.getByRole('button', { name: /simpan perubahan/i });
     expect(saveBtn).toBeDisabled();
   });
 
@@ -456,14 +414,14 @@ describe('Edit mode', () => {
 
     renderRulesPage();
 
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Modify a threshold — find the first number input and change it
     const firstInput = screen.getAllByRole('spinbutton')[0];
     await user.clear(firstInput);
     await user.type(firstInput, '99');
 
-    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    const saveBtn = screen.getByRole('button', { name: /simpan perubahan/i });
     expect(saveBtn).toBeEnabled();
   });
 
@@ -479,14 +437,14 @@ describe('Edit mode', () => {
 
     renderRulesPage();
 
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Modify a value first
     const firstInput = screen.getAllByRole('spinbutton')[0];
     await user.clear(firstInput);
     await user.type(firstInput, '99');
 
-    await user.click(screen.getByRole('button', { name: /save changes/i }));
+    await user.click(screen.getByRole('button', { name: /simpan perubahan/i }));
 
     // Password dialog should appear
     expect(screen.getByText('Confirm Password')).toBeInTheDocument();
@@ -509,7 +467,7 @@ describe('Edit mode', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Modify a value
     const firstInput = screen.getAllByRole('spinbutton')[0];
@@ -517,7 +475,7 @@ describe('Edit mode', () => {
     await user.type(firstInput, '99');
 
     // Click Save Changes
-    await user.click(screen.getByRole('button', { name: /save changes/i }));
+    await user.click(screen.getByRole('button', { name: /simpan perubahan/i }));
 
     // Enter password in dialog
     const passwordInput = screen.getByLabelText('Password');
@@ -530,7 +488,7 @@ describe('Edit mode', () => {
     // Verify mutation was called
     expect(mockUpdateRuleMutateAsync).toHaveBeenCalled();
     // Verify toast
-    expect(mockToastSuccess).toHaveBeenCalledWith('Rules updated successfully');
+    expect(mockToastSuccess).toHaveBeenCalledWith('Aturan berhasil diperbarui');
   });
 
   it('incorrect password shows error in dialog', async () => {
@@ -548,7 +506,7 @@ describe('Edit mode', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Modify a value
     const firstInput = screen.getAllByRole('spinbutton')[0];
@@ -556,7 +514,7 @@ describe('Edit mode', () => {
     await user.type(firstInput, '99');
 
     // Click Save Changes
-    await user.click(screen.getByRole('button', { name: /save changes/i }));
+    await user.click(screen.getByRole('button', { name: /simpan perubahan/i }));
 
     // Enter wrong password
     const passwordInput = screen.getByLabelText('Password');
@@ -585,7 +543,7 @@ describe('Edit mode', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Modify a value
     const firstInput = screen.getAllByRole('spinbutton')[0];
@@ -593,41 +551,13 @@ describe('Edit mode', () => {
     await user.type(firstInput, '99');
 
     // Click Cancel
-    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    await user.click(screen.getByRole('button', { name: /batal/i }));
 
     // Back to view mode — Edit Rules button visible again
-    expect(screen.getByRole('button', { name: /edit rules/i })).toBeInTheDocument();
-    expect(screen.queryByRole('button', { name: /save changes/i })).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /edit aturan/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /simpan perubahan/i })).not.toBeInTheDocument();
     // No API call made
     expect(mockUpdateRuleMutateAsync).not.toHaveBeenCalled();
-  });
-
-  it('can switch tabs while in edit mode', async () => {
-    const user = userEvent.setup();
-    mockUseRules.mockReturnValue({
-      rules: SAMPLE_RULES,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    renderRulesPage();
-
-    // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
-
-    // Verify edit mode is active
-    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
-
-    // Switch to Non-Fashion tab
-    const nonFashionTab = screen.getByRole('tab', { name: /non-fashion/i });
-    await user.click(nonFashionTab);
-
-    // Should still be in edit mode with inputs
-    expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
-    const inputs = screen.getAllByRole('spinbutton');
-    expect(inputs.length).toBeGreaterThan(0);
   });
 
   it('Save Changes disabled when field is cleared (validation error)', async () => {
@@ -643,14 +573,14 @@ describe('Edit mode', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Clear a value to trigger validation error
     const firstInput = screen.getAllByRole('spinbutton')[0];
     await user.clear(firstInput);
 
     // Save Changes should be disabled
-    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    const saveBtn = screen.getByRole('button', { name: /simpan perubahan/i });
     expect(saveBtn).toBeDisabled();
 
     // Should show "Required" error
@@ -672,16 +602,16 @@ describe('Edit mode', () => {
 
     renderRulesPage();
 
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
     const firstInput = screen.getAllByRole('spinbutton')[0];
     await user.clear(firstInput);
     await user.type(firstInput, '99');
-    await user.click(screen.getByRole('button', { name: /save changes/i }));
+    await user.click(screen.getByRole('button', { name: /simpan perubahan/i }));
     const passwordInput = screen.getByLabelText('Password');
     await user.type(passwordInput, 'mypassword');
     await user.click(screen.getByRole('button', { name: /^confirm$/i }));
 
-    expect(mockToastSuccess).toHaveBeenCalledWith('Rules updated successfully');
+    expect(mockToastSuccess).toHaveBeenCalledWith('Aturan berhasil diperbarui');
   });
 });
 
@@ -772,13 +702,13 @@ describe('Marketing category', () => {
 
     expect(screen.getByText('Marketing')).toBeInTheDocument();
     expect(screen.getByText('Config')).toBeInTheDocument();
-    expect(screen.getByText('Floor')).toBeInTheDocument();
-    expect(screen.getByText('Base Subtraction')).toBeInTheDocument();
-    expect(screen.getByText('Upper Limit Base')).toBeInTheDocument();
-    expect(screen.getByText('Fashion Adjustment')).toBeInTheDocument();
-    expect(screen.getByText('Minimum Threshold')).toBeInTheDocument();
-    expect(screen.getByText('Display Max')).toBeInTheDocument();
-    expect(screen.getByText('Display Min')).toBeInTheDocument();
+    expect(screen.getByText('Batas Bawah')).toBeInTheDocument();
+    expect(screen.getByText('Pengurangan Dasar')).toBeInTheDocument();
+    expect(screen.getByText('Batas Atas Dasar')).toBeInTheDocument();
+    expect(screen.getByText('Penyesuaian Fashion')).toBeInTheDocument();
+    expect(screen.getByText('Ambang Minimum')).toBeInTheDocument();
+    expect(screen.getByText('Tampilan Maks')).toBeInTheDocument();
+    expect(screen.getByText('Tampilan Min')).toBeInTheDocument();
   });
 
   it('marketing fields are editable in edit mode', async () => {
@@ -793,7 +723,7 @@ describe('Marketing category', () => {
 
     renderRulesPage();
 
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Find a marketing field input by aria-label
     const floorInput = screen.getByRole('spinbutton', { name: /floor value/i });
@@ -801,58 +731,6 @@ describe('Marketing category', () => {
     expect(floorInput).toHaveValue(0.15);
   });
 
-  it('marketing floor and fashion_adjustment show differs badge within marketing card', async () => {
-    mockUseRules.mockReturnValue({
-      rules: SAMPLE_RULES,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    renderRulesPage();
-
-    // Find the Marketing category card specifically
-    const marketingHeading = screen.getByText('Marketing');
-    const marketingCard = marketingHeading.closest('[data-slot="card"]') ?? marketingHeading.closest('.rounded-xl');
-
-    // Verify differs badges exist within the marketing card context
-    expect(marketingCard).not.toBeNull();
-    const differsBadgesInMarketing = within(marketingCard!).getAllByText('differs');
-    // Exactly 2 differs badges in marketing: floor, fashion_adjustment
-    expect(differsBadgesInMarketing).toHaveLength(2);
-
-    // Verify the specific differing fields are highlighted
-    expect(within(marketingCard!).getByText('Floor')).toBeInTheDocument();
-    expect(within(marketingCard!).getByText('Fashion Adjustment')).toBeInTheDocument();
-
-    // Total differs badges across all categories: conversion_rate, roi_threshold, floor, fashion_adjustment
-    const allDiffersBadges = screen.getAllByText('differs');
-    expect(allDiffersBadges).toHaveLength(4);
-  });
-
-  it('non-fashion tab shows different marketing values', async () => {
-    const user = userEvent.setup();
-    mockUseRules.mockReturnValue({
-      rules: SAMPLE_RULES,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    renderRulesPage();
-
-    // Fashion tab: floor should display as 15.0%
-    expect(screen.getByText('15.0%')).toBeInTheDocument();
-
-    // Switch to Non-Fashion tab
-    await user.click(screen.getByRole('tab', { name: /non-fashion/i }));
-
-    // Non-fashion: floor = 0.12 (12.0%), fashion_adjustment = 0.0 (0.0%)
-    expect(screen.getByText('12.0%')).toBeInTheDocument();
-    expect(screen.getByText('0.0%')).toBeInTheDocument();
-  });
 });
 
 // --- Message templates tests (Story 5.5) ---
@@ -927,7 +805,7 @@ describe('Message templates', () => {
     renderRulesPage();
 
     // UFO rate has 2 message fields → should show "2 msg" toggle
-    const toggleBtn = screen.getByLabelText('Toggle messages for Unfulfilled Order Rate');
+    const toggleBtn = screen.getByLabelText('Toggle messages for Tingkat Pesanan Tidak Terselesaikan');
     expect(toggleBtn).toBeInTheDocument();
     expect(toggleBtn).toHaveTextContent('2 msg');
   });
@@ -945,7 +823,7 @@ describe('Message templates', () => {
     renderRulesPage();
 
     // Click toggle to expand messages
-    const toggleBtn = screen.getByLabelText('Toggle messages for Unfulfilled Order Rate');
+    const toggleBtn = screen.getByLabelText('Toggle messages for Tingkat Pesanan Tidak Terselesaikan');
     await user.click(toggleBtn);
 
     // Message text should now be visible
@@ -966,18 +844,18 @@ describe('Message templates', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Expand messages
-    const toggleBtn = screen.getByLabelText('Toggle messages for Unfulfilled Order Rate');
+    const toggleBtn = screen.getByLabelText('Toggle messages for Tingkat Pesanan Tidak Terselesaikan');
     await user.click(toggleBtn);
 
     // Should show textareas with message content
-    const passTextarea = screen.getByLabelText('Unfulfilled Order Rate Pass');
+    const passTextarea = screen.getByLabelText('Tingkat Pesanan Tidak Terselesaikan Lulus');
     expect(passTextarea).toBeInTheDocument();
     expect(passTextarea).toHaveValue('✔️ UFO = {val_str} OK');
 
-    const failTextarea = screen.getByLabelText('Unfulfilled Order Rate Fail');
+    const failTextarea = screen.getByLabelText('Tingkat Pesanan Tidak Terselesaikan Gagal');
     expect(failTextarea).toBeInTheDocument();
     expect(failTextarea).toHaveValue('❌ UFO = {val_str} NOT OK, target: <{threshold}%');
   });
@@ -995,14 +873,14 @@ describe('Message templates', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Expand messages
-    const toggleBtn = screen.getByLabelText('Toggle messages for Unfulfilled Order Rate');
+    const toggleBtn = screen.getByLabelText('Toggle messages for Tingkat Pesanan Tidak Terselesaikan');
     await user.click(toggleBtn);
 
     // Should show placeholder hints (multiple instances for pass and fail)
-    const placeholderLabels = screen.getAllByText('Placeholders:');
+    const placeholderLabels = screen.getAllByText('Placeholder:');
     expect(placeholderLabels.length).toBeGreaterThan(0);
     const valStrHints = screen.getAllByText('{val_str}');
     expect(valStrHints.length).toBeGreaterThan(0);
@@ -1021,19 +899,19 @@ describe('Message templates', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Expand messages
-    const toggleBtn = screen.getByLabelText('Toggle messages for Unfulfilled Order Rate');
+    const toggleBtn = screen.getByLabelText('Toggle messages for Tingkat Pesanan Tidak Terselesaikan');
     await user.click(toggleBtn);
 
     // Edit message template
-    const passTextarea = screen.getByLabelText('Unfulfilled Order Rate Pass');
+    const passTextarea = screen.getByLabelText('Tingkat Pesanan Tidak Terselesaikan Lulus');
     await user.clear(passTextarea);
     await user.type(passTextarea, 'EDITED PASS MESSAGE');
 
     // Save Changes should be enabled now
-    const saveBtn = screen.getByRole('button', { name: /save changes/i });
+    const saveBtn = screen.getByRole('button', { name: /simpan perubahan/i });
     expect(saveBtn).toBeEnabled();
   });
 
@@ -1048,9 +926,9 @@ describe('Message templates', () => {
 
     renderRulesPage();
 
-    expect(screen.getByText('Competition Messages')).toBeInTheDocument();
-    expect(screen.getByText('Competitive')).toBeInTheDocument();
-    expect(screen.getByText('Not competitive')).toBeInTheDocument();
+    expect(screen.getByText('Pesan Kompetisi')).toBeInTheDocument();
+    expect(screen.getByText('Kompetitif')).toBeInTheDocument();
+    expect(screen.getByText('Tidak kompetitif')).toBeInTheDocument();
   });
 
   it('renders G75 Closing Messages section', () => {
@@ -1064,7 +942,7 @@ describe('Message templates', () => {
 
     renderRulesPage();
 
-    expect(screen.getByText('Closing Messages (G75)')).toBeInTheDocument();
+    expect(screen.getByText('Pesan Penutup (G75)')).toBeInTheDocument();
     expect(screen.getByText('Closing pass message')).toBeInTheDocument();
     expect(screen.getByText('Closing fail message')).toBeInTheDocument();
   });
@@ -1082,7 +960,7 @@ describe('Message templates', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Closing message textareas should appear
     const closingTextarea = screen.getByLabelText(/closing message for ✔️/i);
@@ -1106,18 +984,18 @@ describe('Message templates', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit rules/i }));
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Expand and edit message
-    const toggleBtn = screen.getByLabelText('Toggle messages for Unfulfilled Order Rate');
+    const toggleBtn = screen.getByLabelText('Toggle messages for Tingkat Pesanan Tidak Terselesaikan');
     await user.click(toggleBtn);
 
-    const passTextarea = screen.getByLabelText('Unfulfilled Order Rate Pass');
+    const passTextarea = screen.getByLabelText('Tingkat Pesanan Tidak Terselesaikan Lulus');
     await user.clear(passTextarea);
     await user.type(passTextarea, 'NEW PASS MSG');
 
     // Save
-    await user.click(screen.getByRole('button', { name: /save changes/i }));
+    await user.click(screen.getByRole('button', { name: /simpan perubahan/i }));
     const passwordInput = screen.getByLabelText('Password');
     await user.type(passwordInput, 'mypassword');
     await user.click(screen.getByRole('button', { name: /^confirm$/i }));

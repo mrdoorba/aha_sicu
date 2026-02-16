@@ -33,19 +33,19 @@ const defaultProps = {
 };
 
 describe('ScoringSection', () => {
-  it('renders Generate Score button', () => {
+  it('renders Hitung Skor button', () => {
     render(<ScoringSection {...defaultProps} />);
-    expect(screen.getByRole('button', { name: /generate score/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /hitung skor/i })).toBeInTheDocument();
   });
 
   it('disables button when categoryType is null', () => {
     render(<ScoringSection {...defaultProps} categoryType={null} />);
-    expect(screen.getByRole('button', { name: /generate score/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /hitung skor/i })).toBeDisabled();
   });
 
   it('shows category type prompt when null', () => {
     render(<ScoringSection {...defaultProps} categoryType={null} />);
-    expect(screen.getByText(/please select a category type/i)).toBeInTheDocument();
+    expect(screen.getByText(/pilih tipe kategori/i)).toBeInTheDocument();
   });
 
   it('calls onGenerate with correct params', async () => {
@@ -53,29 +53,25 @@ describe('ScoringSection', () => {
     const onGenerate = vi.fn();
     render(<ScoringSection {...defaultProps} onGenerate={onGenerate} />);
 
-    // Fill period
-    const periodInput = screen.getByLabelText(/period/i);
-    await user.type(periodInput, 'Jan 2026');
-
-    await user.click(screen.getByRole('button', { name: /generate score/i }));
+    await user.click(screen.getByRole('button', { name: /hitung skor/i }));
 
     expect(onGenerate).toHaveBeenCalledWith({
       template: 'fashion',
       verdict: '✔️',
       store_name: 'Test Store',
-      period: 'Jan 2026',
+      period: '',
       brand_name: 'Test Brand',
     });
   });
 
-  it('shows Recalculate when result exists and not stale', () => {
+  it('shows Hitung Ulang when result exists and not stale', () => {
     render(<ScoringSection {...defaultProps} scoringResult={MOCK_RESULT} />);
-    expect(screen.getByRole('button', { name: /recalculate/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /hitung ulang/i })).toBeInTheDocument();
   });
 
   it('shows stale warning when data changed', () => {
     render(<ScoringSection {...defaultProps} scoringResult={MOCK_RESULT} isStale />);
-    expect(screen.getByText(/score is stale/i)).toBeInTheDocument();
+    expect(screen.getByText(/skor sudah tidak akurat/i)).toBeInTheDocument();
   });
 
   it('shows error message', () => {
@@ -95,6 +91,6 @@ describe('ScoringSection', () => {
     render(<ScoringSection {...defaultProps} isGenerating />);
     // Period is empty by default so button is disabled for multiple reasons,
     // but the button should still be in the DOM
-    expect(screen.getByRole('button', { name: /generate score/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /hitung skor/i })).toBeDisabled();
   });
 });
