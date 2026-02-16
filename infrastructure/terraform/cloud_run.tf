@@ -46,6 +46,21 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
+      env {
+        name  = "GCS_UPLOAD_BUCKET"
+        value = google_storage_bucket.uploads.name
+      }
+
+      env {
+        name  = "GSHEETS_VP_SPREADSHEET_ID"
+        value = var.gsheets_vp_spreadsheet_id
+      }
+
+      env {
+        name  = "GSHEETS_MEETING_SPREADSHEET_ID"
+        value = var.gsheets_meeting_spreadsheet_id
+      }
+
       resources {
         limits = {
           cpu    = var.cloud_run_cpu
@@ -58,6 +73,16 @@ resource "google_cloud_run_v2_service" "api" {
       min_instance_count = var.cloud_run_min_instances
       max_instance_count = var.cloud_run_max_instances
     }
+  }
+
+  lifecycle {
+    ignore_changes = [
+      template[0].containers[0].image,
+      template[0].labels,
+      client,
+      client_version,
+      build_config,
+    ]
   }
 
   depends_on = [

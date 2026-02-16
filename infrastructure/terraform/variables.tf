@@ -78,3 +78,15 @@ variable "cloud_run_cpu" {
   type        = string
   default     = "1"
 }
+
+variable "gsheets_vp_spreadsheet_id" {
+  description = "Google Sheets spreadsheet ID for VP brand data"
+  type        = string
+  default     = ""
+}
+
+variable "gsheets_meeting_spreadsheet_id" {
+  description = "Google Sheets spreadsheet ID for 1st Meeting brand data"
+  type        = string
+  default     = ""
+}

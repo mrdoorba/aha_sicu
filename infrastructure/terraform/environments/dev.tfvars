@@ -13,3 +13,7 @@ cloud_run_min_instances = 0
 cloud_run_max_instances = 2
 cloud_run_memory        = "512Mi"
 cloud_run_cpu           = "1"
+
+# Google Sheets spreadsheet IDs
+gsheets_vp_spreadsheet_id      = "YOUR_VP_SPREADSHEET_ID"
+gsheets_meeting_spreadsheet_id = "YOUR_MEETING_SPREADSHEET_ID"
