@@ -47,19 +47,19 @@ export function AdsForm({ data, salesMonth0, onChange, onBlur }: AdsFormProps) {
           <div>
             <p className="mb-1 text-sm font-medium">ROAS</p>
             <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
-              {roi == null ? '—' : roi.toFixed(2)}
+              {roi == null ? '—' : roi.toFixed(1)}
             </div>
           </div>
           <div>
             <p className="mb-1 text-sm font-medium">% GMV Iklan / GMV Toko</p>
             <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
-              {gmvAdsPct == null ? '—' : `${gmvAdsPct.toFixed(1)}%`}
+              {gmvAdsPct == null ? '—' : `${Math.round(gmvAdsPct)}%`}
             </div>
           </div>
           <div>
             <p className="mb-1 text-sm font-medium">% Biaya Iklan / GMV Toko</p>
             <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
-              {costAdsPct == null ? '—' : `${costAdsPct.toFixed(1)}%`}
+              {costAdsPct == null ? '—' : `${Math.round(costAdsPct)}%`}
             </div>
           </div>
         </div>
