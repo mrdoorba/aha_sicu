@@ -20,8 +20,8 @@ export function CampaignForm({ data, onChange, onBlur }: CampaignFormProps) {
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
           Partisipasi Campaign
-          <a href={SECTION_LINKS.campaign} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="size-4 text-muted-foreground" />
+          <a href={SECTION_LINKS.campaign} target="_blank" rel="noopener noreferrer" aria-label="Buka Shopee Seller Center (tab baru)">
+            <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -42,7 +42,7 @@ export function CampaignForm({ data, onChange, onBlur }: CampaignFormProps) {
         {/* Computed: % Partisipasi Campaign */}
         <div className="mt-4">
           <p className="mb-1 text-sm font-medium">% Partisipasi Campaign</p>
-          <div className="rounded-md bg-muted p-2 text-sm">
+          <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
             {participationPct == null ? '—' : `${participationPct.toFixed(1)}%`}
           </div>
         </div>

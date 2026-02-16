@@ -24,8 +24,8 @@ export function AdsForm({ data, salesMonth0, onChange, onBlur }: AdsFormProps) {
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
           Data Iklan
-          <a href={SECTION_LINKS.ads} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="size-4 text-muted-foreground" />
+          <a href={SECTION_LINKS.ads} target="_blank" rel="noopener noreferrer" aria-label="Buka Shopee Seller Center (tab baru)">
+            <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
@@ -45,20 +45,20 @@ export function AdsForm({ data, salesMonth0, onChange, onBlur }: AdsFormProps) {
         {/* Computed fields */}
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div>
-            <p className="mb-1 text-sm font-medium">ROI</p>
-            <div className="rounded-md bg-muted p-2 text-sm">
+            <p className="mb-1 text-sm font-medium">ROAS</p>
+            <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
               {roi == null ? '—' : roi.toFixed(2)}
             </div>
           </div>
           <div>
             <p className="mb-1 text-sm font-medium">% GMV Iklan / GMV Toko</p>
-            <div className="rounded-md bg-muted p-2 text-sm">
+            <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
               {gmvAdsPct == null ? '—' : `${gmvAdsPct.toFixed(1)}%`}
             </div>
           </div>
           <div>
             <p className="mb-1 text-sm font-medium">% Biaya Iklan / GMV Toko</p>
-            <div className="rounded-md bg-muted p-2 text-sm">
+            <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
               {costAdsPct == null ? '—' : `${costAdsPct.toFixed(1)}%`}
             </div>
           </div>

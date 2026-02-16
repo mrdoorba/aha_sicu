@@ -23,13 +23,13 @@ function formatPrice(value: number): string {
 function CompetitivenessResult({ product }: { product: CompetitionProduct }) {
   const { productName, sellingPrice, keyword, marketPrice } = product;
 
-  if (sellingPrice == null || marketPrice == null) return null;
+  if (sellingPrice == null || marketPrice == null || marketPrice === 0) return null;
 
   const displayName = productName || '—';
   const isNotCompetitive = sellingPrice > marketPrice * 1.1;
 
   return (
-    <div className={`mt-2 rounded-md bg-muted p-2 text-sm ${isNotCompetitive ? 'text-red-600' : 'text-green-600'}`}>
+    <div className={`mt-2 rounded-md bg-muted p-2 text-sm ${isNotCompetitive ? 'text-red-600' : 'text-green-600'}`} role="status" aria-live="polite">
       <p>
         {isNotCompetitive
           ? `• ${displayName} (Rp. ${formatPrice(sellingPrice)}) = ❌tidak kompetitif (harga kisaran pasaran: Rp. ${formatPrice(marketPrice)})`

@@ -136,9 +136,9 @@ const INDO_MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Se
 const GENERIC_LABELS = ["Bulan Ini", "Bulan -1", "Bulan -2", "Bulan -3", "Bulan -4", "Bulan -5"];
 
 export function generateMonthLabels(startMonth: string | null): string[] {
-  if (!startMonth) return GENERIC_LABELS;
+  if (!startMonth) return [...GENERIC_LABELS];
 
-  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(startMonth)) return GENERIC_LABELS;
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(startMonth)) return [...GENERIC_LABELS];
 
   const [yearStr, monthStr] = startMonth.split('-');
   const year = parseInt(yearStr, 10);

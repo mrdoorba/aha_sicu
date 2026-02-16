@@ -16,8 +16,8 @@ export function OperationalForm({ data, onChange, onBlur }: OperationalFormProps
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
           Kesehatan Operasional Toko
-          <a href={SECTION_LINKS.operational} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="size-4 text-muted-foreground" />
+          <a href={SECTION_LINKS.operational} target="_blank" rel="noopener noreferrer" aria-label="Buka Shopee Seller Center (tab baru)">
+            <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">

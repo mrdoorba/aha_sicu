@@ -37,8 +37,8 @@ export function PromoToolsForm({ data, salesMonth0, onChange, onBlur }: PromoToo
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
           Alat Promosi
-          <a href={SECTION_LINKS.promoTools} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="size-4 text-muted-foreground" />
+          <a href={SECTION_LINKS.promoTools} target="_blank" rel="noopener noreferrer" aria-label="Buka Shopee Seller Center (tab baru)">
+            <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -54,8 +54,8 @@ export function PromoToolsForm({ data, salesMonth0, onChange, onBlur }: PromoToo
                   onBlur={onBlur}
                 />
                 {field.link && (
-                  <a href={field.link} target="_blank" rel="noopener noreferrer" className="mt-5 shrink-0">
-                    <ExternalLink className="size-3.5 text-muted-foreground" />
+                  <a href={field.link} target="_blank" rel="noopener noreferrer" aria-label="Buka referensi Shopee (tab baru)" className="mt-5 shrink-0">
+                    <ExternalLink className="size-3.5 text-muted-foreground" aria-hidden="true" />
                   </a>
                 )}
               </div>
@@ -67,13 +67,13 @@ export function PromoToolsForm({ data, salesMonth0, onChange, onBlur }: PromoToo
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
             <p className="mb-1 text-sm font-medium">% Penggunaan alat promosi</p>
-            <div className="rounded-md bg-muted p-2 text-sm">
+            <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
               {usagePct.toFixed(1)}%
             </div>
           </div>
           <div>
             <p className="mb-1 text-sm font-medium">% Efektifitas alat promosi</p>
-            <div className="rounded-md bg-muted p-2 text-sm">
+            <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
               {effectivenessResult == null ? '—' : `${effectivenessResult.toFixed(1)}%`}
             </div>
           </div>

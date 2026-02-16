@@ -57,8 +57,8 @@ export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessF
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
           Bisnis Analisis
-          <a href={SECTION_LINKS.business} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="size-4 text-muted-foreground" />
+          <a href={SECTION_LINKS.business} target="_blank" rel="noopener noreferrer" aria-label="Buka Shopee Seller Center (tab baru)">
+            <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
 
@@ -73,8 +73,8 @@ export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessF
             value={data.salesStartMonth ?? ''}
             onChange={(e) => {
               onChange('business', 'salesStartMonth', e.target.value || null);
-              onBlur();
             }}
+            onBlur={onBlur}
           >
             <option value="">-- Pilih Bulan --</option>
             {monthOptions.map((opt) => (
@@ -120,7 +120,7 @@ export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessF
         {/* Computed: Average sales */}
         <div className="mt-4">
           <p className="mb-1 text-sm font-medium">Rata-rata Penjualan 6 Bulan Terakhir</p>
-          <div className="rounded-md bg-muted p-2 text-sm">
+          <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
             {average == null ? '—' : formatCurrencyDisplay(average)}
           </div>
         </div>

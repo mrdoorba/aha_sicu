@@ -13,6 +13,7 @@ from app.calculators.scoring import (
     _compute_g73,
     _compute_g75,
     _format_message_template,
+    _generate_month_labels,
     _parse_d73_percentages,
     _promo_verdict,
     _score_ads,
@@ -125,6 +126,37 @@ def full_calculator_results():
             "output_text": "% Diskon TOP SKU: 25.0%\nRange: 15.0% ~ 35.0%\nVoucher 3.0%\nPaket Diskon 1.0%",
         },
     }
+
+
+# ---------------------------------------------------------------------------
+# Month label generation tests
+# ---------------------------------------------------------------------------
+
+
+class TestGenerateMonthLabels:
+    def test_valid_start_month(self):
+        labels = _generate_month_labels("2026-01")
+        assert labels == ["Jan 2026", "Des 2025", "Nov 2025", "Okt 2025", "Sep 2025", "Agu 2025"]
+
+    def test_mid_year(self):
+        labels = _generate_month_labels("2026-06")
+        assert labels == ["Jun 2026", "Mei 2026", "Apr 2026", "Mar 2026", "Feb 2026", "Jan 2026"]
+
+    def test_none_returns_fallback(self):
+        labels = _generate_month_labels(None)
+        assert labels == ["Bulan Ini", "Bulan -1", "Bulan -2", "Bulan -3", "Bulan -4", "Bulan -5"]
+
+    def test_empty_string_returns_fallback(self):
+        labels = _generate_month_labels("")
+        assert labels == ["Bulan Ini", "Bulan -1", "Bulan -2", "Bulan -3", "Bulan -4", "Bulan -5"]
+
+    def test_invalid_format_returns_fallback(self):
+        labels = _generate_month_labels("invalid")
+        assert labels == ["Bulan Ini", "Bulan -1", "Bulan -2", "Bulan -3", "Bulan -4", "Bulan -5"]
+
+    def test_invalid_month_13_returns_fallback(self):
+        labels = _generate_month_labels("2026-13")
+        assert labels == ["Bulan Ini", "Bulan -1", "Bulan -2", "Bulan -3", "Bulan -4", "Bulan -5"]
 
 
 # ---------------------------------------------------------------------------

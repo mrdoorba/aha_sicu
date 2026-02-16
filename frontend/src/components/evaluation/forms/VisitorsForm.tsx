@@ -14,15 +14,16 @@ interface VisitorsFormProps {
 export function VisitorsForm({ data, storeLink, onChange, onBlur }: VisitorsFormProps) {
   const totalVisitors = data.totalVisitors ?? 0;
   const returningVisitors = data.returningVisitors ?? 0;
-  const returningPct = totalVisitors > 0 ? (returningVisitors / totalVisitors) * 100 : null;
+  const rawPct = totalVisitors > 0 ? (returningVisitors / totalVisitors) * 100 : null;
+  const returningPct = rawPct != null ? Math.min(rawPct, 100) : null;
 
   return (
     <Card className="mb-4">
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
           Tinjauan Pengunjung
-          <a href={SECTION_LINKS.visitors} target="_blank" rel="noopener noreferrer">
-            <ExternalLink className="size-4 text-muted-foreground" />
+          <a href={SECTION_LINKS.visitors} target="_blank" rel="noopener noreferrer" aria-label="Buka Shopee Seller Center (tab baru)">
+            <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
         <div className="grid gap-4 sm:grid-cols-3">
@@ -42,9 +43,10 @@ export function VisitorsForm({ data, storeLink, onChange, onBlur }: VisitorsForm
                   href={storeLink}
                   target="_blank"
                   rel="noopener noreferrer"
+                  aria-label="Buka toko Shopee (tab baru)"
                   className="absolute right-0 top-0"
                 >
-                  <ExternalLink className="size-3.5 text-muted-foreground" />
+                  <ExternalLink className="size-3.5 text-muted-foreground" aria-hidden="true" />
                 </a>
               )}
             </div>
@@ -54,7 +56,7 @@ export function VisitorsForm({ data, storeLink, onChange, onBlur }: VisitorsForm
         {/* Computed: % Pengunjung Lama */}
         <div className="mt-4">
           <p className="mb-1 text-sm font-medium">% Pengunjung Lama</p>
-          <div className="rounded-md bg-muted p-2 text-sm">
+          <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
             {data.totalVisitors == null || data.totalVisitors === 0
               ? '—'
               : `${returningPct!.toFixed(1)}%`}
