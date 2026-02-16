@@ -17,8 +17,8 @@ interface CalculatorResultsSectionProps {
 }
 
 const FILE_LABELS: Record<string, string> = {
-  cpc_ad_report: 'CPC Ad Report (.csv)',
-  keyword_report: 'Keyword Placement Report (.csv)',
+  cpc_ad_report: 'Iklan Check Up V2A (.csv)',
+  keyword_report: 'Iklan Check Up V2B (.csv)',
   order_export: 'Order Export (.xlsx)',
   mass_update: 'Mass Update / Sales Info (.xlsx)',
 };

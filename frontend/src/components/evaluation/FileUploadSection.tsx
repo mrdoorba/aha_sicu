@@ -4,14 +4,14 @@ import { toast } from 'sonner';
 
 const SLOTS: FileSlotConfig[] = [
   {
-    label: 'CPC Ad Report',
+    label: 'Iklan Check Up V2A',
     fileType: 'cpc_ad_report',
     accept: '.csv',
     format: '.csv',
     calculator: 'Calculator 1 (Ads Keyword — Sheet 1)',
   },
   {
-    label: 'Keyword Placement Report',
+    label: 'Iklan Check Up V2B',
     fileType: 'keyword_report',
     accept: '.csv',
     format: '.csv',

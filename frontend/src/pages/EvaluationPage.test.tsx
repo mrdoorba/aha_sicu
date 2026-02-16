@@ -141,8 +141,8 @@ describe('EvaluationPage', () => {
   it('renders file upload slot placeholders', () => {
     setupMocks();
     renderEvaluationPage();
-    expect(screen.getByText('CPC Ad Report')).toBeInTheDocument();
-    expect(screen.getByText('Keyword Placement Report')).toBeInTheDocument();
+    expect(screen.getByText('Iklan Check Up V2A')).toBeInTheDocument();
+    expect(screen.getByText('Iklan Check Up V2B')).toBeInTheDocument();
     expect(screen.getByText('Order Export')).toBeInTheDocument();
     expect(screen.getByText('Mass Update / Sales Info')).toBeInTheDocument();
   });

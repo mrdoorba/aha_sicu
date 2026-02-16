@@ -34,8 +34,8 @@ describe('FileUploadSection', () => {
   it('renders 4 upload slots with correct labels', () => {
     render(<FileUploadSection brandId={1} />, { wrapper: createWrapper() });
 
-    expect(screen.getByText('CPC Ad Report')).toBeInTheDocument();
-    expect(screen.getByText('Keyword Placement Report')).toBeInTheDocument();
+    expect(screen.getByText('Iklan Check Up V2A')).toBeInTheDocument();
+    expect(screen.getByText('Iklan Check Up V2B')).toBeInTheDocument();
     expect(screen.getByText('Order Export')).toBeInTheDocument();
     expect(screen.getByText('Mass Update / Sales Info')).toBeInTheDocument();
   });

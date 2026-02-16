@@ -4,7 +4,7 @@ import { FileUploadSlot, type FileSlotConfig } from './FileUploadSlot';
 import type { UploadInfo, UploadStatus } from '../../hooks/useUpload';
 
 const CONFIG: FileSlotConfig = {
-  label: 'CPC Ad Report',
+  label: 'Iklan Check Up V2A',
   fileType: 'cpc_ad_report',
   accept: '.csv',
   format: '.csv',
@@ -45,7 +45,7 @@ describe('FileUploadSlot', () => {
   it('renders empty state with upload button', () => {
     renderSlot();
 
-    expect(screen.getByText('CPC Ad Report')).toBeInTheDocument();
+    expect(screen.getByText('Iklan Check Up V2A')).toBeInTheDocument();
     expect(screen.getByText(/Format: .csv/)).toBeInTheDocument();
     expect(screen.getByText(/Routes to: Calculator 1/)).toBeInTheDocument();
     expect(screen.getByText('No file uploaded')).toBeInTheDocument();
