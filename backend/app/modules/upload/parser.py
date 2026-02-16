@@ -12,6 +12,60 @@ from app.core.exceptions import UploadException
 # actual column headers on row 8.
 SHOPEE_CSV_SKIP_ROWS = 7
 
+# ---------------------------------------------------------------------------
+# English → Indonesian normalisation for Shopee CSV exports
+# ---------------------------------------------------------------------------
+# Shopee exports may use English column headers depending on seller language
+# settings.  We normalise to Indonesian so the calculator layer stays unchanged.
+
+_COLUMN_RENAME: dict[str, str] = {
+    "Ad Name": "Nama Iklan",
+    "Ads Type": "Jenis Iklan",
+    "Product ID": "Kode Produk",
+    "Placement": "Penempatan Iklan",
+    "Bidding Method": "Mode Bidding",
+    "Expense": "Biaya",
+    "Keyword/Location": "Kata Pencarian/Penempatan",
+    "GMV": "Omzet Penjualan",
+    "ROAS": "Efektifitas Iklan",
+    "Match Type": "Tipe Pencarian",
+}
+
+_VALUE_MAPS: dict[str, dict[str, str]] = {
+    "Status": {
+        "Ongoing": "Berjalan",
+        "Paused": "Dijeda",
+        "Ended": "Berakhir",
+    },
+    "Jenis Iklan": {
+        "Product Ad": "Iklan Produk",
+        "Shop Ad": "Iklan Toko",
+        "Product Search Ad": "Iklan Pencarian Produk",
+    },
+    "Penempatan Iklan": {
+        "All": "Semua Penempatan",
+        "Search": "Halaman Pencarian",
+        "Recommendation": "Halaman Rekomendasi",
+    },
+}
+
+
+def _normalise_english_columns(df: pl.DataFrame) -> pl.DataFrame:
+    """Rename English Shopee columns to Indonesian and translate cell values."""
+    actual = set(df.columns)
+    rename_map = {en: id_ for en, id_ in _COLUMN_RENAME.items() if en in actual}
+    if not rename_map:
+        return df  # already Indonesian or unrelated
+
+    df = df.rename(rename_map)
+
+    for col, vmap in _VALUE_MAPS.items():
+        if col in df.columns and df[col].dtype == pl.Utf8:
+            df = df.with_columns(pl.col(col).replace(vmap).alias(col))
+
+    return df
+
+
 # Required columns per file type — matched against actual Shopee exports.
 REQUIRED_COLUMNS: dict[str, list[str]] = {
     "cpc_ad_report": [
@@ -62,13 +116,18 @@ def parse_csv(file_bytes: bytes) -> pl.DataFrame:
     Shopee CSV exports contain 7 metadata rows before the actual column
     headers, so we skip them.  ``truncate_ragged_lines`` handles the
     metadata rows that have fewer fields than the data section.
+
+    English column headers are automatically normalised to Indonesian.
     """
     try:
-        return pl.read_csv(
+        df = pl.read_csv(
             BytesIO(file_bytes),
             skip_rows=SHOPEE_CSV_SKIP_ROWS,
             truncate_ragged_lines=True,
         )
+        return _normalise_english_columns(df)
+    except UploadException:
+        raise
     except Exception as e:
         raise UploadException(
             code="UPLOAD_PARSE_FAILED",

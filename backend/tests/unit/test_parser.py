@@ -143,3 +143,79 @@ def test_dataframe_to_json():
     assert result["row_count"] == 2
     assert len(result["data"]) == 2
     assert result["data"][0] == {"name": "a", "value": 1}
+
+
+# ---------------------------------------------------------------------------
+# English CSV normalisation
+# ---------------------------------------------------------------------------
+
+def test_parse_csv_english_columns_renamed():
+    """English Shopee CSV headers are normalised to Indonesian."""
+    csv_bytes = _shopee_csv(
+        "Ad Name,Ads Type,Product ID,Placement,Expense,Status",
+        ["Test Ad,Product Ad,123,All,5000,Ongoing"],
+    )
+    df = parse_csv(csv_bytes)
+    assert "Nama Iklan" in df.columns
+    assert "Jenis Iklan" in df.columns
+    assert "Kode Produk" in df.columns
+    assert "Penempatan Iklan" in df.columns
+    assert "Biaya" in df.columns
+
+
+def test_parse_csv_english_values_translated():
+    """English cell values for Status, Ads Type, Placement are translated."""
+    csv_bytes = _shopee_csv(
+        "Ad Name,Ads Type,Product ID,Placement,Expense,Status",
+        [
+            "Ad1,Product Ad,1,All,100,Ongoing",
+            "Ad2,Shop Ad,2,Search,200,Ended",
+            "Ad3,Product Ad,3,Recommendation,300,Paused",
+        ],
+    )
+    df = parse_csv(csv_bytes)
+    rows = df.to_dicts()
+    assert rows[0]["Status"] == "Berjalan"
+    assert rows[0]["Jenis Iklan"] == "Iklan Produk"
+    assert rows[0]["Penempatan Iklan"] == "Semua Penempatan"
+    assert rows[1]["Status"] == "Berakhir"
+    assert rows[1]["Jenis Iklan"] == "Iklan Toko"
+    assert rows[1]["Penempatan Iklan"] == "Halaman Pencarian"
+    assert rows[2]["Status"] == "Dijeda"
+    assert rows[2]["Penempatan Iklan"] == "Halaman Rekomendasi"
+
+
+def test_parse_csv_english_keyword_report_normalised():
+    """English keyword report CSV is normalised with GMV/ROAS/Keyword columns."""
+    csv_bytes = _shopee_csv(
+        "Ad Name,Ads Type,Product ID,Placement,Keyword/Location,Expense,GMV,ROAS,Status",
+        ["Ad1,Product Ad,1,All,Auto Selected,100,5000,10.5,Ongoing"],
+    )
+    df = parse_csv(csv_bytes)
+    assert "Kata Pencarian/Penempatan" in df.columns
+    assert "Omzet Penjualan" in df.columns
+    assert "Efektifitas Iklan" in df.columns
+    row = df.to_dicts()[0]
+    assert row["Kata Pencarian/Penempatan"] == "Auto Selected"
+
+
+def test_parse_csv_indonesian_passthrough():
+    """Indonesian CSVs pass through unchanged."""
+    csv_bytes = _shopee_csv(
+        "Nama Iklan,Jenis Iklan,Kode Produk,Penempatan Iklan,Biaya",
+        ["Ad1,Iklan Produk,1,Semua Penempatan,100"],
+    )
+    df = parse_csv(csv_bytes)
+    assert "Nama Iklan" in df.columns
+    row = df.to_dicts()[0]
+    assert row["Jenis Iklan"] == "Iklan Produk"
+
+
+def test_english_csv_validates_after_normalisation():
+    """English CSV passes column validation after normalisation."""
+    csv_bytes = _shopee_csv(
+        "Ad Name,Ads Type,Product ID,Placement,Expense",
+        ["Ad1,Product Ad,1,All,100"],
+    )
+    df = parse_csv(csv_bytes)
+    validate_columns(df, "cpc_ad_report")  # should not raise
