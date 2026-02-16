@@ -47,7 +47,7 @@ export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessF
   // Computed average of 6 months
   const salesMonths = [data.salesMonth0, data.salesMonth1, data.salesMonth2, data.salesMonth3, data.salesMonth4, data.salesMonth5];
   const allNull = salesMonths.every((v) => v == null);
-  const average = allNull ? null : salesMonths.reduce((sum, v) => sum + (v ?? 0), 0) / 6;
+  const average = allNull ? null : salesMonths.reduce<number>((sum, v) => sum + (v ?? 0), 0) / 6;
 
   // Conversion rate benchmark depends on category type
   const conversionBenchmark = categoryType === 'fashion' ? '>2%' : '>3%';
