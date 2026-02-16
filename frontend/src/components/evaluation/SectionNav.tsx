@@ -3,11 +3,11 @@ import type { ReactNode } from 'react';
 import type { SectionProgress } from './forms/formConfig';
 
 const SECTIONS: Array<{ id: string; label: string; icon: ReactNode }> = [
-  { id: 'section-1', label: 'Brand Info & Operational', icon: <ClipboardList className="size-4" aria-hidden="true" /> },
-  { id: 'section-2', label: 'Business, Content & Visitors', icon: <BarChart3 className="size-4" aria-hidden="true" /> },
-  { id: 'section-3', label: 'Promo Tools & Products/Status', icon: <Tag className="size-4" aria-hidden="true" /> },
+  { id: 'section-1', label: 'Brand Info & Kesehatan Operasional', icon: <ClipboardList className="size-4" aria-hidden="true" /> },
+  { id: 'section-2', label: 'Bisnis Analisis & Tinjauan Pengunjung', icon: <BarChart3 className="size-4" aria-hidden="true" /> },
+  { id: 'section-3', label: 'Alat Promosi & Products/Status', icon: <Tag className="size-4" aria-hidden="true" /> },
   { id: 'section-4', label: 'File Upload', icon: <Upload className="size-4" aria-hidden="true" /> },
-  { id: 'section-5', label: 'Ads, Campaign, Competition, Stock, Discount & Review', icon: <Calculator className="size-4" aria-hidden="true" /> },
+  { id: 'section-5', label: 'Data Iklan, Campaign, Kompetisi & Review', icon: <Calculator className="size-4" aria-hidden="true" /> },
   { id: 'section-6', label: 'Final Score', icon: <Trophy className="size-4" aria-hidden="true" /> },
 ];
 

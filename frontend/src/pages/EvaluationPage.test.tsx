@@ -65,7 +65,7 @@ const queryClient = new QueryClient({
 const SAMPLE_BRAND = {
   id: 1,
   brand_name: 'Test Brand',
-  raw_data: { category: 'Electronics', marketplace: 'Shopee' },
+  raw_data: { category: 'Electronics', marketplace: 'Shopee', 'Link Shopee': 'https://shopee.co.id/store' },
   updated_at: '2026-02-05T10:00:00Z',
   meeting_raw_data: { notes: 'Good meeting' },
 };
@@ -169,13 +169,13 @@ describe('EvaluationPage', () => {
   it('renders manual data form sections instead of placeholders', () => {
     setupMocks();
     renderEvaluationPage();
-    // Operational fields should be rendered (not placeholders)
-    expect(screen.getByLabelText(/Pesanan Tidak Terselesaikan/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Chat Dibalas/)).toBeInTheDocument();
-    // Business fields
-    expect(screen.getByLabelText(/Penjualan Bulan Ini/)).toBeInTheDocument();
-    // Promo fields
-    expect(screen.getByLabelText(/Promo Toko/)).toBeInTheDocument();
+    // Operational fields (renamed)
+    expect(screen.getByLabelText(/Tingkat Pesanan Tidak Terselesaikan/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Persentase Chat Dibalas/)).toBeInTheDocument();
+    // Business fields (6 sales month fields)
+    expect(screen.getAllByLabelText(/Penjualan Bulan/)).toHaveLength(6);
+    // Promo fields (renamed with prefix)
+    expect(screen.getByLabelText(/Penjualan dari Promo Toko/)).toBeInTheDocument();
     // No placeholders text
     expect(screen.queryByText('Form fields will be added in Story 3.3')).not.toBeInTheDocument();
   });

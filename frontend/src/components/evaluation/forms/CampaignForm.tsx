@@ -1,7 +1,8 @@
 import { Card, CardContent } from '../../ui/card';
 import { NumberField } from './NumberField';
+import { ExternalLink } from 'lucide-react';
 import type { CampaignData } from './formConfig';
-import { CAMPAIGN_FIELDS } from './formConfig';
+import { CAMPAIGN_FIELDS, SECTION_LINKS } from './formConfig';
 
 interface CampaignFormProps {
   data: CampaignData;
@@ -10,10 +11,19 @@ interface CampaignFormProps {
 }
 
 export function CampaignForm({ data, onChange, onBlur }: CampaignFormProps) {
+  const nominated = data.nominatedSessions ?? 0;
+  const available = data.availableSessions ?? 0;
+  const participationPct = available > 0 ? (nominated / available) * 100 : null;
+
   return (
     <Card className="mb-4">
       <CardContent className="pt-4">
-        <p className="mb-3 text-sm font-semibold">Campaign</p>
+        <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
+          Partisipasi Campaign
+          <a href={SECTION_LINKS.campaign} target="_blank" rel="noopener noreferrer">
+            <ExternalLink className="size-4 text-muted-foreground" />
+          </a>
+        </p>
         <div className="grid gap-4 sm:grid-cols-2">
           {CAMPAIGN_FIELDS.map((field) => (
             <NumberField
@@ -27,6 +37,14 @@ export function CampaignForm({ data, onChange, onBlur }: CampaignFormProps) {
               onBlur={onBlur}
             />
           ))}
+        </div>
+
+        {/* Computed: % Partisipasi Campaign */}
+        <div className="mt-4">
+          <p className="mb-1 text-sm font-medium">% Partisipasi Campaign</p>
+          <div className="rounded-md bg-muted p-2 text-sm">
+            {participationPct == null ? '—' : `${participationPct.toFixed(1)}%`}
+          </div>
         </div>
       </CardContent>
     </Card>

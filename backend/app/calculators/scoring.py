@@ -67,6 +67,30 @@ class ScoringResult:
 # Helpers
 # ---------------------------------------------------------------------------
 
+INDO_MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
+
+
+def _generate_month_labels(start_month: str | None) -> list[str]:
+    """Given '2026-01', returns ['Jan 2026', 'Des 2025', ...] for 6 months.
+
+    If None or invalid, returns ['Bulan Ini', 'Bulan -1', ..., 'Bulan -5'].
+    """
+    fallback = ["Bulan Ini", "Bulan -1", "Bulan -2", "Bulan -3", "Bulan -4", "Bulan -5"]
+    if not start_month:
+        return fallback
+    if not re.match(r"^\d{4}-(0[1-9]|1[0-2])$", start_month):
+        return fallback
+    year_str, month_str = start_month.split("-")
+    year = int(year_str)
+    month = int(month_str)
+    labels: list[str] = []
+    for i in range(6):
+        month_index = ((month - 1 - i) % 12 + 12) % 12
+        year_offset = (month - 1 - i) // 12
+        labels.append(f"{INDO_MONTHS[month_index]} {year + year_offset}")
+    return labels
+
+
 def _safe_num(value: Any, default: float = 0.0) -> float:
     """Coerce a value to float, treating None/empty as default."""
     if value is None:
@@ -478,6 +502,9 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
     biz = _get_nested(manual_data, "business") or {}
     biz_rules = _get_rule_category(rules, "business")
 
+    sales_start_month = biz.get("salesStartMonth")
+    month_labels = _generate_month_labels(sales_start_month)
+
     sales_months = [
         _safe_num(biz.get("salesMonth0")),
         _safe_num(biz.get("salesMonth1")),
@@ -499,14 +526,14 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
     f13 = "✔️" if avg_6mo < current_month * trend_multiplier else "❌"
     h13 = trend_points if avg_6mo < current_month * trend_multiplier else 0.0
     rows.append(RowScore(
-        row=13, metric="Penjualan",
+        row=13, metric=f"Penjualan Bulan {month_labels[0]}",
         value=current_month, benchmark=e13, verdict=f13, message="", score=h13,
     ))
 
     # Rows 14-18: Past months (no score, kept for reference)
     for i in range(1, 6):
         rows.append(RowScore(
-            row=13 + i, metric=f"Penjualan Bulan -{i}",
+            row=13 + i, metric=f"Penjualan Bulan {month_labels[i]}",
             value=sales_months[i], benchmark="-", verdict="-", message="", score=0.0,
         ))
 

@@ -44,6 +44,12 @@ export const EvaluationPage = () => {
 
   const sectionProgress = useMemo(() => computeSectionProgress(manualData), [manualData]);
 
+  const storeLink = useMemo(() => {
+    const raw = brand?.raw_data?.['Link Shopee'];
+    if (typeof raw === 'string' && raw.startsWith('https://')) return raw;
+    return null;
+  }, [brand]);
+
   const {
     generateScore,
     scoringResult,
@@ -163,6 +169,7 @@ export const EvaluationPage = () => {
                   manualData={manualData}
                   onFieldChange={handleFieldChange}
                   onFieldBlur={triggerSave}
+                  storeLink={storeLink}
                   saveStatus={saveStatus}
                   lastSaved={lastSaved}
                   onRetrySave={retrySave}
