@@ -10,6 +10,15 @@ resource "google_artifact_registry_repository" "registry" {
   cleanup_policy_dry_run = false
 
   cleanup_policies {
+    id     = "delete-old-versions"
+    action = "DELETE"
+
+    condition {
+      older_than = "86400s" # 1 day
+    }
+  }
+
+  cleanup_policies {
     id     = "keep-latest-2"
     action = "KEEP"
 

@@ -77,6 +77,22 @@ jobs:
             echo "::warning::Health check returned HTTP $STATUS at ${{ steps.deploy.outputs.url }}/docs"
           fi
 
+      - name: Cleanup old Cloud Run revisions
+        run: |
+          REVISIONS=$(gcloud run revisions list \
+            --service=${{ vars.CLOUD_RUN_SERVICE }} \
+            --region=${{ vars.GCP_REGION }} \
+            --format="value(name)" \
+            --sort-by="~createTime")
+          COUNT=0
+          for REV in $REVISIONS; do
+            COUNT=$((COUNT + 1))
+            if [ $COUNT -gt 2 ]; then
+              echo "Deleting old revision: $REV"
+              gcloud run revisions delete "$REV" --region=${{ vars.GCP_REGION }} --quiet || true
+            fi
+          done
+
   deploy-prod:
     if: github.ref == 'refs/heads/main'
     name: Deploy to Production
@@ -129,3 +145,19 @@ jobs:
           else
             echo "::warning::Health check returned HTTP $STATUS at ${{ steps.deploy.outputs.url }}/docs"
           fi
+
+      - name: Cleanup old Cloud Run revisions
+        run: |
+          REVISIONS=$(gcloud run revisions list \
+            --service=${{ vars.CLOUD_RUN_SERVICE }} \
+            --region=${{ vars.GCP_REGION }} \
+            --format="value(name)" \
+            --sort-by="~createTime")
+          COUNT=0
+          for REV in $REVISIONS; do
+            COUNT=$((COUNT + 1))
+            if [ $COUNT -gt 2 ]; then
+              echo "Deleting old revision: $REV"
+              gcloud run revisions delete "$REV" --region=${{ vars.GCP_REGION }} --quiet || true
+            fi
+          done
