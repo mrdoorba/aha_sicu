@@ -39,13 +39,6 @@ validation-rules:
 
 ## 🧪 Testing & Quality Assurance
 
-### Dev Self-Check (run before marking story for review)
-
-- [ ] **AC Coverage:** Is every Acceptance Criterion tested?
-- [ ] **Error Handling:** Are error paths handled with structured error codes?
-
-### Test Verification
-
 - [ ] **Unit Tests:** Unit tests added/updated for ALL core functionality introduced/changed by this story
 - [ ] **Integration Tests:** Integration tests added/updated for component interactions when story requirements demand them
 - [ ] **End-to-End Tests:** End-to-end tests created for critical user flows when story requirements specify them

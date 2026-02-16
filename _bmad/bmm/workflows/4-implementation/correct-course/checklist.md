@@ -130,17 +130,6 @@
 <status>[ ] Done / [ ] N/A / [ ] Action-needed</status>
 </check-item>
 
-<check-item id="3.5">
-<prompt>Verify data conventions across affected components</prompt>
-<action>Check for data format consistency between components that share data:</action>
-  - Percentage value convention (e.g., 0.5 = 0.5% vs 0.005 = 0.5%)
-  - Currency and number formatting (locale-specific separators)
-  - Naming conventions between data layers (e.g., Indonesian internal names vs English display labels)
-  - Unit representations across calculators, forms, and display components
-<action>Document any convention mismatches and required alignment</action>
-<status>[ ] Done / [ ] N/A / [ ] Action-needed</status>
-</check-item>
-
 </section>
 
 <section n="4" title="Path Forward Evaluation">
