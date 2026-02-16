@@ -18,12 +18,12 @@ describe('SectionNav', () => {
   it('renders section labels', () => {
     render(<SectionNav activeSection="section-1" onSectionClick={vi.fn()} />);
 
-    expect(screen.getByText(/brand info & operational/i)).toBeInTheDocument();
-    expect(screen.getByText(/business, content & visitors/i)).toBeInTheDocument();
-    expect(screen.getByText(/promo tools & products\/status/i)).toBeInTheDocument();
-    expect(screen.getByText(/file upload/i)).toBeInTheDocument();
-    expect(screen.getByText(/ads, campaign, competition, stock, discount & review/i)).toBeInTheDocument();
-    expect(screen.getByText(/final score/i)).toBeInTheDocument();
+    expect(screen.getByText(/Brand Info & Kesehatan Operasional/)).toBeInTheDocument();
+    expect(screen.getByText(/Bisnis Analisis & Tinjauan Pengunjung/)).toBeInTheDocument();
+    expect(screen.getByText(/Alat Promosi & Products\/Status/)).toBeInTheDocument();
+    expect(screen.getByText(/File Upload/)).toBeInTheDocument();
+    expect(screen.getByText(/Data Iklan, Campaign, Kompetisi & Review/)).toBeInTheDocument();
+    expect(screen.getByText(/Final Score/)).toBeInTheDocument();
   });
 
   it('calls onSectionClick when a section is clicked', async () => {

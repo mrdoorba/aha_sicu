@@ -7,7 +7,6 @@ import { Save, Check, Loader2 } from 'lucide-react';
 import { FileUploadSection } from './FileUploadSection';
 import { OperationalForm } from './forms/OperationalForm';
 import { BusinessForm } from './forms/BusinessForm';
-import { ContentForm } from './forms/ContentForm';
 import { VisitorsForm } from './forms/VisitorsForm';
 import { PromoToolsForm } from './forms/PromoToolsForm';
 import { ProductsStatusForm } from './forms/ProductsStatusForm';
@@ -29,6 +28,7 @@ interface EvaluationSectionsProps {
   manualData: ManualData;
   onFieldChange: (category: string, key: string, value: number | string | null) => void;
   onFieldBlur: () => void;
+  storeLink: string | null;
   saveStatus: SaveStatus;
   lastSaved: Date | null;
   onRetrySave: () => void;
@@ -60,6 +60,7 @@ export const EvaluationSections = ({
   manualData,
   onFieldChange,
   onFieldBlur,
+  storeLink,
   saveStatus,
   lastSaved,
   onRetrySave,
@@ -103,6 +104,8 @@ export const EvaluationSections = ({
     }
   };
 
+  const salesMonth0 = manualData.business?.salesMonth0 ?? 0;
+
   return (
     <div className="space-y-8">
       {/* Save status indicator */}
@@ -113,13 +116,13 @@ export const EvaluationSections = ({
       {/* Section 1: Brand Info & Operational */}
       <section id="section-1" ref={setSectionRef('section-1')}>
         <h3 className="mb-4 text-lg font-semibold text-foreground">
-          Step 1. Brand Info &amp; Operational
+          Step 1. Brand Info &amp; Kesehatan Operasional
         </h3>
 
         {/* Fashion/Non-Fashion Selector */}
         <Card className="mb-4">
           <CardContent className="pt-4">
-            <p className="mb-3 text-sm font-medium">Category Type</p>
+            <p className="mb-3 text-sm font-medium">Kategori Toko</p>
             <RadioGroup
               value={categoryType ?? ''}
               onValueChange={onCategoryChange}
@@ -144,23 +147,20 @@ export const EvaluationSections = ({
         />
       </section>
 
-      {/* Section 2: Business, Content & Visitors */}
+      {/* Section 2: Bisnis Analisis & Tinjauan Pengunjung */}
       <section id="section-2" ref={setSectionRef('section-2')}>
         <h3 className="mb-4 text-lg font-semibold text-foreground">
-          Step 2. Business, Content &amp; Visitors
+          Step 2. Bisnis Analisis &amp; Tinjauan Pengunjung
         </h3>
         <BusinessForm
           data={manualData.business}
-          onChange={onFieldChange}
-          onBlur={onFieldBlur}
-        />
-        <ContentForm
-          data={manualData.content}
+          categoryType={categoryType}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
         <VisitorsForm
           data={manualData.visitors}
+          storeLink={storeLink}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
@@ -169,15 +169,17 @@ export const EvaluationSections = ({
       {/* Section 3: Promo Tools & Products/Status */}
       <section id="section-3" ref={setSectionRef('section-3')}>
         <h3 className="mb-4 text-lg font-semibold text-foreground">
-          Step 3. Promo Tools &amp; Products/Status
+          Step 3. Alat Promosi &amp; Products/Status
         </h3>
         <PromoToolsForm
           data={manualData.promoTools}
+          salesMonth0={salesMonth0}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
         <ProductsStatusForm
           data={manualData.products}
+          storeLink={storeLink}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
@@ -191,13 +193,14 @@ export const EvaluationSections = ({
         <FileUploadSection brandId={brandId} />
       </section>
 
-      {/* Section 5: Ads, Campaign, Competition & Review */}
+      {/* Section 5: Data Iklan, Campaign, Kompetisi & Review */}
       <section id="section-5" ref={setSectionRef('section-5')}>
         <h3 className="mb-4 text-lg font-semibold text-foreground">
-          Step 5. Ads, Campaign, Competition &amp; Review
+          Step 5. Data Iklan, Campaign, Kompetisi &amp; Review
         </h3>
         <AdsForm
           data={manualData.ads}
+          salesMonth0={salesMonth0}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />

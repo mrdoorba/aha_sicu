@@ -19,23 +19,23 @@ const emptyData: PromoToolsData = {
 
 describe('PromoToolsForm', () => {
   it('renders all 11 promo tool fields', () => {
-    render(<PromoToolsForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />);
+    render(<PromoToolsForm data={emptyData} salesMonth0={0} onChange={vi.fn()} onBlur={vi.fn()} />);
 
-    expect(screen.getByLabelText(/Promo Toko/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Paket Diskon/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Kombo Hemat/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Flash Sale Toko Saya/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Voucher/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Shopee Live/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Game Toko/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Brand Membership/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Gratis Ongkir XTRA/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Chat Broadcast/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Program Afiliasi/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Penjualan dari Promo Toko/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Penjualan dari Paket Diskon/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Penjualan dari Kombo Hemat/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Penjualan dari Flash Sale Toko Saya/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Penjualan dari Voucher/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Penjualan dari Shopee Live/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Penjualan dari Game Toko/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Penjualan dari Brand Membership/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Penjualan dari Gratis Ongkir XTRA/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Penjualan dari Chat Broadcast/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Penjualan dari Program Afiliasi/)).toBeInTheDocument();
   });
 
   it('renders benchmarks for promo tools', () => {
-    render(<PromoToolsForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />);
+    render(<PromoToolsForm data={emptyData} salesMonth0={0} onChange={vi.fn()} onBlur={vi.fn()} />);
 
     expect(screen.getByText('Benchmark: >8% dari penjualan')).toBeInTheDocument();
     expect(screen.getByText('Benchmark: >16% dari penjualan')).toBeInTheDocument();
@@ -45,14 +45,40 @@ describe('PromoToolsForm', () => {
     expect(screen.getByText('Benchmark: >0')).toBeInTheDocument();
   });
 
-  it('renders section title', () => {
-    render(<PromoToolsForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />);
-    expect(screen.getByText('Promo Tools')).toBeInTheDocument();
+  it('renders section title with reference link', () => {
+    render(<PromoToolsForm data={emptyData} salesMonth0={0} onChange={vi.fn()} onBlur={vi.fn()} />);
+    expect(screen.getByText('Alat Promosi')).toBeInTheDocument();
   });
 
   it('renders all fields as currency (IDR) inputs', () => {
-    render(<PromoToolsForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />);
+    render(<PromoToolsForm data={emptyData} salesMonth0={0} onChange={vi.fn()} onBlur={vi.fn()} />);
     const idrLabels = screen.getAllByText('(IDR)');
     expect(idrLabels).toHaveLength(11);
+  });
+
+  it('shows % Efektifitas as dash when salesMonth0 is 0', () => {
+    render(<PromoToolsForm data={emptyData} salesMonth0={0} onChange={vi.fn()} onBlur={vi.fn()} />);
+    expect(screen.getByText('% Efektifitas alat promosi')).toBeInTheDocument();
+    // The dash "—" should be in the efektifitas display
+    const displays = screen.getAllByText('—');
+    expect(displays.length).toBeGreaterThan(0);
+  });
+
+  it('computes % Penggunaan correctly', () => {
+    const dataWith7Tools: PromoToolsData = {
+      promoToko: 100,
+      paketDiskon: 200,
+      komboHemat: 300,
+      flashSale: 400,
+      voucher: 500,
+      shopeeLive: 600,
+      gameToko: 700,
+      brandMembership: null,
+      gratisOngkir: null,
+      chatBroadcast: null,
+      programAfiliasi: null,
+    };
+    render(<PromoToolsForm data={dataWith7Tools} salesMonth0={100000000} onChange={vi.fn()} onBlur={vi.fn()} />);
+    expect(screen.getByText('63.6%')).toBeInTheDocument();
   });
 });

@@ -26,6 +26,7 @@ const defaultProps = {
   manualData: EMPTY_MANUAL_DATA,
   onFieldChange: vi.fn(),
   onFieldBlur: vi.fn(),
+  storeLink: null as string | null,
   saveStatus: 'idle' as const,
   lastSaved: null,
   onRetrySave: vi.fn(),
@@ -56,23 +57,25 @@ describe('EvaluationForms Integration', () => {
     renderWithProviders();
 
     // Section 1: Operational
-    expect(screen.getByLabelText(/Pesanan Tidak Terselesaikan/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Penilaian/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Tingkat Pesanan Tidak Terselesaikan/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Keseluruhan Penilaian/)).toBeInTheDocument();
 
-    // Section 2: Business, Content, Visitors
-    expect(screen.getByLabelText(/Penjualan Bulan Ini/)).toBeInTheDocument();
+    // Section 2: Business, Visitors (no Content)
+    expect(screen.getAllByLabelText(/Penjualan Bulan/)).toHaveLength(6);
     expect(screen.getByLabelText(/Tingkat Konversi/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Perlu Ditingkatkan/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Total Pengunjung/)).toBeInTheDocument();
 
+    // Content section should NOT be rendered
+    expect(screen.queryByLabelText(/Perlu Ditingkatkan/)).not.toBeInTheDocument();
+    expect(screen.queryByLabelText(/Kualitas Baik/)).not.toBeInTheDocument();
+
     // Section 3: Promo Tools, Products
-    expect(screen.getByLabelText(/Promo Toko/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Penjualan dari Promo Toko/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Jumlah Produk/)).toBeInTheDocument();
 
     // Section 5: Ads, Campaign, Competition
     expect(screen.getByLabelText(/Penjualan Iklan/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Sesi Dinominasikan/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Produk Kompetitor 1 — Keyword/)).toBeInTheDocument();
 
     // No placeholder text
     expect(screen.queryByText('Form fields will be added in Story 3.3')).not.toBeInTheDocument();
@@ -114,7 +117,7 @@ describe('EvaluationForms Integration', () => {
     const user = userEvent.setup();
     renderWithProviders({ onFieldChange });
 
-    const ratingInput = screen.getByLabelText(/Penilaian/);
+    const ratingInput = screen.getByLabelText(/Keseluruhan Penilaian/);
     await user.type(ratingInput, '4');
     expect(onFieldChange).toHaveBeenCalledWith('operational', 'overallRating', 4);
   });
@@ -124,7 +127,7 @@ describe('EvaluationForms Integration', () => {
     const user = userEvent.setup();
     renderWithProviders({ onFieldBlur });
 
-    const input = screen.getByLabelText(/Pesanan Tidak Terselesaikan/);
+    const input = screen.getByLabelText(/Tingkat Pesanan Tidak Terselesaikan/);
     await user.click(input);
     await user.tab();
     expect(onFieldBlur).toHaveBeenCalled();

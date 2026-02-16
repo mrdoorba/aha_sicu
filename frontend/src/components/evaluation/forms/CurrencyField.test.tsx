@@ -12,11 +12,11 @@ describe('CurrencyField', () => {
     expect(screen.getByText('(IDR)')).toBeInTheDocument();
   });
 
-  it('formats value with dot separators when not focused', () => {
+  it('formats value as plain number when not focused', () => {
     render(
       <CurrencyField name="test" label="Sales" value={125000000} onChange={vi.fn()} />,
     );
-    expect(screen.getByRole('textbox')).toHaveValue('125.000.000');
+    expect(screen.getByRole('textbox')).toHaveValue('125000000');
   });
 
   it('shows raw number when focused', async () => {
@@ -28,7 +28,7 @@ describe('CurrencyField', () => {
     expect(screen.getByRole('textbox')).toHaveValue('125000000');
   });
 
-  it('formats back to IDR on blur', async () => {
+  it('formats back to plain number on blur', async () => {
     const user = userEvent.setup();
     render(
       <CurrencyField name="test" label="Sales" value={50000} onChange={vi.fn()} />,
@@ -37,7 +37,7 @@ describe('CurrencyField', () => {
     await user.click(input);
     expect(input).toHaveValue('50000');
     await user.tab();
-    expect(input).toHaveValue('50.000');
+    expect(input).toHaveValue('50000');
   });
 
   it('calls onChange with parsed number', async () => {

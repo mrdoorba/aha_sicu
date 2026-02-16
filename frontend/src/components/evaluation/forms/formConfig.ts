@@ -9,6 +9,7 @@ export interface OperationalData {
 }
 
 export interface BusinessData {
+  salesStartMonth: string | null;
   salesMonth0: number | null;
   salesMonth1: number | null;
   salesMonth2: number | null;
@@ -59,7 +60,10 @@ export interface CampaignData {
 }
 
 export interface CompetitionProduct {
+  productName: string | null;
+  sellingPrice: number | null;
   keyword: string | null;
+  link: string | null;
   marketPrice: number | null;
 }
 
@@ -91,6 +95,8 @@ export interface FieldDefinition {
   inputType: InputType;
   unit?: string;
   benchmark?: string;
+  threshold?: number;
+  link?: string;
 }
 
 export interface SelectOption {
@@ -113,14 +119,48 @@ export const STORE_STATUS_OPTIONS: SelectOption[] = [
   { value: 'Regular', label: 'Regular' },
 ];
 
+// ── Section reference links ────────────────────────────────────────────────
+
+export const SECTION_LINKS = {
+  operational: 'https://seller.shopee.co.id/portal/accounthealth/home',
+  business: 'https://seller.shopee.co.id/datacenter/dashboard',
+  visitors: 'https://seller.shopee.co.id/datacenter/traffic/overview',
+  promoTools: 'https://seller.shopee.co.id/datacenter/marketing/tools/discount',
+  ads: 'https://seller.shopee.co.id/portal/marketing/pas/assembly?&type=all&group=last-thirty-days',
+  campaign: 'https://seller.shopee.co.id/portal/marketing/cmt-product/campaign?tab=AllCampaign',
+} as const;
+
+// ── Month label generation ─────────────────────────────────────────────────
+
+const INDO_MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"];
+const GENERIC_LABELS = ["Bulan Ini", "Bulan -1", "Bulan -2", "Bulan -3", "Bulan -4", "Bulan -5"];
+
+export function generateMonthLabels(startMonth: string | null): string[] {
+  if (!startMonth) return [...GENERIC_LABELS];
+
+  if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(startMonth)) return [...GENERIC_LABELS];
+
+  const [yearStr, monthStr] = startMonth.split('-');
+  const year = parseInt(yearStr, 10);
+  const month = parseInt(monthStr, 10);
+
+  const labels: string[] = [];
+  for (let i = 0; i < 6; i++) {
+    const monthIndex = ((month - 1 - i) % 12 + 12) % 12;
+    const yearOffset = Math.floor((month - 1 - i) / 12);
+    labels.push(`${INDO_MONTHS[monthIndex]} ${year + yearOffset}`);
+  }
+  return labels;
+}
+
 // ── Field definitions per category ─────────────────────────────────────────
 
 export const OPERATIONAL_FIELDS: FieldDefinition[] = [
-  { key: 'unfulfilledOrderRate', label: 'Pesanan Tidak Terselesaikan', inputType: 'number', unit: '%', benchmark: '<1%' },
-  { key: 'lateShipmentRate', label: 'Keterlambatan', inputType: 'number', unit: '%', benchmark: '<1%' },
+  { key: 'unfulfilledOrderRate', label: 'Tingkat Pesanan Tidak Terselesaikan', inputType: 'number', unit: '%', benchmark: '<1%' },
+  { key: 'lateShipmentRate', label: 'Tingkat Keterlambatan Pengiriman', inputType: 'number', unit: '%', benchmark: '<1%' },
   { key: 'preparationTime', label: 'Masa Pengemasan', inputType: 'number', unit: 'hari', benchmark: '<1' },
-  { key: 'chatResponseRate', label: 'Chat Dibalas', inputType: 'number', unit: '%', benchmark: '>95%' },
-  { key: 'overallRating', label: 'Penilaian', inputType: 'number', unit: 'rating', benchmark: '>4.7' },
+  { key: 'chatResponseRate', label: 'Persentase Chat Dibalas', inputType: 'number', unit: '%', benchmark: '>95%' },
+  { key: 'overallRating', label: 'Keseluruhan Penilaian', inputType: 'number', unit: 'rating', benchmark: '>4.7' },
 ];
 
 export const BUSINESS_FIELDS: FieldDefinition[] = [
@@ -145,17 +185,17 @@ export const VISITORS_FIELDS: FieldDefinition[] = [
 ];
 
 export const PROMO_TOOLS_FIELDS: FieldDefinition[] = [
-  { key: 'promoToko', label: 'Promo Toko', inputType: 'currency', unit: 'IDR', benchmark: '>8% dari penjualan' },
-  { key: 'paketDiskon', label: 'Paket Diskon', inputType: 'currency', unit: 'IDR', benchmark: '>16% dari penjualan' },
-  { key: 'komboHemat', label: 'Kombo Hemat', inputType: 'currency', unit: 'IDR', benchmark: '>1% dari penjualan' },
-  { key: 'flashSale', label: 'Flash Sale Toko Saya', inputType: 'currency', unit: 'IDR', benchmark: '>1% dari penjualan' },
-  { key: 'voucher', label: 'Voucher', inputType: 'currency', unit: 'IDR', benchmark: '>84% dari penjualan' },
-  { key: 'shopeeLive', label: 'Shopee Live', inputType: 'currency', unit: 'IDR', benchmark: '>15% dari penjualan' },
-  { key: 'gameToko', label: 'Game Toko', inputType: 'currency', unit: 'IDR', benchmark: '>1% dari penjualan' },
-  { key: 'brandMembership', label: 'Brand Membership', inputType: 'currency', unit: 'IDR', benchmark: '>1% dari penjualan' },
-  { key: 'gratisOngkir', label: 'Gratis Ongkir XTRA', inputType: 'currency', unit: 'IDR', benchmark: '>0' },
-  { key: 'chatBroadcast', label: 'Chat Broadcast', inputType: 'currency', unit: 'IDR', benchmark: '>1% dari penjualan' },
-  { key: 'programAfiliasi', label: 'Program Afiliasi', inputType: 'currency', unit: 'IDR', benchmark: '>18% dari penjualan' },
+  { key: 'promoToko', label: 'Penjualan dari Promo Toko', inputType: 'currency', unit: 'IDR', benchmark: '>8% dari penjualan', threshold: 0.08 },
+  { key: 'paketDiskon', label: 'Penjualan dari Paket Diskon', inputType: 'currency', unit: 'IDR', benchmark: '>16% dari penjualan', threshold: 0.16 },
+  { key: 'komboHemat', label: 'Penjualan dari Kombo Hemat', inputType: 'currency', unit: 'IDR', benchmark: '>1% dari penjualan', threshold: 0.01 },
+  { key: 'flashSale', label: 'Penjualan dari Flash Sale Toko Saya', inputType: 'currency', unit: 'IDR', benchmark: '>1% dari penjualan', threshold: 0.01 },
+  { key: 'voucher', label: 'Penjualan dari Voucher', inputType: 'currency', unit: 'IDR', benchmark: '>84% dari penjualan', threshold: 0.84 },
+  { key: 'shopeeLive', label: 'Penjualan dari Shopee Live', inputType: 'currency', unit: 'IDR', benchmark: '>15% dari penjualan', threshold: 0.15 },
+  { key: 'gameToko', label: 'Penjualan dari Game Toko', inputType: 'currency', unit: 'IDR', benchmark: '>1% dari penjualan', threshold: 0.01 },
+  { key: 'brandMembership', label: 'Penjualan dari Brand Membership', inputType: 'currency', unit: 'IDR', benchmark: '>1% dari penjualan', threshold: 0.01, link: 'https://seller.shopee.co.id/datacenter/marketing/membership' },
+  { key: 'gratisOngkir', label: 'Penjualan dari Gratis Ongkir XTRA', inputType: 'currency', unit: 'IDR', benchmark: '>0', threshold: 0, link: 'https://seller.shopee.co.id/portal/marketing/cmt/campaign?tab=2&sort=9' },
+  { key: 'chatBroadcast', label: 'Penjualan dari Chat Broadcast', inputType: 'currency', unit: 'IDR', benchmark: '>1% dari penjualan', threshold: 0.01, link: 'https://seller.shopee.co.id/datacenter/services/crm' },
+  { key: 'programAfiliasi', label: 'Penjualan dari Program Afiliasi', inputType: 'currency', unit: 'IDR', benchmark: '>18% dari penjualan', threshold: 0.18, link: 'https://seller.shopee.co.id/portal/web-seller-affiliate/dashboard' },
 ];
 
 export const PRODUCTS_FIELDS: FieldDefinition[] = [
@@ -174,26 +214,34 @@ export const CAMPAIGN_FIELDS: FieldDefinition[] = [
 ];
 
 export const COMPETITION_FIELDS: FieldDefinition[] = [
-  { key: 'product1.keyword', label: 'Produk Kompetitor 1 — Keyword', inputType: 'text' },
-  { key: 'product1.marketPrice', label: 'Produk Kompetitor 1 — Harga Pasar', inputType: 'currency', unit: 'IDR' },
-  { key: 'product2.keyword', label: 'Produk Kompetitor 2 — Keyword', inputType: 'text' },
-  { key: 'product2.marketPrice', label: 'Produk Kompetitor 2 — Harga Pasar', inputType: 'currency', unit: 'IDR' },
-  { key: 'product3.keyword', label: 'Produk Kompetitor 3 — Keyword', inputType: 'text' },
-  { key: 'product3.marketPrice', label: 'Produk Kompetitor 3 — Harga Pasar', inputType: 'currency', unit: 'IDR' },
+  { key: 'product1.productName', label: 'Produk Kompetitor 1 — Nama Produk', inputType: 'text' },
+  { key: 'product1.sellingPrice', label: 'Produk Kompetitor 1 — Harga Jual', inputType: 'currency', unit: 'IDR' },
+  { key: 'product1.keyword', label: 'Produk Kompetitor 1 — Kata kunci pencarian', inputType: 'text' },
+  { key: 'product1.link', label: 'Produk Kompetitor 1 — LINK', inputType: 'text' },
+  { key: 'product1.marketPrice', label: 'Produk Kompetitor 1 — Harga rata-rata pasaran', inputType: 'currency', unit: 'IDR' },
+  { key: 'product2.productName', label: 'Produk Kompetitor 2 — Nama Produk', inputType: 'text' },
+  { key: 'product2.sellingPrice', label: 'Produk Kompetitor 2 — Harga Jual', inputType: 'currency', unit: 'IDR' },
+  { key: 'product2.keyword', label: 'Produk Kompetitor 2 — Kata kunci pencarian', inputType: 'text' },
+  { key: 'product2.link', label: 'Produk Kompetitor 2 — LINK', inputType: 'text' },
+  { key: 'product2.marketPrice', label: 'Produk Kompetitor 2 — Harga rata-rata pasaran', inputType: 'currency', unit: 'IDR' },
+  { key: 'product3.productName', label: 'Produk Kompetitor 3 — Nama Produk', inputType: 'text' },
+  { key: 'product3.sellingPrice', label: 'Produk Kompetitor 3 — Harga Jual', inputType: 'currency', unit: 'IDR' },
+  { key: 'product3.keyword', label: 'Produk Kompetitor 3 — Kata kunci pencarian', inputType: 'text' },
+  { key: 'product3.link', label: 'Produk Kompetitor 3 — LINK', inputType: 'text' },
+  { key: 'product3.marketPrice', label: 'Produk Kompetitor 3 — Harga rata-rata pasaran', inputType: 'currency', unit: 'IDR' },
 ];
 
 // ── Category definitions (maps categories to their fields) ─────────────────
 
 export const MANUAL_DATA_FIELDS: CategoryDefinition[] = [
-  { key: 'operational', displayName: 'Operasional', fields: OPERATIONAL_FIELDS },
-  { key: 'business', displayName: 'Bisnis', fields: BUSINESS_FIELDS },
-  { key: 'content', displayName: 'Konten', fields: CONTENT_FIELDS },
-  { key: 'visitors', displayName: 'Pengunjung', fields: VISITORS_FIELDS },
-  { key: 'promoTools', displayName: 'Alat Promo', fields: PROMO_TOOLS_FIELDS },
+  { key: 'operational', displayName: 'Kesehatan Operasional Toko', fields: OPERATIONAL_FIELDS },
+  { key: 'business', displayName: 'Bisnis Analisis', fields: BUSINESS_FIELDS },
+  { key: 'visitors', displayName: 'Tinjauan Pengunjung', fields: VISITORS_FIELDS },
+  { key: 'promoTools', displayName: 'Alat Promosi', fields: PROMO_TOOLS_FIELDS },
   { key: 'products', displayName: 'Produk/Status', fields: PRODUCTS_FIELDS },
-  { key: 'ads', displayName: 'Iklan', fields: ADS_FIELDS },
-  { key: 'campaign', displayName: 'Kampanye', fields: CAMPAIGN_FIELDS },
-  { key: 'competition', displayName: 'Kompetisi', fields: COMPETITION_FIELDS },
+  { key: 'ads', displayName: 'Data Iklan', fields: ADS_FIELDS },
+  { key: 'campaign', displayName: 'Partisipasi Campaign', fields: CAMPAIGN_FIELDS },
+  { key: 'competition', displayName: 'Kompetisi TOP Produk', fields: COMPETITION_FIELDS },
 ];
 
 // ── IDR formatting utilities ───────────────────────────────────────────────
@@ -228,12 +276,12 @@ function countFilledInFlat(obj: object): { filled: number; total: number } {
 export function computeSectionProgress(data: ManualData): Record<string, SectionProgress> {
   const s1 = countFilledInFlat(data.operational);
 
-  const biz = countFilledInFlat(data.business);
-  const content = countFilledInFlat(data.content);
+  const { salesStartMonth: _ssm, ...bizData } = data.business;
+  const biz = countFilledInFlat(bizData);
   const visitors = countFilledInFlat(data.visitors);
   const s2 = {
-    filled: biz.filled + content.filled + visitors.filled,
-    total: biz.total + content.total + visitors.total,
+    filled: biz.filled + visitors.filled,
+    total: biz.total + visitors.total,
   };
 
   const promo = countFilledInFlat(data.promoTools);
@@ -251,13 +299,16 @@ export function computeSectionProgress(data: ManualData): Record<string, Section
     .reduce(
       (acc, p) =>
         acc +
+        (p.productName != null && p.productName !== '' ? 1 : 0) +
+        (p.sellingPrice != null ? 1 : 0) +
         (p.keyword != null && p.keyword !== '' ? 1 : 0) +
+        (p.link != null && p.link !== '' ? 1 : 0) +
         (p.marketPrice != null ? 1 : 0),
       0,
     );
   const s5 = {
     filled: ads.filled + campaign.filled + compFilled,
-    total: ads.total + campaign.total + 6, // 3 products × 2 fields
+    total: ads.total + campaign.total + 15, // 3 products × 5 fields
   };
 
   return {
@@ -279,6 +330,7 @@ export const EMPTY_MANUAL_DATA: ManualData = {
     overallRating: null,
   },
   business: {
+    salesStartMonth: null,
     salesMonth0: null,
     salesMonth1: null,
     salesMonth2: null,
@@ -322,8 +374,8 @@ export const EMPTY_MANUAL_DATA: ManualData = {
     availableSessions: null,
   },
   competition: {
-    product1: { keyword: null, marketPrice: null },
-    product2: { keyword: null, marketPrice: null },
-    product3: { keyword: null, marketPrice: null },
+    product1: { productName: null, sellingPrice: null, keyword: null, link: null, marketPrice: null },
+    product2: { productName: null, sellingPrice: null, keyword: null, link: null, marketPrice: null },
+    product3: { productName: null, sellingPrice: null, keyword: null, link: null, marketPrice: null },
   },
 };

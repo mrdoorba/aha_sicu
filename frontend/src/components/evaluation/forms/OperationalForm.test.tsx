@@ -15,11 +15,11 @@ describe('OperationalForm', () => {
   it('renders all 5 operational fields', () => {
     render(<OperationalForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />);
 
-    expect(screen.getByLabelText(/Pesanan Tidak Terselesaikan/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Keterlambatan/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Tingkat Pesanan Tidak Terselesaikan/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Tingkat Keterlambatan Pengiriman/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Masa Pengemasan/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Chat Dibalas/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Penilaian/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Persentase Chat Dibalas/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/Keseluruhan Penilaian/)).toBeInTheDocument();
   });
 
   it('renders benchmarks for each field', () => {
@@ -33,9 +33,9 @@ describe('OperationalForm', () => {
     expect(screen.getByText('Benchmark: >4.7')).toBeInTheDocument();
   });
 
-  it('renders section title', () => {
+  it('renders section title with reference link', () => {
     render(<OperationalForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />);
-    expect(screen.getByText('Operational')).toBeInTheDocument();
+    expect(screen.getByText('Kesehatan Operasional Toko')).toBeInTheDocument();
   });
 
   it('displays pre-filled values', () => {

@@ -15,6 +15,13 @@ resource "google_storage_bucket" "uploads" {
       type = "Delete"
     }
   }
+
+  cors {
+    origin          = ["https://aha-sicu-dev.web.app", "http://localhost:5173"]
+    method          = ["PUT"]
+    response_header = ["Content-Type"]
+    max_age_seconds = 3600
+  }
 }
 
 # IAM: Cloud Run SA gets objectAdmin on this bucket only (not project-wide)
