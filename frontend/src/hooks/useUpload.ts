@@ -149,7 +149,11 @@ export function useUploadFile(brandId: number) {
         setProgress(100);
         return result;
       } catch (err) {
-        const message = err instanceof Error ? err.message : 'Upload failed';
+        let message = 'Upload failed';
+        if (err instanceof Error) {
+          const detail = (err as unknown as Record<string, unknown>).detail;
+          message = typeof detail === 'string' ? detail : err.message;
+        }
         setError(message);
         setStatus('error');
         throw err;
