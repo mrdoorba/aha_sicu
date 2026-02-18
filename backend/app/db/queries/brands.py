@@ -1,6 +1,5 @@
 """Brand data database queries using parameterized SQL."""
 
-import json
 from typing import Any, Literal
 
 from asyncpg import Connection
@@ -41,7 +40,7 @@ async def upsert_brand_data(
         RETURNING id, brand_name, raw_data, created_at, updated_at
         """,
         brand_name,
-        json.dumps(raw_data),
+        raw_data,
     )
     return dict(row)
 

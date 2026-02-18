@@ -1,6 +1,5 @@
 """Calculator results database queries using parameterized SQL."""
 
-import json
 from typing import Any
 
 from asyncpg import Connection
@@ -73,7 +72,7 @@ async def upsert_result(
         """,
         brand_id,
         calculator_type,
-        json.dumps(details),
+        details,
         output_text,
     )
     return dict(row)

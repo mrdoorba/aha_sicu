@@ -1,6 +1,5 @@
 """Brand uploads database queries using parameterized SQL."""
 
-import json
 from typing import Any
 
 from asyncpg import Connection
@@ -73,7 +72,7 @@ async def upsert_upload(
         filename,
         file_size,
         row_count,
-        json.dumps(parsed_data),
+        parsed_data,
         uploaded_by,
     )
     return dict(row)

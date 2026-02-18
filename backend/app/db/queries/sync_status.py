@@ -1,6 +1,5 @@
 """Sync status database queries using parameterized SQL."""
 
-import json
 from datetime import datetime
 from typing import Any
 
@@ -45,7 +44,7 @@ async def update_sync_status(
         success,
         brands_synced,
         error_message,
-        json.dumps(sync_details) if sync_details else None,
+        sync_details,
     )
 
 
