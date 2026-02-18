@@ -64,6 +64,9 @@ jobs:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
 
+      - name: Configure Firebase deploy target
+        run: npx firebase-tools target:apply hosting ${{ vars.FIREBASE_HOSTING_SITE }} ${{ vars.FIREBASE_HOSTING_SITE }} --project ${{ vars.GCP_PROJECT_ID }}
+
       - name: Deploy to Firebase Hosting
         run: npx firebase-tools deploy --only hosting:${{ vars.FIREBASE_HOSTING_SITE }} --project ${{ vars.GCP_PROJECT_ID }}
 
@@ -114,6 +117,9 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Configure Firebase deploy target
+        run: npx firebase-tools target:apply hosting ${{ vars.FIREBASE_HOSTING_SITE }} ${{ vars.FIREBASE_HOSTING_SITE }} --project ${{ vars.GCP_PROJECT_ID }}
 
       - name: Deploy to Firebase Hosting
         run: npx firebase-tools deploy --only hosting:${{ vars.FIREBASE_HOSTING_SITE }} --project ${{ vars.GCP_PROJECT_ID }}
