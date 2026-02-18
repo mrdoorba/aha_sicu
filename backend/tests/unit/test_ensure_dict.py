@@ -2,7 +2,7 @@
 
 import json
 
-from app.modules.evaluations.service import _ensure_dict
+from app.core.utils import ensure_dict as _ensure_dict
 
 
 class TestEnsureDict:
