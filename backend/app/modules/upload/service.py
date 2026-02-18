@@ -204,11 +204,15 @@ async def process_upload(
             detail=f"Failed to parse file: {e}",
         ) from e
 
+    # Free raw file bytes — no longer needed after parsing
+    del file_bytes
+
     # Validate columns
     validate_columns(df, file_type)
 
     # Convert to JSONB-ready format
     parsed_data = dataframe_to_json(df)
+    del df  # Free DataFrame — parsed_data holds the JSON-ready structure now
     calculator_target = _CALCULATOR_TARGETS[file_type]
 
     # Store in database (upsert) + clear dependent results + auto-execute calculators
