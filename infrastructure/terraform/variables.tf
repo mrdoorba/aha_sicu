@@ -70,7 +70,7 @@ variable "cloud_run_max_instances" {
 variable "cloud_run_memory" {
   description = "Memory limit for Cloud Run container"
   type        = string
-  default     = "512Mi"
+  default     = "1Gi"
 }
 
 variable "cloud_run_cpu" {
