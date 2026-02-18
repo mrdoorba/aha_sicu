@@ -83,7 +83,14 @@ export const EvaluationHeader = ({ brand, isLoading, isError }: EvaluationHeader
       <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
         {vpFields.map(([key, value]) => (
           <span key={key}>
-            <span className="font-medium text-foreground">{key}:</span> {value}
+            <span className="font-medium text-foreground">{key}:</span>{' '}
+            {value.startsWith('https://') || value.startsWith('http://') ? (
+              <a href={value} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">
+                {value}
+              </a>
+            ) : (
+              value
+            )}
           </span>
         ))}
       </div>
@@ -97,7 +104,14 @@ export const EvaluationHeader = ({ brand, isLoading, isError }: EvaluationHeader
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
             {meetingFields.map(([key, value]) => (
               <span key={key}>
-                <span className="font-medium text-foreground">{key}:</span> {value}
+                <span className="font-medium text-foreground">{key}:</span>{' '}
+                {value.startsWith('https://') || value.startsWith('http://') ? (
+                  <a href={value} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">
+                    {value}
+                  </a>
+                ) : (
+                  value
+                )}
               </span>
             ))}
           </div>
