@@ -1,6 +1,5 @@
 """Evaluation inputs database queries using parameterized SQL."""
 
-import json
 from datetime import date
 from typing import Any, Literal
 
@@ -52,7 +51,7 @@ async def upsert_evaluation_inputs(
         brand_id,
         user_id,
         category_type,
-        json.dumps(manual_data) if manual_data is not None else None,
+        manual_data,
     )
     return dict(row)
 
@@ -90,9 +89,9 @@ async def insert_evaluation(
         template,
         final_score,
         verdict,
-        json.dumps(score_breakdown),
-        json.dumps(calculator_results),
-        json.dumps(manual_inputs),
+        score_breakdown,
+        calculator_results,
+        manual_inputs,
         rule_version,
         email_output,
     )

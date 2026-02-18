@@ -1,6 +1,5 @@
 """Unit tests for evaluation query functions."""
 
-import json
 from datetime import date
 from unittest.mock import AsyncMock
 
@@ -83,7 +82,7 @@ async def test_upsert_evaluation_inputs():
     assert call_args[1] == 1  # brand_id
     assert call_args[2] == 1  # user_id
     assert call_args[3] == "fashion"
-    assert call_args[4] == json.dumps({"key": "val"})
+    assert call_args[4] == {"key": "val"}
 
 
 @pytest.mark.asyncio
