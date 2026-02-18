@@ -64,6 +64,8 @@ export interface ProcessUploadResponse {
   auto_calculated: AutoCalculatedItem[];
 }
 
+const PROCESS_TIMEOUT_MS = 120_000;
+
 export function useProcessUpload() {
   return useMutation({
     mutationFn: async (body: {
@@ -71,14 +73,29 @@ export function useProcessUpload() {
       brand_id: number;
       file_type: string;
     }) => {
-      const { data, error } = await client.POST('/api/v1/upload/process', {
-        body,
-      });
-      if (error) {
-        const detail = (error as Record<string, unknown>).detail;
-        throw new Error(typeof detail === 'string' ? detail : 'Failed to process upload');
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), PROCESS_TIMEOUT_MS);
+
+      try {
+        const { data, error } = await client.POST('/api/v1/upload/process', {
+          body,
+          signal: controller.signal,
+        });
+        if (error) {
+          const detail = (error as Record<string, unknown>).detail;
+          throw new Error(typeof detail === 'string' ? detail : 'Failed to process upload');
+        }
+        return data as ProcessUploadResponse;
+      } catch (err) {
+        if (err instanceof DOMException && err.name === 'AbortError') {
+          throw new Error(
+            'Processing timed out. The file may be too large \u2014 try splitting it into smaller parts.',
+          );
+        }
+        throw err;
+      } finally {
+        clearTimeout(timeoutId);
       }
-      return data as ProcessUploadResponse;
     },
   });
 }

@@ -6,6 +6,7 @@ from app.calculators.ads_keyword import calculate_ads_keyword
 from app.calculators.discount import calculate_discount
 from app.calculators.top_sku import calculate_top_sku
 from app.core.exceptions import CalculatorException
+from app.core.utils import ensure_dict
 from app.db.connection import db
 from app.db.queries import brands as brand_queries
 from app.db.queries import calculator_results as calc_queries
@@ -156,9 +157,11 @@ _REQUIRED_COLUMNS: dict[str, frozenset[str]] = {
 
 
 def _validate_columns(
-    parsed_data: dict, file_type: str
+    parsed_data: dict | str | None, file_type: str
 ) -> None:
     """Validate that parsed_data contains all required columns for the file type.
+
+    Handles double-encoded parsed_data (string instead of dict) via ensure_dict.
 
     Raises:
         CalculatorException: CALC_MISSING_DATA if required columns are missing.
@@ -167,6 +170,7 @@ def _validate_columns(
     if not required:
         return
 
+    parsed_data = ensure_dict(parsed_data)
     columns = parsed_data.get("columns")
     if not isinstance(columns, list):
         raise CalculatorException(

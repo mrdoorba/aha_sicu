@@ -587,6 +587,40 @@ def test_run_discount_missing_columns(client):
         assert "Jumlah" in data["detail"]
 
 
+def test_run_discount_string_parsed_data(client):
+    """POST succeeds when parsed_data is a JSON string (double-encoded legacy data)."""
+    import json
+
+    upload_string_parsed = {
+        **SAMPLE_ORDER_UPLOAD,
+        "parsed_data": json.dumps(SAMPLE_ORDER_UPLOAD["parsed_data"]),
+    }
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.calculator_service.db") as mock_calc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_calc_conn = _make_transactional_conn([
+            SAMPLE_BRAND,               # get_brand_by_id
+            upload_string_parsed,       # get_upload_by_type (order_export) — string parsed_data
+            SAMPLE_DISCOUNT_RESULT,     # upsert_result
+        ])
+        mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
+
+        response = client.post(
+            "/api/v1/evaluations/brands/1/calculators/discount",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["calculator_type"] == "discount"
+
+
 # ---------------------------------------------------------------------------
 # Top SKU Calculator integration tests
 # ---------------------------------------------------------------------------
