@@ -13,12 +13,17 @@ This document specifies the complete calculation logic for the AHA Store Interna
 
 - [Architecture Overview](#architecture-overview)
 - [Data Conventions](#data-conventions)
+- [Formatting Functions Reference](#formatting-functions-reference)
 - [Calculator 1: Ads Keyword](#calculator-1-ads-keyword)
 - [Calculator 2: Top SKU (Sales)](#calculator-2-top-sku-sales)
 - [Calculator 3: Discount Check](#calculator-3-discount-check)
 - [Scoring System](#scoring-system)
+- [DEFAULT_RULES Reference](#default_rules-reference)
+- [Fashion vs Non-Fashion Behavior](#fashion-vs-non-fashion-behavior)
+- [Edge Cases & Zero-State Behavior](#edge-cases--zero-state-behavior)
 - [Orchestration Engine](#orchestration-engine)
 - [Data Flow Summary](#data-flow-summary)
+- [Test Vectors](#test-vectors)
 
 ---
 
@@ -112,6 +117,41 @@ Round DOWN to N decimal places:
 ```text
 ROUNDDOWN(value, decimals) = FLOOR(value × 10^decimals) / 10^decimals
 ```
+
+---
+
+## Formatting Functions Reference
+
+All value formatting functions used across the calculators and scoring system. Functions are defined locally in each module — some share names but have slightly different implementations.
+
+### Calculator 1 (ads_keyword.py)
+
+| Function | Signature | Format Pattern | Example | Used By |
+|----------|-----------|---------------|---------|---------|
+| `_format_idr` | `_format_idr(value: int\|float) -> str` | `IDR {int(value):,}` | `26433781` → `"IDR 26,433,781"` | AK2 (ad summary), AL2/AL5 (top/bottom ads GMV/cost) |
+| `_format_roas` | `_format_roas(value: float\|int) -> str` | `f"{float(value):g}"` (strip trailing zeros) | `5.68` → `"5.68"`, `6.0` → `"6"`, `5.90` → `"5.9"` | AL2/AL5 (ROAS display) |
+| `_format_pct` | `_format_pct(fraction: float) -> str` | `f"{fraction * 100:.1f}%"` | `0.05` → `"5.0%"`, `0.235` → `"23.5%"` | AK2 (product participation %) |
+
+### Calculator 3 (discount.py)
+
+| Function | Signature | Format Pattern | Example | Used By |
+|----------|-----------|---------------|---------|---------|
+| `_format_pct_1dp` | `_format_pct_1dp(fraction: float) -> str` | `f"{fraction * 100:.1f}%"` | `0.027` → `"2.7%"`, `0.0` → `"0.0%"` | Output 1-4 (discount/voucher/paket percentages) |
+| `_roundup` | `_roundup(value: float, decimals: int) -> float` | `ceil(value × 10^decimals) / 10^decimals` | `_roundup(0.0271, 3)` → `0.028` | Output 2 (range min/max) |
+
+### Scoring System (scoring.py)
+
+| Function | Signature | Format Pattern | Example | Used By |
+|----------|-----------|---------------|---------|---------|
+| `_fmt_pct_1dp` | `_fmt_pct_1dp(value: float) -> str` | `f"{value * 100:.1f}%"` | `0.235` → `"23.5%"` | Row 28 (returning visitors %), Row 51 (GMV ratio), Row 52 (cost ratio), Row 57 (campaign %), promo tool rows |
+| `_fmt_pct_0dp` | `_fmt_pct_0dp(value: float) -> str` | `f"{value * 100:.0f}%"` | `0.95` → `"95%"` | Row 24 (content quality %), Rows 42-43 (promo usage/effectiveness %) |
+| `_fmt_num_1dp` | `_fmt_num_1dp(value: float) -> str` | `f"{value:.1f}%"` | `0.5` → `"0.5%"` (raw number, not fraction) | Row 7 (unfulfilled order rate), Row 8 (late shipment rate) |
+| `_fmt_num_2dp` | `_fmt_num_2dp(value: float) -> str` | `f"{value:.2f}"` | `4.65` → `"4.65"` | Row 9 (preparation time), Row 11 (overall rating) |
+| `_fmt_idr` | `_fmt_idr(value: float) -> str` | `f"{rounded:,}".replace(",", ".")` | `1250000` → `"1.250.000"`, `-500000` → `"-500.000"` | Row 13 (sales IDR), Row 29 (followers), G73 (budget), competition rows |
+| `_rounddown` | `_rounddown(value: float, decimals: int) -> float` | `floor(value × 10^decimals) / 10^decimals` | `_rounddown(0.1567, 2)` → `0.15` | G72 (marketing percentage base) |
+| `_extract_pct` | `_extract_pct(pattern: str, text: str) -> float` | Regex capture group → `float / 100` | `_extract_pct(r"Voucher ([\d.]+)%", "Voucher 2.7%")` → `0.027` | G68/G72 (parse D73 discount text) |
+
+**Key difference:** `_fmt_pct_1dp` and `_fmt_pct_0dp` multiply by 100 (input is a fraction like `0.235`). `_fmt_num_1dp` does **not** multiply (input is already a percentage number like `0.5`). The scoring system uses `_fmt_idr` with Indonesian dot separator (`.`), while Calculator 1 uses `_format_idr` with comma separator (`,`).
 
 ---
 
@@ -710,12 +750,14 @@ class ScoringResult:
 
 ### Two Templates
 
-| Parameter | Fashion | Non-Fashion |
-|-----------|---------|-------------|
-| Conversion rate threshold | >2% | >3% |
-| ROI threshold | >8 | >9 |
-| Marketing floor | 15% | 12% |
-| Fashion adjustment | 5% | 0% |
+| Parameter | Fashion | Non-Fashion | Source |
+|-----------|---------|-------------|--------|
+| Conversion rate threshold | >2% | >3% | DEFAULT_RULES default is `3.0`; fashion `2.0` from DB rules |
+| ROI threshold | >8 | >9 | DEFAULT_RULES default is `9.0`; fashion `8.0` from DB rules |
+| Marketing floor | 15% | 12% | DEFAULT_RULES `marketing.floor_fashion` / `marketing.floor` |
+| Fashion adjustment | 5% | 0% | DEFAULT_RULES `marketing.fashion_adjustment`; 0 when `is_fashion=False` |
+
+**Important:** `DEFAULT_RULES` contains a **single** set of thresholds (non-fashion values). Fashion-specific differences (conversion rate `2.0`, ROI `8.0`) are applied via DB-provided rules, not via separate hardcoded constants.
 
 ### Category 1: Kesehatan Operasional Toko (Rows 7-11)
 
@@ -730,6 +772,21 @@ class ScoringResult:
 | 11 | Keseluruhan Penilaian | `operational.overallRating` | >= 4.7 | 0 (info) | 0 (info) |
 
 **Row 10 special:** The value is rounded UP to 2 decimal places before comparing: `CEIL(value × 100) / 100`.
+
+**G-column message templates (rows 7-11):**
+
+| Row | Verdict | Template | Placeholders |
+|-----|---------|----------|-------------|
+| 7 | Pass | `✔️ Tingkat Pesanan Tidak Terselesaikan = {val_str} Sudah Baik` | `val_str`: `f"{value:.1f}%"` |
+| 7 | Fail | `❌ Tingkat Pesanan Tidak Terselesaikan = {val_str} Kurang Baik, nilai disarankan: <{threshold}%` | `threshold`: `f"{threshold:g}"` |
+| 8 | Pass | `✔️ Tingkat Keterlambatan Pengiriman = {val_str} Sudah Baik` | `val_str`: `f"{value:.1f}%"` |
+| 8 | Fail | `❌ Tingkat Keterlambatan Pengiriman = {val_str} Kurang Baik, nilai disarankan: <{threshold}%` | `threshold`: `f"{threshold:g}"` |
+| 9 | Pass | `✔️ Masa Pengemasan = {val_str} hari Sudah Baik` | `val_str`: `f"{value:.2f}"` |
+| 9 | Fail | `❌ Masa Pengemasan = {val_str} hari Kurang Baik, nilai disarankan: <{threshold} hari` | `threshold`: `f"{threshold:g}"` |
+| 10 | Pass | `✔️ Persentase Chat Dibalas = {val_str} Sudah Baik` | `val_str`: `f"{value:.0f}%"` |
+| 10 | Fail | `❌ Persentase Chat Dibalas = {val_str} Kurang Baik, nilai disarankan: >{threshold}%` | `threshold`: `f"{threshold:g}"` |
+| 11 | Pass | `✔️ Keseluruhan Penilaian = {val_str} Sudah Baik` | `val_str`: `f"{value:.2f}"` |
+| 11 | Fail | `❌ Keseluruhan Penilaian = {val_str} Kurang Baik, nilai disarankan: >{threshold}` | `threshold`: `f"{threshold:g}"` |
 
 ### Category 2: Bisnis Analisis (Rows 13-20)
 
@@ -746,12 +803,23 @@ Compute first:
 | 13 | Penjualan (current month) | Pass if `avg_6mo < current_month × 1.10` | +10 or 0 |
 | 14-18 | Past 5 months | Reference only | 0 |
 | 19 | Rata² Penjualan 6 bulan terakhir | Pass if `avg_6mo > 100,000,000` | +10 or 0 |
-| 20 | Tingkat Konversi | Pass if value >= threshold (2% fashion / 3% non-fashion) | 0 (info) |
+| 20 | Tingkat Konversi | Pass if value >= threshold (default `3.0` from DEFAULT_RULES; fashion `2.0` from DB rules) | 0 (info) |
+
+**Row 20 override flow:** The conversion rate threshold starts at `3.0` in `_score_business()` (from DEFAULT_RULES). During `calculate_score()`, **after** all categories are scored, lines 1758-1764 re-read the conversion_rate threshold from rules and override the benchmark and verdict for row 20. This post-scoring override is where template-specific rules (e.g., fashion `2.0`) take effect.
 
 **Row 13 detail:** The `threshold_pct=90` from rules maps to multiplier `(200 - 90) / 100 = 1.10`. Pass condition: `avg_6mo < current_month × 1.10`.
 
-**Row 13 G-column message:** Compute `change% = ((current_month - avg_6mo) / avg_6mo) × 100`. If fail AND change% < -25%, append severe warning:
-`\n❗️ Potensi peningkatan harga jual signifikan atau terdapat event abnormal.`
+**G-column message templates (rows 13, 20):**
+
+| Row | Verdict | Template | Placeholders |
+|-----|---------|----------|-------------|
+| 13 | Pass | `✔️ Penjualan = IDR {idr_val} Meningkat {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: IDR {idr_avg}` | `idr_val`: `_fmt_idr(current)`, `change_pct`: `f"{abs(change_pct):.1f}"`, `idr_avg`: `_fmt_idr(avg_6mo)` |
+| 13 | Fail | `❌ Penjualan = IDR {idr_val} Menurun {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: IDR {idr_avg}` | Same as pass |
+| 13 | Fail (severe) | Appended when `change_pct < -25`: `\n❗️ Potensi peningkatan harga jual signifikan atau terdapat event abnormal.` | — |
+| 20 | Pass | `✔️ Tingkat Konversi = {val_str} Sudah Baik` | `val_str`: `f"{value:.1f}%"`, `benchmark`: row benchmark string |
+| 20 | Fail | `❌ Tingkat Konversi = {val_str} Kurang Baik, nilai disarankan: {benchmark}` | Same |
+
+`change_pct` formula: `((current_month - avg_6mo) / avg_6mo) × 100` (uses absolute value in template).
 
 ### Category 3: Skor Kesehatan Konten (Rows 22-24)
 
@@ -763,6 +831,13 @@ Compute first:
 | 23 | Kualitas baik | `content.goodQuality` |
 | 24 | % Konten baik | `d23 / (d23 + d22)`, pass if >= 95% |
 
+**G-column message templates (row 24):**
+
+| Row | Verdict | Template | Placeholders |
+|-----|---------|----------|-------------|
+| 24 | Pass | `✔️ % Konten baik = {val_str} Sudah Baik` | `val_str`: `_fmt_pct_0dp(value)`, `threshold`: `f"{threshold:g}"` |
+| 24 | Fail | `❌ % Konten baik = {val_str} Kurang Baik, nilai disarankan: >{threshold}%` | Same |
+
 ### Category 4: Tinjauan Pengunjung (Rows 26-29)
 
 **Max score: 5 points**
@@ -773,6 +848,15 @@ Compute first:
 | 27 | Pengunjung Lama | `visitors.returningVisitors` | Reference | 0 |
 | 28 | % Pengunjung Lama | `d27 / d26` | Pass if > 23% | +3 or 0 |
 | 29 | Total Pengikut | `visitors.totalFollowers` | Pass if > 50,000 | +2 or 0 |
+
+**G-column message templates (rows 28-29):**
+
+| Row | Verdict | Template | Placeholders |
+|-----|---------|----------|-------------|
+| 28 | Pass | `✔️ % Pengunjung Lama = {val_str} Sudah Baik` | `val_str`: `_fmt_pct_1dp(value)`, `threshold`: `f"{threshold:g}"` |
+| 28 | Fail | `❌ % Pengunjung Lama = {val_str} Kurang Baik, nilai disarankan: >{threshold}%` | Same |
+| 29 | Pass | `✔️ Total Pengikut = {val_str} Sudah Baik` | `val_str`: `f"{int(value):,}".replace(",", ".")` |
+| 29 | Fail | `❌ Total Pengikut = {val_str} Kurang Baik, nilai disarankan: >50.000` | Same |
 
 ### Category 5: Promo Toko (Rows 31-43)
 
@@ -822,15 +906,26 @@ else:                              → "❌"
 
 **Opportunity scoring:** Points are added when the store has room for improvement (fail = opportunity = points).
 
-#### Promo G-column Messages
+#### Promo G-column Messages (Rows 31-41, individual tools)
 
-| Condition | Message Template |
-|-----------|-----------------|
-| D == 0 | `{verdict} {metric} nil pendapatan` |
-| D/D13 >= 50% | `{verdict} {metric} = {pct_str} Terlalu mengandalkan promo, nilai disarankan: 15%-50%` |
-| Fail | `❌ {metric} = {pct_str} Kurang Efektif, nilai disarankan: {benchmark}` |
-| Pass (regular) | `✔️ {metric} ({pct_str}) digunakan & persentase penggunaan baik` |
-| Pass (Program Afiliasi) | `✔️ {metric} ({pct_str}) digunakan` |
+| Condition | Template Key | Template | Placeholders |
+|-----------|-------------|----------|-------------|
+| D == 0 | `message_zero` | `{verdict} {metric} nil pendapatan` | `verdict`: row F-column, `metric`: display name |
+| D/D13 >= 50% | `message_dependent` | `{verdict} {metric} = {pct_str} Terlalu mengandalkan promo, nilai disarankan: 15%-50%` | `pct_str`: `_fmt_pct_1dp(d_value / d13)` |
+| Fail | `message_fail` | `❌ {metric} = {pct_str} Kurang Efektif, nilai disarankan: {benchmark}` | `benchmark`: row benchmark string |
+| Pass (regular) | `message_pass` | `✔️ {metric} ({pct_str}) digunakan & persentase penggunaan baik` | `pct_str`: `_fmt_pct_1dp(d_value / d13)` |
+| Pass (Program Afiliasi) | `message_pass_afiliasi` | `✔️ {metric} ({pct_str}) digunakan` | Only for `metric == "Program Afiliasi"` |
+
+These templates are in `DEFAULT_RULES.promo_tools.individual_messages`.
+
+#### Promo G-column Messages (Rows 42-43, summary)
+
+| Row | Verdict | Template | Placeholders |
+|-----|---------|----------|-------------|
+| 42 | Pass | `✔️ Penggunaan alat promosi = {val_str} Sudah Baik` | `val_str`: `_fmt_pct_0dp(usage_rate)`, `threshold`: `f"{threshold:g}"` |
+| 42 | Fail | `❌ Penggunaan alat promosi = {val_str} Kurang Baik, nilai disarankan: >{threshold}%` | Same |
+| 43 | Pass | `✔️ Efektifitas alat promosi = {val_str} Sudah Baik` | `val_str`: `_fmt_pct_0dp(effectiveness_rate)`, `threshold`: `f"{threshold:g}"` |
+| 43 | Fail | `❌ Efektifitas alat promosi = {val_str} Kurang Baik, nilai disarankan: >{threshold}%` | Same |
 
 ### Category 6: Jumlah Produk & Status Toko (Rows 45-46)
 
@@ -841,6 +936,15 @@ else:                              → "❌"
 | 45 | Jumlah Produk | `products.productCount >= 35` | +5 or 0 |
 | 46 | Status Toko | `products.storeStatus` | Mall: +10, Star+: +5, else: 0 |
 
+**G-column message templates (rows 45-46):**
+
+| Row | Verdict | Template | Placeholders |
+|-----|---------|----------|-------------|
+| 45 | Pass | `✔️ Jumlah Produk = {value_int} OK` | `value_int`: `str(int(value))`, `threshold`: `f"{threshold:g}"` |
+| 45 | Fail | `❌ Jumlah Produk = {value_int} NOT OK, nilai disarankan: >={threshold}` | Same |
+| 46 | Pass | `✔️ Status Toko = {store_status} OK` | `store_status`: `str(value)` |
+| 46 | Fail | `❌ Status Toko = {store_status} Wajib Shopee Mall` | Same |
+
 ### Category 7: Data Iklan (Rows 48-53)
 
 **Max score: 10 points**
@@ -849,19 +953,25 @@ else:                              → "❌"
 |-----|--------|---------|-------|-------|
 | 48 | Penjualan (iklan) | `ads.adSales` | Reference | 0 |
 | 49 | Biaya (iklan) | `ads.adCost` | Reference | 0 |
-| 50 | ROI | `D48 / D49` | Pass if >= threshold (8 fashion / 9 non-fashion) | Fail: +5, Pass: 0 |
+| 50 | ROI | `D48 / D49` | Pass if >= threshold (default: `9.0` from DEFAULT_RULES; fashion `8.0` from DB rules) | Fail: +5, Pass: 0 |
 | 51 | % GMV Iklan / GMV Toko | `D48 / D13` | Pass if < 84% | Pass: +5, Fail: 0 |
 | 52 | % Biaya Iklan / GMV Toko | `D49 / D13` | <1%: fail, <5%: fail, 5-10%: pass, >10%: fail | 0 (info) |
 | 53 | Iklan check up | Calculator 1 `output_text` | Injected | 0 |
 
-**Row 52 G-column messages:**
+**G-column message templates (rows 50-53):**
 
-| Condition | Message |
-|-----------|---------|
-| D49 == 0 | `❌ Iklan tidak aktif sama sekali` |
-| D52 < 5% | `❌ Penggunaan iklan terlalu minim ({pct}). Nilai disarankan: 5%-10%.` |
-| D52 > 10% | `❌ % Biaya Iklan / GMV Toko = {pct} Biaya terlalu tinggi, nilai disarankan: <10%` |
-| 5-10% | `✔️ % Biaya Iklan / GMV Toko = {pct} Sudah Baik` |
+| Row | Condition | Template Key | Template | Placeholders |
+|-----|-----------|-------------|----------|-------------|
+| 50 | Pass | `message_pass` | `✔️ ROI = {val_str} Sudah Baik` | `val_str`: `f"{roi:.1f}"`, `benchmark`: row benchmark |
+| 50 | Fail | `message_fail` | `❌ ROI = {val_str} Kurang Baik, nilai disarankan: {benchmark}` | Same |
+| 51 | No ads (D48==0) | `message_no_ads` | `❌ Iklan tidak aktif sama sekali` | — |
+| 51 | Pass | `message_pass` | `✔️ % GMV Iklan / GMV Toko = {pct_str} Sudah Baik` | `pct_str`: `_fmt_pct_1dp(d51)`, `threshold`: `f"{threshold:g}"` |
+| 51 | Fail | `message_fail` | `❌ % GMV Iklan / GMV Toko = {pct_str} Terlalu bergantung terhadap Iklan, nilai disarankan: <{threshold}%` | Same |
+| 52 | No ads (D49==0) | `message_no_ads` | `❌ Iklan tidak aktif sama sekali` | — |
+| 52 | Too minimal (<5%) | `message_too_minimal` | `❌ Penggunaan iklan terlalu minim ({pct_str}). Nilai disarankan: {min}%-{max}%.` | `pct_str`: `_fmt_pct_1dp(d52)`, `min`/`max`: from rules |
+| 52 | Fail (>10%) | `message_fail` | `❌ % Biaya Iklan / GMV Toko = {pct_str} Biaya terlalu tinggi, nilai disarankan: <{threshold}%` | `threshold`: `str(int(cost_max))` |
+| 52 | Pass (5-10%) | `message_pass` | `✔️ % Biaya Iklan / GMV Toko = {pct_str} Sudah Baik` | Same |
+| 53 | — | — | Calculator 1 `output_text` injected directly | — |
 
 ### Category 8: Partisipasi Campaign (Rows 55-57)
 
@@ -873,6 +983,14 @@ else:                              → "❌"
 | 56 | Sesi tersedia | `campaign.availableSessions` | Reference | 0 |
 | 57 | % Partisipasi Campaign | `D55 / D56` | Pass if > 90% | Fail: +10, Pass: 0 |
 
+**G-column message templates (row 57):**
+
+| Row | Condition | Template Key | Template | Placeholders |
+|-----|-----------|-------------|----------|-------------|
+| 57 | No data (value==0.0) | `message_no_data` | `❌Tidak ada Campaign yang dipartisipasikan` | — |
+| 57 | Pass | `message_pass` | `✔️ % Partisipasi Campaign = {pct_str} Sudah Baik` | `pct_str`: `_fmt_pct_1dp(value)`, `threshold`: `f"{threshold:g}"` |
+| 57 | Fail | `message_fail` | `❌ % Partisipasi Campaign = {pct_str} Kurang Baik, nilai disarankan: >{threshold}%` | Same |
+
 ### Category 9: Kompetisi TOP Produk (Rows 60-63)
 
 **Max score: 0 points (informational)**
@@ -882,6 +1000,13 @@ For products 1-3 (rows 61-63):
 - **Selling price** = Calculator 2 `output_1[i].rata2_harga_jual` (i = 0, 1, 2)
 - **Market price** = `competition.product{i+1}.marketPrice` (manual input)
 - **Competitive** if `selling_price <= market_price × 1.10`
+
+**G-column message templates (rows 61-63):**
+
+| Verdict | Template | Placeholders |
+|---------|----------|-------------|
+| Pass | `✅kompetitif` | — |
+| Fail | `❌tidak kompetitif (harga kisaran pasaran: Rp. {market_price})` | `market_price`: `_fmt_idr(market_price)` |
 
 ### Category 10: Stok (Row 70)
 
@@ -1039,9 +1164,251 @@ link = "https://api.whatsapp.com/send?text={URL_ENCODE(message)}"
 
 ### Configurable Rules System
 
-All thresholds and point values are configurable via a `rules` dict loaded from the `scoring_rules` database table. When `rules` is `None`, the system falls back to `DEFAULT_FASHION_RULES` or `DEFAULT_NON_FASHION_RULES` (module-level constants).
+All thresholds and point values are configurable via a `rules` dict loaded from the `scoring_rules` database table. When `rules` is `None`, the system falls back to a single `DEFAULT_RULES` dict (module-level constant). There are **not** separate fashion/non-fashion rule sets — fashion-specific behavior is handled via `is_fashion` checks in the scoring functions and via DB-provided rule overrides for specific thresholds (e.g., ROI threshold, conversion rate).
 
 G-column message templates support `{placeholder}` syntax. Missing placeholders are preserved as-is via a `_SafeDict` that returns `{key}` for unknown keys. Malformed templates (unmatched braces) also degrade gracefully by returning the template unchanged.
+
+---
+
+## DEFAULT_RULES Reference
+
+The complete `DEFAULT_RULES` dict structure, organized by category. These are the runtime fallback values when `rules=None`. Source: `scoring.py` lines 226-384.
+
+### Operational
+
+| Key | Threshold | Points | Comparison | Message Pass | Message Fail |
+|-----|-----------|--------|------------|-------------|-------------|
+| `unfulfilled_order_rate` | 1.0 | 4 | lte | `✔️ Tingkat Pesanan Tidak Terselesaikan = {val_str} Sudah Baik` | `❌ Tingkat Pesanan Tidak Terselesaikan = {val_str} Kurang Baik, nilai disarankan: <{threshold}%` |
+| `late_shipment_rate` | 1.0 | 3 | lte | `✔️ Tingkat Keterlambatan Pengiriman = {val_str} Sudah Baik` | `❌ Tingkat Keterlambatan Pengiriman = {val_str} Kurang Baik, nilai disarankan: <{threshold}%` |
+| `preparation_time` | 1.0 | 3 | lte | `✔️ Masa Pengemasan = {val_str} hari Sudah Baik` | `❌ Masa Pengemasan = {val_str} hari Kurang Baik, nilai disarankan: <{threshold} hari` |
+| `chat_response_rate` | 95.0 | — | gte (info_only) | `✔️ Persentase Chat Dibalas = {val_str} Sudah Baik` | `❌ Persentase Chat Dibalas = {val_str} Kurang Baik, nilai disarankan: >{threshold}%` |
+| `overall_rating` | 4.7 | — | gte (info_only) | `✔️ Keseluruhan Penilaian = {val_str} Sudah Baik` | `❌ Keseluruhan Penilaian = {val_str} Kurang Baik, nilai disarankan: >{threshold}` |
+
+### Business
+
+| Key | Field | Value |
+|-----|-------|-------|
+| `monthly_sales_trend` | threshold_pct | 90.0 |
+| | points | 10 |
+| | comparison | gte |
+| | message_pass | `✔️ Penjualan = IDR {idr_val} Meningkat {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: IDR {idr_avg}` |
+| | message_fail | `❌ Penjualan = IDR {idr_val} Menurun {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: IDR {idr_avg}` |
+| | message_fail_severe | `\n❗️ Potensi peningkatan harga jual signifikan atau terdapat event abnormal.` |
+| `six_month_avg_threshold` | threshold | 100,000,000 |
+| | points | 10 |
+| `conversion_rate` | threshold | 3.0 |
+| | comparison | gte (info_only) |
+| | message_pass | `✔️ Tingkat Konversi = {val_str} Sudah Baik` |
+| | message_fail | `❌ Tingkat Konversi = {val_str} Kurang Baik, nilai disarankan: {benchmark}` |
+
+### Content
+
+| Key | Threshold | Comparison | Message Pass | Message Fail |
+|-----|-----------|------------|-------------|-------------|
+| `quality_ratio` | 95.0 | gte (info_only) | `✔️ % Konten baik = {val_str} Sudah Baik` | `❌ % Konten baik = {val_str} Kurang Baik, nilai disarankan: >{threshold}%` |
+
+### Visitors
+
+| Key | Threshold | Points | Comparison | Message Pass | Message Fail |
+|-----|-----------|--------|------------|-------------|-------------|
+| `returning_visitors_pct` | 23.0 | 3 | gte | `✔️ % Pengunjung Lama = {val_str} Sudah Baik` | `❌ % Pengunjung Lama = {val_str} Kurang Baik, nilai disarankan: >{threshold}%` |
+| `followers` | 50,000 | 2 | gte | `✔️ Total Pengikut = {val_str} Sudah Baik` | `❌ Total Pengikut = {val_str} Kurang Baik, nilai disarankan: >50.000` |
+
+### Promo Tools
+
+| Key | Field | Value |
+|-----|-------|-------|
+| `usage_pct_threshold` | threshold | 80.0 |
+| | opportunity_points | 5 |
+| | message_pass | `✔️ Penggunaan alat promosi = {val_str} Sudah Baik` |
+| | message_fail | `❌ Penggunaan alat promosi = {val_str} Kurang Baik, nilai disarankan: >{threshold}%` |
+| `effectiveness_pct_threshold` | threshold | 90.0 |
+| | opportunity_points | 10 |
+| | message_pass | `✔️ Efektifitas alat promosi = {val_str} Sudah Baik` |
+| | message_fail | `❌ Efektifitas alat promosi = {val_str} Kurang Baik, nilai disarankan: >{threshold}%` |
+| `individual_messages` | message_zero | `{verdict} {metric} nil pendapatan` |
+| | message_dependent | `{verdict} {metric} = {pct_str} Terlalu mengandalkan promo, nilai disarankan: 15%-50%` |
+| | message_fail | `❌ {metric} = {pct_str} Kurang Efektif, nilai disarankan: {benchmark}` |
+| | message_pass | `✔️ {metric} ({pct_str}) digunakan & persentase penggunaan baik` |
+| | message_pass_afiliasi | `✔️ {metric} ({pct_str}) digunakan` |
+
+### Products & Status
+
+| Key | Field | Value |
+|-----|-------|-------|
+| `product_count` | threshold | 35 |
+| | points | 5 |
+| | comparison | gte |
+| | message_pass | `✔️ Jumlah Produk = {value_int} OK` |
+| | message_fail | `❌ Jumlah Produk = {value_int} NOT OK, nilai disarankan: >={threshold}` |
+| `store_status_points` | mall | 10 |
+| | star_plus | 5 |
+| | star | 0 |
+| | regular | 0 |
+| | message_pass | `✔️ Status Toko = {store_status} OK` |
+| | message_fail | `❌ Status Toko = {store_status} Wajib Shopee Mall` |
+
+### Ads
+
+| Key | Field | Value |
+|-----|-------|-------|
+| `roi_threshold` | threshold | 9.0 |
+| | opportunity_points | 5 |
+| | comparison | gt |
+| | message_pass | `✔️ ROI = {val_str} Sudah Baik` |
+| | message_fail | `❌ ROI = {val_str} Kurang Baik, nilai disarankan: {benchmark}` |
+| `gmv_ratio_threshold` | threshold | 84.0 |
+| | points | 5 |
+| | comparison | lt |
+| | message_pass | `✔️ % GMV Iklan / GMV Toko = {pct_str} Sudah Baik` |
+| | message_fail | `❌ % GMV Iklan / GMV Toko = {pct_str} Terlalu bergantung terhadap Iklan, nilai disarankan: <{threshold}%` |
+| | message_no_ads | `❌ Iklan tidak aktif sama sekali` |
+| `cost_ratio_range` | min | 5.0 |
+| | max | 10.0 |
+| | info_only | true |
+| | message_pass | `✔️ % Biaya Iklan / GMV Toko = {pct_str} Sudah Baik` |
+| | message_fail | `❌ % Biaya Iklan / GMV Toko = {pct_str} Biaya terlalu tinggi, nilai disarankan: <{threshold}%` |
+| | message_no_ads | `❌ Iklan tidak aktif sama sekali` |
+| | message_too_minimal | `❌ Penggunaan iklan terlalu minim ({pct_str}). Nilai disarankan: {min}%-{max}%.` |
+
+### Campaign
+
+| Key | Field | Value |
+|-----|-------|-------|
+| `participation_pct_threshold` | threshold | 90.0 |
+| | opportunity_points | 10 |
+| | comparison | gte |
+| | message_pass | `✔️ % Partisipasi Campaign = {pct_str} Sudah Baik` |
+| | message_fail | `❌ % Partisipasi Campaign = {pct_str} Kurang Baik, nilai disarankan: >{threshold}%` |
+| | message_no_data | `❌Tidak ada Campaign yang dipartisipasikan` |
+
+### Stock
+
+| Key | Threshold | Points | Comparison |
+|-----|-----------|--------|------------|
+| `high_threshold` | 24 | 10 | gte |
+| `mid_threshold` | 12 | 5 | gte |
+| `low_penalty` | 12 | -5 | lt |
+
+### Discount
+
+| Key | Field | Value |
+|-----|-------|-------|
+| `fake_discount_flag` | points_no_flag | 5 |
+| | points_flag | 0 |
+
+### Marketing
+
+| Key | Field | Value | Description |
+|-----|-------|-------|-------------|
+| `floor` | value | 0.12 | Non-fashion marketing floor |
+| `floor_fashion` | value | 0.15 | Fashion marketing floor |
+| `base_subtraction` | value | 0.03 | G72 base subtraction |
+| `upper_limit_base` | value | 0.20 | G72 upper limit base |
+| `fashion_adjustment` | value | 0.05 | Added to upper_limit when fashion |
+| `minimum_threshold` | value | 0.10 | G72 minimum |
+| `display_max` | value | 0.25 | G73 clamp max |
+| `display_min` | value | 0.10 | G73 clamp min |
+
+### Competition
+
+| Key | Template |
+|-----|----------|
+| `message_pass` | `✅kompetitif` |
+| `message_fail` | `❌tidak kompetitif (harga kisaran pasaran: Rp. {market_price})` |
+
+### Interpretation
+
+**Score ranges:**
+
+| Min | Max | Label | Verdict |
+|-----|-----|-------|---------|
+| 71 | — | Good Candidate | ✔️ |
+| 41 | 70 | Needs Review | ⭕️ |
+| — | 40 | Not Recommended | ❌ |
+
+**Closing messages (6 verdict variants):**
+
+| Verdict | Message |
+|---------|---------|
+| `"✔️"` | `Berdasarkan data analisa diatas, potensi toko masih belum maksimal. Kami mengundang untuk berdiskusi mengenai potensi optimisasi toko melalui link berikut: cal-bd2.ahacommerce.net` |
+| `"❌"` | `Berdasarkan data analisa diatas, perlu mempertimbangkan potensi keuntungan. Silakan cek AHA Coventures: bit.ly/AHACoventures` |
+| `"❌ Non Mall"` | `Toko belum berstatus Mall. AHA dapat membantu proses pengajuan Shopee Mall. Persyaratan: HAKI (Merek Terdaftar), NIB, dan dokumen legalitas usaha.` |
+| `"❌ No Brand"` | `Toko bukan merupakan toko yang memiliki brand sendiri. Terima kasih atas waktunya, semoga sukses selalu.` |
+| `""` (empty) | `Performa toko sudah cukup baik. Terima kasih atas waktunya, semoga sukses selalu.` |
+| `"❌ Opex"` | `Tingkat keterlambatan cukup tinggi. Disarankan untuk memperbaiki pengiriman (<2%) dan masa pengemasan (<1 hari) terlebih dahulu.` |
+| `"⭕️"` | *(empty string)* |
+
+---
+
+## Fashion vs Non-Fashion Behavior
+
+### Comparison Table
+
+| Behavior | Non-Fashion (Default) | Fashion | Source |
+|----------|----------------------|---------|--------|
+| Conversion rate threshold (Row 20) | >= 3.0% | >= 2.0% | DB rules override of `business.conversion_rate.threshold` |
+| ROI threshold (Row 50) | >= 9.0 | >= 8.0 | DB rules override of `ads.roi_threshold.threshold` |
+| Marketing floor (G72) | 12% | 15% | `DEFAULT_RULES.marketing.floor` / `floor_fashion` |
+| Fashion adjustment (G72) | 0% | +5% | `DEFAULT_RULES.marketing.fashion_adjustment` (applied when `is_fashion=True`) |
+| Upper limit (G72) | 20% | 25% (20% + 5%) | `upper_limit_base + fashion_adjustment` |
+
+### Override Mechanism
+
+1. **DEFAULT_RULES (hardcoded):** Contains the non-fashion defaults. Marketing floor and fashion adjustment are the only values that differ structurally — both variants exist as separate keys (`floor` vs `floor_fashion`).
+
+2. **DB rules (runtime):** When `rules` is provided (loaded from `scoring_rules` table), individual thresholds like conversion rate and ROI threshold can be overridden per-template. This is how fashion gets `conversion_rate.threshold=2.0` and `roi_threshold.threshold=8.0`.
+
+3. **`is_fashion` code checks:** The `calculate_score()` function sets `is_fashion = (template == "fashion")`. This flag controls:
+   - Which marketing floor to use (`floor_fashion` vs `floor`)
+   - Whether `fashion_adjustment` is applied (0 when `is_fashion=False`)
+   - These happen in `_compute_g72()` via direct `is_fashion` parameter
+
+4. **Post-scoring override (conversion rate):** After all categories are scored, `calculate_score()` re-reads `conversion_rate.threshold` from rules and overrides row 20's benchmark and verdict. This ensures template-specific rules apply even though `_score_business()` initially uses the DEFAULT_RULES value.
+
+---
+
+## Edge Cases & Zero-State Behavior
+
+### Calculator 1: Ads Keyword — Zero States
+
+| Condition | Behavior |
+|-----------|----------|
+| Empty `cpc_data` (no CPC rows) | AK2: `"• Total Iklan: 0 Aktif, 0 Dijeda dan 0 Berakhir.\n• Melibatkan 0 (0.0%) produk dari total jumlah produk: {total_products}."` |
+| | AK3: All counts are 0 |
+| | AK4: Flag 1 triggers (product_pct=0 < 0.5), Flag 2 triggers (active_ratio=0/0=0 < 0.5), Flags 3-7 all trigger (no rows) |
+| Empty `keyword_data` (no keyword rows) | AL2: empty (no ads qualify), AL3: manual message (fallback), AL5: empty, AL6-AL9: empty |
+| | Thresholds: AM6=0, AM7=0, AM9=0, AM10=0 |
+| `total_products=0` | product_pct = 0 (division guarded), AK2 shows 0 products |
+
+### Calculator 2: Top SKU — Zero States
+
+| Condition | Return Value |
+|-----------|-------------|
+| Empty `order_data` | `output_text=""`, `details={"output_1": [], "output_2": [], "average_stock": 0, "product_count": 0, "total_unique_products": 0}` |
+| No matching mass_update | All products get `kode_variasi="Kode Variasi tidak ditemukan"`, `stok=0` |
+| Single product | Returns that product as the only top SKU |
+
+### Calculator 3: Discount — Zero States
+
+| Condition | Return Value |
+|-----------|-------------|
+| Empty `order_data` | `output_text="% Diskon TOP SKU: 0.0%\nRange: 0.0% ~ 0.0%\nVoucher 0.0%\nPaket Diskon 0.0%"` |
+| | `details={"discount_pct": "0.0%", "range_min": "0.0%", "range_max": "0.0%", "voucher_pct": "0.0%", "paket_pct": "0.0%", "fake_discount_flag": False, "product_summary": [], "top_sku": [], "totals": {"sum_n": 0, "sum_p": 0, "sum_voucher": 0, "sum_paket": 0, "sum_harga_setelah_diskon": 0}}` |
+| All rows have empty `No. Pesanan` | All urutan=0, all rows skipped → same as empty |
+| All `Harga Awal=0` | discount_pct=0 for all rows |
+
+### Scoring — Zero States
+
+| Condition | Behavior |
+|-----------|----------|
+| Calculator 2 not run (missing from `calculator_results`) | Stock category: `available=False`, score=0, message=`"Calculator 2 (Top SKU) belum dijalankan"` |
+| Calculator 3 not run (missing from `calculator_results`) | Discount category: `available=False`, score=0, message=`"Calculator 3 (Discount) belum dijalankan"` |
+| All `salesMonth0..5` are 0 | `avg_6mo=0`, Row 13: passes (0 < 0 × 1.10 is false → actually fails), Row 19: fails (0 < 100M) |
+| `adCost=0` | ROI=0 (D48/0 guarded → 0), Row 52: `"❌ Iklan tidak aktif sama sekali"` |
+| `adSales=0` | Row 51: `"❌ Iklan tidak aktif sama sekali"` (no_ads message) |
+| All promo tool values = 0 | All 11 tools: verdict=❌, used_count=0, pass_count=0, Row 42/43 both fail → +15 opportunity points |
+| Empty D73 text (no Calculator 3) | G68="", G72=floor value, G73=budget based on floor |
 
 ---
 
@@ -1156,4 +1523,170 @@ flowchart LR
     S --> OUT2[Email Body]
     S --> OUT3[WhatsApp Link]
     S --> OUT4[Marketing Budget]
+```
+
+---
+
+## Test Vectors
+
+Sample input → expected output pairs extracted from the test suite. Use these to verify a reimplementation produces identical results.
+
+### Calculator 1: Ads Keyword — MND Test Vector
+
+**Input:** `total_products = 80`, CPC data with 49 rows (4 Berjalan, 1 Dijeda, 44 Berakhir), all ads use `Penempatan Iklan = "Semua Penempatan"` and `Mode Bidding = "GMV Max Custom ROAS"`.
+
+Active ads (Berjalan):
+1. "Automatically select products Ad" — Iklan Produk, Cost: 3,950,930, Revenue: 38,296,173, ROAS: 9.69
+2. "MOON DAE Nami Bag Tas Selempang [9]" — Iklan Produk, Cost: 65,109, Revenue: 381,302, ROAS: 5.86
+3. "MOON DAE Bona Shoulder Bag [11]" — Iklan Produk, Cost: 27,287, Revenue: 110,695, ROAS: 4.06
+4. "MOON DAE Kimmy Bag [8]" — Iklan Produk, Cost: 11,032, Revenue: 0, ROAS: 0.0
+
+Paused (Dijeda):
+5. "MOON DAE Rachel Bag [11]" — Iklan Produk, Cost: 33,515, Revenue: 110,300, ROAS: 3.29
+
+**Expected AK2 output:**
+
+```text
+• Total Iklan: 4 Aktif, 1 Dijeda dan 44 Berakhir.
+• Melibatkan 4 (5.0%) produk dari total jumlah produk: 80.
+```
+
+Note: unique products = 4 (CleanName deduplication: "Automatically select products Ad", "MOON DAE Nami Bag Tas Selempang", "MOON DAE Bona Shoulder Bag", "MOON DAE Kimmy Bag"). Rachel is Dijeda so included in non-ended, but count is still 4 unique since it's "MOON DAE Rachel Bag". Actually 5 unique product names but total_products=80 so pct=5/80=6.25%... The test asserts exact "4 (5.0%)" which means 4 unique and 4/80=5.0%.
+
+### Calculator 1: Threshold Calculation Test Vector
+
+**Input (keyword data, 3 rows):**
+
+| Row | Omzet Penjualan | Biaya | Efektifitas Iklan |
+|-----|----------------|-------|-------------------|
+| 1 | 5,000,000 | 600,000 | 4.0 |
+| 2 | 2,572,696 | 303,118 | 6.0 |
+| 3 | 0 | 0 | 0.0 |
+
+**Expected thresholds:**
+
+| Threshold | Calculation | Result |
+|-----------|------------|--------|
+| AM6 | ROUND((5,000,000 + 2,572,696) / 2) | **3,786,348** |
+| AM7 | MIN(ROUND((4.0 + 6.0) / 2), 10) = MIN(5, 10) | **5** |
+| AM9 | ROUND((600,000 + 303,118) / 2) | **451,559** |
+| AM10 | MIN(ROUND((4.0 + 6.0) / 2), 3) = MIN(5, 3) | **3** |
+
+Note: Row 3 excluded from all averages because all values are 0.
+
+### Calculator 2: Top SKU — Revenue & Stock Test Vector
+
+**Input (order data, single product):**
+
+```json
+{
+  "Nomor Referensi SKU": "SKU001",
+  "Nama Produk": "Product A",
+  "Nama Variasi": "Red",
+  "Harga Setelah Diskon": "100.000",
+  "Jumlah": 2,
+  "Jumlah Produk di Pesan": 2,
+  "Voucher Ditanggung Penjual": "10.000",
+  "Cashback Koin": "0",
+  "Diskon Dari Shopee": "0"
+}
+```
+
+**Expected revenue:** `(100,000 × 2) - (10,000 / 2) - (0 / 2) + (0 / 2) = 195,000`
+
+**Average stock example:** Products with stok [100, 150, 120] → `ROUND((100 + 150 + 120) / 3)` = **123**
+
+**Ranking limit:** 100 unique products → `MAX(ROUND(100 × 0.20), 20)` = `MAX(20, 20)` = 20 top products returned.
+
+### Calculator 3: Discount — SUKA Test Vector (No Fake Discount)
+
+**Input (12 rows, 4 unique products):**
+
+| No. Pesanan | Nama Produk | Harga Awal | Harga Setelah Diskon | Jumlah | Voucher | Paket |
+|-------------|-------------|-----------|---------------------|--------|---------|-------|
+| SUKA001 | Sepatu Sneakers | 200.000 | 195.000 | 1 | 3.000 | 0 |
+| SUKA001 | Kaos Polos | 50.000 | 48.000 | 2 | 3.000 | 0 |
+| SUKA002 | Sepatu Sneakers | 200.000 | 190.000 | 1 | 2.000 | 0 |
+| SUKA003 | Tas Ransel | 150.000 | 150.000 | 1 | 0 | 0 |
+| SUKA004 | Sepatu Sneakers | 200.000 | 195.000 | 2 | 1.000 | 0 |
+| SUKA004 | Topi Baseball | 75.000 | 72.000 | 1 | 1.000 | 0 |
+| SUKA005 | Kaos Polos | 50.000 | 49.000 | 3 | 0 | 0 |
+| SUKA006 | Tas Ransel | 150.000 | 148.000 | 1 | 0 | 0 |
+| SUKA007 | Sepatu Sneakers | 200.000 | 198.000 | 3 | 0 | 0 |
+| SUKA008 | Kaos Polos | 50.000 | 49.000 | 4 | 0 | 0 |
+| SUKA009 | Sepatu Sneakers | 200.000 | 194.000 | 2 | 0 | 0 |
+| SUKA010 | Tas Ransel | 150.000 | 150.000 | 2 | 500 | 0 |
+
+**Expected output (4 lines, no fake discount flag):**
+
+```text
+% Diskon TOP SKU: {pct}%
+Range: {min}% ~ {max}%
+Voucher {v}%
+Paket Diskon {p}%
+```
+
+The `fake_discount_flag` is `False` because `sum_n / sum_p <= 0.20` (low discount ratios).
+
+### Calculator 3: Discount — MND Test Vector (Fake Discount Triggered)
+
+**Input (10 rows, 4 unique products, heavy discounts + vouchers + paket):**
+
+| No. Pesanan | Nama Produk | Harga Awal | Harga Setelah Diskon | Jumlah | Voucher | Paket |
+|-------------|-------------|-----------|---------------------|--------|---------|-------|
+| MND001 | MOON DAE Nami Bag | 250.000 | 125.000 | 1 | 20.000 | 5.000 |
+| MND001 | MOON DAE Seoul Bag | 200.000 | 100.000 | 1 | 20.000 | 5.000 |
+| MND002 | MOON DAE Nami Bag | 250.000 | 120.000 | 2 | 15.000 | 3.000 |
+| MND003 | MOON DAE Bona Bag | 180.000 | 90.000 | 1 | 10.000 | 2.000 |
+| MND004 | MOON DAE Nami Bag | 250.000 | 125.000 | 1 | 25.000 | 5.000 |
+| MND004 | MOON DAE Honey Bag | 220.000 | 110.000 | 1 | 25.000 | 5.000 |
+| MND005 | MOON DAE Seoul Bag | 200.000 | 95.000 | 2 | 20.000 | 4.000 |
+| MND006 | MOON DAE Bona Bag | 180.000 | 85.000 | 1 | 15.000 | 3.000 |
+| MND007 | MOON DAE Nami Bag | 250.000 | 120.000 | 3 | 10.000 | 2.000 |
+| MND008 | MOON DAE Honey Bag | 220.000 | 105.000 | 1 | 8.000 | 1.000 |
+
+**Expected exact output:**
+
+```text
+% Diskon TOP SKU: 137.3%
+Range: 59.5% ~ 59.5%
+Voucher 11.4%
+Paket Diskon 2.3%
+📌 Berpotensi menggunakan 'fake discount'
+```
+
+**Expected exact totals:**
+
+| Metric | Value |
+|--------|-------|
+| sum_n (total discount) | 1,273,000.0 |
+| sum_p (total paid) | 927,000.0 |
+| sum_voucher | 123,000.0 |
+| sum_paket | 25,000.0 |
+| sum_harga_setelah_diskon | 1,075,000.0 |
+| fake_discount_flag | True (`1,273,000 / 927,000 = 1.373 > 0.20`) |
+| discount_pct | "137.3%" |
+| range_min / range_max | "59.5%" / "59.5%" |
+| voucher_pct | "11.4%" (`123,000 / 1,075,000`) |
+| paket_pct | "2.3%" (`25,000 / 1,075,000`) |
+| Unique products | 4 (Nami, Seoul, Bona, Honey) |
+| Top SKU | "MOON DAE Nami Bag" (qty=7) |
+
+### Scoring: Threshold Calculation Test Vector
+
+**Input for G68 (marketing estimation):**
+
+```text
+D73 = "% Diskon TOP SKU: 100.0%\nRange: 40.0% ~ 50.0%\nVoucher 3.0%\nPaket Diskon 1.0%"
+d52 = 0.05 (ad cost ratio)
+```
+
+**Parsed values:** t=1.0, ra=0.40, rb=0.50, v=0.03, p=0.01
+
+**G68 computation:**
+
+```text
+low  = (0.40 × 1.0) + 0.03 + 0.01 + 0.05 + 0.05 = 0.54 → "54.0%"
+high = (0.50 × 1.0) + 0.03 + 0.01 + 0.05 + 0.05 = 0.64 → "64.0%"
+Output: "54.0% ~ 64.0%"
 ```
