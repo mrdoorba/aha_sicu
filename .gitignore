@@ -43,7 +43,6 @@ gsheets-service-account.json
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
-!infrastructure/terraform/environments/*.tfvars
 crash.log
 override.tf
 override.tf.json

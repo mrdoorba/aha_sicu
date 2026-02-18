@@ -1,9 +1,10 @@
 # Store ICU - Production Environment Variables
+# Copy to prod.tfvars and fill in real values
 
 project_id          = "YOUR_GCP_PROJECT_ID"
 region              = "asia-southeast1"
 environment         = "prod"
-github_repo         = "HandersThe/aha_sicu"
+github_repo         = "YOUR_ORG/aha_sicu"
 firebase_project_id = "YOUR_GCP_PROJECT_ID"
 
 # Cloud Run - prod sizing

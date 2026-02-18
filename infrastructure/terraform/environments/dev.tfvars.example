@@ -1,9 +1,10 @@
 # Store ICU - Development Environment Variables
+# Copy to dev.tfvars and fill in real values
 
 project_id          = "YOUR_GCP_PROJECT_ID"
 region              = "asia-southeast1"
 environment         = "dev"
-github_repo         = "HandersThe/aha_sicu"
+github_repo         = "YOUR_ORG/aha_sicu"
 firebase_project_id = "YOUR_GCP_PROJECT_ID"
 
 # Cloud Run - dev sizing

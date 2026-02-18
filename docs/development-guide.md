@@ -84,7 +84,7 @@ The app will be available at `http://localhost:5173`.
 | `VITE_API_BASE_URL` | Yes | `http://localhost:8000` | Backend API URL |
 | `VITE_FIREBASE_API_KEY` | Yes | `AIza...` | Firebase API key |
 | `VITE_FIREBASE_AUTH_DOMAIN` | Yes | `project.firebaseapp.com` | Firebase auth domain |
-| `VITE_FIREBASE_PROJECT_ID` | Yes | `YOUR_GCP_PROJECT_ID` | Firebase project ID |
+| `VITE_FIREBASE_PROJECT_ID` | Yes | `your-project-id` | Firebase project ID |
 
 ## Development Commands
 

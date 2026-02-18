@@ -3,7 +3,7 @@
 # Dev: auto-deploys on push to develop.  Prod: requires manual approval.
 #
 # Required GitHub Actions variables (set per environment):
-#   GCP_PROJECT_ID            – GCP project ID (e.g. YOUR_GCP_PROJECT_ID)
+#   GCP_PROJECT_ID            – GCP project ID
 #   GCP_REGION                – GCP region (asia-southeast1)
 #   WORKLOAD_IDENTITY_PROVIDER – Full WIF provider path from terraform output
 #   DEPLOY_SERVICE_ACCOUNT    – Deploy SA email from terraform output

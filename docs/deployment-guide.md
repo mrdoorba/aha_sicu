@@ -16,21 +16,21 @@ This guide covers deploying the AHA Store ICU application to Google Cloud. The s
 - `firebase-tools` CLI (`npm install -g firebase-tools`)
 - `uv` (Python package manager) installed
 - Node.js 18+ and npm
-- Access to the GCP project (dev: `YOUR_GCP_PROJECT_ID`)
+- Access to the GCP project
 
 ## Environment Details
 
 | Resource | Dev | Prod |
 |----------|-----|------|
-| GCP Project | `YOUR_GCP_PROJECT_ID` | TBD |
+| GCP Project | `YOUR_GCP_PROJECT_ID` | `YOUR_GCP_PROJECT_ID` |
 | Cloud Run Service | `aha-sicu-dev-api` | `aha-sicu-prod-api` |
 | Cloud Run Region | `asia-southeast1` | `asia-southeast1` |
-| Cloud Run URL | `https://aha-sicu-dev-api-XXXXXXXXXXXX.asia-southeast1.run.app` | TBD |
+| Cloud Run URL | `https://aha-sicu-${ENV}-api-XXXXXXXXX.asia-southeast1.run.app` | Same pattern |
 | Firebase Hosting | `aha-sicu-dev.web.app` | `aha-sicu-prod.web.app` |
 | Firebase Project | `YOUR_GCP_PROJECT_ID` | `YOUR_GCP_PROJECT_ID` |
-| Neon DB Host | `YOUR_NEON_HOST.aws.neon.tech` | TBD |
-| API SA | `aha-sicu-dev-api-sa@YOUR_GCP_PROJECT_ID.iam.gserviceaccount.com` | TBD |
-| Sheets SA | `aha-sicu-dev-sheets-sa@YOUR_GCP_PROJECT_ID.iam.gserviceaccount.com` | TBD |
+| Neon DB Host | `YOUR_NEON_HOST.aws.neon.tech` | Same pattern |
+| API SA | `aha-sicu-${ENV}-api-sa@PROJECT_ID.iam.gserviceaccount.com` | Same pattern |
+| Sheets SA | `aha-sicu-${ENV}-sheets-sa@PROJECT_ID.iam.gserviceaccount.com` | Same pattern |
 
 ---
 
@@ -138,7 +138,7 @@ Create `frontend/.env` with Firebase client config:
 VITE_FIREBASE_API_KEY=<firebase-web-api-key>
 VITE_FIREBASE_AUTH_DOMAIN=YOUR_GCP_PROJECT_ID.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=YOUR_GCP_PROJECT_ID
-VITE_API_BASE_URL=https://aha-sicu-dev-api-XXXXXXXXXXXX.asia-southeast1.run.app
+VITE_API_BASE_URL=https://YOUR_CLOUD_RUN_URL
 ```
 
 To get the Firebase Web API key:
