@@ -276,7 +276,8 @@ function countFilledInFlat(obj: object): { filled: number; total: number } {
 export function computeSectionProgress(data: ManualData): Record<string, SectionProgress> {
   const s1 = countFilledInFlat(data.operational);
 
-  const { salesStartMonth: _ssm, ...bizData } = data.business;
+  const { salesStartMonth, ...bizData } = data.business;
+  void salesStartMonth;
   const biz = countFilledInFlat(bizData);
   const visitors = countFilledInFlat(data.visitors);
   const s2 = {

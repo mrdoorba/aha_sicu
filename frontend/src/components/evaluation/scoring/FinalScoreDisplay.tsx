@@ -16,7 +16,7 @@ const VERDICT_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; 
   '': { icon: AlertTriangle, color: 'text-muted-foreground', label: 'No Verdict' },
 };
 
-export const FinalScoreDisplay = ({ totalScore, verdict, template: _template }: FinalScoreDisplayProps) => {
+export const FinalScoreDisplay = ({ totalScore, verdict }: FinalScoreDisplayProps) => {
   const config = VERDICT_CONFIG[verdict] ?? VERDICT_CONFIG[''];
   const Icon = config.icon;
 
