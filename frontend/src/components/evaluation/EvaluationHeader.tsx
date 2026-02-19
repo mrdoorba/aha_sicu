@@ -10,6 +10,18 @@ interface EvaluationHeaderProps {
   isError: boolean;
 }
 
+const VP_DISPLAY_FIELDS = [
+  'BD',
+  'Link Shopee Mall / LazMall',
+  'Kategori',
+  'Shopee Mall',
+  'No OPEX Issue',
+  'Omset >100jt',
+  'Score VP',
+  'No WA',
+  'Email',
+] as const;
+
 const META_KEYS = new Set(['id', 'created_at', 'updated_at', 'synced_at']);
 
 function getDisplayFields(rawData: Record<string, unknown>): Array<[string, string]> {
@@ -54,7 +66,12 @@ export const EvaluationHeader = ({ brand, isLoading, isError }: EvaluationHeader
     );
   }
 
-  const vpFields = getDisplayFields(brand.raw_data);
+  const vpFields = VP_DISPLAY_FIELDS
+    .filter((key) => {
+      const val = brand.raw_data[key];
+      return val !== undefined && val !== null && val !== '';
+    })
+    .map((key) => [key, String(brand.raw_data[key])] as [string, string]);
   const meetingFields = brand.meeting_raw_data
     ? getDisplayFields(brand.meeting_raw_data)
     : null;
