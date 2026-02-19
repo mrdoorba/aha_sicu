@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import {
   useReactTable,
@@ -250,9 +250,10 @@ export const EvaluationHistoryTable = () => {
     [setSearchParams],
   );
 
-  const sorting: SortingState = [
-    { id: sortBy, desc: sortOrder === 'desc' },
-  ];
+  const sorting: SortingState = useMemo(
+    () => [{ id: sortBy, desc: sortOrder === 'desc' }],
+    [sortBy, sortOrder],
+  );
 
   const setPage = useCallback(
     (updater: number | ((prev: number) => number)) => {
@@ -302,6 +303,7 @@ export const EvaluationHistoryTable = () => {
     dateToUrl || undefined,
   );
 
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table is not compatible with React Compiler memoization
   const table = useReactTable({
     data: evaluations,
     columns,
