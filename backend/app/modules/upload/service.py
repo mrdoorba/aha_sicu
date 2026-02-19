@@ -183,11 +183,12 @@ async def process_upload(
     filename_lower = pending.filename.lower()
 
     # Parse based on file extension
+    source_language = "id"
     try:
         if filename_lower.endswith(".zip"):
             df = process_zip(file_bytes, file_type)
         elif filename_lower.endswith(".csv"):
-            df = parse_csv(file_bytes)
+            df, source_language = parse_csv(file_bytes)
         elif filename_lower.endswith((".xlsx", ".xls")):
             header_row = 2 if file_type == "mass_update" else 0
             df = parse_excel(file_bytes, header_row=header_row)
@@ -212,7 +213,7 @@ async def process_upload(
 
     # Convert to JSONB-ready format
     row_count = len(df)
-    parsed_data = dataframe_to_json(df)
+    parsed_data = dataframe_to_json(df, source_language=source_language)
     del df  # Free DataFrame — parsed_data holds the JSON-ready structure now
     calculator_target = _CALCULATOR_TARGETS[file_type]
 

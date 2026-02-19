@@ -50,12 +50,17 @@ _VALUE_MAPS: dict[str, dict[str, str]] = {
 }
 
 
-def _normalise_english_columns(df: pl.DataFrame) -> pl.DataFrame:
-    """Rename English Shopee columns to Indonesian and translate cell values."""
+def _normalise_english_columns(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
+    """Rename English Shopee columns to Indonesian and translate cell values.
+
+    Returns:
+        Tuple of (normalised DataFrame, was_english) where was_english is True
+        if English column renames were applied.
+    """
     actual = set(df.columns)
     rename_map = {en: id_ for en, id_ in _COLUMN_RENAME.items() if en in actual}
     if not rename_map:
-        return df  # already Indonesian or unrelated
+        return df, False  # already Indonesian or unrelated
 
     df = df.rename(rename_map)
 
@@ -63,7 +68,7 @@ def _normalise_english_columns(df: pl.DataFrame) -> pl.DataFrame:
         if col in df.columns and df[col].dtype == pl.Utf8:
             df = df.with_columns(pl.col(col).replace(vmap).alias(col))
 
-    return df
+    return df, True
 
 
 # Required columns per file type — matched against actual Shopee exports.
@@ -110,7 +115,7 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
 }
 
 
-def parse_csv(file_bytes: bytes) -> pl.DataFrame:
+def parse_csv(file_bytes: bytes) -> tuple[pl.DataFrame, str]:
     """Parse a Shopee CSV export into a Polars DataFrame.
 
     Shopee CSV exports contain 7 metadata rows before the actual column
@@ -118,6 +123,10 @@ def parse_csv(file_bytes: bytes) -> pl.DataFrame:
     metadata rows that have fewer fields than the data section.
 
     English column headers are automatically normalised to Indonesian.
+
+    Returns:
+        Tuple of (DataFrame, source_language) where source_language is
+        ``"en"`` if English columns were detected, ``"id"`` otherwise.
     """
     try:
         df = pl.read_csv(
@@ -125,7 +134,8 @@ def parse_csv(file_bytes: bytes) -> pl.DataFrame:
             skip_rows=SHOPEE_CSV_SKIP_ROWS,
             truncate_ragged_lines=True,
         )
-        return _normalise_english_columns(df)
+        df, was_english = _normalise_english_columns(df)
+        return df, "en" if was_english else "id"
     except UploadException:
         raise
     except Exception as e:
@@ -176,10 +186,18 @@ def validate_columns(df: pl.DataFrame, file_type: str) -> None:
         )
 
 
-def dataframe_to_json(df: pl.DataFrame) -> dict[str, Any]:
-    """Convert a Polars DataFrame to a JSON-serializable dict for JSONB storage."""
+def dataframe_to_json(
+    df: pl.DataFrame, *, source_language: str = "id"
+) -> dict[str, Any]:
+    """Convert a Polars DataFrame to a JSON-serializable dict for JSONB storage.
+
+    Args:
+        df: The DataFrame to convert.
+        source_language: ``"en"`` or ``"id"`` — detected CSV language.
+    """
     return {
         "columns": df.columns,
         "data": df.to_dicts(),
         "row_count": len(df),
+        "source_language": source_language,
     }

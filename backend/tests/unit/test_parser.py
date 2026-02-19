@@ -41,16 +41,18 @@ def _shopee_csv(header_line: str, data_lines: list[str] | None = None) -> bytes:
 
 def test_parse_csv_valid():
     csv_bytes = _shopee_csv("col_a,col_b", ["1,hello", "2,world"])
-    df = parse_csv(csv_bytes)
+    df, lang = parse_csv(csv_bytes)
     assert df.shape == (2, 2)
     assert df.columns == ["col_a", "col_b"]
+    assert lang == "id"
 
 
 def test_parse_csv_empty():
     csv_bytes = _shopee_csv("col_a,col_b")
-    df = parse_csv(csv_bytes)
+    df, lang = parse_csv(csv_bytes)
     assert len(df) == 0
     assert df.columns == ["col_a", "col_b"]
+    assert lang == "id"
 
 
 def test_parse_csv_invalid():
@@ -143,6 +145,13 @@ def test_dataframe_to_json():
     assert result["row_count"] == 2
     assert len(result["data"]) == 2
     assert result["data"][0] == {"name": "a", "value": 1}
+    assert result["source_language"] == "id"
+
+
+def test_dataframe_to_json_english():
+    df = pl.DataFrame({"name": ["a"], "value": [1]})
+    result = dataframe_to_json(df, source_language="en")
+    assert result["source_language"] == "en"
 
 
 # ---------------------------------------------------------------------------
@@ -155,12 +164,13 @@ def test_parse_csv_english_columns_renamed():
         "Ad Name,Ads Type,Product ID,Placement,Expense,Status",
         ["Test Ad,Product Ad,123,All,5000,Ongoing"],
     )
-    df = parse_csv(csv_bytes)
+    df, lang = parse_csv(csv_bytes)
     assert "Nama Iklan" in df.columns
     assert "Jenis Iklan" in df.columns
     assert "Kode Produk" in df.columns
     assert "Penempatan Iklan" in df.columns
     assert "Biaya" in df.columns
+    assert lang == "en"
 
 
 def test_parse_csv_english_values_translated():
@@ -173,7 +183,7 @@ def test_parse_csv_english_values_translated():
             "Ad3,Product Ad,3,Recommendation,300,Paused",
         ],
     )
-    df = parse_csv(csv_bytes)
+    df, lang = parse_csv(csv_bytes)
     rows = df.to_dicts()
     assert rows[0]["Status"] == "Berjalan"
     assert rows[0]["Jenis Iklan"] == "Iklan Produk"
@@ -183,6 +193,7 @@ def test_parse_csv_english_values_translated():
     assert rows[1]["Penempatan Iklan"] == "Halaman Pencarian"
     assert rows[2]["Status"] == "Dijeda"
     assert rows[2]["Penempatan Iklan"] == "Halaman Rekomendasi"
+    assert lang == "en"
 
 
 def test_parse_csv_english_keyword_report_normalised():
@@ -191,12 +202,13 @@ def test_parse_csv_english_keyword_report_normalised():
         "Ad Name,Ads Type,Product ID,Placement,Keyword/Location,Expense,GMV,ROAS,Status",
         ["Ad1,Product Ad,1,All,Auto Selected,100,5000,10.5,Ongoing"],
     )
-    df = parse_csv(csv_bytes)
+    df, lang = parse_csv(csv_bytes)
     assert "Kata Pencarian/Penempatan" in df.columns
     assert "Omzet Penjualan" in df.columns
     assert "Efektifitas Iklan" in df.columns
     row = df.to_dicts()[0]
     assert row["Kata Pencarian/Penempatan"] == "Auto Selected"
+    assert lang == "en"
 
 
 def test_parse_csv_indonesian_passthrough():
@@ -205,10 +217,11 @@ def test_parse_csv_indonesian_passthrough():
         "Nama Iklan,Jenis Iklan,Kode Produk,Penempatan Iklan,Biaya",
         ["Ad1,Iklan Produk,1,Semua Penempatan,100"],
     )
-    df = parse_csv(csv_bytes)
+    df, lang = parse_csv(csv_bytes)
     assert "Nama Iklan" in df.columns
     row = df.to_dicts()[0]
     assert row["Jenis Iklan"] == "Iklan Produk"
+    assert lang == "id"
 
 
 def test_english_csv_validates_after_normalisation():
@@ -217,5 +230,5 @@ def test_english_csv_validates_after_normalisation():
         "Ad Name,Ads Type,Product ID,Placement,Expense",
         ["Ad1,Product Ad,1,All,100"],
     )
-    df = parse_csv(csv_bytes)
+    df, _lang = parse_csv(csv_bytes)
     validate_columns(df, "cpc_ad_report")  # should not raise
