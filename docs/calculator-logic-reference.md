@@ -597,7 +597,7 @@ class DiscountResult:
 | `Harga Setelah Diskon` | Discounted price (Indonesian format) |
 | `Jumlah` | Quantity |
 | `Voucher Ditanggung Penjual` | Seller voucher (Indonesian format) |
-| `Paket Diskon` | Bundle discount (Indonesian format) |
+| `Paket Diskon (Diskon dari Penjual)` | Seller bundle discount (Indonesian format) |
 
 ### Processing Pipeline
 
