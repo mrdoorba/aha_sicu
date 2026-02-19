@@ -377,11 +377,12 @@ def _format_bottom_ad(row: dict, is_fallback: bool) -> str:
     )
 
 
-def calculate_sheet2(rows: list[dict]) -> dict[str, Any]:
+def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any]:
     """Calculate AL2, AL3, AL5, AL6-AL9 and thresholds from Keyword Report.
 
     Args:
         rows: Parsed keyword/placement report rows (list of dicts).
+        language: ``"id"`` or ``"en"`` — controls threshold/fallback/AL6 variants.
 
     Returns:
         Dict with keys ``al2``, ``al3``, ``al5``, ``al6``-``al9``,
@@ -413,8 +414,11 @@ def calculate_sheet2(rows: list[dict]) -> dict[str, Any]:
     is_top_fallback = False
     if top_primary:
         top_ads = top_primary
+    elif language == "en":
+        # English: no fallback — AL2 is empty if primary returns nothing
+        top_ads = []
     else:
-        # Fallback: D<>'' AND GMV > AM6/2 AND ROAS > MAX(AM7/2, 6)
+        # Indonesian: fallback query
         fallback_roas_threshold = max(am7 / 2, 6)
         top_ads = sorted(
             [
@@ -456,11 +460,16 @@ def calculate_sheet2(rows: list[dict]) -> dict[str, Any]:
         al3 = "📌 Iklan dengan performa terbaik sudah mengandalkan pengaturan manual."
 
     # --- AL5: BOTTOM Ads ---
-    # Primary: D<>'' AND Cost > 100000 AND Cost > AM9 AND ROAS < AM10 AND ROAS < 5
+    # Language-variant thresholds:
+    #   Indonesian: Cost > 100000, fallback ROAS cap min(round(AM10*2), 5)
+    #   English:    Cost > 50000,  fallback ROAS cap min(round(AM10*2), 4)
+    min_cost = 50000 if language == "en" else 100000
+    fallback_roas_cap_limit = 4 if language == "en" else 5
+
     bottom_primary = sorted(
         [
             r for r in product_rows
-            if _safe_num(r.get("Biaya")) > 100000
+            if _safe_num(r.get("Biaya")) > min_cost
             and _safe_num(r.get("Biaya")) > am9
             and _safe_num(r.get("Efektifitas Iklan")) < am10
             and _safe_num(r.get("Efektifitas Iklan")) < 5
@@ -473,13 +482,11 @@ def calculate_sheet2(rows: list[dict]) -> dict[str, Any]:
     if bottom_primary:
         bottom_ads = bottom_primary
     else:
-        # Fallback: D<>'' AND Cost > 100000 AND Cost > AM9
-        #   AND ROAS < MIN(ROUND(AM10*2), 5) AND ROAS < 5
-        fallback_roas_cap = min(round(am10 * 2), 5)
+        fallback_roas_cap = min(round(am10 * 2), fallback_roas_cap_limit)
         bottom_ads = sorted(
             [
                 r for r in product_rows
-                if _safe_num(r.get("Biaya")) > 100000
+                if _safe_num(r.get("Biaya")) > min_cost
                 and _safe_num(r.get("Biaya")) > am9
                 and _safe_num(r.get("Efektifitas Iklan")) < fallback_roas_cap
                 and _safe_num(r.get("Efektifitas Iklan")) < 5
@@ -500,8 +507,10 @@ def calculate_sheet2(rows: list[dict]) -> dict[str, Any]:
         al5 = ""
 
     # --- AL6-AL9: Bottom Flags (substring checks on AL5 text) ---
+    # AL6: Indonesian checks "Otomatis", English checks "Bidding Otomatis"
     al6 = ""
-    if al5.count("Otomatis") >= 1:
+    al6_substring = "Bidding Otomatis" if language == "en" else "Otomatis"
+    if al5.count(al6_substring) >= 1:
         al6 = (
             "📌 Terdapat iklan dengan pengaturan otomatis yang tidak "
             "terkontrol biayanya (disarankan dimonitor 1-2x setiap hari)."
@@ -514,10 +523,6 @@ def calculate_sheet2(rows: list[dict]) -> dict[str, Any]:
             "terkontrol biayanya (disarankan dimonitor 1-2x setiap hari)."
         )
 
-    # NOTE: AL8 triggers on "Iklan Pencarian Produk: " — this substring appears
-    # when the keyword report has Jenis Iklan = "Iklan Pencarian Produk" (a more
-    # specific ad type that Shopee uses in keyword reports for search product ads).
-    # The CPC report uses "Iklan Produk" but keyword report may use this variant.
     al8 = ""
     if al5.count("Iklan Pencarian Produk: ") >= 3:
         al8 = (

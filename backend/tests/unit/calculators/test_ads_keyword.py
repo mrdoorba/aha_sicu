@@ -884,6 +884,161 @@ class TestSheet2BottomFlags:
 
 
 # ---------------------------------------------------------------------------
+# Sheet 2 — Language variant tests
+# ---------------------------------------------------------------------------
+
+
+class TestSheet2BottomThresholdVariants:
+    """Test BOTTOM ads language-variant thresholds."""
+
+    def test_id_bottom_min_cost_100k(self):
+        """Indonesian: BOTTOM uses min cost 100,000."""
+        data = [
+            _kw_row(1, "Ad Below 100K", "Berjalan", "Iklan Produk", "100",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=1000, biaya=80000, roas=0.5),
+            _kw_row(2, "Good Ad", "Berjalan", "Iklan Produk", "200",
+                    "GMV Max ROAS", "Semua Penempatan", "kw",
+                    omzet=5000000, biaya=200000, roas=8.0),
+        ]
+        result = calculate_sheet2(data, language="id")
+        # 80K < 100K threshold → should not appear in bottom
+        assert "Ad Below 100K" not in result["al5"]
+
+    def test_en_bottom_min_cost_50k(self):
+        """English: BOTTOM uses min cost 50,000."""
+        # Ad at 80K should qualify for English (>50K) but not Indonesian (>100K)
+        # AM9 = round(avg(80000, 10000)) = 45000, so 80K > AM9 ✓
+        data = [
+            _kw_row(1, "Ad Above 50K", "Berjalan", "Iklan Produk", "100",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=1000, biaya=80000, roas=0.5),
+            _kw_row(2, "Good Ad", "Berjalan", "Iklan Produk", "200",
+                    "GMV Max ROAS", "Semua Penempatan", "kw",
+                    omzet=5000000, biaya=10000, roas=8.0),
+        ]
+        result = calculate_sheet2(data, language="en")
+        # 80K > 50K threshold → qualifies for English bottom
+        assert "Ad Above 50K" in result["al5"]
+
+    def test_id_fallback_roas_cap_5(self):
+        """Indonesian: fallback ROAS cap is min(round(AM10*2), 5)."""
+        # AM10 = min(round(avg_roas), 3) with roas=3 → AM10=3
+        # fallback cap = min(round(3*2), 5) = min(6, 5) = 5
+        data = [
+            _kw_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=1000, biaya=500000, roas=4.5),
+            _kw_row(2, "Good Ad", "Berjalan", "Iklan Produk", "200",
+                    "GMV Max ROAS", "Semua Penempatan", "kw",
+                    omzet=5000000, biaya=200000, roas=3.0),
+        ]
+        result = calculate_sheet2(data, language="id")
+        # Primary: ROAS < AM10(3) → Ad A has ROAS 4.5, not < 3 → no primary
+        # Fallback: ROAS < min(6, 5) = 5 → Ad A has 4.5 < 5 → qualifies
+        assert result["is_bottom_fallback"]
+        assert "Ad A" in result["al5"]
+
+    def test_en_fallback_roas_cap_4(self):
+        """English: fallback ROAS cap is min(round(AM10*2), 4)."""
+        # Same data as above but English cap=4
+        data = [
+            _kw_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=1000, biaya=500000, roas=4.5),
+            _kw_row(2, "Good Ad", "Berjalan", "Iklan Produk", "200",
+                    "GMV Max ROAS", "Semua Penempatan", "kw",
+                    omzet=5000000, biaya=200000, roas=3.0),
+        ]
+        result = calculate_sheet2(data, language="en")
+        # Fallback: ROAS < min(6, 4) = 4 → Ad A has 4.5, not < 4 → no match
+        assert "Ad A" not in result["al5"]
+
+
+class TestSheet2TopFallbackVariants:
+    """Test TOP ads fallback language variants."""
+
+    def test_id_top_has_fallback(self):
+        """Indonesian: uses fallback when primary returns no results."""
+        data = [
+            _kw_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
+                    "GMV Max ROAS", "Semua Penempatan", "kw",
+                    omzet=10000, biaya=1000, roas=5.0),
+            _kw_row(2, "Ad B", "Berjalan", "Iklan Produk", "200",
+                    "GMV Max ROAS", "Semua Penempatan", "kw",
+                    omzet=8000, biaya=800, roas=8.0),
+        ]
+        result = calculate_sheet2(data, language="id")
+        assert result["is_top_fallback"]
+        assert "Ad B" in result["al2"]
+
+    def test_en_top_no_fallback(self):
+        """English: no fallback — AL2 empty if primary returns nothing."""
+        data = [
+            _kw_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
+                    "GMV Max ROAS", "Semua Penempatan", "kw",
+                    omzet=10000, biaya=1000, roas=5.0),
+            _kw_row(2, "Ad B", "Berjalan", "Iklan Produk", "200",
+                    "GMV Max ROAS", "Semua Penempatan", "kw",
+                    omzet=8000, biaya=800, roas=8.0),
+        ]
+        result = calculate_sheet2(data, language="en")
+        assert result["al2"] == ""
+        assert not result["is_top_fallback"]
+
+    def test_en_top_primary_still_works(self):
+        """English: primary query still works when data qualifies."""
+        data = [
+            _kw_row(1, "Top Ad", "Berjalan", "Iklan Produk", "1",
+                    "GMV Max ROAS", "Semua Penempatan", "kw",
+                    omzet=20000000, biaya=1000000, roas=10.0),
+            _kw_row(2, "Low Ad", "Berjalan", "Iklan Produk", "2",
+                    "GMV Max ROAS", "Semua Penempatan", "kw",
+                    omzet=500000, biaya=100000, roas=2.0),
+        ]
+        result = calculate_sheet2(data, language="en")
+        assert "Top Ad" in result["al2"]
+        assert not result["is_top_fallback"]
+
+
+class TestSheet2AL6Variants:
+    """Test AL6 language-variant substring check."""
+
+    def test_id_al6_checks_otomatis(self):
+        """Indonesian: AL6 triggers on 'Otomatis' in AL5."""
+        result = calculate_sheet2(MND_KEYWORD_DATA, language="id")
+        # MND bottom has "Pilih Otomatis" mode bidding → contains "Otomatis"
+        assert "pengaturan otomatis" in result["al6"]
+
+    def test_en_al6_checks_bidding_otomatis(self):
+        """English: AL6 triggers on 'Bidding Otomatis' in AL5."""
+        data = [
+            _kw_row(1, "Bad Ad", "Berjalan", "Iklan Produk", "100",
+                    "Bidding Otomatis", "Halaman Pencarian", "kw",
+                    omzet=1000, biaya=500000, roas=0.5),
+            _kw_row(2, "Good Ad", "Berjalan", "Iklan Produk", "200",
+                    "GMV Max ROAS", "Semua Penempatan", "kw",
+                    omzet=5000000, biaya=200000, roas=8.0),
+        ]
+        result = calculate_sheet2(data, language="en")
+        assert "pengaturan otomatis" in result["al6"]
+
+    def test_en_al6_does_not_trigger_on_pilih_otomatis(self):
+        """English: 'Pilih Otomatis' should NOT trigger AL6 (not 'Bidding Otomatis')."""
+        data = [
+            _kw_row(1, "Bad Ad", "Berjalan", "Iklan Produk", "100",
+                    "Pilih Otomatis", "Halaman Pencarian", "kw",
+                    omzet=1000, biaya=500000, roas=0.5),
+            _kw_row(2, "Good Ad", "Berjalan", "Iklan Produk", "200",
+                    "GMV Max ROAS", "Semua Penempatan", "kw",
+                    omzet=5000000, biaya=200000, roas=8.0),
+        ]
+        result = calculate_sheet2(data, language="en")
+        # "Pilih Otomatis" contains "Otomatis" but not "Bidding Otomatis"
+        assert result["al6"] == ""
+
+
+# ---------------------------------------------------------------------------
 # combine_output tests
 # ---------------------------------------------------------------------------
 
