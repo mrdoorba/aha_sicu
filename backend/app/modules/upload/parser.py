@@ -91,7 +91,7 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
         "Harga Setelah Diskon",
         "Jumlah",
         "Voucher Ditanggung Penjual",
-        "Paket Diskon",
+        "Paket Diskon (Diskon dari Penjual)",
         "Nomor Referensi SKU",
         "Nama Variasi",
         "Jumlah Produk di Pesan",

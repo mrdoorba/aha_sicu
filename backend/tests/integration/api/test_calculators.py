@@ -120,7 +120,7 @@ SAMPLE_ORDER_UPLOAD = {
     "parsed_data": {
         "columns": ["No. Pesanan", "Nama Produk", "Harga Awal",
                      "Harga Setelah Diskon", "Jumlah",
-                     "Voucher Ditanggung Penjual", "Paket Diskon"],
+                     "Voucher Ditanggung Penjual", "Paket Diskon (Diskon dari Penjual)"],
         "data": [
             {
                 "No. Pesanan": "ORD001",
@@ -129,7 +129,7 @@ SAMPLE_ORDER_UPLOAD = {
                 "Harga Setelah Diskon": "80.000",
                 "Jumlah": "2",
                 "Voucher Ditanggung Penjual": "5.000",
-                "Paket Diskon": "0",
+                "Paket Diskon (Diskon dari Penjual)": "0",
             },
             {
                 "No. Pesanan": "ORD002",
@@ -138,7 +138,7 @@ SAMPLE_ORDER_UPLOAD = {
                 "Harga Setelah Diskon": "45.000",
                 "Jumlah": "3",
                 "Voucher Ditanggung Penjual": "0",
-                "Paket Diskon": "0",
+                "Paket Diskon (Diskon dari Penjual)": "0",
             },
             {
                 "No. Pesanan": "ORD003",
@@ -147,7 +147,7 @@ SAMPLE_ORDER_UPLOAD = {
                 "Harga Setelah Diskon": "80.000",
                 "Jumlah": "1",
                 "Voucher Ditanggung Penjual": "0",
-                "Paket Diskon": "0",
+                "Paket Diskon (Diskon dari Penjual)": "0",
             },
         ],
         "row_count": 3,
@@ -482,7 +482,7 @@ SAMPLE_ORDER_UPLOAD_TOP_SKU = {
             "Nama Variasi", "Harga Setelah Diskon", "Jumlah",
             "Jumlah Produk di Pesan", "Voucher Ditanggung Penjual",
             "Cashback Koin", "Diskon Dari Shopee",
-            "Harga Awal", "Paket Diskon",
+            "Harga Awal", "Paket Diskon (Diskon dari Penjual)",
         ],
         "data": [
             {
@@ -497,7 +497,7 @@ SAMPLE_ORDER_UPLOAD_TOP_SKU = {
                 "Cashback Koin": "0",
                 "Diskon Dari Shopee": "0",
                 "Harga Awal": "120.000",
-                "Paket Diskon": "0",
+                "Paket Diskon (Diskon dari Penjual)": "0",
             },
             {
                 "No. Pesanan": "ORD002",
@@ -511,7 +511,7 @@ SAMPLE_ORDER_UPLOAD_TOP_SKU = {
                 "Cashback Koin": "0",
                 "Diskon Dari Shopee": "0",
                 "Harga Awal": "250.000",
-                "Paket Diskon": "0",
+                "Paket Diskon (Diskon dari Penjual)": "0",
             },
         ],
         "row_count": 2,

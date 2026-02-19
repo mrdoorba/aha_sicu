@@ -134,7 +134,7 @@ _REQUIRED_COLUMNS: dict[str, frozenset[str]] = {
         "Harga Setelah Diskon",
         "Jumlah",
         "Voucher Ditanggung Penjual",
-        "Paket Diskon",
+        "Paket Diskon (Diskon dari Penjual)",
     }),
     "order_export_top_sku": frozenset({
         "Nama Produk",

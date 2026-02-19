@@ -156,7 +156,7 @@ class TestCalculateLineItems:
                 "Harga Setelah Diskon": "80.000",
                 "Jumlah": "2",
                 "Voucher Ditanggung Penjual": "5.000",
-                "Paket Diskon": "3.000",
+                "Paket Diskon (Diskon dari Penjual)": "3.000",
             },
         ]
         urutan = [1]
@@ -175,7 +175,7 @@ class TestCalculateLineItems:
                 "Harga Setelah Diskon": "80.000",
                 "Jumlah": "1",
                 "Voucher Ditanggung Penjual": "0",
-                "Paket Diskon": "0",
+                "Paket Diskon (Diskon dari Penjual)": "0",
             },
         ]
         urutan = [1]
@@ -193,7 +193,7 @@ class TestCalculateLineItems:
                 "Harga Setelah Diskon": "80.000",
                 "Jumlah": "1",
                 "Voucher Ditanggung Penjual": "5.000",
-                "Paket Diskon": "3.000",
+                "Paket Diskon (Diskon dari Penjual)": "3.000",
             },
         ]
         urutan = [1]
@@ -211,7 +211,7 @@ class TestCalculateLineItems:
                 "Harga Setelah Diskon": "80.000",
                 "Jumlah": "1",
                 "Voucher Ditanggung Penjual": "5.000",
-                "Paket Diskon": "0",
+                "Paket Diskon (Diskon dari Penjual)": "0",
             },
             {
                 "No. Pesanan": "ORD001",
@@ -220,7 +220,7 @@ class TestCalculateLineItems:
                 "Harga Setelah Diskon": "40.000",
                 "Jumlah": "1",
                 "Voucher Ditanggung Penjual": "5.000",
-                "Paket Diskon": "0",
+                "Paket Diskon (Diskon dari Penjual)": "0",
             },
         ]
         urutan = [1, 2]
@@ -238,7 +238,7 @@ class TestCalculateLineItems:
                 "Harga Setelah Diskon": "80.000",
                 "Jumlah": "1",
                 "Voucher Ditanggung Penjual": "0",
-                "Paket Diskon": "3.000",
+                "Paket Diskon (Diskon dari Penjual)": "3.000",
             },
             {
                 "No. Pesanan": "ORD001",
@@ -247,7 +247,7 @@ class TestCalculateLineItems:
                 "Harga Setelah Diskon": "40.000",
                 "Jumlah": "1",
                 "Voucher Ditanggung Penjual": "0",
-                "Paket Diskon": "3.000",
+                "Paket Diskon (Diskon dari Penjual)": "3.000",
             },
         ]
         urutan = [1, 2]
@@ -265,7 +265,7 @@ class TestCalculateLineItems:
                 "Harga Setelah Diskon": "80.000",
                 "Jumlah": "1",
                 "Voucher Ditanggung Penjual": "0",
-                "Paket Diskon": "0",
+                "Paket Diskon (Diskon dari Penjual)": "0",
             },
         ]
         urutan = [0]
@@ -282,7 +282,7 @@ class TestCalculateLineItems:
                 "Harga Setelah Diskon": "0",
                 "Jumlah": "1",
                 "Voucher Ditanggung Penjual": "0",
-                "Paket Diskon": "0",
+                "Paket Diskon (Diskon dari Penjual)": "0",
             },
         ]
         urutan = [1]
@@ -579,7 +579,7 @@ def _make_order_row(
         "Harga Setelah Diskon": harga_diskon,
         "Jumlah": jumlah,
         "Voucher Ditanggung Penjual": voucher,
-        "Paket Diskon": paket,
+        "Paket Diskon (Diskon dari Penjual)": paket,
     }
 
 

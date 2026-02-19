@@ -130,7 +130,7 @@ def _calculate_line_items(rows: list[dict], urutan_list: list[int]) -> list[Line
         # Voucher and Paket only applied at Urutan=1
         if urutan == 1:
             voucher = _clean_price(row.get("Voucher Ditanggung Penjual"))
-            paket = _clean_price(row.get("Paket Diskon"))
+            paket = _clean_price(row.get("Paket Diskon (Diskon dari Penjual)"))
         else:
             voucher = 0.0
             paket = 0.0
