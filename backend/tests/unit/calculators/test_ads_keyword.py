@@ -274,20 +274,20 @@ class TestSheet1AK2:
         assert "1 (10.0%)" in result["ak2"]
 
 
-class TestSheet1AK3:
-    """Test AK3 — Ad Type Breakdown."""
+class TestSheet1AK3Indonesian:
+    """Test AK3 — Indonesian variant (2 categories)."""
 
-    def test_ak3_mnd_non_ended_only(self):
-        """MND: all non-ended ads are Semua Penempatan."""
+    def test_ak3_id_mnd_only_semua_and_toko(self):
+        """Indonesian AK3 outputs only Semua Penempatan + Iklan Toko."""
         result = calculate_sheet1(MND_CPC_DATA, total_products=80)
         ak3 = result["ak3"]
-
-        assert "0 Iklan Produk Halaman Pencarian (0 Otomatis & 0 Manual)." in ak3
-        assert "0 Iklan Produk Halaman Rekomendasi (0 Otomatis & 0 Manual)." in ak3
         assert "5 Iklan Produk Otomatis Semua Halaman." in ak3
         assert "0 Iklan Toko (0 Otomatis & 0 Manual)." in ak3
+        # Should NOT include Search or Recommendation categories
+        assert "Halaman Pencarian" not in ak3
+        assert "Halaman Rekomendasi" not in ak3
 
-    def test_ak3_includes_shop_ads_in_semua(self):
+    def test_ak3_id_includes_shop_ads_in_semua(self):
         """Semua Penempatan count includes shop-level ads."""
         data = [
             _mnd_cpc_row(1, "Shop Ad", "Berjalan", "", "-",
@@ -298,19 +298,7 @@ class TestSheet1AK3:
         result = calculate_sheet1(data, total_products=10)
         assert "2 Iklan Produk Otomatis Semua Halaman." in result["ak3"]
 
-    def test_ak3_counts_search_page_ads(self):
-        data = [
-            _mnd_cpc_row(1, "Ad 1", "Berjalan", "Iklan Produk", "100",
-                         "Bidding Otomatis", "Halaman Pencarian"),
-            _mnd_cpc_row(2, "Ad 2", "Berjalan", "Iklan Produk", "200",
-                         "Bidding Manual", "Halaman Pencarian"),
-            _mnd_cpc_row(3, "Ad 3", "Berjalan", "Iklan Produk", "300",
-                         "Bidding Manual", "Halaman Pencarian"),
-        ]
-        result = calculate_sheet1(data, total_products=10)
-        assert "3 Iklan Produk Halaman Pencarian (1 Otomatis & 2 Manual)." in result["ak3"]
-
-    def test_ak3_counts_iklan_toko(self):
+    def test_ak3_id_counts_iklan_toko(self):
         data = [
             _mnd_cpc_row(1, "Toko 1", "Berjalan", "Iklan Toko", "-",
                          "Bidding Otomatis", "Halaman Pencarian"),
@@ -320,19 +308,44 @@ class TestSheet1AK3:
         result = calculate_sheet1(data, total_products=10)
         assert "2 Iklan Toko (1 Otomatis & 1 Manual)." in result["ak3"]
 
-    def test_ak3_excludes_ended_ads(self):
+
+class TestSheet1AK3English:
+    """Test AK3 — English variant (4 categories)."""
+
+    def test_ak3_en_all_four_categories(self):
+        """English AK3 outputs all 4 categories."""
+        result = calculate_sheet1(MND_CPC_DATA, total_products=80, language="en")
+        ak3 = result["ak3"]
+        assert "0 Iklan Produk Halaman Pencarian (0 Otomatis & 0 Manual)." in ak3
+        assert "0 Iklan Produk Halaman Rekomendasi (0 Otomatis & 0 Manual)." in ak3
+        assert "5 Iklan Produk Otomatis Semua Halaman." in ak3
+        assert "0 Iklan Toko (0 Otomatis & 0 Manual)." in ak3
+
+    def test_ak3_en_counts_search_page_ads(self):
+        data = [
+            _mnd_cpc_row(1, "Ad 1", "Berjalan", "Iklan Produk", "100",
+                         "Bidding Otomatis", "Halaman Pencarian"),
+            _mnd_cpc_row(2, "Ad 2", "Berjalan", "Iklan Produk", "200",
+                         "Bidding Manual", "Halaman Pencarian"),
+            _mnd_cpc_row(3, "Ad 3", "Berjalan", "Iklan Produk", "300",
+                         "Bidding Manual", "Halaman Pencarian"),
+        ]
+        result = calculate_sheet1(data, total_products=10, language="en")
+        assert "3 Iklan Produk Halaman Pencarian (1 Otomatis & 2 Manual)." in result["ak3"]
+
+    def test_ak3_en_excludes_ended_ads(self):
         data = [
             _mnd_cpc_row(1, "Ad 1", "Berjalan", "Iklan Produk", "100",
                          "Bidding Manual", "Halaman Pencarian"),
             _mnd_cpc_row(2, "Ad 2", "Berakhir", "Iklan Produk", "200",
                          "Bidding Manual", "Halaman Pencarian"),
         ]
-        result = calculate_sheet1(data, total_products=10)
+        result = calculate_sheet1(data, total_products=10, language="en")
         assert "1 Iklan Produk Halaman Pencarian (0 Otomatis & 1 Manual)." in result["ak3"]
 
 
-class TestSheet1AK4:
-    """Test AK4 — Recommendation Flags."""
+class TestSheet1AK4Indonesian:
+    """Test AK4 — Indonesian variant (3 flags)."""
 
     def test_flag1_low_participation(self):
         """Product pct < 50% → kurang maksimal."""
@@ -340,7 +353,7 @@ class TestSheet1AK4:
             _mnd_cpc_row(1, "Ad [1]", "Berjalan", "Iklan Produk", "100",
                          "GMV Max ROAS", "Semua Penempatan"),
         ]
-        result = calculate_sheet1(data, total_products=100)  # 1/100 = 1%
+        result = calculate_sheet1(data, total_products=100)
         assert "kurang maksimal (saran >50%)" in result["ak4"]
 
     def test_flag1_good_participation(self):
@@ -349,7 +362,7 @@ class TestSheet1AK4:
             _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
                          "GMV Max ROAS", "Semua Penempatan"),
         ]
-        result = calculate_sheet1(data, total_products=1)  # 1/1 = 100%
+        result = calculate_sheet1(data, total_products=1)
         assert "sudah cukup baik" in result["ak4"]
 
     def test_flag2_low_active_ratio(self):
@@ -362,7 +375,7 @@ class TestSheet1AK4:
             _mnd_cpc_row(3, "Ad C [1]", "Berakhir", "Iklan Produk", "300",
                          "GMV Max ROAS", "Semua Penempatan"),
         ]
-        result = calculate_sheet1(data, total_products=100)  # active=1/3=33%
+        result = calculate_sheet1(data, total_products=100)
         assert "status aktif kurang maksimal" in result["ak4"]
 
     def test_flag2_suppressed_when_flag1_low(self):
@@ -371,11 +384,8 @@ class TestSheet1AK4:
             _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
                          "GMV Max ROAS", "Semua Penempatan"),
         ]
-        # 1 ad, 1 active → 100% active ratio (>50%) BUT product_pct = 1/100 = 1% (<50%)
-        # Flag 2 ELSE IF product_pct >= 50% → FALSE, so suppressed
         result = calculate_sheet1(data, total_products=100)
         ak4_lines = result["ak4"].split("\n")
-        # Should only have flag1 (kurang maksimal) — flag2 suppressed
         flag2_lines = [line for line in ak4_lines if "status aktif" in line]
         assert len(flag2_lines) == 0
 
@@ -385,24 +395,11 @@ class TestSheet1AK4:
             _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
                          "GMV Max ROAS", "Semua Penempatan"),
         ]
-        # 1 ad, 1 active → 100%, product_pct = 1/1 = 100%
         result = calculate_sheet1(data, total_products=1)
         assert "status aktif sudah cukup baik" in result["ak4"]
 
-    def test_flags3_to_7_use_all_ads(self):
-        """Flags 3-7 check ALL ads including ended."""
-        data = [
-            _mnd_cpc_row(1, "Ad A", "Berakhir", "Iklan Produk", "100",
-                         "Bidding Manual", "Halaman Pencarian"),
-        ]
-        result = calculate_sheet1(data, total_products=100)
-        # Flag 3 should NOT trigger (has Halaman Pencarian)
-        assert "Halaman Pencarian belum dimanfaatkan." not in result["ak4"]
-        # Flag 4 should NOT trigger (has Halaman Pencarian + Bidding Manual)
-        assert "Halaman Pencarian (Bidding Manual) belum dimanfaatkan." not in result["ak4"]
-
-    def test_flag7_iklan_toko_missing(self):
-        """Flag 7 triggers when no Iklan Toko ads exist."""
+    def test_flag3_iklan_toko_missing(self):
+        """Indonesian flag 3 triggers when no Iklan Toko ads exist."""
         data = [
             _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
                          "GMV Max ROAS", "Semua Penempatan"),
@@ -410,8 +407,8 @@ class TestSheet1AK4:
         result = calculate_sheet1(data, total_products=100)
         assert "Iklan Toko belum dimanfaatkan." in result["ak4"]
 
-    def test_flag7_iklan_toko_present(self):
-        """Flag 7 does NOT trigger when Iklan Toko ads exist."""
+    def test_flag3_iklan_toko_present(self):
+        """Indonesian flag 3 does NOT trigger when Iklan Toko ads exist."""
         data = [
             _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Toko", "-",
                          "Bidding Otomatis", "Halaman Pencarian"),
@@ -419,11 +416,108 @@ class TestSheet1AK4:
         result = calculate_sheet1(data, total_products=100)
         assert "Iklan Toko belum dimanfaatkan." not in result["ak4"]
 
-    def test_mnd_all_flags(self):
-        """MND should have all 7 flags."""
+    def test_flag3_checks_all_ads_including_ended(self):
+        """Indonesian Iklan Toko flag checks ALL ads including ended."""
+        data = [
+            _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
+                         "GMV Max ROAS", "Semua Penempatan"),
+            _mnd_cpc_row(2, "Toko Ad", "Berakhir", "Iklan Toko", "-",
+                         "Bidding Otomatis", "Halaman Pencarian"),
+        ]
+        result = calculate_sheet1(data, total_products=100)
+        assert "Iklan Toko belum dimanfaatkan." not in result["ak4"]
+
+    def test_mnd_all_flags_indonesian(self):
+        """MND with Indonesian should have 3 flags."""
         result = calculate_sheet1(MND_CPC_DATA, total_products=80)
         ak4 = result["ak4"]
-        assert ak4.count("📌") == 7
+        assert ak4.count("📌") == 3
+
+    def test_id_no_placement_flags(self):
+        """Indonesian AK4 should NOT include Search/Recommendation flags."""
+        data = [
+            _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
+                         "GMV Max ROAS", "Semua Penempatan"),
+        ]
+        result = calculate_sheet1(data, total_products=100)
+        assert "Halaman Pencarian" not in result["ak4"]
+        assert "Halaman Rekomendasi" not in result["ak4"]
+
+
+class TestSheet1AK4English:
+    """Test AK4 — English variant (9 flags)."""
+
+    def test_mnd_all_flags_english(self):
+        """MND with English should have 9 flags (all placement types missing)."""
+        result = calculate_sheet1(MND_CPC_DATA, total_products=80, language="en")
+        ak4 = result["ak4"]
+        assert ak4.count("📌") == 9
+
+    def test_en_flags3_to_9_use_all_ads(self):
+        """English flags 3-9 check ALL ads including ended."""
+        data = [
+            _mnd_cpc_row(1, "Ad A", "Berakhir", "Iklan Produk", "100",
+                         "Bidding Manual", "Halaman Pencarian"),
+        ]
+        result = calculate_sheet1(data, total_products=100, language="en")
+        # Flag 3 should NOT trigger (has Halaman Pencarian)
+        assert "Halaman Pencarian belum dimanfaatkan." not in result["ak4"]
+        # Flag 5 should NOT trigger (has Pencarian + Bidding Manual)
+        assert "Halaman Pencarian (Bidding Manual) belum dimanfaatkan." not in result["ak4"]
+
+    def test_en_search_auto_flag(self):
+        """English flag 4: Pencarian + Bidding Otomatis."""
+        data = [
+            _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
+                         "Bidding Otomatis", "Halaman Pencarian"),
+        ]
+        result = calculate_sheet1(data, total_products=100, language="en")
+        assert "Halaman Pencarian (Bidding Otomatis) belum dimanfaatkan." not in result["ak4"]
+        # But Bidding Manual not present → flag 5 triggers
+        assert "Halaman Pencarian (Bidding Manual) belum dimanfaatkan." in result["ak4"]
+
+    def test_en_reco_flags(self):
+        """English flags 6-8: Rekomendasi variants."""
+        data = [
+            _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
+                         "Bidding Otomatis", "Halaman Rekomendasi"),
+        ]
+        result = calculate_sheet1(data, total_products=100, language="en")
+        # Has Rekomendasi → flag 6 should NOT trigger
+        assert "Halaman Rekomendasi belum dimanfaatkan." not in result["ak4"]
+        # Has Rekomendasi + Otomatis → flag 7 should NOT trigger
+        assert "Halaman Rekomendasi (Bidding Otomatis) belum dimanfaatkan." not in result["ak4"]
+        # No Rekomendasi + Manual → flag 8 should trigger
+        assert "Halaman Rekomendasi (Bidding Manual) belum dimanfaatkan." in result["ak4"]
+
+    def test_en_all_covered_no_placement_flags(self):
+        """All placement types covered → no placement flags."""
+        data = [
+            _mnd_cpc_row(1, "A1", "Berjalan", "Iklan Produk", "100",
+                         "Bidding Otomatis", "Halaman Pencarian"),
+            _mnd_cpc_row(2, "A2", "Berjalan", "Iklan Produk", "200",
+                         "Bidding Manual", "Halaman Pencarian"),
+            _mnd_cpc_row(3, "A3", "Berjalan", "Iklan Produk", "300",
+                         "Bidding Otomatis", "Halaman Rekomendasi"),
+            _mnd_cpc_row(4, "A4", "Berjalan", "Iklan Produk", "400",
+                         "Bidding Manual", "Halaman Rekomendasi"),
+            _mnd_cpc_row(5, "A5", "Berjalan", "Iklan Toko", "-",
+                         "Bidding Otomatis", "Halaman Pencarian"),
+        ]
+        result = calculate_sheet1(data, total_products=5, language="en")
+        ak4 = result["ak4"]
+        assert "belum dimanfaatkan" not in ak4
+        # Only flag 1 and flag 2 should be present
+        assert ak4.count("📌") == 2
+
+    def test_en_iklan_toko_flag(self):
+        """English flag 9: Iklan Toko belum dimanfaatkan."""
+        data = [
+            _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
+                         "GMV Max ROAS", "Semua Penempatan"),
+        ]
+        result = calculate_sheet1(data, total_products=100, language="en")
+        assert "Iklan Toko belum dimanfaatkan." in result["ak4"]
 
 
 # ---------------------------------------------------------------------------
