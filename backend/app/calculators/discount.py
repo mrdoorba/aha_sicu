@@ -170,8 +170,13 @@ class ProductSummary:
 
 
 def _build_product_summary(line_items: list[LineItem]) -> list[ProductSummary]:
-    """Group by Nama Produk (exact match), aggregate qty and avg discount %."""
-    groups: dict[str, dict[str, Any]] = {}
+    """Group by Nama Produk (exact match), aggregate qty and avg discount %.
+
+    avg_discount_pct per product = sum(N) / sum(J) where N = total_discount
+    and J = harga_awal.  This is a weighted ratio (matches spreadsheet formula
+    ``T = SUMIF(B:B, R2, N:N) / SUMIF(B:B, R2, J:J)``).
+    """
+    groups: dict[str, dict[str, float]] = {}
 
     for item in line_items:
         name = item.nama_produk
@@ -179,15 +184,16 @@ def _build_product_summary(line_items: list[LineItem]) -> list[ProductSummary]:
             continue
 
         if name not in groups:
-            groups[name] = {"qty": 0.0, "disc_values": []}
+            groups[name] = {"qty": 0.0, "sum_n": 0.0, "sum_j": 0.0}
 
         groups[name]["qty"] += item.jumlah
-        groups[name]["disc_values"].append(item.discount_pct)
+        groups[name]["sum_n"] += item.total_discount
+        groups[name]["sum_j"] += item.harga_awal
 
     summaries: list[ProductSummary] = []
     for name, data in groups.items():
-        disc_values = data["disc_values"]
-        avg_disc = sum(disc_values) / len(disc_values) if disc_values else 0.0
+        sum_j = data["sum_j"]
+        avg_disc = data["sum_n"] / sum_j if sum_j > 0 else 0.0
         summaries.append(ProductSummary(
             product_name=name,
             qty=data["qty"],
