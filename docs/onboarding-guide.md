@@ -214,7 +214,7 @@ Files are uploaded via signed URLs to cloud storage and automatically processed 
 | `Voucher Ditanggung Penjual` | Seller-borne voucher | "15.000" |
 | `Cashback Koin` | Coin cashback | "5.000" |
 | `Diskon Dari Shopee` | Shopee-subsidized discount | "0" |
-| `Paket Diskon` | Bundle/package discount | "10.000" |
+| `Paket Diskon (Diskon dari Penjual)` | Seller bundle discount | "10.000" |
 
 **Important — Indonesian number format:**
 - Prices use `.` (dot) as thousands separator: `125.000` = Rp 125,000.
