@@ -69,9 +69,25 @@ async def run_ads_keyword_calculator(
             cpc_data = _extract_parsed_data(cpc_upload, "cpc_ad_report")
             keyword_data = _extract_parsed_data(keyword_upload, "keyword_report")
 
+            # Detect and validate language consistency
+            cpc_lang = _extract_source_language(cpc_upload)
+            kw_lang = _extract_source_language(keyword_upload)
+            if cpc_lang != kw_lang:
+                raise CalculatorException(
+                    code="CALC_MISSING_DATA",
+                    detail=(
+                        f"Language mismatch: CPC Ad Report is '{cpc_lang}' "
+                        f"but Keyword Report is '{kw_lang}'. "
+                        "Both uploads must be in the same language."
+                    ),
+                )
+            language = cpc_lang
+
             # Run pure calculator
             try:
-                result = calculate_ads_keyword(cpc_data, keyword_data, total_products)
+                result = calculate_ads_keyword(
+                    cpc_data, keyword_data, total_products, language=language
+                )
             except Exception as e:
                 raise CalculatorException(
                     code="CALC_EXECUTION_FAILED",
@@ -94,6 +110,23 @@ async def run_ads_keyword_calculator(
         details=row["details"],
         calculated_at=row["calculated_at"],
     )
+
+
+def _extract_source_language(upload: dict) -> str:
+    """Extract source_language from a brand upload's parsed_data.
+
+    Defaults to ``"id"`` when the key is absent (backwards compatibility).
+    """
+    parsed_data = upload.get("parsed_data")
+    if isinstance(parsed_data, str):
+        import json
+        try:
+            parsed_data = json.loads(parsed_data)
+        except (json.JSONDecodeError, TypeError):
+            parsed_data = None
+    if isinstance(parsed_data, dict):
+        return parsed_data.get("source_language", "id")
+    return "id"
 
 
 def _extract_parsed_data(upload: dict, file_type: str) -> list[dict[str, Any]]:

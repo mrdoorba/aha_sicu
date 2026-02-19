@@ -583,6 +583,8 @@ def calculate_ads_keyword(
     cpc_data: list[dict],
     keyword_data: list[dict],
     total_products: int,
+    *,
+    language: str = "id",
 ) -> AdsKeywordResult:
     """Execute the Ads Keyword Calculator.
 
@@ -592,12 +594,13 @@ def calculate_ads_keyword(
         cpc_data: Parsed rows from cpc_ad_report (list of dicts).
         keyword_data: Parsed rows from keyword_report (list of dicts).
         total_products: AK1 — total products in the store.
+        language: ``"id"`` or ``"en"`` — controls variant logic.
 
     Returns:
         AdsKeywordResult with output_text and details.
     """
-    sheet1 = calculate_sheet1(cpc_data, total_products)
-    sheet2 = calculate_sheet2(keyword_data)
+    sheet1 = calculate_sheet1(cpc_data, total_products, language=language)
+    sheet2 = calculate_sheet2(keyword_data, language=language)
     output_text = combine_output(sheet1, sheet2)
 
     details = {

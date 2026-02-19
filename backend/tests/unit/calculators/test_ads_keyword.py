@@ -1108,6 +1108,38 @@ class TestCalculateAdsKeyword:
         assert "am10" in t
 
 
+class TestCalculateAdsKeywordEnglish:
+    """Integration test: full English-language calculator run."""
+
+    def test_english_full_run(self):
+        """English run uses 4-category AK3, 9-flag AK4, and language thresholds."""
+        result = calculate_ads_keyword(
+            MND_CPC_DATA, MND_KEYWORD_DATA, 80, language="en"
+        )
+        assert isinstance(result, AdsKeywordResult)
+
+        # AK3 should have 4 categories (English)
+        assert "Halaman Pencarian" in result.details["ak3"]
+        assert "Halaman Rekomendasi" in result.details["ak3"]
+        assert "Semua Halaman" in result.details["ak3"]
+        assert "Iklan Toko" in result.details["ak3"]
+
+        # AK4 should have 9 flags (English)
+        assert result.details["ak4"].count("📌") == 9
+
+        # TOP should have no fallback for English (primary returns no results
+        # for MND data, so AL2 is empty)
+        assert result.details["al2"] == ""
+
+    def test_english_defaults_backwards_compatible(self):
+        """Default language=id preserves Indonesian behavior."""
+        result_id = calculate_ads_keyword(MND_CPC_DATA, MND_KEYWORD_DATA, 80)
+        result_id2 = calculate_ads_keyword(
+            MND_CPC_DATA, MND_KEYWORD_DATA, 80, language="id"
+        )
+        assert result_id.output_text == result_id2.output_text
+
+
 # ---------------------------------------------------------------------------
 # Edge case tests
 # ---------------------------------------------------------------------------
