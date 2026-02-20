@@ -14,9 +14,11 @@ vi.mock('../../context/AuthContext', () => ({
   }),
 }));
 
+const mockProfile = { id: '1', email: 'test@example.com', role: 'leader', created_at: '', last_login: '' };
+
 vi.mock('../../hooks/useCurrentUser', () => ({
   useCurrentUser: () => ({
-    profile: { id: '1', email: 'test@example.com', role: 'leader', created_at: '', last_login: '' },
+    profile: mockProfile,
     isLoading: false,
     isError: false,
   }),
@@ -33,6 +35,7 @@ const renderHeader = () => {
 describe('Header', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    mockProfile.role = 'leader';
   });
 
   it('displays user email', () => {
@@ -134,5 +137,41 @@ describe('Header', () => {
     // Verify the actual title and description text are rendered
     expect(screen.getByText('Confirm Logout')).toBeInTheDocument();
     expect(screen.getByText('Are you sure you want to log out?')).toBeInTheDocument();
+  });
+
+  it('does not show Akun link for leader role', () => {
+    renderHeader();
+    expect(screen.queryByRole('link', { name: /^akun$/i })).not.toBeInTheDocument();
+  });
+
+  it('shows Rules link for leader role', () => {
+    renderHeader();
+    expect(screen.getByRole('link', { name: /^rules$/i })).toBeInTheDocument();
+  });
+
+  it('shows Akun link for admin role', () => {
+    mockProfile.role = 'admin';
+    renderHeader();
+    const akunLink = screen.getByRole('link', { name: /^akun$/i });
+    expect(akunLink).toBeInTheDocument();
+    expect(akunLink).toHaveAttribute('href', '/accounts');
+  });
+
+  it('shows Rules link for admin role', () => {
+    mockProfile.role = 'admin';
+    renderHeader();
+    expect(screen.getByRole('link', { name: /^rules$/i })).toBeInTheDocument();
+  });
+
+  it('does not show Akun link for member role', () => {
+    mockProfile.role = 'member';
+    renderHeader();
+    expect(screen.queryByRole('link', { name: /^akun$/i })).not.toBeInTheDocument();
+  });
+
+  it('does not show Rules link for member role', () => {
+    mockProfile.role = 'member';
+    renderHeader();
+    expect(screen.queryByRole('link', { name: /^rules$/i })).not.toBeInTheDocument();
   });
 });
