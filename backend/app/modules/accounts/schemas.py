@@ -3,7 +3,7 @@
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, EmailStr, Field
+from pydantic import BaseModel, Field
 
 
 class UserListResponse(BaseModel):
@@ -19,7 +19,7 @@ class UserListResponse(BaseModel):
 class CreateAccountRequest(BaseModel):
     """Request body for creating a new account."""
 
-    email: EmailStr
+    email: str
     password: str = Field(min_length=6)
     role: Literal["member", "leader", "admin"] = "member"
 
