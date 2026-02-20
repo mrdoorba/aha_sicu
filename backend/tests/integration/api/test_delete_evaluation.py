@@ -1,0 +1,135 @@
+"""Integration tests for the delete evaluation endpoint."""
+
+from datetime import datetime, timezone
+from unittest.mock import AsyncMock, patch
+
+AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
+
+MOCK_LEADER = {
+    "id": 1,
+    "firebase_uid": "test-uid",
+    "email": "leader@company.com",
+    "role": "leader",
+    "created_at": datetime(2026, 2, 5, tzinfo=timezone.utc),
+    "last_login": datetime(2026, 2, 5, tzinfo=timezone.utc),
+}
+
+MOCK_ADMIN = {
+    "id": 2,
+    "firebase_uid": "admin-uid",
+    "email": "admin@company.com",
+    "role": "admin",
+    "created_at": datetime(2026, 2, 5, tzinfo=timezone.utc),
+    "last_login": datetime(2026, 2, 5, tzinfo=timezone.utc),
+}
+
+MOCK_MEMBER = {
+    "id": 3,
+    "firebase_uid": "member-uid",
+    "email": "member@company.com",
+    "role": "member",
+    "created_at": datetime(2026, 2, 5, tzinfo=timezone.utc),
+    "last_login": datetime(2026, 2, 5, tzinfo=timezone.utc),
+}
+
+
+def _setup_auth_mocks(mock_verify, mock_db, mock_user_queries, mock_user):
+    """Shared auth mock setup."""
+    mock_verify.return_value = {"uid": mock_user["firebase_uid"], "email": mock_user["email"]}
+    mock_conn = AsyncMock()
+    mock_db.connection.return_value.__aenter__.return_value = mock_conn
+    mock_user_queries.get_user_by_firebase_uid = AsyncMock(return_value=mock_user)
+    mock_user_queries.update_last_login = AsyncMock()
+
+
+def test_delete_evaluation_success_leader(client):
+    """Test leader can delete evaluation — returns 204."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries, MOCK_LEADER)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.execute = AsyncMock(return_value="DELETE 1")
+
+        response = client.delete(
+            "/api/v1/evaluations/42",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 204
+
+
+def test_delete_evaluation_success_admin(client):
+    """Test admin can delete evaluation — returns 204."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.execute = AsyncMock(return_value="DELETE 1")
+
+        response = client.delete(
+            "/api/v1/evaluations/42",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 204
+
+
+def test_delete_evaluation_forbidden_member(client):
+    """Test member cannot delete evaluation — returns 403."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries, MOCK_MEMBER)
+
+        response = client.delete(
+            "/api/v1/evaluations/42",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 403
+        data = response.json()
+        assert data["code"] == "RULE_ACCESS_DENIED"
+
+
+def test_delete_evaluation_not_found(client):
+    """Test deleting non-existent evaluation returns 404."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries, MOCK_LEADER)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.execute = AsyncMock(return_value="DELETE 0")
+
+        response = client.delete(
+            "/api/v1/evaluations/99999",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 404
+        data = response.json()
+        assert data["code"] == "EVAL_NOT_FOUND"
+
+
+def test_delete_evaluation_unauthorized(client):
+    """Test unauthenticated request returns 401."""
+    response = client.delete("/api/v1/evaluations/42")
+    assert response.status_code == 401
