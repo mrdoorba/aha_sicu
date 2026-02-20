@@ -44,6 +44,7 @@ export function FileUploadSlot({
   };
 
   const isUploading = uploadStatus === 'signing' || uploadStatus === 'uploading' || uploadStatus === 'processing';
+  const isVerifying = uploadStatus === 'verifying';
 
   return (
     <Card>
@@ -98,6 +99,16 @@ export function FileUploadSlot({
               {uploadStatus === 'uploading' && (
                 <Progress value={uploadProgress} className="h-1.5" />
               )}
+            </div>
+          )}
+
+          {/* State: Verifying */}
+          {isVerifying && (
+            <div className="mt-2">
+              <div className="flex items-center gap-2 text-sm text-muted-foreground">
+                <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
+                <span>Verifying upload…</span>
+              </div>
             </div>
           )}
 
