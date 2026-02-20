@@ -723,6 +723,16 @@ class TestG72Branching:
         result = _compute_g72("22.0% ~ 28.5%", 0.03, self.D73, is_fashion=False)
         assert result == 0.22
 
+    def test_fashion_retains_capped_value(self):
+        """Fashion store TRUE branch: high floor drives capped above ceiling_g68."""
+        # floor_fashion=0.25 via rules, G68 "19.5% ~ 24.5%" → ceiling_g68=0.20
+        # capped pushed to 0.25 by floor > ceiling_g68=0.20 → TRUE → return 0.25
+        rules = {"marketing": {"floor_fashion": {"value": 0.25}}}
+        result = _compute_g72(
+            "19.5% ~ 24.5%", 0.03, self.D73, is_fashion=True, rules=rules,
+        )
+        assert result == 0.25
+
     def test_empty_g68_preserves_capped_behavior(self):
         """Empty G68 text returns capped value without G68 comparison."""
         result = _compute_g72("", 0.03, self.D73, is_fashion=False)
