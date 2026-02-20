@@ -1,5 +1,5 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useCallback, useRef } from 'react';
+import { useState, useCallback, useRef, useEffect } from 'react';
 import client from '../services/apiClient';
 
 export interface UploadInfo {
@@ -272,6 +272,13 @@ export function useUploadFile(brandId: number) {
     },
     [brandId, requestSignedUrl, processUpload, queryClient, getUploadSnapshot, verifyUpload],
   );
+
+  // Abort verification polling on unmount
+  useEffect(() => {
+    return () => {
+      verifyAbortRef.current?.abort();
+    };
+  }, []);
 
   const reset = useCallback(() => {
     verifyAbortRef.current?.abort();
