@@ -19,6 +19,7 @@ export const Header = () => {
   const navigate = useNavigate();
   const location = useLocation();
   const canAccessRules = profile?.role === 'leader' || profile?.role === 'admin';
+  const isAdmin = profile?.role === 'admin';
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
@@ -87,6 +88,18 @@ export const Header = () => {
                     }`}
                   >
                     Rules
+                  </Link>
+                )}
+                {isAdmin && (
+                  <Link
+                    to="/accounts"
+                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                      location.pathname === '/accounts'
+                        ? 'bg-white/20 text-white'
+                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    Akun
                   </Link>
                 )}
               </nav>

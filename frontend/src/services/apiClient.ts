@@ -687,6 +687,111 @@ interface paths {
       };
     };
   };
+  '/api/v1/accounts': {
+    get: {
+      responses: {
+        200: {
+          content: {
+            'application/json': Array<{
+              id: number;
+              email: string;
+              role: string;
+              created_at: string;
+              last_login: string | null;
+            }>;
+          };
+        };
+      };
+    };
+    post: {
+      requestBody: {
+        content: {
+          'application/json': {
+            email: string;
+            password: string;
+            role: 'member' | 'leader' | 'admin';
+          };
+        };
+      };
+      responses: {
+        201: {
+          content: {
+            'application/json': {
+              id: number;
+              email: string;
+              role: string;
+              created_at: string;
+              last_login: string | null;
+            };
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/accounts/{user_id}/role': {
+    patch: {
+      parameters: {
+        path: {
+          user_id: number;
+        };
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            role: 'member' | 'leader' | 'admin';
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              id: number;
+              email: string;
+              role: string;
+              created_at: string;
+              last_login: string | null;
+            };
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/accounts/{user_id}/reset-password': {
+    post: {
+      parameters: {
+        path: {
+          user_id: number;
+        };
+      };
+      requestBody: {
+        content: {
+          'application/json': {
+            password: string;
+          };
+        };
+      };
+      responses: {
+        204: {
+          content: never;
+        };
+      };
+    };
+  };
+  '/api/v1/accounts/{user_id}': {
+    delete: {
+      parameters: {
+        path: {
+          user_id: number;
+        };
+      };
+      responses: {
+        204: {
+          content: never;
+        };
+      };
+    };
+  };
 }
 
 const authMiddleware: Middleware = {

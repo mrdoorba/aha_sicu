@@ -10,6 +10,7 @@ import { EvaluationPage } from './pages/EvaluationPage';
 import { HistoryPage } from './pages/HistoryPage';
 import { EvaluationDetailPage } from './pages/EvaluationDetailPage';
 import { RulesPage } from './pages/RulesPage';
+import { AccountsPage } from './pages/AccountsPage';
 import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
 
 const queryClient = new QueryClient();
@@ -72,6 +73,17 @@ function App() {
               element={
                 <RoleProtectedRoute allowedRoles={['leader', 'admin']}>
                   <RulesPage />
+                </RoleProtectedRoute>
+              }
+            />
+            <Route
+              path="/accounts"
+              element={
+                <RoleProtectedRoute
+                  allowedRoles={['admin']}
+                  accessDeniedMessage="Akses ditolak — halaman akun hanya untuk admin"
+                >
+                  <AccountsPage />
                 </RoleProtectedRoute>
               }
             />
