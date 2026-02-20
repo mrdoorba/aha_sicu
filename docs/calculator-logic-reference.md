@@ -1500,36 +1500,26 @@ G-column message templates support `{placeholder}` syntax. Missing placeholders 
 └──────────────────────────────────────────────────────────────────┘
 ```
 
-#### Structured Pseudocode — Row-Group Pipeline
+#### Structured Pseudocode — Main Pipeline
 
 ```
 FUNCTION calculate_score(manual_data, calculator_results, template, verdict, ...):
     is_fashion = (template == "fashion")
 
     # ═══ Phase 1: Score all 11 categories ═══
-    # Each _score_*() reads inputs, applies thresholds, returns CategoryScore
-
-    Cat 1 (Operational):  rows 7-11, max 10 pts
-        row 7:  unfulfilled_rate <= 1% → +4, else -value
-        row 8:  late_shipment    <= 1% → +3, else -value
-        row 9:  prep_time        <= 1  → +3, else -((val-1)*100)
-        row 10: chat_response (info only, CEIL to 2dp before compare)
-        row 11: overall_rating (info only)
-
-    Cat 2 (Business):  rows 13-20, max 20 pts
-        row 13: current vs avg_6mo, threshold_pct=90 → multiplier 1.10
-        row 19: avg_6mo > 100M → +10
-        row 20: conversion_rate (initially scored with DEFAULT threshold)
-
-    Cat 3 (Content):     rows 22-24, info only
-    Cat 4 (Visitors):    rows 26-29, max 5 pts
-    Cat 5 (Promo):       rows 31-43, max 15 pts (opportunity scoring)
-    Cat 6 (Products):    rows 45-46, max 15 pts
-    Cat 7 (Ads):         rows 48-53, max 10 pts (opportunity scoring)
-    Cat 8 (Campaign):    rows 55-57, max 10 pts (opportunity scoring)
-    Cat 9 (Competition): rows 60-63, info only (from Calculator 2)
-    Cat 10 (Stock):      row 70, max 10 pts (from Calculator 2)
-    Cat 11 (Discount):   row 73, max 5 pts (from Calculator 3)
+    categories = [
+        _score_operational(manual_data, rules),
+        _score_business(manual_data, rules),
+        _score_content(manual_data, rules),
+        _score_visitors(manual_data, rules),
+        _score_promo_tools(manual_data, rules),
+        _score_products(manual_data, rules),
+        _score_ads(manual_data, template, rules),
+        _score_campaign(manual_data, rules),
+        _score_competition(manual_data, calculator_results),
+        _score_stock(calculator_results, rules),
+        _score_discount_row(calculator_results, rules),
+    ]
 
     # Post-scoring override: row 20 conversion rate from rules
     conv_threshold = rules.business.conversion_rate.threshold  (default 3.0)
@@ -1572,6 +1562,154 @@ FUNCTION calculate_score(manual_data, calculator_results, template, verdict, ...
     Build WhatsApp link with URL-encoded message
 
     RETURN ScoringResult(...)
+```
+
+#### Structured Pseudocode — Per-Category Scoring
+
+```
+# ─── Cat 1: Kesehatan Operasional Toko (rows 7-11, max 10 pts) ───
+FUNCTION _score_operational(manual_data, rules):
+    d7  = operational.unfulfilledOrderRate
+    d8  = operational.lateShipmentRate
+    d9  = operational.preparationTime
+    d10 = operational.chatResponseRate
+    d11 = operational.overallRating
+
+    row 7:  IF d7  <= 1.0 → score = +4      ELSE score = -d7
+    row 8:  IF d8  <= 1.0 → score = +3      ELSE score = -d8
+    row 9:  IF d9  <= 1.0 → score = +3      ELSE score = -((d9 - 1) × 100)
+    row 10: CEIL(d10 × 100) / 100, then compare >= 95   (info only, score = 0)
+    row 11: compare d11 >= 4.7                           (info only, score = 0)
+    RETURN CategoryScore(sum of row scores, max=10)
+
+# ─── Cat 2: Bisnis Analisis (rows 13-20, max 20 pts) ───
+FUNCTION _score_business(manual_data, rules):
+    sales_months[0..5] = salesMonth0..salesMonth5
+    current = sales_months[0]
+    avg_6mo = AVG(all 6 months)    # 0 if all are 0
+
+    # Row 13: Sales trend
+    multiplier = (200 - threshold_pct) / 100    # threshold_pct=90 → 1.10
+    IF avg_6mo < current × multiplier → score = +10  ELSE 0
+
+    # Rows 14-18: Past months (reference only, score = 0)
+
+    # Row 19: 6-month average
+    IF avg_6mo > 100,000,000 → score = +10  ELSE 0
+
+    # Row 20: Conversion rate (scored with default threshold=3.0)
+    # NOTE: overridden post-scoring in calculate_score() with rules threshold
+    RETURN CategoryScore(sum of row 13 + 19 scores, max=20)
+
+# ─── Cat 3: Skor Kesehatan Konten (rows 22-24, info only) ───
+FUNCTION _score_content(manual_data, rules):
+    d22 = content.needsImprovement
+    d23 = content.goodQuality
+    d24 = d23 / (d23 + d22)
+    row 24: IF d24 >= 0.95 → verdict ✔️  ELSE ❌     (score always 0)
+    RETURN CategoryScore(0, max=0)
+
+# ─── Cat 4: Tinjauan Pengunjung (rows 26-29, max 5 pts) ───
+FUNCTION _score_visitors(manual_data, rules):
+    d26 = visitors.totalVisitors       (reference)
+    d27 = visitors.returningVisitors   (reference)
+    d28 = d27 / d26                    # % returning
+    d29 = visitors.totalFollowers
+
+    row 28: IF d28 > 0.23 → score = +3  ELSE 0
+    row 29: IF d29 > 50000 → score = +2  ELSE 0
+    RETURN CategoryScore(row28 + row29, max=5)
+
+# ─── Cat 5: Promo Toko (rows 31-43, max 15 pts, opportunity) ───
+FUNCTION _score_promo_tools(manual_data, rules):
+    d13 = business.salesMonth0
+    used_count = 0
+    pass_count = 0
+
+    FOR each of 11 PROMO_TOOLS (rows 31-41):
+        d = promoTools.{fieldKey}
+        IF d == 0             → verdict = ❌
+        ELIF d/d13 >= 0.50    → verdict = ❌  (too dependent)
+        ELIF benchmark == 0   → verdict = ✔️ if d > 0   (gratisOngkir)
+        ELIF d >= benchmark×d13 → verdict = ✔️
+        ELSE                  → verdict = ❌
+        IF d > 0: used_count++
+        IF verdict == ✔️: pass_count++
+
+    # Row 42: Usage rate = used_count / 11
+    IF usage > 80% → score = 0  ELSE score = +5   (opportunity)
+
+    # Row 43: Effectiveness rate = pass_count / 11
+    IF effectiveness > 90% → score = 0  ELSE score = +10   (opportunity)
+
+    RETURN CategoryScore(row42 + row43, max=15)
+
+# ─── Cat 6: Jumlah Produk & Status Toko (rows 45-46, max 15 pts) ───
+FUNCTION _score_products(manual_data, rules):
+    d45 = products.productCount
+    d46 = products.storeStatus
+
+    row 45: IF d45 >= 35 → score = +5  ELSE 0
+    row 46: IF d46 == "Shopee Mall" → score = +10
+            ELIF d46 == "Star+"     → score = +5
+            ELSE                    → score = 0
+    RETURN CategoryScore(row45 + row46, max=15)
+
+# ─── Cat 7: Data Iklan (rows 48-53, max 10 pts, opportunity) ───
+FUNCTION _score_ads(manual_data, template, rules):
+    d48 = ads.adSales
+    d49 = ads.adCost
+    d13 = business.salesMonth0
+
+    row 48: reference only (d48)
+    row 49: reference only (d49)
+
+    # Row 50: ROI = d48 / d49
+    roi_threshold = 9.0 (non-fashion) or 8.0 (fashion, from rules)
+    IF roi >= threshold → score = 0  ELSE score = +5   (opportunity)
+
+    # Row 51: GMV ratio = d48 / d13
+    IF d51 < 0.84 → score = +5  ELSE score = 0
+
+    # Row 52: Cost ratio = d49 / d13 (info only, score = 0)
+    IF <1% → ❌  ELIF <5% → ❌  ELIF <=10% → ✔️  ELSE → ❌
+
+    # Row 53: Calculator 1 output_text (injected, score = 0)
+    RETURN CategoryScore(row50 + row51, max=10)
+
+# ─── Cat 8: Partisipasi Campaign (rows 55-57, max 10 pts, opportunity) ───
+FUNCTION _score_campaign(manual_data, rules):
+    d55 = campaign.nominatedSessions   (reference)
+    d56 = campaign.availableSessions   (reference)
+    d57 = d55 / d56                    # participation rate
+
+    row 57: IF d57 > 0.90 → score = 0  ELSE score = +10   (opportunity)
+    RETURN CategoryScore(row57, max=10)
+
+# ─── Cat 9: Kompetisi TOP Produk (rows 60-63, info only) ───
+FUNCTION _score_competition(manual_data, calculator_results):
+    FOR i in 0..2 (products 1-3):
+        selling_price = Calculator 2 output_1[i].rata2_harga_jual
+        market_price  = competition.product{i+1}.marketPrice
+        IF selling_price <= market_price × 1.10 → verdict ✔️
+        ELSE → verdict ❌
+    RETURN CategoryScore(0, max=0)
+
+# ─── Cat 10: Stok (row 70, max 10 pts) ───
+FUNCTION _score_stock(calculator_results, rules):
+    IF Calculator 2 not run → available=False, score=0
+    avg_stock = ROUND(Calculator 2 details.average_stock)
+    IF avg_stock >= 24 → score = +10
+    ELIF avg_stock >= 12 → score = +5
+    ELSE → score = -5
+    RETURN CategoryScore(score, max=10)
+
+# ─── Cat 11: Discount (row 73, max 5 pts) ───
+FUNCTION _score_discount_row(calculator_results, rules):
+    IF Calculator 3 not run → available=False, score=0
+    IF fake_discount_flag == False → score = +5
+    ELSE → score = 0
+    RETURN CategoryScore(score, max=5)
 ```
 
 #### Key Branching: Fashion vs Non-Fashion
