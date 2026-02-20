@@ -1457,6 +1457,138 @@ All thresholds and point values are configurable via a `rules` dict loaded from 
 
 G-column message templates support `{placeholder}` syntax. Missing placeholders are preserved as-is via a `_SafeDict` that returns `{key}` for unknown keys. Malformed templates (unmatched braces) also degrade gracefully by returning the template unchanged.
 
+### Pseudocode
+
+#### Flow Diagram
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                       calculate_score()                           │
+│                                                                  │
+│  manual_data ──┬──► _score_operational()  ──► Cat 1 (rows 7-11)  │
+│                ├──► _score_business()     ──► Cat 2 (rows 13-20) │
+│                ├──► _score_content()      ──► Cat 3 (rows 22-24) │
+│                ├──► _score_visitors()     ──► Cat 4 (rows 26-29) │
+│                ├──► _score_promo_tools()  ──► Cat 5 (rows 31-43) │
+│                ├──► _score_products()     ──► Cat 6 (rows 45-46) │
+│                ├──► _score_ads()          ──► Cat 7 (rows 48-53) │
+│                └──► _score_campaign()     ──► Cat 8 (rows 55-57) │
+│                                                                  │
+│  calc_results ──┬──► _score_competition() ──► Cat 9 (rows 60-63) │
+│                 ├──► _score_stock()       ──► Cat 10 (row 70)    │
+│                 └──► _score_discount_row()──► Cat 11 (row 73)    │
+│                                                                  │
+│  Post-scoring: override row 20 (conversion rate) from rules      │
+│                                                                  │
+│  total_score = SUM(all category scores)                          │
+│                                                                  │
+│  _generate_*_messages() ──► G-column text for all rows           │
+│                                                                  │
+│  d52 = adCost / salesMonth0                                      │
+│  d73 = Calculator 3 output_text                                  │
+│                                                                  │
+│  _compute_g68()  ──► marketing estimation text                   │
+│  _compute_g72()  ──► marketing percentage (fraction)             │
+│  _compute_g73()  ──► marketing budget text                       │
+│  _compute_g66()  ──► conclusion text                             │
+│  _compute_g75()  ──► closing message                             │
+│                                                                  │
+│  _assemble_email_body() + _build_whatsapp_link()                 │
+│                        │                                         │
+│                        ▼                                         │
+│              ScoringResult (all fields)                           │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### Structured Pseudocode — Row-Group Pipeline
+
+```
+FUNCTION calculate_score(manual_data, calculator_results, template, verdict, ...):
+    is_fashion = (template == "fashion")
+
+    # ═══ Phase 1: Score all 11 categories ═══
+    # Each _score_*() reads inputs, applies thresholds, returns CategoryScore
+
+    Cat 1 (Operational):  rows 7-11, max 10 pts
+        row 7:  unfulfilled_rate <= 1% → +4, else -value
+        row 8:  late_shipment    <= 1% → +3, else -value
+        row 9:  prep_time        <= 1  → +3, else -((val-1)*100)
+        row 10: chat_response (info only, CEIL to 2dp before compare)
+        row 11: overall_rating (info only)
+
+    Cat 2 (Business):  rows 13-20, max 20 pts
+        row 13: current vs avg_6mo, threshold_pct=90 → multiplier 1.10
+        row 19: avg_6mo > 100M → +10
+        row 20: conversion_rate (initially scored with DEFAULT threshold)
+
+    Cat 3 (Content):     rows 22-24, info only
+    Cat 4 (Visitors):    rows 26-29, max 5 pts
+    Cat 5 (Promo):       rows 31-43, max 15 pts (opportunity scoring)
+    Cat 6 (Products):    rows 45-46, max 15 pts
+    Cat 7 (Ads):         rows 48-53, max 10 pts (opportunity scoring)
+    Cat 8 (Campaign):    rows 55-57, max 10 pts (opportunity scoring)
+    Cat 9 (Competition): rows 60-63, info only (from Calculator 2)
+    Cat 10 (Stock):      row 70, max 10 pts (from Calculator 2)
+    Cat 11 (Discount):   row 73, max 5 pts (from Calculator 3)
+
+    # Post-scoring override: row 20 conversion rate from rules
+    conv_threshold = rules.business.conversion_rate.threshold  (default 3.0)
+    Override row 20 benchmark and verdict with conv_threshold
+
+    total_score = SUM(all category scores)
+
+    # ═══ Phase 2: Generate G-column messages ═══
+    FOR each category: _generate_*_messages(category, ...)
+
+    # ═══ Phase 3: Derived formulas (G68/G72/G73/G66/G75) ═══
+    d13 = salesMonth0
+    d52 = adCost / d13
+    d73 = Calculator 3 output_text
+
+    # G68: Parse D73 → compute low/high marketing cost estimates
+    t, ra, rb, v, p = parse 5 percentages from D73
+    low  = (ra*t) + v + p + d52 + 0.05
+    high = (rb*t) + v + p + d52 + 0.05
+    g68 = "{low}% ~ {high}%"  (+ fake discount warning if present)
+
+    # G72: Complex MIN/MAX with fashion adjustment
+    avg = ((ra*t+v+p+d52) + (rb*t+v+p+d52)) / 2
+    base = ROUNDDOWN(avg - 0.03, 2)
+    upper_limit = 0.20 + fashion_adj
+    g68_left = raw fraction before "~" in g68
+    ceiling_g68 = CEIL(first % from g68) / 100
+    min_val = MIN(MIN(base, upper_limit), g68_left)
+    capped = MAX(MAX(min_val, 0.10), floor)
+    g72 = ceiling_g68 IF ceiling_g68 > 0 AND capped <= ceiling_g68 ELSE capped
+
+    # G73: Budget text (suppressed for ❌/⭕️ verdicts)
+    display_pct = CLAMP(g72, 0.10, 0.25)
+    budget = d13 × display_pct
+
+    # G66: Multi-line conclusion, G75: Closing message by verdict
+
+    # ═══ Phase 4: Email + WhatsApp ═══
+    Assemble email body from G-column messages across all categories
+    Build WhatsApp link with URL-encoded message
+
+    RETURN ScoringResult(...)
+```
+
+#### Key Branching: Fashion vs Non-Fashion
+
+```
+IF is_fashion:
+    marketing_floor = 0.15
+    fashion_adjustment = 0.05     # upper_limit = 0.25
+    conversion_threshold = 2.0%   # (from DB rules override)
+    ROI_threshold = 8.0           # (from DB rules override)
+ELSE:
+    marketing_floor = 0.12
+    fashion_adjustment = 0.0      # upper_limit = 0.20
+    conversion_threshold = 3.0%   # (DEFAULT_RULES)
+    ROI_threshold = 9.0           # (DEFAULT_RULES)
+```
+
 ---
 
 ## DEFAULT_RULES Reference
@@ -1766,6 +1898,76 @@ Each calculator runs in its own try/except block. One calculator's failure does 
 ### Database Storage
 
 Results are stored via `upsert_result()` (INSERT ON CONFLICT UPDATE) keyed by `(brand_id, calculator_type)` — one result per calculator per brand, replaced on re-run.
+
+### Pseudocode
+
+#### Flow Diagram
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│              Orchestration Engine                                │
+│                                                                │
+│  ┌─────────────────────────────────────────────────┐           │
+│  │        check_calculator_readiness()              │           │
+│  │                                                 │           │
+│  │  uploads ──► available file types (set)          │           │
+│  │  manual_data ──► has total_products?             │           │
+│  │  existing results ──► has_result, calculated_at  │           │
+│  │                                                 │           │
+│  │  FOR each calculator:                           │           │
+│  │    missing = required_files - available_files    │           │
+│  │    missing_manual = check manual dependencies   │           │
+│  │    status = "ready" if nothing missing           │           │
+│  └─────────────────────────────────────────────────┘           │
+│                         │                                      │
+│           ┌─────────────┼──────────────┐                       │
+│           ▼             ▼              ▼                       │
+│  ┌─────────────┐ ┌──────────────┐ ┌─────────────────┐         │
+│  │ run_ready_  │ │ run_calcs_   │ │ clear_dependent_ │         │
+│  │ calculators │ │ for_upload   │ │ results          │         │
+│  │ (run all    │ │ (targeted    │ │ (delete stale    │         │
+│  │  ready)     │ │  by file)    │ │  before re-run)  │         │
+│  └─────────────┘ └──────────────┘ └─────────────────┘         │
+│           │             │                                      │
+│           ▼             ▼                                      │
+│    Per calculator: try/except isolation                        │
+│    → success / skipped / error                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+#### Structured Pseudocode
+
+```
+FUNCTION check_calculator_readiness(brand_id, conn):
+    available_files = {file_type for upload in brand uploads}
+    has_total_products = manual_data.products.productCount exists?
+    existing_results = query calculator_results by brand
+
+    FOR each calculator_type in [ads_keyword, discount, top_sku]:
+        required = CALCULATOR_REQUIRED_FILES[type]
+        missing_files = required - available_files
+        missing_manual = check CALCULATOR_REQUIRED_MANUAL[type]
+        status = "ready" IF no missing files AND no missing manual
+        RETURN {status, has_result, missing_files, missing_manual, ...}
+
+FUNCTION run_ready_calculators(brand_id, user_id, conn):
+    readiness = check_calculator_readiness(brand_id, conn, user_id)
+    FOR each calculator:
+        IF not ready → skip with reason
+        ELSE:
+            TRY:  runner(brand_id, user_id) → success
+            CATCH: log warning → error
+    RETURN [per-calculator results]
+
+FUNCTION run_calculators_for_upload(brand_id, file_type, user_id, conn):
+    affected = FILE_TO_CALCULATORS[file_type]
+    readiness = check_calculator_readiness(brand_id, conn, user_id)
+    RUN only affected calculators that are ready
+
+FUNCTION clear_dependent_results(brand_id, file_type, conn):
+    affected = FILE_TO_CALCULATORS[file_type]
+    DELETE calculator results for affected types
+```
 
 ---
 
