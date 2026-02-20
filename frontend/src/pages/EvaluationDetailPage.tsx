@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, ClipboardCheck } from 'lucide-react';
+import { ArrowLeft, Copy, ClipboardCheck, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { toast } from 'sonner';
 import { Header } from '../components/layout/Header';
@@ -15,6 +15,9 @@ import {
   TableRow,
 } from '../components/ui/table';
 import { useEvaluationDetail } from '../hooks/useEvaluationDetail';
+import { useCurrentUser } from '../hooks/useCurrentUser';
+import { useDeleteEvaluation } from '../hooks/useDeleteEvaluation';
+import { DeleteEvaluationDialog } from '../components/evaluations/DeleteEvaluationDialog';
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -247,6 +250,23 @@ export function EvaluationDetailPage() {
   const { evaluation, isLoading, isError, isNotFound, refetch } = useEvaluationDetail(
     validId ? id : 0,
   );
+  const { profile } = useCurrentUser();
+  const deleteEvaluation = useDeleteEvaluation();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+
+  const canDelete = profile?.role === 'leader' || profile?.role === 'admin';
+
+  const handleDelete = () => {
+    deleteEvaluation.mutate(id, {
+      onSuccess: () => {
+        toast.success('Evaluasi berhasil dihapus');
+        navigate('/history');
+      },
+      onError: () => {
+        toast.error('Gagal menghapus evaluasi');
+      },
+    });
+  };
 
   return (
     <div className="min-h-screen bg-muted">
@@ -302,12 +322,34 @@ export function EvaluationDetailPage() {
                       {evaluation.evaluator_email} &middot; {formatDate(evaluation.created_at)}
                     </p>
                   </div>
-                  <Badge variant={evaluation.template === 'fashion' ? 'default' : 'secondary'}>
-                    {evaluation.template === 'fashion' ? 'Fashion' : 'Non-Fashion'}
-                  </Badge>
+                  <div className="flex items-center gap-2">
+                    <Badge variant={evaluation.template === 'fashion' ? 'default' : 'secondary'}>
+                      {evaluation.template === 'fashion' ? 'Fashion' : 'Non-Fashion'}
+                    </Badge>
+                    {canDelete && (
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        onClick={() => setDeleteDialogOpen(true)}
+                      >
+                        <Trash2 className="mr-1 size-4" />
+                        Hapus Evaluasi
+                      </Button>
+                    )}
+                  </div>
                 </div>
               </CardContent>
             </Card>
+
+            {canDelete && evaluation && (
+              <DeleteEvaluationDialog
+                open={deleteDialogOpen}
+                onOpenChange={setDeleteDialogOpen}
+                brandName={evaluation.brand_name}
+                onConfirm={handleDelete}
+                isDeleting={deleteEvaluation.isPending}
+              />
+            )}
 
             {/* Score Section */}
             <div className="grid gap-6 md:grid-cols-2">
