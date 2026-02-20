@@ -60,6 +60,38 @@ vi.mock('../components/layout/Header', () => ({
   Header: () => <header data-testid="mock-header">Header</header>,
 }));
 
+// Mock useCurrentUser
+let mockProfile: { id: string; email: string; role: string; created_at: string; last_login: string } | null = {
+  id: '1',
+  email: 'member@company.com',
+  role: 'member',
+  created_at: '2026-01-01T00:00:00Z',
+  last_login: '2026-02-20T00:00:00Z',
+};
+
+vi.mock('../hooks/useCurrentUser', () => ({
+  useCurrentUser: () => ({
+    profile: mockProfile,
+    isLoading: false,
+    isError: false,
+  }),
+}));
+
+// Mock useDeleteEvaluation
+const mockMutate = vi.fn();
+
+vi.mock('../hooks/useDeleteEvaluation', () => ({
+  useDeleteEvaluation: () => ({
+    mutate: mockMutate,
+    isPending: false,
+  }),
+}));
+
+// Mock sonner toast
+vi.mock('sonner', () => ({
+  toast: { error: vi.fn(), success: vi.fn() },
+}));
+
 function LocationDisplay() {
   const location = useLocation();
   return <div data-testid="location">{location.pathname}</div>;
@@ -85,6 +117,13 @@ beforeEach(() => {
     isNotFound: false,
     error: null,
     refetch: mockRefetch,
+  };
+  mockProfile = {
+    id: '3',
+    email: 'member@company.com',
+    role: 'member',
+    created_at: '2026-01-01T00:00:00Z',
+    last_login: '2026-02-20T00:00:00Z',
   };
   mockUseEvaluationDetail.mockImplementation(() => mockHookReturn);
   vi.clearAllMocks();
@@ -157,8 +196,10 @@ describe('EvaluationDetailPage', () => {
 
   it('copies email output to clipboard on copy button click', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.assign(navigator, {
-      clipboard: { writeText },
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      writable: true,
+      configurable: true,
     });
 
     renderPage();
@@ -246,6 +287,66 @@ describe('EvaluationDetailPage', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('location')).toHaveTextContent('/history');
+    });
+  });
+
+  // --- Delete button visibility by role (Task 7.3) ---
+
+  it('shows delete button for leader role', () => {
+    mockProfile = {
+      id: '1',
+      email: 'leader@company.com',
+      role: 'leader',
+      created_at: '2026-01-01T00:00:00Z',
+      last_login: '2026-02-20T00:00:00Z',
+    };
+    renderPage();
+
+    expect(screen.getByRole('button', { name: /hapus evaluasi/i })).toBeInTheDocument();
+  });
+
+  it('shows delete button for admin role', () => {
+    mockProfile = {
+      id: '2',
+      email: 'admin@company.com',
+      role: 'admin',
+      created_at: '2026-01-01T00:00:00Z',
+      last_login: '2026-02-20T00:00:00Z',
+    };
+    renderPage();
+
+    expect(screen.getByRole('button', { name: /hapus evaluasi/i })).toBeInTheDocument();
+  });
+
+  it('does not show delete button for member role', () => {
+    mockProfile = {
+      id: '3',
+      email: 'member@company.com',
+      role: 'member',
+      created_at: '2026-01-01T00:00:00Z',
+      last_login: '2026-02-20T00:00:00Z',
+    };
+    renderPage();
+
+    expect(screen.queryByRole('button', { name: /hapus evaluasi/i })).not.toBeInTheDocument();
+  });
+
+  it('opens delete dialog when delete button is clicked', async () => {
+    mockProfile = {
+      id: '1',
+      email: 'leader@company.com',
+      role: 'leader',
+      created_at: '2026-01-01T00:00:00Z',
+      last_login: '2026-02-20T00:00:00Z',
+    };
+    renderPage();
+
+    const deleteBtn = screen.getByRole('button', { name: /hapus evaluasi/i });
+    await userEvent.click(deleteBtn);
+
+    await waitFor(() => {
+      expect(screen.getByRole('dialog')).toBeInTheDocument();
+      expect(screen.getByText(/permanen dan tidak dapat dibatalkan/)).toBeInTheDocument();
     });
   });
 });

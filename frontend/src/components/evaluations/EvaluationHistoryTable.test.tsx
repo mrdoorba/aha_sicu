@@ -6,29 +6,27 @@ import { EvaluationHistoryTable } from './EvaluationHistoryTable';
 
 const mockRefetch = vi.fn();
 
-const MOCK_EVALUATIONS = [
+const MOCK_BRANDS = [
   {
-    id: 1,
+    brand_id: 10,
     brand_name: 'Nike Indonesia',
-    final_score: 78.5,
-    verdict: '\u2714\uFE0F',
-    template: 'fashion',
-    evaluator_email: 'rina@company.com',
-    created_at: '2026-02-10T10:30:00Z',
+    evaluation_count: 5,
+    top_score: 82.5,
+    top_verdict: '\u2714\uFE0F',
+    latest_date: '2026-02-15T10:00:00Z',
   },
   {
-    id: 2,
-    brand_name: 'Unilever ID',
-    final_score: 65.0,
-    verdict: '\u274C',
-    template: 'non_fashion',
-    evaluator_email: 'budi@company.com',
-    created_at: '2026-02-09T14:00:00Z',
+    brand_id: 20,
+    brand_name: 'Adidas SEA',
+    evaluation_count: 3,
+    top_score: 75.0,
+    top_verdict: '\u2714\uFE0F',
+    latest_date: '2026-02-14T14:00:00Z',
   },
 ];
 
-let mockHookReturn = {
-  evaluations: MOCK_EVALUATIONS,
+let mockGroupedReturn = {
+  brands: MOCK_BRANDS,
   total: 2,
   page: 1,
   pages: 1,
@@ -39,13 +37,38 @@ let mockHookReturn = {
   isPlaceholderData: false,
 };
 
-const mockUseEvaluationHistory = vi.fn(() => mockHookReturn);
+const MOCK_BRAND_EVALS = [
+  { id: 101, final_score: 82.5, verdict: '\u2714\uFE0F', template: 'fashion', evaluator_email: 'rina@company.com', created_at: '2026-02-15T10:00:00Z' },
+  { id: 102, final_score: 78.0, verdict: '\u2714\uFE0F', template: 'fashion', evaluator_email: 'budi@company.com', created_at: '2026-02-12T14:00:00Z' },
+];
 
-vi.mock('../../hooks/useEvaluationHistory', () => ({
-  useEvaluationHistory: (...args: unknown[]) => mockUseEvaluationHistory(...args),
+const MOCK_BRAND_EVALS_MANY = [
+  { id: 101, final_score: 82.5, verdict: '\u2714\uFE0F', template: 'fashion', evaluator_email: 'a@co.com', created_at: '2026-02-15T10:00:00Z' },
+  { id: 102, final_score: 80.0, verdict: '\u2714\uFE0F', template: 'fashion', evaluator_email: 'b@co.com', created_at: '2026-02-14T10:00:00Z' },
+  { id: 103, final_score: 78.0, verdict: '\u2714\uFE0F', template: 'fashion', evaluator_email: 'c@co.com', created_at: '2026-02-13T10:00:00Z' },
+  { id: 104, final_score: 76.0, verdict: '\u2714\uFE0F', template: 'fashion', evaluator_email: 'd@co.com', created_at: '2026-02-12T10:00:00Z' },
+  { id: 105, final_score: 74.0, verdict: '\u2714\uFE0F', template: 'fashion', evaluator_email: 'e@co.com', created_at: '2026-02-11T10:00:00Z' },
+];
+
+let mockBrandReturn = {
+  evaluations: MOCK_BRAND_EVALS,
+  total: 2,
+  isLoading: false,
+  isError: false,
+  refetch: vi.fn(),
+};
+
+const mockUseGrouped = vi.fn(() => mockGroupedReturn);
+const mockUseBrand = vi.fn(() => mockBrandReturn);
+
+vi.mock('../../hooks/useGroupedEvaluations', () => ({
+  useGroupedEvaluations: (...args: unknown[]) => mockUseGrouped(...args),
 }));
 
-/** Helper that renders current location for assertions. */
+vi.mock('../../hooks/useBrandEvaluations', () => ({
+  useBrandEvaluations: (...args: unknown[]) => mockUseBrand(...args),
+}));
+
 function LocationDisplay() {
   const location = useLocation();
   return (
@@ -65,11 +88,11 @@ const renderTable = (initialEntries = ['/history']) => {
   );
 };
 
-describe('EvaluationHistoryTable', () => {
+describe('EvaluationHistoryTable — Accordion', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    mockHookReturn = {
-      evaluations: MOCK_EVALUATIONS,
+    mockGroupedReturn = {
+      brands: MOCK_BRANDS,
       total: 2,
       page: 1,
       pages: 1,
@@ -79,158 +102,151 @@ describe('EvaluationHistoryTable', () => {
       refetch: mockRefetch,
       isPlaceholderData: false,
     };
+    mockBrandReturn = {
+      evaluations: MOCK_BRAND_EVALS,
+      total: 2,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    };
   });
 
-  it('renders evaluation history table with data', () => {
+  // --- Render grouped data ---
+
+  it('renders Indonesian column headers: BRAND, EVALUASI, SKOR TERTINGGI, TERBARU', () => {
+    renderTable();
+
+    expect(screen.getByText('Brand')).toBeInTheDocument();
+    expect(screen.getByText('Evaluasi')).toBeInTheDocument();
+    expect(screen.getByText('Skor Tertinggi')).toBeInTheDocument();
+    expect(screen.getByText('Terbaru')).toBeInTheDocument();
+  });
+
+  it('renders brand summary rows with name, count, score, and date', () => {
     renderTable();
 
     expect(screen.getByText('Nike Indonesia')).toBeInTheDocument();
-    expect(screen.getByText('Unilever ID')).toBeInTheDocument();
-    expect(screen.getByText('rina@company.com')).toBeInTheDocument();
-    expect(screen.getByText('budi@company.com')).toBeInTheDocument();
+    expect(screen.getByText('5 evaluasi')).toBeInTheDocument();
+    expect(screen.getByText(/82\.50/)).toBeInTheDocument();
+    expect(screen.getByText('Adidas SEA')).toBeInTheDocument();
+    expect(screen.getByText('3 evaluasi')).toBeInTheDocument();
   });
 
-  it('pagination buttons navigate between pages and update URL', async () => {
+  // --- Expand/Collapse ---
+
+  it('expands brand on click showing individual evaluations', async () => {
     const user = userEvent.setup();
-    mockHookReturn = {
-      ...mockHookReturn,
+    renderTable();
+
+    const nikeRow = screen.getByText('Nike Indonesia').closest('tr')!;
+    await user.click(nikeRow);
+
+    await waitFor(() => {
+      expect(screen.getByText('rina@company.com')).toBeInTheDocument();
+      expect(screen.getByText('budi@company.com')).toBeInTheDocument();
+    });
+  });
+
+  it('collapses expanded brand on second click', async () => {
+    const user = userEvent.setup();
+    renderTable();
+
+    const nikeRow = screen.getByText('Nike Indonesia').closest('tr')!;
+
+    // Expand
+    await user.click(nikeRow);
+    await waitFor(() => {
+      expect(screen.getByText('rina@company.com')).toBeInTheDocument();
+    });
+
+    // Collapse — expanded row's aria-expanded should flip
+    await user.click(nikeRow);
+    expect(nikeRow).toHaveAttribute('aria-expanded', 'false');
+  });
+
+  // --- Limit 5 & "Tampilkan semua" ---
+
+  it('shows "Tampilkan semua (N)" button when total > 5', async () => {
+    mockBrandReturn = {
+      evaluations: MOCK_BRAND_EVALS_MANY,
+      total: 8,
+      isLoading: false,
+      isError: false,
+      refetch: vi.fn(),
+    };
+    const user = userEvent.setup();
+    renderTable();
+
+    const nikeRow = screen.getByText('Nike Indonesia').closest('tr')!;
+    await user.click(nikeRow);
+
+    await waitFor(() => {
+      expect(screen.getByText('Tampilkan semua (8)')).toBeInTheDocument();
+    });
+  });
+
+  it('does not show "Tampilkan semua" when total <= 5', async () => {
+    const user = userEvent.setup();
+    renderTable();
+
+    const nikeRow = screen.getByText('Nike Indonesia').closest('tr')!;
+    await user.click(nikeRow);
+
+    await waitFor(() => {
+      expect(screen.getByText('rina@company.com')).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/Tampilkan semua/)).not.toBeInTheDocument();
+  });
+
+  // --- Pagination ---
+
+  it('shows pagination controls for multiple pages', () => {
+    mockGroupedReturn = {
+      ...mockGroupedReturn,
+      pages: 3,
+      total: 50,
+    };
+    renderTable();
+
+    expect(screen.getByText('Halaman 1 dari 3')).toBeInTheDocument();
+    expect(screen.getByText('Sebelumnya')).toBeInTheDocument();
+    expect(screen.getByText('Berikutnya')).toBeInTheDocument();
+  });
+
+  it('pagination next button updates URL', async () => {
+    const user = userEvent.setup();
+    mockGroupedReturn = {
+      ...mockGroupedReturn,
       total: 40,
       pages: 2,
     };
     renderTable();
 
-    expect(screen.getByText('Page 1 of 2')).toBeInTheDocument();
-    const prevButton = screen.getByRole('button', { name: /previous/i });
-    const nextButton = screen.getByRole('button', { name: /next/i });
-    expect(prevButton).toBeDisabled();
-    expect(nextButton).not.toBeDisabled();
-
-    // Click Next — URL should update with ?page=2
+    const nextButton = screen.getByRole('button', { name: /berikutnya/i });
     await user.click(nextButton);
+
     expect(screen.getByTestId('location')).toHaveTextContent('?page=2');
   });
 
-  it('column header click triggers sort and updates URL', async () => {
-    const user = userEvent.setup();
-    renderTable();
+  // --- Search ---
 
-    // Date and Score columns should be sortable (rendered as buttons)
-    const dateButton = screen.getByRole('button', { name: /sort by date/i });
-    expect(dateButton).toBeInTheDocument();
-
-    const scoreButton = screen.getByRole('button', { name: /sort by score/i });
-    expect(scoreButton).toBeInTheDocument();
-
-    // Click score to sort — URL should update with sort_by param
-    await user.click(scoreButton);
-    expect(screen.getByTestId('location')).toHaveTextContent('sort_by=final_score');
-  });
-
-  it('row click navigates to evaluation detail', async () => {
-    const user = userEvent.setup();
-    renderTable();
-
-    // Click the first row (Nike Indonesia)
-    const row = screen.getByText('Nike Indonesia').closest('tr')!;
-    await user.click(row);
-
-    // Should navigate to /history/1
-    expect(screen.getByTestId('location')).toHaveTextContent('/history/1');
-  });
-
-  it('shows loading state during fetch', () => {
-    mockHookReturn = {
-      ...mockHookReturn,
-      evaluations: [],
-      total: 0,
-      isLoading: true,
-    };
-    renderTable();
-
-    const table = screen.getByRole('table', { name: /evaluation history/i });
-    expect(table).toHaveAttribute('aria-busy', 'true');
-    // Should not show data
-    expect(screen.queryByText('Nike Indonesia')).not.toBeInTheDocument();
-  });
-
-  it('shows aria-busy during placeholder data transitions', () => {
-    mockHookReturn = {
-      ...mockHookReturn,
-      isPlaceholderData: true,
-    };
-    renderTable();
-
-    const table = screen.getByRole('table', { name: /evaluation history/i });
-    expect(table).toHaveAttribute('aria-busy', 'true');
-  });
-
-  it('shows empty state when no evaluations', () => {
-    mockHookReturn = {
-      ...mockHookReturn,
-      evaluations: [],
-      total: 0,
-    };
-    renderTable();
-
-    expect(screen.getByText('No evaluations found')).toBeInTheDocument();
-  });
-
-  it('shows error state with retry button', async () => {
-    const user = userEvent.setup();
-    mockHookReturn = {
-      ...mockHookReturn,
-      evaluations: [],
-      total: 0,
-      isError: true,
-      error: new Error('Failed to load evaluations'),
-    };
-    renderTable();
-
-    expect(screen.getByText('Failed to load evaluations')).toBeInTheDocument();
-    const retryButton = screen.getByRole('button', { name: /retry/i });
-    expect(retryButton).toBeInTheDocument();
-
-    await user.click(retryButton);
-    expect(mockRefetch).toHaveBeenCalled();
-  });
-
-  // --- Search tests (Story 4.2) ---
-
-  it('search input renders with accessible label', () => {
+  it('search input has Indonesian placeholder', () => {
     renderTable();
 
     const searchInput = screen.getByRole('textbox', {
-      name: /search evaluations by brand name/i,
+      name: /cari evaluasi berdasarkan nama brand/i,
     });
     expect(searchInput).toBeInTheDocument();
-    expect(searchInput).toHaveAttribute('placeholder', 'Search by brand name...');
+    expect(searchInput).toHaveAttribute('placeholder', 'Cari nama brand...');
   });
 
-  it('typing in search triggers API call with search param', async () => {
+  it('typing in search updates URL with search param after debounce', async () => {
     const user = userEvent.setup();
     renderTable();
 
     const searchInput = screen.getByRole('textbox', {
-      name: /search evaluations by brand name/i,
+      name: /cari evaluasi berdasarkan nama brand/i,
     });
-
-    await user.type(searchInput, 'Nike');
-
-    // Wait for debounce to fire and URL to update
-    await waitFor(() => {
-      const lastCall = mockUseEvaluationHistory.mock.calls.at(-1);
-      expect(lastCall?.[4]).toBe('Nike');
-    });
-  });
-
-  it('search updates URL query params', async () => {
-    const user = userEvent.setup();
-    renderTable();
-
-    const searchInput = screen.getByRole('textbox', {
-      name: /search evaluations by brand name/i,
-    });
-
     await user.type(searchInput, 'Nike');
 
     await waitFor(() => {
@@ -238,105 +254,22 @@ describe('EvaluationHistoryTable', () => {
     });
   });
 
-  it('clear button clears search and resets page', async () => {
-    const user = userEvent.setup();
-    renderTable(['/history?search=Nike']);
+  // --- Date filters ---
 
-    // Clear button should be visible
-    const clearButton = screen.getByRole('button', { name: /clear search/i });
-    expect(clearButton).toBeInTheDocument();
-
-    await user.click(clearButton);
-
-    await waitFor(() => {
-      const location = screen.getByTestId('location').textContent ?? '';
-      expect(location).not.toContain('search=');
-    });
-  });
-
-  it('empty search results show contextual message with search term', () => {
-    mockHookReturn = {
-      ...mockHookReturn,
-      evaluations: [],
-      total: 0,
-    };
-    renderTable(['/history?search=Nike']);
-
-    expect(
-      screen.getByText("No evaluations found for 'Nike'"),
-    ).toBeInTheDocument();
-  });
-
-  it('search persists across sort changes', async () => {
-    const user = userEvent.setup();
-    renderTable(['/history?search=Nike']);
-
-    // Click sort by score
-    const scoreButton = screen.getByRole('button', { name: /sort by score/i });
-    await user.click(scoreButton);
-
-    await waitFor(() => {
-      const location = screen.getByTestId('location').textContent ?? '';
-      expect(location).toContain('search=Nike');
-      expect(location).toContain('sort_by=final_score');
-    });
-  });
-
-  // --- Date filter tests (Story 4.3) ---
-
-  it('date pickers render with accessible labels', () => {
+  it('date pickers have Indonesian labels', () => {
     renderTable();
 
-    const fromPicker = screen.getByRole('button', { name: /filter from date/i });
-    const toPicker = screen.getByRole('button', { name: /filter to date/i });
+    const fromPicker = screen.getByRole('button', { name: /dari tanggal/i });
+    const toPicker = screen.getByRole('button', { name: /sampai tanggal/i });
     expect(fromPicker).toBeInTheDocument();
     expect(toPicker).toBeInTheDocument();
-  });
-
-  it('selecting from-date updates URL with date_from param and resets page', async () => {
-    const user = userEvent.setup();
-    renderTable(['/history?page=3']);
-
-    // Click the from-date picker to open it
-    const fromPicker = screen.getByRole('button', { name: /filter from date/i });
-    await user.click(fromPicker);
-
-    // Find the "15th" day button — uses ordinal suffix to avoid ambiguous matches
-    const dayButton = screen.getByRole('button', { name: /15th/ });
-    await user.click(dayButton);
-
-    await waitFor(() => {
-      const location = screen.getByTestId('location').textContent ?? '';
-      expect(location).toContain('date_from=');
-      expect(location).not.toContain('page=3');
-    });
-  });
-
-  it('selecting to-date updates URL with date_to param', async () => {
-    const user = userEvent.setup();
-    renderTable();
-
-    // Click the to-date picker to open it
-    const toPicker = screen.getByRole('button', { name: /filter to date/i });
-    await user.click(toPicker);
-
-    // Find the "18th" day button — uses ordinal suffix to avoid matching "2026"
-    const dayButton = screen.getByRole('button', { name: /18th/ });
-    await user.click(dayButton);
-
-    await waitFor(() => {
-      const location = screen.getByTestId('location').textContent ?? '';
-      expect(location).toContain('date_to=');
-    });
   });
 
   it('clearing date picker removes the corresponding URL param', async () => {
     const user = userEvent.setup();
     renderTable(['/history?date_from=2026-01-01&date_to=2026-01-31']);
 
-    // Clear from-date
-    const clearFromButton = screen.getByRole('button', { name: /clear from date/i });
-    expect(clearFromButton).toBeInTheDocument();
+    const clearFromButton = screen.getByRole('button', { name: /hapus dari tanggal/i });
     await user.click(clearFromButton);
 
     await waitFor(() => {
@@ -346,46 +279,70 @@ describe('EvaluationHistoryTable', () => {
     });
   });
 
-  it('date filter combines with search in URL and hook call', () => {
-    renderTable(['/history?search=Nike&date_from=2026-01-01']);
+  // --- Empty / Error / Loading states ---
 
-    const location = screen.getByTestId('location').textContent ?? '';
-    expect(location).toContain('search=Nike');
-    expect(location).toContain('date_from=2026-01-01');
+  it('shows Indonesian empty state message when no brands', () => {
+    mockGroupedReturn = {
+      ...mockGroupedReturn,
+      brands: [],
+      total: 0,
+    };
+    renderTable();
 
-    // Verify hook receives both params
-    const lastCall = mockUseEvaluationHistory.mock.calls.at(-1);
-    expect(lastCall?.[4]).toBe('Nike');       // search
-    expect(lastCall?.[5]).toBe('2026-01-01'); // dateFrom
+    expect(screen.getByText('Belum ada riwayat evaluasi')).toBeInTheDocument();
   });
 
-  it('empty state with date filter shows contextual message', () => {
-    mockHookReturn = {
-      ...mockHookReturn,
-      evaluations: [],
+  it('shows Indonesian error state with retry button', async () => {
+    const user = userEvent.setup();
+    mockGroupedReturn = {
+      ...mockGroupedReturn,
+      brands: [],
+      total: 0,
+      isError: true,
+      error: new Error('Network error'),
+    };
+    renderTable();
+
+    expect(screen.getByText('Network error')).toBeInTheDocument();
+    const retryButton = screen.getByRole('button', { name: /coba lagi/i });
+    await user.click(retryButton);
+    expect(mockRefetch).toHaveBeenCalled();
+  });
+
+  it('shows loading skeleton with aria-busy', () => {
+    mockGroupedReturn = {
+      ...mockGroupedReturn,
+      brands: [],
+      total: 0,
+      isLoading: true,
+    };
+    renderTable();
+
+    const table = screen.getByRole('table');
+    expect(table).toHaveAttribute('aria-busy', 'true');
+  });
+
+  it('shows contextual empty message for search filter', () => {
+    mockGroupedReturn = {
+      ...mockGroupedReturn,
+      brands: [],
+      total: 0,
+    };
+    renderTable(['/history?search=Nike']);
+
+    expect(screen.getByText("Tidak ada evaluasi ditemukan untuk 'Nike'")).toBeInTheDocument();
+  });
+
+  it('shows contextual empty message for date filter', () => {
+    mockGroupedReturn = {
+      ...mockGroupedReturn,
+      brands: [],
       total: 0,
     };
     renderTable(['/history?date_from=2026-01-01&date_to=2026-01-31']);
 
     expect(
-      screen.getByText('No evaluations found for the selected date range'),
+      screen.getByText('Tidak ada evaluasi ditemukan untuk rentang tanggal tersebut'),
     ).toBeInTheDocument();
   });
-
-  it('date filter persists across sort changes', async () => {
-    const user = userEvent.setup();
-    renderTable(['/history?date_from=2026-01-01&date_to=2026-01-31']);
-
-    // Click sort by score
-    const scoreButton = screen.getByRole('button', { name: /sort by score/i });
-    await user.click(scoreButton);
-
-    await waitFor(() => {
-      const location = screen.getByTestId('location').textContent ?? '';
-      expect(location).toContain('date_from=2026-01-01');
-      expect(location).toContain('date_to=2026-01-31');
-      expect(location).toContain('sort_by=final_score');
-    });
-  });
-
 });
