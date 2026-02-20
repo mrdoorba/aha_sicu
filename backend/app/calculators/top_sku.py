@@ -192,7 +192,8 @@ def _build_mass_update_lookup(
 
         label = f"{nama_produk} - {nama_variasi}"
         if kode_variasi:
-            name_to_kode[label] = kode_variasi
+            if label not in name_to_kode:
+                name_to_kode[label] = kode_variasi
             kode_to_stok[kode_variasi] = stok
 
     return name_to_kode, kode_to_stok

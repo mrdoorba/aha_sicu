@@ -316,6 +316,19 @@ class TestBuildMassUpdateLookup:
         assert kode_to_stok["K001"] == 100
         assert kode_to_stok["K002"] == 50
 
+    def test_duplicate_labels_uses_first_kode_variasi(self):
+        """When duplicate labels exist, first Kode Variasi wins (VLOOKUP semantics)."""
+        mu_data = [
+            {"Nama Produk": "Prod A", "Nama Variasi": "Red", "Kode Variasi": "K001", "Stok": 100},
+            {"Nama Produk": "Prod A", "Nama Variasi": "Red", "Kode Variasi": "K999", "Stok": 50},
+        ]
+        name_to_kode, kode_to_stok = _build_mass_update_lookup(mu_data)
+        # First Kode Variasi wins for the label mapping
+        assert name_to_kode["Prod A - Red"] == "K001"
+        # Both kode→stok entries exist (stock lookup is by kode, not label)
+        assert kode_to_stok["K001"] == 100
+        assert kode_to_stok["K999"] == 50
+
 
 # ---------------------------------------------------------------------------
 # _enrich_with_mass_update tests
