@@ -1,13 +1,6 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
-import {
-  useReactTable,
-  getCoreRowModel,
-  type ColumnDef,
-  type SortingState,
-  flexRender,
-} from '@tanstack/react-table';
-import { ArrowUpDown, ArrowUp, ArrowDown, ChevronLeft, ChevronRight, AlertCircle, Search, X, CalendarIcon } from 'lucide-react';
+import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, AlertCircle, Search, X, CalendarIcon, Loader2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import {
   Table,
@@ -22,11 +15,8 @@ import { Input } from '../ui/input';
 import { cn } from '../../lib/utils';
 import { Calendar } from '../ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
-import {
-  useEvaluationHistory,
-  type SortBy,
-  type SortOrder,
-} from '../../hooks/useEvaluationHistory';
+import { useGroupedEvaluations, type GroupedEvaluationItem } from '../../hooks/useGroupedEvaluations';
+import { useBrandEvaluations } from '../../hooks/useBrandEvaluations';
 
 const dateFormatter = new Intl.DateTimeFormat('id-ID', {
   day: 'numeric',
@@ -36,45 +26,6 @@ const dateFormatter = new Intl.DateTimeFormat('id-ID', {
   minute: '2-digit',
   timeZone: 'Asia/Jakarta',
 });
-
-interface EvaluationRow {
-  id: number;
-  brand_name: string;
-  final_score: number;
-  verdict: string;
-  template: string;
-  evaluator_email: string;
-  created_at: string;
-}
-
-const columns: ColumnDef<EvaluationRow>[] = [
-  {
-    accessorKey: 'brand_name',
-    header: 'Brand',
-    enableSorting: false,
-  },
-  {
-    accessorKey: 'final_score',
-    header: 'Score',
-    enableSorting: true,
-    cell: ({ row }) => (
-      <span className="font-mono">
-        {row.original.final_score.toFixed(2)} {row.original.verdict}
-      </span>
-    ),
-  },
-  {
-    accessorKey: 'evaluator_email',
-    header: 'Evaluator',
-    enableSorting: false,
-  },
-  {
-    accessorKey: 'created_at',
-    header: 'Date',
-    enableSorting: true,
-    cell: ({ row }) => dateFormatter.format(new Date(row.original.created_at)),
-  },
-];
 
 function SearchInput({
   value,
@@ -90,8 +41,8 @@ function SearchInput({
         aria-hidden="true"
       />
       <Input
-        aria-label="Search evaluations by brand name"
-        placeholder="Search by brand name..."
+        aria-label="Cari evaluasi berdasarkan nama brand"
+        placeholder="Cari nama brand..."
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="pl-9 pr-9"
@@ -101,7 +52,7 @@ function SearchInput({
           variant="ghost"
           size="sm"
           className="absolute right-1 top-1/2 size-7 -translate-y-1/2 p-0"
-          aria-label="Clear search"
+          aria-label="Hapus pencarian"
           onClick={() => onChange('')}
         >
           <X className="size-4" aria-hidden="true" />
@@ -176,16 +127,121 @@ function DatePickerField({
   );
 }
 
-export const EvaluationHistoryTable = () => {
+function BrandAccordionRow({
+  brand,
+  isExpanded,
+  onToggle,
+  dateFrom,
+  dateTo,
+}: {
+  brand: GroupedEvaluationItem;
+  isExpanded: boolean;
+  onToggle: () => void;
+  dateFrom?: string;
+  dateTo?: string;
+}) {
   const navigate = useNavigate();
+  const [showAll, setShowAll] = useState(false);
+
+  // When collapsed, always reset to limited view
+  const effectiveShowAll = isExpanded && showAll;
+  const limit = effectiveShowAll ? undefined : 5;
+  const { evaluations, total, isLoading, isError } = useBrandEvaluations(
+    brand.brand_id,
+    limit,
+    dateFrom,
+    dateTo,
+    isExpanded,
+  );
+
+  return (
+    <>
+      <TableRow
+        className="cursor-pointer hover:bg-muted/50"
+        onClick={onToggle}
+        aria-expanded={isExpanded}
+      >
+        <TableCell className="font-medium">
+          <div className="flex items-center gap-2">
+            {isExpanded
+              ? <ChevronUp className="size-4 text-muted-foreground" aria-hidden="true" />
+              : <ChevronDown className="size-4 text-muted-foreground" aria-hidden="true" />
+            }
+            {brand.brand_name}
+          </div>
+        </TableCell>
+        <TableCell>{brand.evaluation_count} evaluasi</TableCell>
+        <TableCell>
+          <span className="font-mono">
+            {brand.top_score.toFixed(2)} {brand.top_verdict}
+          </span>
+        </TableCell>
+        <TableCell>{dateFormatter.format(new Date(brand.latest_date))}</TableCell>
+      </TableRow>
+
+      {isExpanded && (
+        <>
+          {isLoading && (
+            <TableRow>
+              <TableCell colSpan={4} className="py-4 text-center">
+                <Loader2 className="mx-auto size-5 animate-spin text-muted-foreground" />
+              </TableCell>
+            </TableRow>
+          )}
+
+          {isError && (
+            <TableRow>
+              <TableCell colSpan={4} className="py-4 text-center text-destructive">
+                Gagal memuat evaluasi
+              </TableCell>
+            </TableRow>
+          )}
+
+          {!isLoading && !isError && evaluations.map((ev) => (
+            <TableRow
+              key={ev.id}
+              className="cursor-pointer bg-muted/30 hover:bg-muted/50"
+              onClick={() => navigate(`/history/${ev.id}`)}
+            >
+              <TableCell className="pl-10 text-muted-foreground">—</TableCell>
+              <TableCell>
+                <span className="font-mono">
+                  {ev.final_score.toFixed(2)} {ev.verdict}
+                </span>
+              </TableCell>
+              <TableCell>{ev.evaluator_email}</TableCell>
+              <TableCell>{dateFormatter.format(new Date(ev.created_at))}</TableCell>
+            </TableRow>
+          ))}
+
+          {!isLoading && !isError && !showAll && total > 5 && (
+            <TableRow>
+              <TableCell colSpan={4} className="py-2 text-center">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowAll(true);
+                  }}
+                >
+                  Tampilkan semua ({total})
+                </Button>
+              </TableCell>
+            </TableRow>
+          )}
+        </>
+      )}
+    </>
+  );
+}
+
+export const EvaluationHistoryTable = () => {
   const [searchParams, setSearchParams] = useSearchParams();
+  const [expandedBrands, setExpandedBrands] = useState<Set<number>>(new Set());
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
   const limit = 20;
-  const sortBy: SortBy =
-    (searchParams.get('sort_by') as SortBy) || 'created_at';
-  const sortOrder: SortOrder =
-    (searchParams.get('sort_order') as SortOrder) || 'desc';
   const searchFromUrl = searchParams.get('search') ?? '';
   const dateFromUrl = searchParams.get('date_from') ?? '';
   const dateToUrl = searchParams.get('date_to') ?? '';
@@ -206,7 +262,7 @@ export const EvaluationHistoryTable = () => {
         } else {
           p.delete('search');
         }
-        p.delete('page'); // Reset page on search change
+        p.delete('page');
         return p;
       }, { replace: true });
     }, 300);
@@ -250,11 +306,6 @@ export const EvaluationHistoryTable = () => {
     [setSearchParams],
   );
 
-  const sorting: SortingState = useMemo(
-    () => [{ id: sortBy, desc: sortOrder === 'desc' }],
-    [sortBy, sortOrder],
-  );
-
   const setPage = useCallback(
     (updater: number | ((prev: number) => number)) => {
       const next = typeof updater === 'function' ? updater(page) : updater;
@@ -264,31 +315,23 @@ export const EvaluationHistoryTable = () => {
         else p.set('page', String(next));
         return p;
       });
+      // Collapse all accordions when changing page
+      setExpandedBrands(new Set());
     },
     [page, setSearchParams],
   );
 
-  const setSorting = useCallback(
-    (updater: SortingState | ((old: SortingState) => SortingState)) => {
-      const next = typeof updater === 'function' ? updater(sorting) : updater;
-      const newSortBy = (next[0]?.id as SortBy) || 'created_at';
-      const newSortOrder: SortOrder = next[0]?.desc ? 'desc' : 'asc';
-      setSearchParams((prev) => {
-        const p = new URLSearchParams(prev);
-        // Reset page on sort change
-        p.delete('page');
-        if (newSortBy === 'created_at') p.delete('sort_by');
-        else p.set('sort_by', newSortBy);
-        if (newSortOrder === 'desc') p.delete('sort_order');
-        else p.set('sort_order', newSortOrder);
-        return p;
-      });
-    },
-    [sorting, setSearchParams],
-  );
+  const toggleBrand = useCallback((brandId: number) => {
+    setExpandedBrands((prev) => {
+      const next = new Set(prev);
+      if (next.has(brandId)) next.delete(brandId);
+      else next.add(brandId);
+      return next;
+    });
+  }, []);
 
   const {
-    evaluations,
+    brands,
     total,
     pages,
     isLoading,
@@ -296,37 +339,22 @@ export const EvaluationHistoryTable = () => {
     error,
     refetch,
     isPlaceholderData,
-  } = useEvaluationHistory(
-    page, limit, sortBy, sortOrder,
+  } = useGroupedEvaluations(
+    page, limit,
     searchFromUrl || undefined,
     dateFromUrl || undefined,
     dateToUrl || undefined,
   );
-
-  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Table is not compatible with React Compiler memoization
-  const table = useReactTable({
-    data: evaluations,
-    columns,
-    getCoreRowModel: getCoreRowModel(),
-    manualPagination: true,
-    manualSorting: true,
-    pageCount: pages,
-    state: {
-      sorting,
-      pagination: { pageIndex: page - 1, pageSize: limit },
-    },
-    onSortingChange: setSorting,
-  });
 
   if (isError) {
     return (
       <div className="flex flex-col items-center gap-3 py-16 text-center">
         <AlertCircle className="size-10 text-destructive" aria-hidden="true" />
         <p className="text-muted-foreground">
-          {error?.message || 'Failed to load evaluations'}
+          {error?.message || 'Gagal memuat riwayat evaluasi'}
         </p>
         <Button variant="outline" onClick={() => refetch()}>
-          Retry
+          Coba Lagi
         </Button>
       </div>
     );
@@ -340,41 +368,41 @@ export const EvaluationHistoryTable = () => {
       />
       <div className="flex items-center gap-2">
         <DatePickerField
-          label="Filter from date"
+          label="Dari tanggal"
           value={dateFromUrl ? parseISO(dateFromUrl) : undefined}
           onChange={setDateFrom}
-          clearLabel="Clear from date"
+          clearLabel="Hapus dari tanggal"
           disableAfter={dateToUrl ? parseISO(dateToUrl) : undefined}
         />
         <span className="text-muted-foreground text-sm">–</span>
         <DatePickerField
-          label="Filter to date"
+          label="Sampai tanggal"
           value={dateToUrl ? parseISO(dateToUrl) : undefined}
           onChange={setDateTo}
-          clearLabel="Clear to date"
+          clearLabel="Hapus sampai tanggal"
           disableBefore={dateFromUrl ? parseISO(dateFromUrl) : undefined}
         />
       </div>
     </div>
   );
 
-  if (!isLoading && evaluations.length === 0 && total === 0) {
+  if (!isLoading && brands.length === 0 && total === 0) {
     return (
       <div>
         {filterBar}
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <p className="text-muted-foreground">
             {[searchFromUrl, dateFromUrl || dateToUrl].filter(Boolean).length > 1
-              ? 'No evaluations found matching your filters'
+              ? 'Tidak ada evaluasi yang cocok dengan filter'
               : searchFromUrl
-                ? `No evaluations found for '${searchFromUrl}'`
+                ? `Tidak ada evaluasi ditemukan untuk '${searchFromUrl}'`
                 : dateFromUrl || dateToUrl
-                  ? `No evaluations found for the selected date range`
-                  : 'No evaluations found'}
+                  ? 'Tidak ada evaluasi ditemukan untuk rentang tanggal tersebut'
+                  : 'Belum ada riwayat evaluasi'}
           </p>
           {!searchFromUrl && !dateFromUrl && !dateToUrl && (
             <p className="text-sm text-muted-foreground">
-              Start evaluating brands to see history here.
+              Mulai evaluasi brand untuk melihat riwayat di sini.
             </p>
           )}
         </div>
@@ -386,49 +414,17 @@ export const EvaluationHistoryTable = () => {
     <div>
       {filterBar}
       <Table
-        aria-label="Evaluation history"
+        aria-label="Riwayat evaluasi"
         aria-busy={isLoading || isPlaceholderData}
         className={isPlaceholderData ? 'opacity-60 transition-opacity' : ''}
       >
         <TableHeader>
-          {table.getHeaderGroups().map((headerGroup) => (
-            <TableRow key={headerGroup.id}>
-              {headerGroup.headers.map((header) => (
-                <TableHead key={header.id} className="text-xs uppercase">
-                  {header.column.getCanSort() ? (
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="-ml-3 h-8 text-xs uppercase"
-                      aria-label={`Sort by ${header.column.columnDef.header}${header.column.getIsSorted() === 'asc' ? ', sorted ascending' : header.column.getIsSorted() === 'desc' ? ', sorted descending' : ''}`}
-                      onClick={() =>
-                        header.column.toggleSorting(
-                          header.column.getIsSorted() === 'asc',
-                        )
-                      }
-                    >
-                      {flexRender(
-                        header.column.columnDef.header,
-                        header.getContext(),
-                      )}
-                      {header.column.getIsSorted() === 'asc' ? (
-                        <ArrowUp className="ml-1 size-3.5" aria-hidden="true" />
-                      ) : header.column.getIsSorted() === 'desc' ? (
-                        <ArrowDown className="ml-1 size-3.5" aria-hidden="true" />
-                      ) : (
-                        <ArrowUpDown className="ml-1 size-3.5" aria-hidden="true" />
-                      )}
-                    </Button>
-                  ) : (
-                    flexRender(
-                      header.column.columnDef.header,
-                      header.getContext(),
-                    )
-                  )}
-                </TableHead>
-              ))}
-            </TableRow>
-          ))}
+          <TableRow>
+            <TableHead className="text-xs uppercase">Brand</TableHead>
+            <TableHead className="text-xs uppercase">Evaluasi</TableHead>
+            <TableHead className="text-xs uppercase">Skor Tertinggi</TableHead>
+            <TableHead className="text-xs uppercase">Terbaru</TableHead>
+          </TableRow>
         </TableHeader>
         <TableBody>
           {isLoading
@@ -436,22 +432,19 @@ export const EvaluationHistoryTable = () => {
                 <TableRow key={i}>
                   <TableCell><div className="h-4 w-32 animate-pulse rounded bg-muted" /></TableCell>
                   <TableCell><div className="h-4 w-20 animate-pulse rounded bg-muted" /></TableCell>
-                  <TableCell><div className="h-4 w-36 animate-pulse rounded bg-muted" /></TableCell>
+                  <TableCell><div className="h-4 w-24 animate-pulse rounded bg-muted" /></TableCell>
                   <TableCell><div className="h-4 w-28 animate-pulse rounded bg-muted" /></TableCell>
                 </TableRow>
               ))
-            : table.getRowModel().rows.map((row) => (
-                <TableRow
-                  key={row.original.id}
-                  className="cursor-pointer hover:bg-muted/50"
-                  onClick={() => navigate(`/history/${row.original.id}`)}
-                >
-                  {row.getVisibleCells().map((cell) => (
-                    <TableCell key={cell.id}>
-                      {flexRender(cell.column.columnDef.cell, cell.getContext())}
-                    </TableCell>
-                  ))}
-                </TableRow>
+            : brands.map((brand) => (
+                <BrandAccordionRow
+                  key={brand.brand_id}
+                  brand={brand}
+                  isExpanded={expandedBrands.has(brand.brand_id)}
+                  onToggle={() => toggleBrand(brand.brand_id)}
+                  dateFrom={dateFromUrl || undefined}
+                  dateTo={dateToUrl || undefined}
+                />
               ))}
         </TableBody>
       </Table>
@@ -466,11 +459,11 @@ export const EvaluationHistoryTable = () => {
               disabled={page <= 1}
             >
               <ChevronLeft className="size-4" aria-hidden="true" />
-              Previous
+              Sebelumnya
             </Button>
           )}
           <span className="text-sm text-muted-foreground">
-            {pages > 1 ? `Page ${page} of ${pages}` : `${total} evaluation${total !== 1 ? 's' : ''}`}
+            {pages > 1 ? `Halaman ${page} dari ${pages}` : `${total} brand`}
           </span>
           {pages > 1 && (
             <Button
@@ -479,7 +472,7 @@ export const EvaluationHistoryTable = () => {
               onClick={() => setPage((p) => Math.min(pages, p + 1))}
               disabled={page >= pages}
             >
-              Next
+              Berikutnya
               <ChevronRight className="size-4" aria-hidden="true" />
             </Button>
           )}
