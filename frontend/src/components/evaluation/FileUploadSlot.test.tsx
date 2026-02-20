@@ -90,6 +90,15 @@ describe('FileUploadSlot', () => {
     expect(screen.getByText(/Processing file/)).toBeInTheDocument();
   });
 
+  it('renders verifying state with spinner', () => {
+    renderSlot({ uploadStatus: 'verifying' });
+
+    expect(screen.getByText(/Verifying upload/)).toBeInTheDocument();
+    // Should NOT show error or uploading states
+    expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+  });
+
   it('has correct file input accept attribute', () => {
     renderSlot();
 
