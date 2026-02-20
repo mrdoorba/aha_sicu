@@ -285,6 +285,40 @@ describe('useUploadFile – verification on error', () => {
     expect(invalidatedKeys).toContainEqual(['calculatorStatus', BRAND_ID]);
   });
 
+  it('clears stale auto-calc errors when new upload completes with no errors', async () => {
+    // Pre-seed stale auto-calc errors from a previous upload
+    queryClient.setQueryData(['autoCalcErrors', BRAND_ID], [
+      { calculator_type: 'ads_keyword', status: 'error', reason: 'Old failure' },
+    ]);
+
+    // New upload succeeds with empty auto_calculated (no errors)
+    mockClientPOST.mockImplementation(async (path: string) => {
+      if (path === '/api/v1/upload/signed-url') {
+        return {
+          data: { upload_url: 'http://mock-gcs/upload', upload_id: 'upload-999', expires_at: '' },
+          error: null,
+        };
+      }
+      if (path === '/api/v1/upload/process') {
+        return { data: { upload: NEW_UPLOAD, auto_calculated: [] }, error: null };
+      }
+      return { data: null, error: 'Unknown path' };
+    });
+
+    const { result } = renderHook(() => useUploadFile(BRAND_ID), { wrapper: createWrapper() });
+    const file = new File(['data'], 'new.zip', { type: 'application/zip' });
+
+    await act(async () => {
+      await result.current.upload(file, FILE_TYPE);
+    });
+
+    expect(result.current.status).toBe('done');
+
+    // Stale auto-calc errors should be replaced with empty array
+    const errors = queryClient.getQueryData(['autoCalcErrors', BRAND_ID]);
+    expect(errors).toEqual([]);
+  });
+
   it('aborts verification polling on unmount', async () => {
     setupProcessError();
     mockClientGET.mockResolvedValue({ data: OLD_BRAND_UPLOADS, error: null });
