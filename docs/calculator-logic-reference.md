@@ -432,6 +432,100 @@ Combine sections in this exact order, separated by `\n\n`, skipping empty sectio
 AK2, AK3, AK4, AL2, AL3, AL5, AL6, AL7, AL8, AL9
 ```
 
+### Pseudocode
+
+#### Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  calculate_ads_keyword()                 │
+│                                                         │
+│  cpc_data ──► calculate_sheet1() ──► {ak2, ak3, ak4}   │
+│                     │                                   │
+│                     ▼                                   │
+│  keyword_data ──► calculate_sheet2() ──► {al2..al9}     │
+│                     │                                   │
+│                     ▼                                   │
+│              combine_output()                           │
+│                     │                                   │
+│                     ▼                                   │
+│              AdsKeywordResult(output_text, details)      │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Sheet 1 (CPC Ad Report)
+
+```
+FUNCTION calculate_sheet1(rows, total_products, language):
+    # AK2: Ad Overview Summary
+    FOR each row in rows:
+        COUNT status into active/paused/ended
+        IF status != "Berakhir" AND jenis == "Iklan Produk" AND nama not empty:
+            ADD CleanName(nama) to unique_products set
+    product_pct = unique_count / total_products
+    ak2 = format overview text
+
+    # AK3: Ad Type Breakdown (non-ended rows only)
+    FOR each non-ended row:
+        CLASSIFY into search/reco/semua/toko with auto/manual counters
+    IF language == "en":
+        ak3 = 4-category format (search, reco, semua, toko)
+    ELSE:
+        ak3 = 2-category format (semua, toko)
+
+    # AK4: Recommendation Flags
+    active_ratio = count_active / total_ads
+    EMIT flag 1 (product participation < 50%)
+    EMIT flag 2 (active ratio < 50%, with suppression logic)
+    IF language == "en":
+        EMIT flags 3-8 (placement-specific checks on ALL rows)
+    EMIT iklan toko flag (both languages, ALL rows)
+    ak4 = JOIN flags with newline
+
+    RETURN {ak2, ak3, ak4}
+```
+
+#### Sheet 2 (Keyword/Placement Report)
+
+```
+FUNCTION calculate_sheet2(rows, language):
+    # Thresholds from ALL rows (including shop-level)
+    AM6 = ROUND(AVG(GMV where GMV > 0))
+    AM7 = MIN(ROUND(AVG(ROAS where ROAS > 0)), 10)
+    AM9 = ROUND(AVG(Cost where Cost > 0))
+    AM10 = MIN(ROUND(AVG(ROAS where ROAS > 0)), 3)
+
+    product_rows = rows WHERE Jenis Iklan != ""
+
+    # AL2: TOP Ads
+    top_primary = product_rows WHERE GMV > AM6 AND ROAS > AM7
+                  ORDER BY GMV DESC LIMIT 5
+    IF top_primary not empty:
+        top_ads = top_primary
+    ELIF language == "en":
+        top_ads = []     # English: no fallback
+    ELSE:
+        top_ads = product_rows WHERE GMV > AM6/2 AND ROAS > MAX(AM7/2, 6)
+                  ORDER BY GMV DESC LIMIT 5   # Indonesian fallback
+
+    # AL3: Top Ads Recommendation (substring count on AL2 text)
+    IF "Bidding Otomatis" count >= 3 OR "GMV Max" count >= 3:
+        al3 = "relying on auto settings"
+    ELSE:
+        al3 = "already using manual settings"
+
+    # AL5: BOTTOM Ads (language-variant min_cost)
+    min_cost = 50000 if en else 100000
+    cap_limit = 4 if en else 5
+    bottom_primary = product_rows WHERE Cost > min_cost AND Cost > AM9
+                     AND ROAS < AM10 AND ROAS < 5
+                     ORDER BY Cost DESC LIMIT 5
+    IF empty: apply fallback with MIN(ROUND(AM10*2), cap_limit)
+
+    # AL6-AL9: Bottom flags (substring counts on AL5 text)
+    RETURN {al2, al3, al5, al6..al9, thresholds}
+```
+
 ---
 
 ## Calculator 2: Top SKU (Sales)
@@ -595,6 +689,85 @@ Split `product_variant_label` on the LAST ` - ` occurrence:
 | Scoring Row 70 | `details.average_stock` | Stock score (>=24: +10, >=12: +5, <12: -5) |
 | Scoring Rows 61-63 | `details.output_1[0..2].rata2_harga_jual` | Competition price check |
 
+### Pseudocode
+
+#### Flow Diagram
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│                   calculate_top_sku()                          │
+│                                                               │
+│  order_data ──► _extract_per_line()                           │
+│                       │                                       │
+│                       ▼                                       │
+│               _aggregate_by_product()                         │
+│                       │                                       │
+│                       ▼                                       │
+│               _rank_top_products()                            │
+│                       │                                       │
+│  mass_update ──► _build_mass_update_lookup() ──┐              │
+│                                                │              │
+│                       ▼                        ▼              │
+│               _enrich_with_mass_update()                      │
+│                       │                                       │
+│                       ├──► _calculate_average_stock()          │
+│                       └──► _build_output_tables()              │
+│                                    │                          │
+│                                    ▼                          │
+│                          TopSkuResult(output_text, details)    │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### Structured Pseudocode
+
+```
+FUNCTION calculate_top_sku(order_data, mass_update_data):
+    IF order_data is empty:
+        RETURN empty result (all zeros)
+
+    # Step 1: Extract per-line data
+    FOR each row in order_data:
+        product_variant_label = "{Nama Produk} - {Nama Variasi}"
+        items_in_order = MAX(Jumlah Produk di Pesan, 1)
+        revenue = (Harga Setelah Diskon × Jumlah)
+                  - (Voucher / items_in_order)
+                  - (Cashback / items_in_order)
+                  + (Diskon Shopee / items_in_order)
+        COLLECT LineItem(sku, label, quantity, revenue)
+
+    # Step 2: Aggregate by product+variant
+    GROUP line_items BY product_variant_label
+    FOR each group:
+        total_qty = SUM(quantity)
+        total_omzet = SUM(revenue)
+
+    # Step 3: Rank top products
+    SORT by total_omzet DESC
+    IF unique_products <= 20:
+        RETURN all
+    ELSE:
+        limit = MAX(ROUND(unique_products × 0.20), 20)
+        RETURN top `limit`
+
+    # Step 4-6: Enrich with mass update data
+    BUILD name_to_kode lookup: "{Nama Produk} - {Nama Variasi}" → Kode Variasi
+    BUILD kode_to_stok lookup: Kode Variasi → Stok
+    FOR each top product:
+        kode = lookup by label (default "Kode Variasi tidak ditemukan")
+        rata2_harga_jual = MAX(revenue) across matching line items
+        stok = lookup by kode (default 0, 0 if kode not found)
+
+    # Step 7: Average stock
+    average_stock = ROUND(SUM(stok) / count(top_products))
+
+    # Step 8: Build output tables
+    output_1 = [{kode_variasi, product_name, total_omzet, rata2_harga_jual}]
+    output_2 = [{kode_variasi, nama_produk, varian, stok}]
+               (split label on LAST " - ")
+
+    RETURN TopSkuResult("", {output_1, output_2, average_stock, ...})
+```
+
 ---
 
 ## Calculator 3: Discount Check
@@ -734,6 +907,82 @@ Paket Diskon {paket_pct}
 | Scoring D73 | `output_text` | Injected into row 73 value |
 | Scoring H73 | `details.fake_discount_flag` | No flag: +5pts, flag: 0pts |
 | Scoring G68 | Parsed from `output_text` | Marketing cost estimation formula |
+
+### Pseudocode
+
+#### Flow Diagram
+
+```
+┌───────────────────────────────────────────────────────────┐
+│                  calculate_discount()                      │
+│                                                           │
+│  order_data ──► _calculate_urutan()                       │
+│                       │                                   │
+│                       ▼                                   │
+│               _calculate_line_items()                     │
+│               (N=total discount, O=disc%, P=total paid)   │
+│                       │                                   │
+│                       ├──► _build_product_summary()        │
+│                       │           │                       │
+│                       │           ▼                       │
+│                       │    _filter_top_sku()               │
+│                       │           │                       │
+│                       ▼           ▼                       │
+│               _format_output()                            │
+│               (5 outputs: disc%, range, voucher%,         │
+│                paket%, fake flag)                          │
+│                       │                                   │
+│                       ▼                                   │
+│              DiscountResult(output_text, details)          │
+└───────────────────────────────────────────────────────────┘
+```
+
+#### Structured Pseudocode
+
+```
+FUNCTION calculate_discount(order_data):
+    IF order_data is empty:
+        RETURN zero-state result
+
+    # Step 1: Calculate Urutan (item position within each order)
+    prev_order = None
+    FOR each row:
+        IF No. Pesanan is empty → urutan = 0
+        ELIF same as previous → increment counter
+        ELSE → reset counter to 1
+
+    # Step 2: Calculate per-line values
+    FOR each row WHERE urutan > 0:
+        IF urutan == 1:
+            voucher = Voucher Ditanggung Penjual
+            paket = Paket Diskon
+        ELSE:
+            voucher = 0, paket = 0     # Avoid double-counting
+        N = (Harga Awal - Harga Setelah Diskon) + voucher + paket
+        O = N / Harga Awal              (0 if Harga Awal == 0)
+        P = Harga Setelah Diskon - voucher - paket
+
+    # Step 3: Product summary (weighted ratio, NOT arithmetic mean)
+    GROUP line_items BY Nama Produk (exact match, no variant)
+    FOR each group:
+        qty = SUM(Jumlah)
+        avg_discount_pct = SUM(N) / SUM(Harga Awal)
+
+    # Step 4: TOP SKU filter
+    avg_qty = total_qty / count(products)
+    FILTER: qty > avg_qty AND avg_discount_pct < 1.0
+    SORT BY qty DESC
+    LIMIT = ROUND(unique_products × 0.20)   # no minimum 20 floor
+
+    # Step 5: Generate outputs
+    Output 1 = SUMIF(P>0, N) / SUM(P)                              # % Diskon
+    Output 2 = ROUNDUP(MIN(top_disc),3) ~ ROUNDUP(MAX(top_disc),3) # Range
+    Output 3 = SUM(voucher) / SUM(harga_setelah_diskon)            # Voucher %
+    Output 4 = SUM(paket) / SUM(harga_setelah_diskon)              # Paket %
+    Output 5 = SUM(N)/SUM(P) > 0.20 → fake discount flag
+
+    RETURN DiscountResult(combined text, details)
+```
 
 ---
 
