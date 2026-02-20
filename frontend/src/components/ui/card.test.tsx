@@ -6,7 +6,7 @@ describe('Card', () => {
   it('clips overflow so wide content scrolls instead of overflowing', () => {
     render(
       <Card data-testid="card">
-        <CardContent>
+        <CardContent data-testid="card-content">
           <div className="overflow-x-auto">
             <table>
               <tbody>
@@ -23,7 +23,9 @@ describe('Card', () => {
     );
 
     const card = screen.getByTestId('card');
+    const cardContent = screen.getByTestId('card-content');
     expect(card.className).toContain('overflow-hidden');
+    expect(cardContent.className).toContain('min-w-0');
   });
 
   it('renders normal-width content without overflow-related issues', () => {
