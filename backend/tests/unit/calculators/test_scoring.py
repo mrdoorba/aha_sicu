@@ -10,6 +10,7 @@ from app.calculators.scoring import (
     ScoringResult,
     _compute_g68,
     _compute_g72,
+    _parse_g68_left,
     _compute_g73,
     _compute_g75,
     _format_message_template,
@@ -696,6 +697,56 @@ class TestG72:
     def test_empty_d73_returns_default(self):
         result = _compute_g72("", 0.0, "", is_fashion=True)
         assert result == 0.15  # Fashion default
+
+
+class TestG72Branching:
+    """Test G72 two-branch comparison: capped_value vs ceiling_g68."""
+
+    D73 = "% Diskon TOP SKU: 100.0%\nRange: 10.0% ~ 15.0%\nVoucher 1.0%\nPaket Diskon 0.5%"
+
+    def test_true_branch_capped_exceeds_ceiling(self):
+        """G72=TRUE: capped_value > ceiling_g68 returns capped_value."""
+        # G68 "13.5% ~ 20.0%" → g68_left=0.135, ceiling_g68=0.14
+        # Fashion floor=0.15 pushes capped above ceiling_g68
+        result = _compute_g72("13.5% ~ 20.0%", 0.03, self.D73, is_fashion=True)
+        assert result == 0.15
+
+    def test_false_branch_ceiling_returned(self):
+        """G72=FALSE: capped_value <= ceiling_g68 returns ceiling_g68."""
+        # G68 "15.3% ~ 22.7%" → g68_left=0.153, ceiling_g68=0.16
+        result = _compute_g72("15.3% ~ 22.7%", 0.03, self.D73, is_fashion=False)
+        assert result == 0.16
+
+    def test_non_fashion_high_g68_exceeds_20_percent(self):
+        """Non-fashion store with high G68 can exceed the 20% upper limit."""
+        # G68 "22.0% ~ 28.5%" → ceiling_g68=0.22, above non-fashion upper_limit
+        result = _compute_g72("22.0% ~ 28.5%", 0.03, self.D73, is_fashion=False)
+        assert result == 0.22
+
+    def test_empty_g68_preserves_capped_behavior(self):
+        """Empty G68 text returns capped value without G68 comparison."""
+        result = _compute_g72("", 0.03, self.D73, is_fashion=False)
+        assert result >= 0.12  # At least non-fashion floor
+        assert result <= 0.20  # At most upper_limit
+
+    def test_g68_without_tilde_uses_ceiling(self):
+        """G68 without '~' defaults g68_left to 0.0, ceiling_g68 used as fallback."""
+        # "15.3%" → g68_left=0.0, ceiling_g68=0.16
+        result = _compute_g72("15.3%", 0.03, self.D73, is_fashion=False)
+        assert result == 0.16
+
+
+class TestParseG68Left:
+    """Test _parse_g68_left helper extraction."""
+
+    def test_standard_format(self):
+        assert _parse_g68_left("15.3% ~ 22.7%") == pytest.approx(0.153)
+
+    def test_no_tilde(self):
+        assert _parse_g68_left("15.3%") == 0.0
+
+    def test_empty(self):
+        assert _parse_g68_left("") == 0.0
 
 
 class TestG73:

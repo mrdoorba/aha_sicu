@@ -1394,6 +1394,22 @@ def _compute_g68(d73_text: str, d52: float) -> str:
     return result
 
 
+def _parse_g68_left(g68_text: str) -> float:
+    """Extract raw percentage before '~' from G68 text as a fraction.
+
+    Spreadsheet equivalent: VALUE(LEFT(G68, FIND("~", G68)-1)) / 100
+    e.g. "15.3% ~ 22.7%" → 0.153
+    Returns 0.0 if no "~" found or text is empty.
+    """
+    if not g68_text or "~" not in g68_text:
+        return 0.0
+    left_part = g68_text.split("~")[0].strip()
+    match = re.search(r"([\d.]+)", left_part)
+    if match:
+        return float(match.group(1)) / 100
+    return 0.0
+
+
 def _compute_g72(
     g68_text: str, d52: float, d73_text: str, is_fashion: bool,
     rules: dict | None = None,
@@ -1422,17 +1438,26 @@ def _compute_g72(
 
     upper_limit = upper_limit_base + fashion_adj
 
-    # Parse first percentage from G68 text
-    g68_first = 0.0
+    # Parse G68 using two distinct methods (matching spreadsheet LEFT/RIGHT sides)
+    g68_left = _parse_g68_left(g68_text)  # Raw fraction before "~" for MIN chain
+
+    ceiling_g68 = 0.0  # CEILING extraction for fallback branch
     if g68_text:
         match = re.search(r"([\d.]+)%", g68_text)
         if match:
-            g68_first = math.ceil(float(match.group(1))) / 100
+            ceiling_g68 = math.ceil(float(match.group(1))) / 100
 
-    min_val = min(min(base, upper_limit), g68_first) if g68_first > 0 else min(base, upper_limit)
-    result = max(max(min_val, minimum), floor)
+    # Capped value: include g68_left in MIN chain only when g68 data exists
+    if g68_text:
+        min_val = min(min(base, upper_limit), g68_left)
+    else:
+        min_val = min(base, upper_limit)
+    capped_value = max(max(min_val, minimum), floor)
 
-    return result
+    # G72 branching: if capped > ceiling_g68, use capped; otherwise use ceiling_g68
+    if ceiling_g68 > 0 and capped_value <= ceiling_g68:
+        return ceiling_g68
+    return capped_value
 
 
 def _compute_g73(
