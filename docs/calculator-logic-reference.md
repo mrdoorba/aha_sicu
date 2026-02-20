@@ -168,6 +168,7 @@ All value formatting functions used across the calculators and scoring system. F
 | `cpc_data` | `list[dict]` | Parsed CPC Ad Report CSV rows |
 | `keyword_data` | `list[dict]` | Parsed Keyword/Placement Report CSV rows |
 | `total_products` | `int` | Total products in store (manual input, AK1) |
+| `language` | `str` | `"id"` (Indonesian, default) or `"en"` (English) — controls AK3/AK4/AL2/AL5/AL6 variant logic |
 
 ### Result Structure
 
@@ -236,7 +237,7 @@ Count non-ended ads by placement type. **Filter all rows where** `Status != "Ber
 | All Placements | `Penempatan Iklan == "Semua Penempatan"` (NO Jenis filter) | total only |
 | Shop Ads | `Jenis Iklan == "Iklan Toko"` | total, auto, manual |
 
-**Output format:**
+**Output format (English `language="en"` — 4 categories):**
 
 ```text
 • Jenis Iklan yang aktif digunakan:
@@ -246,9 +247,19 @@ Count non-ended ads by placement type. **Filter all rows where** `Status != "Ber
   {toko_total} Iklan Toko ({toko_auto} Otomatis & {toko_manual} Manual).
 ```
 
-#### AK4: Seven Recommendation Flags
+**Output format (Indonesian `language="id"` — 2 categories):**
+
+```text
+• Jenis Iklan yang aktif digunakan:
+  {semua_total} Iklan Produk Otomatis Semua Halaman.
+  {toko_total} Iklan Toko ({toko_auto} Otomatis & {toko_manual} Manual).
+```
+
+#### AK4: Recommendation Flags
 
 **active_ratio** = `count_active / total_ads` (total_ads = total row count; 0 if no rows)
+
+**Common flags (both languages):**
 
 | Flag # | Condition | Output |
 |--------|-----------|--------|
@@ -257,13 +268,27 @@ Count non-ended ads by placement type. **Filter all rows where** `Status != "Ber
 | 2 | `active_ratio < 0.5` | `📌 Jumlah iklan dengan status aktif kurang maksimal (saran >50%).` |
 | 2 (elif) | `active_ratio >= 0.5` AND `product_pct >= 0.5` | `📌 Jumlah iklan dengan status aktif sudah cukup baik.` |
 | 2 (else) | `active_ratio >= 0.5` AND `product_pct < 0.5` | **(suppressed — no output)** |
-| 3 | No `"Halaman Pencarian"` in ANY row (including ended) | `📌 Iklan Produk Halaman Pencarian belum dimanfaatkan.` |
-| 4 | No row has `Penempatan == "Halaman Pencarian"` AND `Mode Bidding == "Bidding Manual"` (ALL rows) | `📌 Iklan Produk Halaman Pencarian (Bidding Manual) belum dimanfaatkan.` |
-| 5 | No `"Halaman Rekomendasi"` in ANY row (including ended) | `📌 Iklan Produk Halaman Rekomendasi belum dimanfaatkan.` |
-| 6 | No row has `Penempatan == "Halaman Rekomendasi"` AND `Mode Bidding == "Bidding Manual"` (ALL rows) | `📌 Iklan Produk Halaman Rekomendasi (Bidding Manual) belum dimanfaatkan.` |
-| 7 | No `"Iklan Toko"` in `Jenis Iklan` of ANY row (including ended) | `📌 Iklan Toko belum dimanfaatkan.` |
 
-**Critical:** Flags 1-2 use non-ended row counts for product_pct/active_ratio. Flags 3-7 scan ALL rows including ended.
+**English-only flags (`language="en"`):** Remaining flags check ALL rows (including ended):
+
+| Flag # | Condition | Output |
+|--------|-----------|--------|
+| 3 | No `"Halaman Pencarian"` in ANY row | `📌 Iklan Produk Halaman Pencarian belum dimanfaatkan.` |
+| 4 | No row has `Penempatan == "Halaman Pencarian"` AND `Bidding Otomatis` | `📌 Iklan Produk Halaman Pencarian (Bidding Otomatis) belum dimanfaatkan.` |
+| 5 | No row has `Penempatan == "Halaman Pencarian"` AND `Bidding Manual` | `📌 Iklan Produk Halaman Pencarian (Bidding Manual) belum dimanfaatkan.` |
+| 6 | No `"Halaman Rekomendasi"` in ANY row | `📌 Iklan Produk Halaman Rekomendasi belum dimanfaatkan.` |
+| 7 | No row has `Penempatan == "Halaman Rekomendasi"` AND `Bidding Otomatis` | `📌 Iklan Produk Halaman Rekomendasi (Bidding Otomatis) belum dimanfaatkan.` |
+| 8 | No row has `Penempatan == "Halaman Rekomendasi"` AND `Bidding Manual` | `📌 Iklan Produk Halaman Rekomendasi (Bidding Manual) belum dimanfaatkan.` |
+
+**Iklan Toko flag (both languages):**
+
+| Flag # | Condition | Output |
+|--------|-----------|--------|
+| Last | No `"Iklan Toko"` in `Jenis Iklan` of ANY row | `📌 Iklan Toko belum dimanfaatkan.` |
+
+**Indonesian (`language="id"`)** produces 3 flags total (Flag 1, Flag 2, Iklan Toko). **English (`language="en"`)** produces up to 9 flags (Flag 1, Flag 2, Flags 3-8, Iklan Toko).
+
+**Critical:** Flags 1-2 use non-ended row counts for product_pct/active_ratio. Remaining flags scan ALL rows including ended.
 
 Output: join all generated flags with `\n`.
 
@@ -305,7 +330,7 @@ Note: AM7 and AM10 share the same average ROAS but have different caps (10 vs 3)
 - Sort by `Omzet Penjualan` descending
 - Limit: 5
 
-**Fallback** (if primary returns empty):
+**Fallback** (Indonesian `language="id"` only — English has no fallback, returns empty if primary fails):
 
 - `Omzet Penjualan > AM6 / 2` AND `Efektifitas Iklan > MAX(AM7 / 2, 6)`
 - Sort by `Omzet Penjualan` descending
@@ -343,15 +368,22 @@ Substring count on the complete AL2 text:
 
 **Product rows only** (`Jenis Iklan != ""`).
 
+**Language-variant thresholds:**
+
+| Parameter | Indonesian (`"id"`) | English (`"en"`) |
+|-----------|--------------------|--------------------|
+| Minimum cost | 100,000 | 50,000 |
+| Fallback ROAS cap limit | 5 | 4 |
+
 **Primary selection:**
 
-- `Biaya > 100000` AND `Biaya > AM9` AND `Efektifitas Iklan < AM10` AND `Efektifitas Iklan < 5`
+- `Biaya > min_cost` AND `Biaya > AM9` AND `Efektifitas Iklan < AM10` AND `Efektifitas Iklan < 5`
 - Sort by `Biaya` descending
 - Limit: 5
 
 **Fallback** (if primary returns empty):
 
-- `Biaya > 100000` AND `Biaya > AM9` AND `Efektifitas Iklan < MIN(ROUND(AM10 × 2), 5)` AND `Efektifitas Iklan < 5`
+- `Biaya > min_cost` AND `Biaya > AM9` AND `Efektifitas Iklan < MIN(ROUND(AM10 × 2), fallback_roas_cap_limit)` AND `Efektifitas Iklan < 5`
 - Sort by `Biaya` descending
 - Limit: 5
 
@@ -385,7 +417,7 @@ Substring counts on the complete AL5 text:
 
 | Flag | Condition | Output |
 |------|-----------|--------|
-| **AL6** | `count("Otomatis") >= 1` | `📌 Terdapat iklan dengan pengaturan otomatis yang tidak terkontrol biayanya (disarankan dimonitor 1-2x setiap hari).` |
+| **AL6** | Indonesian: `count("Otomatis") >= 1`; English: `count("Bidding Otomatis") >= 1` | `📌 Terdapat iklan dengan pengaturan otomatis yang tidak terkontrol biayanya (disarankan dimonitor 1-2x setiap hari).` |
 | **AL7** | `count("Bidding Manual") >= 1` | `📌 Terdapat iklan dengan pengaturan manual yang tidak terkontrol biayanya (disarankan dimonitor 1-2x setiap hari).` |
 | **AL8** | `count("Iklan Pencarian Produk: ") >= 3` (note: this is a Shopee-specific ad type variant that appears in keyword reports) | `📌 Terdapat kata kunci dengan pengaturan manual yang tidak terkontrol biayanya (disarankan dipantau 1-2x setiap hari).` |
 | **AL9** | `count("Auto Bidding") >= 1` | `📌 Terdapat iklan dengan pengaturan otomatis yang tidak terkontrol biayanya (disarankan dimonitor 1-2x setiap hari).` |
@@ -630,7 +662,7 @@ Group by `Nama Produk` only (exact match, **no variant** — differs from Calcul
 Per group:
 
 - **qty** = sum of `Jumlah`
-- **avg_discount_pct** = arithmetic mean of all `O` (discount_pct) values in the group
+- **avg_discount_pct** = `SUM(N) / SUM(Harga Awal)` for all line items in the group — a **weighted ratio** (not arithmetic mean of per-line percentages). Matches spreadsheet formula `T = SUMIF(B:B, R2, N:N) / SUMIF(B:B, R2, J:J)`.
 
 #### Step 4: TOP SKU Filter
 
@@ -1084,13 +1116,21 @@ avg = ((ra×t + v + p + d52) + (rb×t + v + p + d52)) / 2
 base = ROUNDDOWN(avg - 0.03, 2)
 
 upper_limit = 0.20 + fashion_adjustment    (0.05 for fashion, 0 for non-fashion)
-
-g68_first = CEIL(first percentage from G68 text) / 100
-
-min_val = MIN(MIN(base, upper_limit), g68_first)     (skip g68_first if 0)
-result  = MAX(MAX(min_val, 0.10), floor)
-
 floor = 0.15 (fashion) or 0.12 (non-fashion)
+
+# Two G68 extractions (matching spreadsheet LEFT/CEILING methods):
+g68_left    = raw fraction before "~" in G68 text    (e.g. "15.3% ~ 22.7%" → 0.153)
+ceiling_g68 = CEIL(first percentage from G68 text) / 100   (e.g. "15.3%" → 0.16)
+
+# MIN/MAX chain with g68_left:
+min_val      = MIN(MIN(base, upper_limit), g68_left)     (skip g68_left if no G68 text)
+capped_value = MAX(MAX(min_val, 0.10), floor)
+
+# Final branching: prefer ceiling_g68 when it exceeds the capped value
+if ceiling_g68 > 0 AND capped_value <= ceiling_g68:
+    result = ceiling_g68
+else:
+    result = capped_value
 ```
 
 #### G73: Marketing Budget Text
