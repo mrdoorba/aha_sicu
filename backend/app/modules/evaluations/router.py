@@ -6,7 +6,9 @@ from typing import Literal
 from fastapi import APIRouter, Depends, Query
 
 from app.calculators.engine import check_calculator_readiness, run_ready_calculators
-from app.core.dependencies import get_current_user
+from fastapi.responses import Response
+
+from app.core.dependencies import get_current_user, require_role
 from app.db.connection import db
 from app.db.queries.calculator_results import get_results_by_brand
 from app.modules.evaluations.calculator_service import (
@@ -15,6 +17,7 @@ from app.modules.evaluations.calculator_service import (
     run_top_sku_calculator as _run_top_sku,
 )
 from app.modules.evaluations.schemas import (
+    BrandEvaluationListResponse,
     CalculatorResultItem,
     CalculatorResultResponse,
     CalculatorResultsListResponse,
@@ -23,6 +26,7 @@ from app.modules.evaluations.schemas import (
     EvaluationInputsUpdate,
     EvaluationListResponse,
     EvaluationStateResponse,
+    GroupedEvaluationListResponse,
     RunAllResponse,
     RunCalculatorItem,
     SaveEvaluationRequest,
@@ -32,10 +36,13 @@ from app.modules.evaluations.schemas import (
     SingleCalculatorStatus,
 )
 from app.modules.evaluations.service import (
+    delete_evaluation,
     generate_score,
     get_evaluation_detail,
     get_evaluation_state,
     list_evaluations,
+    list_evaluations_by_brand,
+    list_grouped_evaluations,
     save_evaluation,
     save_evaluation_inputs,
 )
@@ -68,6 +75,68 @@ async def list_evaluations_endpoint(
         date_from=date_from,
         date_to=date_to,
     )
+
+
+@router.get("/grouped", response_model=GroupedEvaluationListResponse)
+async def list_grouped_evaluations_endpoint(
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    search: str | None = Query(default=None, max_length=200),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    current_user: dict = Depends(get_current_user),
+) -> GroupedEvaluationListResponse:
+    """List evaluations grouped by brand with pagination.
+
+    Returns brand-level summaries with evaluation count, top score, and latest date.
+    Supports search by brand name and date range filter.
+    """
+    return await list_grouped_evaluations(
+        page=page,
+        limit=limit,
+        search=search,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+
+@router.get("/grouped/{brand_id}", response_model=BrandEvaluationListResponse)
+async def list_brand_evaluations_endpoint(
+    brand_id: int,
+    limit: int | None = Query(default=None, ge=1, le=1000),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    current_user: dict = Depends(get_current_user),
+) -> BrandEvaluationListResponse:
+    """List individual evaluations for a specific brand.
+
+    Returns evaluations sorted by date descending.
+    Optional limit parameter for initial accordion expand (e.g., limit=5).
+    """
+    return await list_evaluations_by_brand(
+        brand_id,
+        limit=limit,
+        date_from=date_from,
+        date_to=date_to,
+    )
+
+
+@router.delete(
+    "/{evaluation_id}",
+    status_code=204,
+    response_class=Response,
+)
+async def delete_evaluation_endpoint(
+    evaluation_id: int,
+    current_user: dict = Depends(require_role("leader", "admin")),
+) -> Response:
+    """Delete an evaluation permanently.
+
+    Only accessible by leaders and admins.
+    Returns 204 on success, 404 if not found.
+    """
+    await delete_evaluation(evaluation_id)
+    return Response(status_code=204)
 
 
 @router.get("/{evaluation_id}", response_model=EvaluationDetailResponse)

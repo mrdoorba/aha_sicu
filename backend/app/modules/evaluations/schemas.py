@@ -201,6 +201,45 @@ class EvaluationListResponse(BaseModel):
     pages: int
 
 
+class GroupedEvaluationItem(BaseModel):
+    """A single brand in the grouped evaluation list."""
+
+    brand_id: int
+    brand_name: str
+    evaluation_count: int
+    top_score: float
+    top_verdict: str
+    latest_date: datetime
+
+
+class GroupedEvaluationListResponse(BaseModel):
+    """Paginated list of evaluations grouped by brand."""
+
+    items: list[GroupedEvaluationItem]
+    total: int
+    page: int
+    limit: int
+    pages: int
+
+
+class BrandEvaluationItem(BaseModel):
+    """A single evaluation within a brand's evaluation list."""
+
+    id: int
+    final_score: float
+    verdict: str
+    template: str
+    evaluator_email: str
+    created_at: datetime
+
+
+class BrandEvaluationListResponse(BaseModel):
+    """List of evaluations for a specific brand."""
+
+    items: list[BrandEvaluationItem]
+    total: int
+
+
 class EvaluationDetailResponse(BaseModel):
     """Full evaluation detail for the detail view page."""
 

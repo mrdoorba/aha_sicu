@@ -209,6 +209,132 @@ async def get_evaluation_by_id(
     return dict(row) if row else None
 
 
+async def list_grouped_evaluations(
+    conn: Connection,
+    *,
+    limit: int,
+    offset: int,
+    search: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> list[dict]:
+    """List evaluations grouped by brand with aggregate data.
+
+    Returns one row per brand with evaluation count, top score/verdict,
+    and latest date. Sorted by latest evaluation date descending.
+    Paginated by brand (not by individual evaluation).
+    """
+    where_clause, params, param_idx = _build_filter_clauses(search, date_from, date_to)
+    limit_param = f"${param_idx}"
+    offset_param = f"${param_idx + 1}"
+    params.extend([limit, offset])
+
+    query = f"""
+        SELECT e.brand_id,
+               b.brand_name,
+               COUNT(*) AS evaluation_count,
+               MAX(e.final_score) AS top_score,
+               (ARRAY_AGG(e.verdict ORDER BY e.final_score DESC))[1] AS top_verdict,
+               MAX(e.created_at) AS latest_date
+        FROM evaluations e
+        JOIN brand_vp_data b ON e.brand_id = b.id
+        {where_clause}
+        GROUP BY e.brand_id, b.brand_name
+        ORDER BY MAX(e.created_at) DESC
+        LIMIT {limit_param} OFFSET {offset_param}
+    """
+    rows = await conn.fetch(query, *params)
+    return [dict(row) for row in rows]
+
+
+async def count_grouped_evaluations(
+    conn: Connection,
+    *,
+    search: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> int:
+    """Count distinct brands that have evaluations matching the filters."""
+    where_clause, params, _ = _build_filter_clauses(search, date_from, date_to)
+
+    query = f"""
+        SELECT COUNT(DISTINCT e.brand_id)
+        FROM evaluations e
+        JOIN brand_vp_data b ON e.brand_id = b.id
+        {where_clause}
+    """
+    row = await conn.fetchval(query, *params)
+    return row or 0
+
+
+async def list_evaluations_by_brand(
+    conn: Connection,
+    brand_id: int,
+    *,
+    limit: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> tuple[list[dict], int]:
+    """Fetch individual evaluations for a specific brand.
+
+    Returns (rows, total) where total is the count before limit is applied.
+    Sorted by created_at DESC. Supports optional limit and date filter.
+    """
+    conditions: list[str] = ["e.brand_id = $1"]
+    params: list[Any] = [brand_id]
+    param_idx = 2
+
+    if date_from:
+        conditions.append(f"e.created_at >= ${param_idx}")
+        params.append(date_from)
+        param_idx += 1
+
+    if date_to:
+        conditions.append(f"e.created_at < (${param_idx} + interval '1 day')")
+        params.append(date_to)
+        param_idx += 1
+
+    where_clause = "WHERE " + " AND ".join(conditions)
+
+    # Get total count first
+    count_query = f"""
+        SELECT COUNT(*)
+        FROM evaluations e
+        {where_clause}
+    """
+    total = await conn.fetchval(count_query, *params) or 0
+
+    # Fetch rows with optional limit
+    limit_clause = ""
+    if limit is not None:
+        limit_clause = f"LIMIT ${param_idx}"
+        params.append(limit)
+
+    query = f"""
+        SELECT e.id, e.final_score, e.verdict, e.template,
+               u.email AS evaluator_email, e.created_at
+        FROM evaluations e
+        JOIN users u ON e.user_id = u.id
+        {where_clause}
+        ORDER BY e.created_at DESC
+        {limit_clause}
+    """
+    rows = await conn.fetch(query, *params)
+    return [dict(row) for row in rows], total
+
+
+async def delete_evaluation(
+    conn: Connection,
+    evaluation_id: int,
+) -> bool:
+    """Hard delete an evaluation by ID. Returns True if a row was deleted."""
+    result = await conn.execute(
+        "DELETE FROM evaluations WHERE id = $1",
+        evaluation_id,
+    )
+    return result == "DELETE 1"
+
+
 async def get_any_evaluation_inputs(
     conn: Connection,
     brand_id: int,

@@ -14,11 +14,15 @@ from app.db.queries import calculator_results as calc_queries
 from app.db.queries import evaluations as eval_queries
 from app.db.queries import rules as rules_queries
 from app.modules.evaluations.schemas import (
+    BrandEvaluationItem,
+    BrandEvaluationListResponse,
     CategoryScoreItem,
     EvaluationDetailResponse,
     EvaluationListItem,
     EvaluationListResponse,
     EvaluationStateResponse,
+    GroupedEvaluationItem,
+    GroupedEvaluationListResponse,
     RowScoreItem,
     SaveEvaluationResponse,
     ScoringResponse,
@@ -85,6 +89,102 @@ async def list_evaluations(
     return EvaluationListResponse(
         items=items, total=total, page=page, limit=limit, pages=pages
     )
+
+
+async def list_grouped_evaluations(
+    *,
+    page: int,
+    limit: int,
+    search: str | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> GroupedEvaluationListResponse:
+    """Return a paginated list of evaluations grouped by brand."""
+    if date_from and date_to and date_from > date_to:
+        raise AppException(
+            code="VALIDATION_ERROR",
+            detail="date_from must not be after date_to",
+            status_code=422,
+        )
+
+    offset = (page - 1) * limit
+
+    async with db.connection() as conn:
+        rows = await eval_queries.list_grouped_evaluations(
+            conn,
+            limit=limit,
+            offset=offset,
+            search=search,
+            date_from=date_from,
+            date_to=date_to,
+        )
+        total = await eval_queries.count_grouped_evaluations(
+            conn, search=search, date_from=date_from, date_to=date_to,
+        )
+
+    pages = math.ceil(total / limit) if total > 0 else 0
+
+    items = [
+        GroupedEvaluationItem(
+            brand_id=row["brand_id"],
+            brand_name=row["brand_name"],
+            evaluation_count=row["evaluation_count"],
+            top_score=float(row["top_score"]),
+            top_verdict=row["top_verdict"],
+            latest_date=row["latest_date"],
+        )
+        for row in rows
+    ]
+
+    return GroupedEvaluationListResponse(
+        items=items, total=total, page=page, limit=limit, pages=pages
+    )
+
+
+async def list_evaluations_by_brand(
+    brand_id: int,
+    *,
+    limit: int | None = None,
+    date_from: date | None = None,
+    date_to: date | None = None,
+) -> BrandEvaluationListResponse:
+    """Return evaluations for a specific brand with optional limit."""
+    async with db.connection() as conn:
+        rows, total = await eval_queries.list_evaluations_by_brand(
+            conn,
+            brand_id,
+            limit=limit,
+            date_from=date_from,
+            date_to=date_to,
+        )
+
+    items = [
+        BrandEvaluationItem(
+            id=row["id"],
+            final_score=float(row["final_score"]),
+            verdict=row["verdict"],
+            template=row["template"],
+            evaluator_email=row["evaluator_email"],
+            created_at=row["created_at"],
+        )
+        for row in rows
+    ]
+
+    return BrandEvaluationListResponse(items=items, total=total)
+
+
+async def delete_evaluation(evaluation_id: int) -> bool:
+    """Delete an evaluation by ID. Returns True if deleted, raises 404 if not found."""
+    async with db.connection() as conn:
+        deleted = await eval_queries.delete_evaluation(conn, evaluation_id)
+
+    if not deleted:
+        raise AppException(
+            code="EVAL_NOT_FOUND",
+            detail="Evaluation not found",
+            status_code=404,
+        )
+    return True
 
 
 async def get_evaluation_detail(evaluation_id: int) -> EvaluationDetailResponse:
