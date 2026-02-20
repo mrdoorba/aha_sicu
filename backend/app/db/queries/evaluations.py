@@ -155,10 +155,10 @@ async def list_evaluations(
 
     query = f"""
         SELECT e.id, b.brand_name, e.final_score, e.verdict, e.template,
-               u.email AS evaluator_email, e.created_at
+               COALESCE(u.email, 'Pengguna Dihapus') AS evaluator_email, e.created_at
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
-        JOIN users u ON e.user_id = u.id
+        LEFT JOIN users u ON e.user_id = u.id
         {where_clause}
         ORDER BY e.{sort_by} {sort_order}
         LIMIT {limit_param} OFFSET {offset_param}
@@ -198,10 +198,10 @@ async def get_evaluation_by_id(
                e.final_score, e.verdict, e.template,
                e.score_breakdown, e.calculator_results, e.manual_inputs,
                e.email_output, e.rule_version, e.created_at,
-               u.email AS evaluator_email
+               COALESCE(u.email, 'Pengguna Dihapus') AS evaluator_email
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
-        JOIN users u ON e.user_id = u.id
+        LEFT JOIN users u ON e.user_id = u.id
         WHERE e.id = $1
         """,
         evaluation_id,
@@ -312,9 +312,9 @@ async def list_evaluations_by_brand(
 
     query = f"""
         SELECT e.id, e.final_score, e.verdict, e.template,
-               u.email AS evaluator_email, e.created_at
+               COALESCE(u.email, 'Pengguna Dihapus') AS evaluator_email, e.created_at
         FROM evaluations e
-        JOIN users u ON e.user_id = u.id
+        LEFT JOIN users u ON e.user_id = u.id
         {where_clause}
         ORDER BY e.created_at DESC
         {limit_clause}

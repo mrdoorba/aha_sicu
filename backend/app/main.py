@@ -11,6 +11,7 @@ from app.core.exceptions import AppException
 from app.core.middleware import app_exception_handler
 from app.core.security import init_firebase
 from app.db.connection import db
+from app.modules.accounts.router import router as accounts_router
 from app.modules.auth.router import router as auth_router
 from app.modules.brands.router import router as brands_router
 from app.modules.events.router import router as events_router
@@ -55,6 +56,7 @@ app.add_middleware(
 app.add_exception_handler(AppException, app_exception_handler)
 
 # Register routers
+app.include_router(accounts_router)
 app.include_router(auth_router)
 app.include_router(brands_router)
 app.include_router(evaluations_router)
