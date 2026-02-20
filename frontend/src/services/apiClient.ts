@@ -218,6 +218,112 @@ interface paths {
       };
     };
   };
+  '/api/v1/evaluations/grouped': {
+    get: {
+      parameters: {
+        query?: {
+          page?: number;
+          limit?: number;
+          search?: string;
+          date_from?: string;
+          date_to?: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              items: Array<{
+                brand_id: number;
+                brand_name: string;
+                evaluation_count: number;
+                top_score: number;
+                top_verdict: string;
+                latest_date: string;
+              }>;
+              total: number;
+              page: number;
+              limit: number;
+              pages: number;
+            };
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/evaluations/grouped/{brand_id}': {
+    get: {
+      parameters: {
+        path: {
+          brand_id: number;
+        };
+        query?: {
+          limit?: number;
+          date_from?: string;
+          date_to?: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              items: Array<{
+                id: number;
+                final_score: number;
+                verdict: string;
+                template: string;
+                evaluator_email: string;
+                created_at: string;
+              }>;
+              total: number;
+            };
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/evaluations/{evaluation_id}': {
+    get: {
+      parameters: {
+        path: {
+          evaluation_id: number;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              id: number;
+              brand_id: number;
+              brand_name: string;
+              final_score: number;
+              verdict: string;
+              template: string;
+              score_breakdown: Array<Record<string, unknown>>;
+              calculator_results: Record<string, unknown>;
+              manual_inputs: Record<string, unknown>;
+              email_output: string | null;
+              evaluator_email: string;
+              created_at: string;
+              rule_version: number;
+            };
+          };
+        };
+      };
+    };
+    delete: {
+      parameters: {
+        path: {
+          evaluation_id: number;
+        };
+      };
+      responses: {
+        204: {
+          content: never;
+        };
+      };
+    };
+  };
   '/api/v1/evaluations': {
     get: {
       parameters: {
@@ -249,36 +355,6 @@ interface paths {
               page: number;
               limit: number;
               pages: number;
-            };
-          };
-        };
-      };
-    };
-  };
-  '/api/v1/evaluations/{evaluation_id}': {
-    get: {
-      parameters: {
-        path: {
-          evaluation_id: number;
-        };
-      };
-      responses: {
-        200: {
-          content: {
-            'application/json': {
-              id: number;
-              brand_id: number;
-              brand_name: string;
-              final_score: number;
-              verdict: string;
-              template: string;
-              score_breakdown: Array<Record<string, unknown>>;
-              calculator_results: Record<string, unknown>;
-              manual_inputs: Record<string, unknown>;
-              email_output: string | null;
-              evaluator_email: string;
-              created_at: string;
-              rule_version: number;
             };
           };
         };
