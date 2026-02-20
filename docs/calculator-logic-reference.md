@@ -168,6 +168,7 @@ All value formatting functions used across the calculators and scoring system. F
 | `cpc_data` | `list[dict]` | Parsed CPC Ad Report CSV rows |
 | `keyword_data` | `list[dict]` | Parsed Keyword/Placement Report CSV rows |
 | `total_products` | `int` | Total products in store (manual input, AK1) |
+| `language` | `str` | `"id"` (Indonesian, default) or `"en"` (English) — controls AK3/AK4/AL2/AL5/AL6 variant logic |
 
 ### Result Structure
 
@@ -236,7 +237,7 @@ Count non-ended ads by placement type. **Filter all rows where** `Status != "Ber
 | All Placements | `Penempatan Iklan == "Semua Penempatan"` (NO Jenis filter) | total only |
 | Shop Ads | `Jenis Iklan == "Iklan Toko"` | total, auto, manual |
 
-**Output format:**
+**Output format (English `language="en"` — 4 categories):**
 
 ```text
 • Jenis Iklan yang aktif digunakan:
@@ -246,9 +247,19 @@ Count non-ended ads by placement type. **Filter all rows where** `Status != "Ber
   {toko_total} Iklan Toko ({toko_auto} Otomatis & {toko_manual} Manual).
 ```
 
-#### AK4: Seven Recommendation Flags
+**Output format (Indonesian `language="id"` — 2 categories):**
+
+```text
+• Jenis Iklan yang aktif digunakan:
+  {semua_total} Iklan Produk Otomatis Semua Halaman.
+  {toko_total} Iklan Toko ({toko_auto} Otomatis & {toko_manual} Manual).
+```
+
+#### AK4: Recommendation Flags
 
 **active_ratio** = `count_active / total_ads` (total_ads = total row count; 0 if no rows)
+
+**Common flags (both languages):**
 
 | Flag # | Condition | Output |
 |--------|-----------|--------|
@@ -257,13 +268,27 @@ Count non-ended ads by placement type. **Filter all rows where** `Status != "Ber
 | 2 | `active_ratio < 0.5` | `📌 Jumlah iklan dengan status aktif kurang maksimal (saran >50%).` |
 | 2 (elif) | `active_ratio >= 0.5` AND `product_pct >= 0.5` | `📌 Jumlah iklan dengan status aktif sudah cukup baik.` |
 | 2 (else) | `active_ratio >= 0.5` AND `product_pct < 0.5` | **(suppressed — no output)** |
-| 3 | No `"Halaman Pencarian"` in ANY row (including ended) | `📌 Iklan Produk Halaman Pencarian belum dimanfaatkan.` |
-| 4 | No row has `Penempatan == "Halaman Pencarian"` AND `Mode Bidding == "Bidding Manual"` (ALL rows) | `📌 Iklan Produk Halaman Pencarian (Bidding Manual) belum dimanfaatkan.` |
-| 5 | No `"Halaman Rekomendasi"` in ANY row (including ended) | `📌 Iklan Produk Halaman Rekomendasi belum dimanfaatkan.` |
-| 6 | No row has `Penempatan == "Halaman Rekomendasi"` AND `Mode Bidding == "Bidding Manual"` (ALL rows) | `📌 Iklan Produk Halaman Rekomendasi (Bidding Manual) belum dimanfaatkan.` |
-| 7 | No `"Iklan Toko"` in `Jenis Iklan` of ANY row (including ended) | `📌 Iklan Toko belum dimanfaatkan.` |
 
-**Critical:** Flags 1-2 use non-ended row counts for product_pct/active_ratio. Flags 3-7 scan ALL rows including ended.
+**English-only flags (`language="en"`):** Remaining flags check ALL rows (including ended):
+
+| Flag # | Condition | Output |
+|--------|-----------|--------|
+| 3 | No `"Halaman Pencarian"` in ANY row | `📌 Iklan Produk Halaman Pencarian belum dimanfaatkan.` |
+| 4 | No row has `Penempatan == "Halaman Pencarian"` AND `Bidding Otomatis` | `📌 Iklan Produk Halaman Pencarian (Bidding Otomatis) belum dimanfaatkan.` |
+| 5 | No row has `Penempatan == "Halaman Pencarian"` AND `Bidding Manual` | `📌 Iklan Produk Halaman Pencarian (Bidding Manual) belum dimanfaatkan.` |
+| 6 | No `"Halaman Rekomendasi"` in ANY row | `📌 Iklan Produk Halaman Rekomendasi belum dimanfaatkan.` |
+| 7 | No row has `Penempatan == "Halaman Rekomendasi"` AND `Bidding Otomatis` | `📌 Iklan Produk Halaman Rekomendasi (Bidding Otomatis) belum dimanfaatkan.` |
+| 8 | No row has `Penempatan == "Halaman Rekomendasi"` AND `Bidding Manual` | `📌 Iklan Produk Halaman Rekomendasi (Bidding Manual) belum dimanfaatkan.` |
+
+**Iklan Toko flag (both languages):**
+
+| Flag # | Condition | Output |
+|--------|-----------|--------|
+| Last | No `"Iklan Toko"` in `Jenis Iklan` of ANY row | `📌 Iklan Toko belum dimanfaatkan.` |
+
+**Indonesian (`language="id"`)** produces 3 flags total (Flag 1, Flag 2, Iklan Toko). **English (`language="en"`)** produces up to 9 flags (Flag 1, Flag 2, Flags 3-8, Iklan Toko).
+
+**Critical:** Flags 1-2 use non-ended row counts for product_pct/active_ratio. Remaining flags scan ALL rows including ended.
 
 Output: join all generated flags with `\n`.
 
@@ -305,7 +330,7 @@ Note: AM7 and AM10 share the same average ROAS but have different caps (10 vs 3)
 - Sort by `Omzet Penjualan` descending
 - Limit: 5
 
-**Fallback** (if primary returns empty):
+**Fallback** (Indonesian `language="id"` only — English has no fallback, returns empty if primary fails):
 
 - `Omzet Penjualan > AM6 / 2` AND `Efektifitas Iklan > MAX(AM7 / 2, 6)`
 - Sort by `Omzet Penjualan` descending
@@ -343,15 +368,22 @@ Substring count on the complete AL2 text:
 
 **Product rows only** (`Jenis Iklan != ""`).
 
+**Language-variant thresholds:**
+
+| Parameter | Indonesian (`"id"`) | English (`"en"`) |
+|-----------|--------------------|--------------------|
+| Minimum cost | 100,000 | 50,000 |
+| Fallback ROAS cap limit | 5 | 4 |
+
 **Primary selection:**
 
-- `Biaya > 100000` AND `Biaya > AM9` AND `Efektifitas Iklan < AM10` AND `Efektifitas Iklan < 5`
+- `Biaya > min_cost` AND `Biaya > AM9` AND `Efektifitas Iklan < AM10` AND `Efektifitas Iklan < 5`
 - Sort by `Biaya` descending
 - Limit: 5
 
 **Fallback** (if primary returns empty):
 
-- `Biaya > 100000` AND `Biaya > AM9` AND `Efektifitas Iklan < MIN(ROUND(AM10 × 2), 5)` AND `Efektifitas Iklan < 5`
+- `Biaya > min_cost` AND `Biaya > AM9` AND `Efektifitas Iklan < MIN(ROUND(AM10 × 2), fallback_roas_cap_limit)` AND `Efektifitas Iklan < 5`
 - Sort by `Biaya` descending
 - Limit: 5
 
@@ -385,7 +417,7 @@ Substring counts on the complete AL5 text:
 
 | Flag | Condition | Output |
 |------|-----------|--------|
-| **AL6** | `count("Otomatis") >= 1` | `📌 Terdapat iklan dengan pengaturan otomatis yang tidak terkontrol biayanya (disarankan dimonitor 1-2x setiap hari).` |
+| **AL6** | Indonesian: `count("Otomatis") >= 1`; English: `count("Bidding Otomatis") >= 1` | `📌 Terdapat iklan dengan pengaturan otomatis yang tidak terkontrol biayanya (disarankan dimonitor 1-2x setiap hari).` |
 | **AL7** | `count("Bidding Manual") >= 1` | `📌 Terdapat iklan dengan pengaturan manual yang tidak terkontrol biayanya (disarankan dimonitor 1-2x setiap hari).` |
 | **AL8** | `count("Iklan Pencarian Produk: ") >= 3` (note: this is a Shopee-specific ad type variant that appears in keyword reports) | `📌 Terdapat kata kunci dengan pengaturan manual yang tidak terkontrol biayanya (disarankan dipantau 1-2x setiap hari).` |
 | **AL9** | `count("Auto Bidding") >= 1` | `📌 Terdapat iklan dengan pengaturan otomatis yang tidak terkontrol biayanya (disarankan dimonitor 1-2x setiap hari).` |
@@ -398,6 +430,100 @@ Combine sections in this exact order, separated by `\n\n`, skipping empty sectio
 
 ```text
 AK2, AK3, AK4, AL2, AL3, AL5, AL6, AL7, AL8, AL9
+```
+
+### Pseudocode
+
+#### Flow Diagram
+
+```
+┌─────────────────────────────────────────────────────────┐
+│                  calculate_ads_keyword()                 │
+│                                                         │
+│  cpc_data ──► calculate_sheet1() ──► {ak2, ak3, ak4}   │
+│                     │                                   │
+│                     ▼                                   │
+│  keyword_data ──► calculate_sheet2() ──► {al2..al9}     │
+│                     │                                   │
+│                     ▼                                   │
+│              combine_output()                           │
+│                     │                                   │
+│                     ▼                                   │
+│              AdsKeywordResult(output_text, details)      │
+└─────────────────────────────────────────────────────────┘
+```
+
+#### Sheet 1 (CPC Ad Report)
+
+```
+FUNCTION calculate_sheet1(rows, total_products, language):
+    # AK2: Ad Overview Summary
+    FOR each row in rows:
+        COUNT status into active/paused/ended
+        IF status != "Berakhir" AND jenis == "Iklan Produk" AND nama not empty:
+            ADD CleanName(nama) to unique_products set
+    product_pct = unique_count / total_products
+    ak2 = format overview text
+
+    # AK3: Ad Type Breakdown (non-ended rows only)
+    FOR each non-ended row:
+        CLASSIFY into search/reco/semua/toko with auto/manual counters
+    IF language == "en":
+        ak3 = 4-category format (search, reco, semua, toko)
+    ELSE:
+        ak3 = 2-category format (semua, toko)
+
+    # AK4: Recommendation Flags
+    active_ratio = count_active / total_ads
+    EMIT flag 1 (product participation < 50%)
+    EMIT flag 2 (active ratio < 50%, with suppression logic)
+    IF language == "en":
+        EMIT flags 3-8 (placement-specific checks on ALL rows)
+    EMIT iklan toko flag (both languages, ALL rows)
+    ak4 = JOIN flags with newline
+
+    RETURN {ak2, ak3, ak4}
+```
+
+#### Sheet 2 (Keyword/Placement Report)
+
+```
+FUNCTION calculate_sheet2(rows, language):
+    # Thresholds from ALL rows (including shop-level)
+    AM6 = ROUND(AVG(GMV where GMV > 0))
+    AM7 = MIN(ROUND(AVG(ROAS where ROAS > 0)), 10)
+    AM9 = ROUND(AVG(Cost where Cost > 0))
+    AM10 = MIN(ROUND(AVG(ROAS where ROAS > 0)), 3)
+
+    product_rows = rows WHERE Jenis Iklan != ""
+
+    # AL2: TOP Ads
+    top_primary = product_rows WHERE GMV > AM6 AND ROAS > AM7
+                  ORDER BY GMV DESC LIMIT 5
+    IF top_primary not empty:
+        top_ads = top_primary
+    ELIF language == "en":
+        top_ads = []     # English: no fallback
+    ELSE:
+        top_ads = product_rows WHERE GMV > AM6/2 AND ROAS > MAX(AM7/2, 6)
+                  ORDER BY GMV DESC LIMIT 5   # Indonesian fallback
+
+    # AL3: Top Ads Recommendation (substring count on AL2 text)
+    IF "Bidding Otomatis" count >= 3 OR "GMV Max" count >= 3:
+        al3 = "relying on auto settings"
+    ELSE:
+        al3 = "already using manual settings"
+
+    # AL5: BOTTOM Ads (language-variant min_cost)
+    min_cost = 50000 if en else 100000
+    cap_limit = 4 if en else 5
+    bottom_primary = product_rows WHERE Cost > min_cost AND Cost > AM9
+                     AND ROAS < AM10 AND ROAS < 5
+                     ORDER BY Cost DESC LIMIT 5
+    IF empty: apply fallback with MIN(ROUND(AM10*2), cap_limit)
+
+    # AL6-AL9: Bottom flags (substring counts on AL5 text)
+    RETURN {al2, al3, al5, al6..al9, thresholds}
 ```
 
 ---
@@ -563,6 +689,85 @@ Split `product_variant_label` on the LAST ` - ` occurrence:
 | Scoring Row 70 | `details.average_stock` | Stock score (>=24: +10, >=12: +5, <12: -5) |
 | Scoring Rows 61-63 | `details.output_1[0..2].rata2_harga_jual` | Competition price check |
 
+### Pseudocode
+
+#### Flow Diagram
+
+```
+┌───────────────────────────────────────────────────────────────┐
+│                   calculate_top_sku()                          │
+│                                                               │
+│  order_data ──► _extract_per_line()                           │
+│                       │                                       │
+│                       ▼                                       │
+│               _aggregate_by_product()                         │
+│                       │                                       │
+│                       ▼                                       │
+│               _rank_top_products()                            │
+│                       │                                       │
+│  mass_update ──► _build_mass_update_lookup() ──┐              │
+│                                                │              │
+│                       ▼                        ▼              │
+│               _enrich_with_mass_update()                      │
+│                       │                                       │
+│                       ├──► _calculate_average_stock()          │
+│                       └──► _build_output_tables()              │
+│                                    │                          │
+│                                    ▼                          │
+│                          TopSkuResult(output_text, details)    │
+└───────────────────────────────────────────────────────────────┘
+```
+
+#### Structured Pseudocode
+
+```
+FUNCTION calculate_top_sku(order_data, mass_update_data):
+    IF order_data is empty:
+        RETURN empty result (all zeros)
+
+    # Step 1: Extract per-line data
+    FOR each row in order_data:
+        product_variant_label = "{Nama Produk} - {Nama Variasi}"
+        items_in_order = MAX(Jumlah Produk di Pesan, 1)
+        revenue = (Harga Setelah Diskon × Jumlah)
+                  - (Voucher / items_in_order)
+                  - (Cashback / items_in_order)
+                  + (Diskon Shopee / items_in_order)
+        COLLECT LineItem(sku, label, quantity, revenue)
+
+    # Step 2: Aggregate by product+variant
+    GROUP line_items BY product_variant_label
+    FOR each group:
+        total_qty = SUM(quantity)
+        total_omzet = SUM(revenue)
+
+    # Step 3: Rank top products
+    SORT by total_omzet DESC
+    IF unique_products <= 20:
+        RETURN all
+    ELSE:
+        limit = MAX(ROUND(unique_products × 0.20), 20)
+        RETURN top `limit`
+
+    # Step 4-6: Enrich with mass update data
+    BUILD name_to_kode lookup: "{Nama Produk} - {Nama Variasi}" → Kode Variasi
+    BUILD kode_to_stok lookup: Kode Variasi → Stok
+    FOR each top product:
+        kode = lookup by label (default "Kode Variasi tidak ditemukan")
+        rata2_harga_jual = MAX(revenue) across matching line items
+        stok = lookup by kode (default 0, 0 if kode not found)
+
+    # Step 7: Average stock
+    average_stock = ROUND(SUM(stok) / count(top_products))
+
+    # Step 8: Build output tables
+    output_1 = [{kode_variasi, product_name, total_omzet, rata2_harga_jual}]
+    output_2 = [{kode_variasi, nama_produk, varian, stok}]
+               (split label on LAST " - ")
+
+    RETURN TopSkuResult("", {output_1, output_2, average_stock, ...})
+```
+
 ---
 
 ## Calculator 3: Discount Check
@@ -630,7 +835,7 @@ Group by `Nama Produk` only (exact match, **no variant** — differs from Calcul
 Per group:
 
 - **qty** = sum of `Jumlah`
-- **avg_discount_pct** = arithmetic mean of all `O` (discount_pct) values in the group
+- **avg_discount_pct** = `SUM(N) / SUM(Harga Awal)` for all line items in the group — a **weighted ratio** (not arithmetic mean of per-line percentages). Matches spreadsheet formula `T = SUMIF(B:B, R2, N:N) / SUMIF(B:B, R2, J:J)`.
 
 #### Step 4: TOP SKU Filter
 
@@ -702,6 +907,82 @@ Paket Diskon {paket_pct}
 | Scoring D73 | `output_text` | Injected into row 73 value |
 | Scoring H73 | `details.fake_discount_flag` | No flag: +5pts, flag: 0pts |
 | Scoring G68 | Parsed from `output_text` | Marketing cost estimation formula |
+
+### Pseudocode
+
+#### Flow Diagram
+
+```
+┌───────────────────────────────────────────────────────────┐
+│                  calculate_discount()                      │
+│                                                           │
+│  order_data ──► _calculate_urutan()                       │
+│                       │                                   │
+│                       ▼                                   │
+│               _calculate_line_items()                     │
+│               (N=total discount, O=disc%, P=total paid)   │
+│                       │                                   │
+│                       ├──► _build_product_summary()        │
+│                       │           │                       │
+│                       │           ▼                       │
+│                       │    _filter_top_sku()               │
+│                       │           │                       │
+│                       ▼           ▼                       │
+│               _format_output()                            │
+│               (5 outputs: disc%, range, voucher%,         │
+│                paket%, fake flag)                          │
+│                       │                                   │
+│                       ▼                                   │
+│              DiscountResult(output_text, details)          │
+└───────────────────────────────────────────────────────────┘
+```
+
+#### Structured Pseudocode
+
+```
+FUNCTION calculate_discount(order_data):
+    IF order_data is empty:
+        RETURN zero-state result
+
+    # Step 1: Calculate Urutan (item position within each order)
+    prev_order = None
+    FOR each row:
+        IF No. Pesanan is empty → urutan = 0
+        ELIF same as previous → increment counter
+        ELSE → reset counter to 1
+
+    # Step 2: Calculate per-line values
+    FOR each row WHERE urutan > 0:
+        IF urutan == 1:
+            voucher = Voucher Ditanggung Penjual
+            paket = Paket Diskon
+        ELSE:
+            voucher = 0, paket = 0     # Avoid double-counting
+        N = (Harga Awal - Harga Setelah Diskon) + voucher + paket
+        O = N / Harga Awal              (0 if Harga Awal == 0)
+        P = Harga Setelah Diskon - voucher - paket
+
+    # Step 3: Product summary (weighted ratio, NOT arithmetic mean)
+    GROUP line_items BY Nama Produk (exact match, no variant)
+    FOR each group:
+        qty = SUM(Jumlah)
+        avg_discount_pct = SUM(N) / SUM(Harga Awal)
+
+    # Step 4: TOP SKU filter
+    avg_qty = total_qty / count(products)
+    FILTER: qty > avg_qty AND avg_discount_pct < 1.0
+    SORT BY qty DESC
+    LIMIT = ROUND(unique_products × 0.20)   # no minimum 20 floor
+
+    # Step 5: Generate outputs
+    Output 1 = SUMIF(P>0, N) / SUM(P)                              # % Diskon
+    Output 2 = ROUNDUP(MIN(top_disc),3) ~ ROUNDUP(MAX(top_disc),3) # Range
+    Output 3 = SUM(voucher) / SUM(harga_setelah_diskon)            # Voucher %
+    Output 4 = SUM(paket) / SUM(harga_setelah_diskon)              # Paket %
+    Output 5 = SUM(N)/SUM(P) > 0.20 → fake discount flag
+
+    RETURN DiscountResult(combined text, details)
+```
 
 ---
 
@@ -1084,13 +1365,21 @@ avg = ((ra×t + v + p + d52) + (rb×t + v + p + d52)) / 2
 base = ROUNDDOWN(avg - 0.03, 2)
 
 upper_limit = 0.20 + fashion_adjustment    (0.05 for fashion, 0 for non-fashion)
-
-g68_first = CEIL(first percentage from G68 text) / 100
-
-min_val = MIN(MIN(base, upper_limit), g68_first)     (skip g68_first if 0)
-result  = MAX(MAX(min_val, 0.10), floor)
-
 floor = 0.15 (fashion) or 0.12 (non-fashion)
+
+# Two G68 extractions (matching spreadsheet LEFT/CEILING methods):
+g68_left    = raw fraction before "~" in G68 text    (e.g. "15.3% ~ 22.7%" → 0.153)
+ceiling_g68 = CEIL(first percentage from G68 text) / 100   (e.g. "15.3%" → 0.16)
+
+# MIN/MAX chain with g68_left:
+min_val      = MIN(MIN(base, upper_limit), g68_left)     (skip g68_left if no G68 text)
+capped_value = MAX(MAX(min_val, 0.10), floor)
+
+# Final branching: prefer ceiling_g68 when it exceeds the capped value
+if ceiling_g68 > 0 AND capped_value <= ceiling_g68:
+    result = ceiling_g68
+else:
+    result = capped_value
 ```
 
 #### G73: Marketing Budget Text
@@ -1167,6 +1456,276 @@ link = "https://api.whatsapp.com/send?text={URL_ENCODE(message)}"
 All thresholds and point values are configurable via a `rules` dict loaded from the `scoring_rules` database table. When `rules` is `None`, the system falls back to a single `DEFAULT_RULES` dict (module-level constant). There are **not** separate fashion/non-fashion rule sets — fashion-specific behavior is handled via `is_fashion` checks in the scoring functions and via DB-provided rule overrides for specific thresholds (e.g., ROI threshold, conversion rate).
 
 G-column message templates support `{placeholder}` syntax. Missing placeholders are preserved as-is via a `_SafeDict` that returns `{key}` for unknown keys. Malformed templates (unmatched braces) also degrade gracefully by returning the template unchanged.
+
+### Pseudocode
+
+#### Flow Diagram
+
+```
+┌──────────────────────────────────────────────────────────────────┐
+│                       calculate_score()                           │
+│                                                                  │
+│  manual_data ──┬──► _score_operational()  ──► Cat 1 (rows 7-11)  │
+│                ├──► _score_business()     ──► Cat 2 (rows 13-20) │
+│                ├──► _score_content()      ──► Cat 3 (rows 22-24) │
+│                ├──► _score_visitors()     ──► Cat 4 (rows 26-29) │
+│                ├──► _score_promo_tools()  ──► Cat 5 (rows 31-43) │
+│                ├──► _score_products()     ──► Cat 6 (rows 45-46) │
+│                ├──► _score_ads()          ──► Cat 7 (rows 48-53) │
+│                └──► _score_campaign()     ──► Cat 8 (rows 55-57) │
+│                                                                  │
+│  calc_results ──┬──► _score_competition() ──► Cat 9 (rows 60-63) │
+│                 ├──► _score_stock()       ──► Cat 10 (row 70)    │
+│                 └──► _score_discount_row()──► Cat 11 (row 73)    │
+│                                                                  │
+│  Post-scoring: override row 20 (conversion rate) from rules      │
+│                                                                  │
+│  total_score = SUM(all category scores)                          │
+│                                                                  │
+│  _generate_*_messages() ──► G-column text for all rows           │
+│                                                                  │
+│  d52 = adCost / salesMonth0                                      │
+│  d73 = Calculator 3 output_text                                  │
+│                                                                  │
+│  _compute_g68()  ──► marketing estimation text                   │
+│  _compute_g72()  ──► marketing percentage (fraction)             │
+│  _compute_g73()  ──► marketing budget text                       │
+│  _compute_g66()  ──► conclusion text                             │
+│  _compute_g75()  ──► closing message                             │
+│                                                                  │
+│  _assemble_email_body() + _build_whatsapp_link()                 │
+│                        │                                         │
+│                        ▼                                         │
+│              ScoringResult (all fields)                           │
+└──────────────────────────────────────────────────────────────────┘
+```
+
+#### Structured Pseudocode — Main Pipeline
+
+```
+FUNCTION calculate_score(manual_data, calculator_results, template, verdict, ...):
+    is_fashion = (template == "fashion")
+
+    # ═══ Phase 1: Score all 11 categories ═══
+    categories = [
+        _score_operational(manual_data, rules),
+        _score_business(manual_data, rules),
+        _score_content(manual_data, rules),
+        _score_visitors(manual_data, rules),
+        _score_promo_tools(manual_data, rules),
+        _score_products(manual_data, rules),
+        _score_ads(manual_data, template, rules),
+        _score_campaign(manual_data, rules),
+        _score_competition(manual_data, calculator_results),
+        _score_stock(calculator_results, rules),
+        _score_discount_row(calculator_results, rules),
+    ]
+
+    # Post-scoring override: row 20 conversion rate from rules
+    conv_threshold = rules.business.conversion_rate.threshold  (default 3.0)
+    Override row 20 benchmark and verdict with conv_threshold
+
+    total_score = SUM(all category scores)
+
+    # ═══ Phase 2: Generate G-column messages ═══
+    FOR each category: _generate_*_messages(category, ...)
+
+    # ═══ Phase 3: Derived formulas (G68/G72/G73/G66/G75) ═══
+    d13 = salesMonth0
+    d52 = adCost / d13
+    d73 = Calculator 3 output_text
+
+    # G68: Parse D73 → compute low/high marketing cost estimates
+    t, ra, rb, v, p = parse 5 percentages from D73
+    low  = (ra*t) + v + p + d52 + 0.05
+    high = (rb*t) + v + p + d52 + 0.05
+    g68 = "{low}% ~ {high}%"  (+ fake discount warning if present)
+
+    # G72: Complex MIN/MAX with fashion adjustment
+    avg = ((ra*t+v+p+d52) + (rb*t+v+p+d52)) / 2
+    base = ROUNDDOWN(avg - 0.03, 2)
+    upper_limit = 0.20 + fashion_adj
+    g68_left = raw fraction before "~" in g68
+    ceiling_g68 = CEIL(first % from g68) / 100
+    min_val = MIN(MIN(base, upper_limit), g68_left)
+    capped = MAX(MAX(min_val, 0.10), floor)
+    g72 = ceiling_g68 IF ceiling_g68 > 0 AND capped <= ceiling_g68 ELSE capped
+
+    # G73: Budget text (suppressed for ❌/⭕️ verdicts)
+    display_pct = CLAMP(g72, 0.10, 0.25)
+    budget = d13 × display_pct
+
+    # G66: Multi-line conclusion, G75: Closing message by verdict
+
+    # ═══ Phase 4: Email + WhatsApp ═══
+    Assemble email body from G-column messages across all categories
+    Build WhatsApp link with URL-encoded message
+
+    RETURN ScoringResult(...)
+```
+
+#### Structured Pseudocode — Per-Category Scoring
+
+```
+# ─── Cat 1: Kesehatan Operasional Toko (rows 7-11, max 10 pts) ───
+FUNCTION _score_operational(manual_data, rules):
+    d7  = operational.unfulfilledOrderRate
+    d8  = operational.lateShipmentRate
+    d9  = operational.preparationTime
+    d10 = operational.chatResponseRate
+    d11 = operational.overallRating
+
+    row 7:  IF d7  <= 1.0 → score = +4      ELSE score = -d7
+    row 8:  IF d8  <= 1.0 → score = +3      ELSE score = -d8
+    row 9:  IF d9  <= 1.0 → score = +3      ELSE score = -((d9 - 1) × 100)
+    row 10: CEIL(d10 × 100) / 100, then compare >= 95   (info only, score = 0)
+    row 11: compare d11 >= 4.7                           (info only, score = 0)
+    RETURN CategoryScore(sum of row scores, max=10)
+
+# ─── Cat 2: Bisnis Analisis (rows 13-20, max 20 pts) ───
+FUNCTION _score_business(manual_data, rules):
+    sales_months[0..5] = salesMonth0..salesMonth5
+    current = sales_months[0]
+    avg_6mo = AVG(all 6 months)    # 0 if all are 0
+
+    # Row 13: Sales trend
+    multiplier = (200 - threshold_pct) / 100    # threshold_pct=90 → 1.10
+    IF avg_6mo < current × multiplier → score = +10  ELSE 0
+
+    # Rows 14-18: Past months (reference only, score = 0)
+
+    # Row 19: 6-month average
+    IF avg_6mo > 100,000,000 → score = +10  ELSE 0
+
+    # Row 20: Conversion rate (scored with default threshold=3.0)
+    # NOTE: overridden post-scoring in calculate_score() with rules threshold
+    RETURN CategoryScore(sum of row 13 + 19 scores, max=20)
+
+# ─── Cat 3: Skor Kesehatan Konten (rows 22-24, info only) ───
+FUNCTION _score_content(manual_data, rules):
+    d22 = content.needsImprovement
+    d23 = content.goodQuality
+    d24 = d23 / (d23 + d22)
+    row 24: IF d24 >= 0.95 → verdict ✔️  ELSE ❌     (score always 0)
+    RETURN CategoryScore(0, max=0)
+
+# ─── Cat 4: Tinjauan Pengunjung (rows 26-29, max 5 pts) ───
+FUNCTION _score_visitors(manual_data, rules):
+    d26 = visitors.totalVisitors       (reference)
+    d27 = visitors.returningVisitors   (reference)
+    d28 = d27 / d26                    # % returning
+    d29 = visitors.totalFollowers
+
+    row 28: IF d28 > 0.23 → score = +3  ELSE 0
+    row 29: IF d29 > 50000 → score = +2  ELSE 0
+    RETURN CategoryScore(row28 + row29, max=5)
+
+# ─── Cat 5: Promo Toko (rows 31-43, max 15 pts, opportunity) ───
+FUNCTION _score_promo_tools(manual_data, rules):
+    d13 = business.salesMonth0
+    used_count = 0
+    pass_count = 0
+
+    FOR each of 11 PROMO_TOOLS (rows 31-41):
+        d = promoTools.{fieldKey}
+        IF d == 0             → verdict = ❌
+        ELIF d/d13 >= 0.50    → verdict = ❌  (too dependent)
+        ELIF benchmark == 0   → verdict = ✔️ if d > 0   (gratisOngkir)
+        ELIF d >= benchmark×d13 → verdict = ✔️
+        ELSE                  → verdict = ❌
+        IF d > 0: used_count++
+        IF verdict == ✔️: pass_count++
+
+    # Row 42: Usage rate = used_count / 11
+    IF usage > 80% → score = 0  ELSE score = +5   (opportunity)
+
+    # Row 43: Effectiveness rate = pass_count / 11
+    IF effectiveness > 90% → score = 0  ELSE score = +10   (opportunity)
+
+    RETURN CategoryScore(row42 + row43, max=15)
+
+# ─── Cat 6: Jumlah Produk & Status Toko (rows 45-46, max 15 pts) ───
+FUNCTION _score_products(manual_data, rules):
+    d45 = products.productCount
+    d46 = products.storeStatus
+
+    row 45: IF d45 >= 35 → score = +5  ELSE 0
+    row 46: IF d46 == "Shopee Mall" → score = +10
+            ELIF d46 == "Star+"     → score = +5
+            ELSE                    → score = 0
+    RETURN CategoryScore(row45 + row46, max=15)
+
+# ─── Cat 7: Data Iklan (rows 48-53, max 10 pts, opportunity) ───
+FUNCTION _score_ads(manual_data, template, rules):
+    d48 = ads.adSales
+    d49 = ads.adCost
+    d13 = business.salesMonth0
+
+    row 48: reference only (d48)
+    row 49: reference only (d49)
+
+    # Row 50: ROI = d48 / d49
+    roi_threshold = 9.0 (non-fashion) or 8.0 (fashion, from rules)
+    IF roi >= threshold → score = 0  ELSE score = +5   (opportunity)
+
+    # Row 51: GMV ratio = d48 / d13
+    IF d51 < 0.84 → score = +5  ELSE score = 0
+
+    # Row 52: Cost ratio = d49 / d13 (info only, score = 0)
+    IF <1% → ❌  ELIF <5% → ❌  ELIF <=10% → ✔️  ELSE → ❌
+
+    # Row 53: Calculator 1 output_text (injected, score = 0)
+    RETURN CategoryScore(row50 + row51, max=10)
+
+# ─── Cat 8: Partisipasi Campaign (rows 55-57, max 10 pts, opportunity) ───
+FUNCTION _score_campaign(manual_data, rules):
+    d55 = campaign.nominatedSessions   (reference)
+    d56 = campaign.availableSessions   (reference)
+    d57 = d55 / d56                    # participation rate
+
+    row 57: IF d57 > 0.90 → score = 0  ELSE score = +10   (opportunity)
+    RETURN CategoryScore(row57, max=10)
+
+# ─── Cat 9: Kompetisi TOP Produk (rows 60-63, info only) ───
+FUNCTION _score_competition(manual_data, calculator_results):
+    FOR i in 0..2 (products 1-3):
+        selling_price = Calculator 2 output_1[i].rata2_harga_jual
+        market_price  = competition.product{i+1}.marketPrice
+        IF selling_price <= market_price × 1.10 → verdict ✔️
+        ELSE → verdict ❌
+    RETURN CategoryScore(0, max=0)
+
+# ─── Cat 10: Stok (row 70, max 10 pts) ───
+FUNCTION _score_stock(calculator_results, rules):
+    IF Calculator 2 not run → available=False, score=0
+    avg_stock = ROUND(Calculator 2 details.average_stock)
+    IF avg_stock >= 24 → score = +10
+    ELIF avg_stock >= 12 → score = +5
+    ELSE → score = -5
+    RETURN CategoryScore(score, max=10)
+
+# ─── Cat 11: Discount (row 73, max 5 pts) ───
+FUNCTION _score_discount_row(calculator_results, rules):
+    IF Calculator 3 not run → available=False, score=0
+    IF fake_discount_flag == False → score = +5
+    ELSE → score = 0
+    RETURN CategoryScore(score, max=5)
+```
+
+#### Key Branching: Fashion vs Non-Fashion
+
+```
+IF is_fashion:
+    marketing_floor = 0.15
+    fashion_adjustment = 0.05     # upper_limit = 0.25
+    conversion_threshold = 2.0%   # (from DB rules override)
+    ROI_threshold = 8.0           # (from DB rules override)
+ELSE:
+    marketing_floor = 0.12
+    fashion_adjustment = 0.0      # upper_limit = 0.20
+    conversion_threshold = 3.0%   # (DEFAULT_RULES)
+    ROI_threshold = 9.0           # (DEFAULT_RULES)
+```
 
 ---
 
@@ -1477,6 +2036,76 @@ Each calculator runs in its own try/except block. One calculator's failure does 
 ### Database Storage
 
 Results are stored via `upsert_result()` (INSERT ON CONFLICT UPDATE) keyed by `(brand_id, calculator_type)` — one result per calculator per brand, replaced on re-run.
+
+### Pseudocode
+
+#### Flow Diagram
+
+```
+┌────────────────────────────────────────────────────────────────┐
+│              Orchestration Engine                                │
+│                                                                │
+│  ┌─────────────────────────────────────────────────┐           │
+│  │        check_calculator_readiness()              │           │
+│  │                                                 │           │
+│  │  uploads ──► available file types (set)          │           │
+│  │  manual_data ──► has total_products?             │           │
+│  │  existing results ──► has_result, calculated_at  │           │
+│  │                                                 │           │
+│  │  FOR each calculator:                           │           │
+│  │    missing = required_files - available_files    │           │
+│  │    missing_manual = check manual dependencies   │           │
+│  │    status = "ready" if nothing missing           │           │
+│  └─────────────────────────────────────────────────┘           │
+│                         │                                      │
+│           ┌─────────────┼──────────────┐                       │
+│           ▼             ▼              ▼                       │
+│  ┌─────────────┐ ┌──────────────┐ ┌─────────────────┐         │
+│  │ run_ready_  │ │ run_calcs_   │ │ clear_dependent_ │         │
+│  │ calculators │ │ for_upload   │ │ results          │         │
+│  │ (run all    │ │ (targeted    │ │ (delete stale    │         │
+│  │  ready)     │ │  by file)    │ │  before re-run)  │         │
+│  └─────────────┘ └──────────────┘ └─────────────────┘         │
+│           │             │                                      │
+│           ▼             ▼                                      │
+│    Per calculator: try/except isolation                        │
+│    → success / skipped / error                                │
+└────────────────────────────────────────────────────────────────┘
+```
+
+#### Structured Pseudocode
+
+```
+FUNCTION check_calculator_readiness(brand_id, conn):
+    available_files = {file_type for upload in brand uploads}
+    has_total_products = manual_data.products.productCount exists?
+    existing_results = query calculator_results by brand
+
+    FOR each calculator_type in [ads_keyword, discount, top_sku]:
+        required = CALCULATOR_REQUIRED_FILES[type]
+        missing_files = required - available_files
+        missing_manual = check CALCULATOR_REQUIRED_MANUAL[type]
+        status = "ready" IF no missing files AND no missing manual
+        RETURN {status, has_result, missing_files, missing_manual, ...}
+
+FUNCTION run_ready_calculators(brand_id, user_id, conn):
+    readiness = check_calculator_readiness(brand_id, conn, user_id)
+    FOR each calculator:
+        IF not ready → skip with reason
+        ELSE:
+            TRY:  runner(brand_id, user_id) → success
+            CATCH: log warning → error
+    RETURN [per-calculator results]
+
+FUNCTION run_calculators_for_upload(brand_id, file_type, user_id, conn):
+    affected = FILE_TO_CALCULATORS[file_type]
+    readiness = check_calculator_readiness(brand_id, conn, user_id)
+    RUN only affected calculators that are ready
+
+FUNCTION clear_dependent_results(brand_id, file_type, conn):
+    affected = FILE_TO_CALCULATORS[file_type]
+    DELETE calculator results for affected types
+```
 
 ---
 
