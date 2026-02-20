@@ -40,6 +40,7 @@ vi.mock('../hooks/useCalculator', () => ({
   useCalculatorStatus: () => ({ data: null }),
   useRunCalculator: () => ({ mutate: vi.fn(), isPending: false }),
   useRunAllCalculators: () => ({ mutate: vi.fn(), isPending: false }),
+  useAutoCalcErrors: () => [],
 }));
 
 vi.mock('../firebase/config', () => ({

@@ -6,6 +6,7 @@ import {
   useCalculatorStatus,
   useRunAllCalculators,
   useRunCalculator,
+  useAutoCalcErrors,
 } from '../../../hooks/useCalculator';
 import type { CalculatorResult } from '../../../hooks/useCalculator';
 import { AdsKeywordResults } from './AdsKeywordResults';
@@ -93,16 +94,51 @@ function ErrorState({
   );
 }
 
+function AutoCalcWarning({
+  reason,
+  onRetry,
+  isRetrying,
+}: {
+  reason?: string;
+  onRetry: () => void;
+  isRetrying: boolean;
+}) {
+  return (
+    <div className="mb-2 flex items-start gap-2 rounded-md bg-amber-50 p-2 text-sm text-amber-700">
+      <AlertTriangle className="mt-0.5 size-4 shrink-0" />
+      <div className="flex-1">
+        <p>Auto-calculation failed{reason ? `: ${reason}` : '.'}</p>
+        <Button
+          variant="outline"
+          size="sm"
+          className="mt-2"
+          onClick={onRetry}
+          disabled={isRetrying}
+        >
+          {isRetrying ? (
+            <Loader2 className="mr-1 size-3 animate-spin" />
+          ) : (
+            <RefreshCw className="mr-1 size-3" />
+          )}
+          Calculate
+        </Button>
+      </div>
+    </div>
+  );
+}
+
 function CalculatorCard({
   calcType,
   brandId,
   result,
   status,
+  autoCalcError,
 }: {
   calcType: string;
   brandId: number;
   result?: CalculatorResult;
   status?: { status: string; has_result: boolean; missing_files: string[]; missing_manual: string[] };
+  autoCalcError?: { reason?: string };
 }) {
   const runCalc = useRunCalculator(brandId, calcType as 'ads_keyword' | 'discount' | 'top_sku');
 
@@ -146,12 +182,36 @@ function CalculatorCard({
     );
   }
 
-  // Ready but no result yet
+  // Ready but no result yet — may have auto-calc error
   return (
     <Card>
       <CardContent className="pt-4">
         <h4 className="mb-2 text-sm font-semibold">{CALCULATOR_LABELS[calcType] ?? calcType}</h4>
-        <p className="text-sm text-muted-foreground">Ready to calculate</p>
+        {autoCalcError ? (
+          <AutoCalcWarning
+            reason={autoCalcError.reason}
+            onRetry={() => runCalc.mutate()}
+            isRetrying={runCalc.isPending}
+          />
+        ) : (
+          <>
+            <p className="text-sm text-muted-foreground">Ready to calculate</p>
+            <Button
+              variant="outline"
+              size="sm"
+              className="mt-2"
+              onClick={() => runCalc.mutate()}
+              disabled={runCalc.isPending}
+            >
+              {runCalc.isPending ? (
+                <Loader2 className="mr-1 size-3 animate-spin" />
+              ) : (
+                <RefreshCw className="mr-1 size-3" />
+              )}
+              Calculate
+            </Button>
+          </>
+        )}
       </CardContent>
     </Card>
   );
@@ -161,6 +221,11 @@ export function CalculatorResultsSection({ brandId }: CalculatorResultsSectionPr
   const { data: resultsData, isLoading: resultsLoading } = useCalculatorResults(brandId);
   const { data: statusData, isLoading: statusLoading } = useCalculatorStatus(brandId);
   const runAll = useRunAllCalculators(brandId);
+  const autoCalcErrors = useAutoCalcErrors(brandId);
+  const autoCalcErrorsByType: Record<string, { reason?: string }> = {};
+  for (const err of autoCalcErrors) {
+    autoCalcErrorsByType[err.calculator_type] = { reason: err.reason };
+  }
 
   if (resultsLoading || statusLoading) {
     return (
@@ -182,6 +247,10 @@ export function CalculatorResultsSection({ brandId }: CalculatorResultsSectionPr
   }
 
   const hasAnyResult = Object.keys(resultsByType).length > 0;
+  const hasAnyReadyWithoutResult = CALCULATOR_ORDER.some(
+    (ct) => statusData?.calculators[ct]?.status === 'ready' && !resultsByType[ct],
+  );
+  const showCalcAllButton = hasAnyResult || hasAnyReadyWithoutResult;
 
   return (
     <div className="mt-4">
@@ -189,7 +258,7 @@ export function CalculatorResultsSection({ brandId }: CalculatorResultsSectionPr
         <p className="text-sm font-semibold uppercase text-muted-foreground">
           Calculator Results
         </p>
-        {hasAnyResult && (
+        {showCalcAllButton && (
           <Button
             variant="outline"
             size="sm"
@@ -201,7 +270,7 @@ export function CalculatorResultsSection({ brandId }: CalculatorResultsSectionPr
             ) : (
               <RefreshCw className="mr-1 size-3" />
             )}
-            Recalculate All
+            {hasAnyResult ? 'Recalculate All' : 'Calculate All'}
           </Button>
         )}
       </div>
@@ -214,6 +283,7 @@ export function CalculatorResultsSection({ brandId }: CalculatorResultsSectionPr
             brandId={brandId}
             result={resultsByType[calcType]}
             status={statusData?.calculators[calcType]}
+            autoCalcError={autoCalcErrorsByType[calcType]}
           />
         ))}
       </div>

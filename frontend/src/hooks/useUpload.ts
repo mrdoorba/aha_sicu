@@ -225,12 +225,16 @@ export function useUploadFile(brandId: number) {
           file_type: fileType,
         });
 
-        // 4. Invalidate query caches (uploads + calculator results/status if auto-calculated)
+        // 4. Invalidate query caches (uploads + calculator results/status)
         queryClient.invalidateQueries({ queryKey: ['brandUploads', brandId] });
-        if (result.auto_calculated && result.auto_calculated.length > 0) {
-          queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });
-          queryClient.invalidateQueries({ queryKey: ['calculatorStatus', brandId] });
-        }
+        queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });
+        queryClient.invalidateQueries({ queryKey: ['calculatorStatus', brandId] });
+
+        // 5. Store auto-calc errors for UI visibility
+        const autoCalcErrors = (result.auto_calculated ?? []).filter(
+          (item) => item.status === 'error',
+        );
+        queryClient.setQueryData(['autoCalcErrors', brandId], autoCalcErrors);
 
         setStatus('done');
         setProgress(100);

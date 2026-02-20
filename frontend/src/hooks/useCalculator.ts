@@ -78,6 +78,12 @@ export interface CalculatorResultsListResponse {
   results: CalculatorResult[];
 }
 
+export interface AutoCalcError {
+  calculator_type: string;
+  status: 'error';
+  reason?: string;
+}
+
 type CalculatorType = 'ads_keyword' | 'discount' | 'top_sku';
 
 const CALCULATOR_PATHS = {
@@ -101,6 +107,15 @@ export function useRunCalculator(brandId: number, calculatorType: CalculatorType
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });
       queryClient.invalidateQueries({ queryKey: ['calculatorStatus', brandId] });
+
+      // Clear auto-calc error for this calculator type on success
+      const current = queryClient.getQueryData<AutoCalcError[]>(['autoCalcErrors', brandId]);
+      if (current?.some((e) => e.calculator_type === calculatorType)) {
+        queryClient.setQueryData(
+          ['autoCalcErrors', brandId],
+          current.filter((e) => e.calculator_type !== calculatorType),
+        );
+      }
     },
   });
 }
@@ -157,6 +172,15 @@ export function useCalculatorStatus(brandId: number) {
     },
     enabled: brandId > 0,
   });
+}
+
+// ---------------------------------------------------------------------------
+// Auto-calc errors hook (reads transient cache set by useUpload)
+// ---------------------------------------------------------------------------
+
+export function useAutoCalcErrors(brandId: number): AutoCalcError[] {
+  const queryClient = useQueryClient();
+  return queryClient.getQueryData<AutoCalcError[]>(['autoCalcErrors', brandId]) ?? [];
 }
 
 // ---------------------------------------------------------------------------

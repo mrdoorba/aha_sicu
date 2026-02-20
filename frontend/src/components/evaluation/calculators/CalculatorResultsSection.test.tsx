@@ -19,6 +19,7 @@ vi.mock('../../../hooks/useCalculator', () => ({
     isError: false,
     error: null,
   })),
+  useAutoCalcErrors: vi.fn(() => []),
 }));
 
 import { CalculatorResultsSection } from './CalculatorResultsSection';
@@ -26,11 +27,13 @@ import {
   useCalculatorResults,
   useCalculatorStatus,
   useRunCalculator,
+  useAutoCalcErrors,
 } from '../../../hooks/useCalculator';
 
 const mockedUseResults = vi.mocked(useCalculatorResults);
 const mockedUseStatus = vi.mocked(useCalculatorStatus);
 const mockedUseRunCalculator = vi.mocked(useRunCalculator);
+const mockedUseAutoCalcErrors = vi.mocked(useAutoCalcErrors);
 
 function createWrapper() {
   const queryClient = new QueryClient({
@@ -174,6 +177,125 @@ describe('CalculatorResultsSection', () => {
     await user.click(recalcBtn);
 
     expect(mockMutate).toHaveBeenCalledOnce();
+  });
+
+  it('shows Calculate button in ready-but-no-result state', async () => {
+    const user = userEvent.setup();
+    const mockCalcMutate = vi.fn();
+
+    mockedUseRunCalculator.mockReturnValue({
+      mutate: mockCalcMutate,
+      isPending: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useRunCalculator>);
+
+    // All calculators ready, no results
+    const allReadyStatus = {
+      brand_id: 1,
+      calculators: {
+        ads_keyword: { ...SAMPLE_STATUS.calculators.ads_keyword, has_result: false },
+        discount: { ...SAMPLE_STATUS.calculators.discount, has_result: false },
+        top_sku: { ...SAMPLE_STATUS.calculators.top_sku, status: 'ready' as const, missing_files: [] },
+      },
+    };
+
+    mockedUseResults.mockReturnValue({
+      data: { brand_id: 1, results: [] },
+      isLoading: false,
+    } as ReturnType<typeof useCalculatorResults>);
+    mockedUseStatus.mockReturnValue({
+      data: allReadyStatus,
+      isLoading: false,
+    } as ReturnType<typeof useCalculatorStatus>);
+
+    render(<CalculatorResultsSection brandId={1} />, { wrapper: createWrapper() });
+
+    // Should show Calculate buttons (one per ready card)
+    const calcButtons = screen.getAllByText('Calculate');
+    expect(calcButtons.length).toBe(3);
+
+    await user.click(calcButtons[0]);
+    expect(mockCalcMutate).toHaveBeenCalledOnce();
+
+    // Should also show "Calculate All" (not "Recalculate All")
+    expect(screen.getByText('Calculate All')).toBeInTheDocument();
+  });
+
+  it('shows auto-calc error warning with Calculate button', async () => {
+    const user = userEvent.setup();
+    const mockCalcMutate = vi.fn();
+
+    mockedUseRunCalculator.mockReturnValue({
+      mutate: mockCalcMutate,
+      isPending: false,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useRunCalculator>);
+
+    mockedUseAutoCalcErrors.mockReturnValue([
+      { calculator_type: 'ads_keyword', status: 'error', reason: 'Data validation failed' },
+    ]);
+
+    // ads_keyword ready but no result, discount has result
+    mockedUseResults.mockReturnValue({
+      data: {
+        brand_id: 1,
+        results: [SAMPLE_RESULTS.results[1]], // only discount
+      },
+      isLoading: false,
+    } as ReturnType<typeof useCalculatorResults>);
+    mockedUseStatus.mockReturnValue({
+      data: SAMPLE_STATUS,
+      isLoading: false,
+    } as ReturnType<typeof useCalculatorStatus>);
+
+    render(<CalculatorResultsSection brandId={1} />, { wrapper: createWrapper() });
+
+    // Warning banner should be visible
+    expect(screen.getByText(/Auto-calculation failed: Data validation failed/)).toBeInTheDocument();
+
+    // Calculate button in the warning should be clickable
+    const calcButtons = screen.getAllByText('Calculate');
+    expect(calcButtons.length).toBeGreaterThanOrEqual(1);
+    await user.click(calcButtons[0]);
+    expect(mockCalcMutate).toHaveBeenCalledOnce();
+  });
+
+  it('shows loading state on Calculate button during calculation', () => {
+    mockedUseRunCalculator.mockReturnValue({
+      mutate: vi.fn(),
+      isPending: true,
+      isError: false,
+      error: null,
+    } as unknown as ReturnType<typeof useRunCalculator>);
+
+    // All ready, no results
+    const allReadyStatus = {
+      brand_id: 1,
+      calculators: {
+        ads_keyword: { ...SAMPLE_STATUS.calculators.ads_keyword, has_result: false },
+        discount: { ...SAMPLE_STATUS.calculators.discount, has_result: false },
+        top_sku: { ...SAMPLE_STATUS.calculators.top_sku, status: 'ready' as const, missing_files: [] },
+      },
+    };
+
+    mockedUseResults.mockReturnValue({
+      data: { brand_id: 1, results: [] },
+      isLoading: false,
+    } as ReturnType<typeof useCalculatorResults>);
+    mockedUseStatus.mockReturnValue({
+      data: allReadyStatus,
+      isLoading: false,
+    } as ReturnType<typeof useCalculatorStatus>);
+
+    render(<CalculatorResultsSection brandId={1} />, { wrapper: createWrapper() });
+
+    // Calculate buttons should be disabled during loading
+    const calcButtons = screen.getAllByText('Calculate');
+    for (const btn of calcButtons) {
+      expect(btn.closest('button')).toBeDisabled();
+    }
   });
 
   it('shows error state with retry button when calculator fails', async () => {

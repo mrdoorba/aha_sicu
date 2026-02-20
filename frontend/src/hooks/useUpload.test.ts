@@ -252,6 +252,39 @@ describe('useUploadFile – verification on error', () => {
     expect(result.current.error).toBeNull();
   });
 
+  it('invalidates calculator caches even when auto_calculated is empty', async () => {
+    // Process succeeds but returns empty auto_calculated array
+    mockClientPOST.mockImplementation(async (path: string) => {
+      if (path === '/api/v1/upload/signed-url') {
+        return {
+          data: { upload_url: 'http://mock-gcs/upload', upload_id: 'upload-789', expires_at: '' },
+          error: null,
+        };
+      }
+      if (path === '/api/v1/upload/process') {
+        return { data: { upload: NEW_UPLOAD, auto_calculated: [] }, error: null };
+      }
+      return { data: null, error: 'Unknown path' };
+    });
+
+    const { result } = renderHook(() => useUploadFile(BRAND_ID), { wrapper: createWrapper() });
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+    const file = new File(['data'], 'new.zip', { type: 'application/zip' });
+
+    await act(async () => {
+      await result.current.upload(file, FILE_TYPE);
+    });
+
+    expect(result.current.status).toBe('done');
+
+    // Verify calculator caches were invalidated despite empty auto_calculated
+    const invalidatedKeys = invalidateSpy.mock.calls.map(
+      (call) => (call[0] as { queryKey: unknown[] }).queryKey,
+    );
+    expect(invalidatedKeys).toContainEqual(['calculatorResults', BRAND_ID]);
+    expect(invalidatedKeys).toContainEqual(['calculatorStatus', BRAND_ID]);
+  });
+
   it('aborts verification polling on unmount', async () => {
     setupProcessError();
     mockClientGET.mockResolvedValue({ data: OLD_BRAND_UPLOADS, error: null });
