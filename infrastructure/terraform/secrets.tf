@@ -44,6 +44,14 @@ resource "google_secret_manager_secret_iam_member" "api_sa_db_url" {
   project   = var.project_id
 }
 
+# Deploy SA needs DB URL to run migrations during CI/CD
+resource "google_secret_manager_secret_iam_member" "deploy_sa_db_url" {
+  secret_id = google_secret_manager_secret.db_url.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.deploy.email}"
+  project   = var.project_id
+}
+
 resource "google_secret_manager_secret_iam_member" "api_sa_gsheets" {
   secret_id = google_secret_manager_secret.gsheets_credentials.secret_id
   role      = "roles/secretmanager.secretAccessor"

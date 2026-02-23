@@ -9,6 +9,7 @@
 #   DEPLOY_SERVICE_ACCOUNT    – Deploy SA email from terraform output
 #   CLOUD_RUN_SERVICE         – Cloud Run service name (aha-sicu-dev-api / aha-sicu-prod-api)
 #   ARTIFACT_REGISTRY_URL     – Docker push URL from terraform output
+#   DB_SECRET_NAME            – Secret Manager secret name for DATABASE_URL
 
 name: Deploy Backend
 
@@ -41,6 +42,20 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Run database migrations
+        run: |
+          uv python install 3.14
+          cd backend && uv sync --all-extras
+          export DATABASE_URL=$(gcloud secrets versions access latest \
+            --secret=${{ vars.DB_SECRET_NAME }} --project=${{ vars.GCP_PROJECT_ID }})
+          uv run alembic -c app/db/migrations/alembic.ini upgrade head
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -111,6 +126,20 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          version: "latest"
+          enable-cache: true
+
+      - name: Run database migrations
+        run: |
+          uv python install 3.14
+          cd backend && uv sync --all-extras
+          export DATABASE_URL=$(gcloud secrets versions access latest \
+            --secret=${{ vars.DB_SECRET_NAME }} --project=${{ vars.GCP_PROJECT_ID }})
+          uv run alembic -c app/db/migrations/alembic.ini upgrade head
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
