@@ -27,8 +27,6 @@ from app.modules.evaluations.schemas import (
     SaveEvaluationResponse,
     ScoringResponse,
 )
-from app.services.event_broadcaster import sync_broadcaster
-
 logger = logging.getLogger(__name__)
 
 
@@ -374,8 +372,6 @@ async def save_evaluation(
 
     Validates that the brand exists, then inserts a new evaluation record.
     Each call creates a NEW record (INSERT-only, no upsert).
-    Broadcasts a new_evaluation SSE event after successful save.
-
     Raises:
         AppException: If brand not found (404).
     """
@@ -400,21 +396,6 @@ async def save_evaluation(
                 rule_version=rule_version,
                 email_output=email_output,
             )
-
-    # Broadcast OUTSIDE the transaction — save already committed
-    try:
-        await sync_broadcaster.broadcast(
-            "new_evaluation",
-            {
-                "evaluation_id": row["id"],
-                "brand_name": brand["brand_name"],
-                "score": final_score,
-                "evaluator": evaluator_email,
-                "created_at": row["created_at"].isoformat(),
-            },
-        )
-    except Exception:
-        logger.warning("Failed to broadcast new_evaluation event", exc_info=True)
 
     return SaveEvaluationResponse(
         id=row["id"],
