@@ -3,7 +3,7 @@
 
 resource "google_sql_database_instance" "main" {
   name                = var.cloud_sql_instance_name
-  database_version    = "POSTGRES_15"
+  database_version    = "POSTGRES_18"
   region              = var.region
   project             = var.project_id
   deletion_protection = var.environment == "prod" ? true : false
