@@ -15,7 +15,6 @@ from app.modules.sync.schemas import (
     SyncStatusResponse,
 )
 from app.modules.sync.sheets_client import GoogleSheetsClient
-from app.services.event_broadcaster import sync_broadcaster
 
 logger = logging.getLogger(__name__)
 
@@ -102,12 +101,6 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
             )
 
     logger.info(f"Starting sync with ID: {sync_id}")
-
-    # Broadcast sync start event
-    await sync_broadcaster.broadcast(
-        "sync_status",
-        {"status": "in_progress", "sync_id": sync_id, "started_at": datetime.now(timezone.utc).isoformat()},
-    )
 
     vp_result: SheetSyncResult | None = None
     meeting_result: SheetSyncResult | None = None
@@ -218,18 +211,6 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
 
         logger.info(f"Sync completed: {total_synced} total synced, {total_errors} errors")
 
-        # Broadcast sync completion event (same timestamp as DB for consistency)
-        await sync_broadcaster.broadcast(
-            "sync_status",
-            {
-                "status": "success" if overall_success else "failed",
-                "sync_id": sync_id,
-                "completed_at": completed_at.isoformat(),
-                "brands_synced": total_synced,
-                **({"error_message": error_message} if error_message else {}),
-            },
-        )
-
         return SyncResult(
             sync_id=sync_id,
             vp_result=vp_result,
@@ -252,16 +233,6 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
                 error_message=str(e),
             )
         logger.error(f"SYNC_FAILED: {e}")
-
-        # Broadcast sync failure event
-        await sync_broadcaster.broadcast(
-            "sync_status",
-            {
-                "status": "failed",
-                "sync_id": sync_id,
-                "error_message": str(e),
-            },
-        )
 
         raise
 

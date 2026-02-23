@@ -55,10 +55,6 @@ vi.mock('../context/AuthContext', () => ({
   }),
 }));
 
-vi.mock('../hooks/useSSE', () => ({
-  useSSE: () => ({ connectionState: 'connected' }),
-}));
-
 const queryClient = new QueryClient({
   defaultOptions: { queries: { retry: false } },
 });

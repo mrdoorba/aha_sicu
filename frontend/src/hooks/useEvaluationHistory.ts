@@ -51,6 +51,7 @@ export function useEvaluationHistory(
       return data as EvaluationListResponse;
     },
     placeholderData: keepPreviousData,
+    refetchInterval: 30_000,
   });
 
   return {

@@ -25,7 +25,10 @@ export function useSyncStatus() {
       if (error) throw new Error('Failed to fetch sync status');
       return (data as SyncStatusData) ?? null;
     },
-    refetchInterval: 60_000, // Fallback polling; SSE handles real-time updates
+    refetchInterval: (query) => {
+      const status = query.state.data?.status;
+      return status === 'in_progress' ? 3_000 : 30_000;
+    },
   });
 }
 
