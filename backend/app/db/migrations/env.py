@@ -2,6 +2,7 @@
 
 import os
 from logging.config import fileConfig
+from urllib.parse import quote_plus
 
 from alembic import context
 
@@ -10,8 +11,17 @@ config = context.config
 if config.config_file_name is not None:
     fileConfig(config.config_file_name)
 
-# Get database URL from environment
+# Get database URL — explicit DATABASE_URL takes precedence, otherwise construct from components
 database_url = os.environ.get("DATABASE_URL", "")
+if not database_url:
+    db_user = os.environ.get("DB_USER", "")
+    db_password = os.environ.get("DB_PASSWORD", "")
+    db_name = os.environ.get("DB_NAME", "")
+    cloud_sql_instance = os.environ.get("CLOUD_SQL_INSTANCE", "")
+    if db_user and db_password and db_name and cloud_sql_instance:
+        # SQLAlchemy uses postgresql:// with host parameter for Unix socket
+        password = quote_plus(db_password)
+        database_url = f"postgresql+psycopg2://{db_user}:{password}@/{db_name}?host=/cloudsql/{cloud_sql_instance}"
 if database_url:
     config.set_main_option("sqlalchemy.url", database_url)
 

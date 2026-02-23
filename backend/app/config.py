@@ -1,5 +1,7 @@
 """Application configuration using Pydantic BaseSettings."""
 
+from urllib.parse import quote_plus
+
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -11,10 +13,26 @@ class Settings(BaseSettings):
     app_name: str = "Store ICU API"
     debug: bool = False
 
-    # Database (Neon PostgreSQL)
+    # Database (Cloud SQL PostgreSQL)
+    # When DATABASE_URL is set (local dev), it takes precedence.
+    # Otherwise, URL is constructed from individual components (Cloud Run / CI).
     database_url: str = ""
-    database_pool_min: int = 5
-    database_pool_max: int = 20
+    db_user: str = ""
+    db_password: str = ""
+    db_name: str = ""
+    cloud_sql_instance: str = ""
+    database_pool_min: int = 1
+    database_pool_max: int = 5
+
+    @property
+    def effective_database_url(self) -> str:
+        """Return the database URL, constructing from components if needed."""
+        if self.database_url:
+            return self.database_url
+        if self.db_user and self.db_password and self.db_name and self.cloud_sql_instance:
+            password = quote_plus(self.db_password)
+            return f"postgresql://{self.db_user}:{password}@/{self.db_name}?host=/cloudsql/{self.cloud_sql_instance}"
+        return ""
 
     # Firebase Admin SDK
     firebase_credentials_path: str | None = None

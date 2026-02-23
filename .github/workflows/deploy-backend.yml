@@ -4,12 +4,15 @@
 #
 # Required GitHub Actions variables (set per environment):
 #   GCP_PROJECT_ID            – GCP project ID
-#   GCP_REGION                – GCP region (asia-southeast1)
+#   GCP_REGION                – GCP region (asia-southeast2)
 #   WORKLOAD_IDENTITY_PROVIDER – Full WIF provider path from terraform output
 #   DEPLOY_SERVICE_ACCOUNT    – Deploy SA email from terraform output
 #   CLOUD_RUN_SERVICE         – Cloud Run service name (aha-sicu-dev-api / aha-sicu-prod-api)
 #   ARTIFACT_REGISTRY_URL     – Docker push URL from terraform output
-#   DB_SECRET_NAME            – Secret Manager secret name for DATABASE_URL
+#   DB_SECRET_NAME            – Secret Manager secret name for database password
+#   CLOUD_SQL_INSTANCE_CONNECTION – Cloud SQL instance connection name (project:region:instance)
+#   DB_USER                   – Database username
+#   DB_NAME                   – Database name
 
 name: Deploy Backend
 
@@ -49,13 +52,25 @@ jobs:
           version: "latest"
           enable-cache: true
 
+      - name: Start Cloud SQL Auth Proxy
+        run: |
+          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.3/cloud-sql-proxy.linux.amd64
+          chmod +x cloud-sql-proxy
+          ./cloud-sql-proxy ${{ vars.CLOUD_SQL_INSTANCE_CONNECTION }} --port 5432 &
+          sleep 3
+
       - name: Run database migrations
         run: |
           uv python install 3.14
           cd backend && uv sync --all-extras
-          export DATABASE_URL=$(gcloud secrets versions access latest \
+          export DB_PASSWORD=$(gcloud secrets versions access latest \
             --secret=${{ vars.DB_SECRET_NAME }} --project=${{ vars.GCP_PROJECT_ID }})
+          export DATABASE_URL="postgresql://${{ vars.DB_USER }}:${DB_PASSWORD}@127.0.0.1:5432/${{ vars.DB_NAME }}"
           uv run alembic -c app/db/migrations/alembic.ini upgrade head
+
+      - name: Stop Cloud SQL Auth Proxy
+        if: always()
+        run: kill $(pgrep -f cloud-sql-proxy) || true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -133,13 +148,25 @@ jobs:
           version: "latest"
           enable-cache: true
 
+      - name: Start Cloud SQL Auth Proxy
+        run: |
+          curl -o cloud-sql-proxy https://storage.googleapis.com/cloud-sql-connectors/cloud-sql-proxy/v2.14.3/cloud-sql-proxy.linux.amd64
+          chmod +x cloud-sql-proxy
+          ./cloud-sql-proxy ${{ vars.CLOUD_SQL_INSTANCE_CONNECTION }} --port 5432 &
+          sleep 3
+
       - name: Run database migrations
         run: |
           uv python install 3.14
           cd backend && uv sync --all-extras
-          export DATABASE_URL=$(gcloud secrets versions access latest \
+          export DB_PASSWORD=$(gcloud secrets versions access latest \
             --secret=${{ vars.DB_SECRET_NAME }} --project=${{ vars.GCP_PROJECT_ID }})
+          export DATABASE_URL="postgresql://${{ vars.DB_USER }}:${DB_PASSWORD}@127.0.0.1:5432/${{ vars.DB_NAME }}"
           uv run alembic -c app/db/migrations/alembic.ini upgrade head
+
+      - name: Stop Cloud SQL Auth Proxy
+        if: always()
+        run: kill $(pgrep -f cloud-sql-proxy) || true
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3

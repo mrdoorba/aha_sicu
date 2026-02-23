@@ -24,3 +24,13 @@ output "deploy_service_account_email" {
   description = "Deploy service account email for GitHub Actions workflow config"
   value       = google_service_account.deploy.email
 }
+
+output "cloud_sql_instance_connection_name" {
+  description = "Cloud SQL instance connection name for Cloud Run and Auth Proxy"
+  value       = google_sql_database_instance.main.connection_name
+}
+
+output "cloud_sql_instance_ip" {
+  description = "Cloud SQL instance public IP address"
+  value       = google_sql_database_instance.main.public_ip_address
+}
