@@ -105,10 +105,10 @@ async def reset_password(user_id: int, new_password: str) -> None:
 
 
 async def delete_account(user_id: int) -> None:
-    """Delete a user from database and Firebase.
+    """Delete a user from database and Firebase atomically.
 
-    DB delete happens first (FK SET NULL handles references),
-    then Firebase account is deleted.
+    Both deletions happen inside a DB transaction. If Firebase deletion
+    fails, the DB deletion is rolled back — no orphaned state.
     """
     async with db.connection() as conn:
         user = await account_queries.get_user_by_id(conn, user_id)
@@ -119,20 +119,20 @@ async def delete_account(user_id: int) -> None:
                 status_code=404,
             )
 
-        deleted = await account_queries.delete_user(conn, user_id)
-        if not deleted:
-            raise AppException(
-                code="ACCOUNT_NOT_FOUND",
-                detail="User not found",
-                status_code=404,
-            )
+        async with conn.transaction():
+            deleted = await account_queries.delete_user(conn, user_id)
+            if not deleted:
+                raise AppException(
+                    code="ACCOUNT_NOT_FOUND",
+                    detail="User not found",
+                    status_code=404,
+                )
 
-    # Delete Firebase account last
-    try:
-        await asyncio.to_thread(auth.delete_user, user["firebase_uid"])
-    except Exception:
-        logger.warning(
-            "Failed to delete Firebase account %s — may require manual cleanup",
-            user["firebase_uid"],
-            exc_info=True,
-        )
+            try:
+                await asyncio.to_thread(auth.delete_user, user["firebase_uid"])
+            except Exception as e:
+                raise AppException(
+                    code="FIREBASE_DELETE_FAILED",
+                    detail=f"Failed to delete Firebase account: {e}",
+                    status_code=502,
+                )

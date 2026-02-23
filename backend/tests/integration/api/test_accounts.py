@@ -316,6 +316,7 @@ def test_delete_account_success(client):
         _setup_auth(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
         mock_svc_conn = AsyncMock()
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.transaction = MagicMock(return_value=AsyncMock())
         mock_svc_conn.fetchrow = AsyncMock(return_value=target_user)
         mock_svc_conn.execute = AsyncMock(return_value="DELETE 1")
         mock_auth.delete_user = MagicMock()
@@ -325,6 +326,35 @@ def test_delete_account_success(client):
             headers=AUTH_HEADERS,
         )
         assert response.status_code == 204
+
+
+def test_delete_account_firebase_failure_returns_502(client):
+    """Firebase deletion failure → 502, DB deletion rolled back."""
+    target_user = {**SAMPLE_USERS[1], "firebase_uid": "member-uid"}
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.accounts.service.db") as mock_svc_db,
+        patch("app.modules.accounts.service.auth") as mock_auth,
+    ):
+        _setup_auth(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.transaction = MagicMock(return_value=AsyncMock())
+        mock_svc_conn.fetchrow = AsyncMock(return_value=target_user)
+        mock_svc_conn.execute = AsyncMock(return_value="DELETE 1")
+        mock_auth.delete_user = MagicMock(
+            side_effect=Exception("INSUFFICIENT_PERMISSION")
+        )
+
+        response = client.delete(
+            "/api/v1/accounts/2",
+            headers=AUTH_HEADERS,
+        )
+        assert response.status_code == 502
+        assert response.json()["code"] == "FIREBASE_DELETE_FAILED"
 
 
 def test_delete_own_account_blocked(client):

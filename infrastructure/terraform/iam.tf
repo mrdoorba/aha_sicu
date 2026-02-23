@@ -68,3 +68,10 @@ resource "google_service_account_iam_member" "api_sa_token_creator" {
   role               = "roles/iam.serviceAccountTokenCreator"
   member             = "serviceAccount:${google_service_account.cloud_run.email}"
 }
+
+# Cloud Run SA can manage Firebase Auth users (create, update, delete)
+resource "google_project_iam_member" "cloud_run_firebase_auth_admin" {
+  project = var.project_id
+  role    = "roles/firebaseauth.admin"
+  member  = "serviceAccount:${google_service_account.cloud_run.email}"
+}
