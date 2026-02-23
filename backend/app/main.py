@@ -26,8 +26,8 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     # Startup
     if settings.firebase_credentials_path or settings.firebase_credentials_json:
         init_firebase(settings)
-    if settings.database_url:
-        await db.init(settings.database_url, settings.database_pool_min, settings.database_pool_max)
+    if settings.effective_database_url:
+        await db.init(settings.effective_database_url, settings.database_pool_min, settings.database_pool_max)
     yield
     # Shutdown
     await db.close()

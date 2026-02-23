@@ -1,7 +1,7 @@
 # Store ICU Infrastructure - Terraform Configuration
 
 terraform {
-  required_version = ">= 1.0"
+  required_version = ">= 1.5"
 
   # Local backend for initial bootstrap. Migrate to GCS when team collaboration needed:
   # backend "gcs" { bucket = "aha-sicu-terraform-state" prefix = "terraform/state" }
@@ -72,6 +72,12 @@ resource "google_project_service" "firebase_hosting_api" {
 resource "google_project_service" "scheduler_api" {
   project            = var.project_id
   service            = "cloudscheduler.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service" "sqladmin_api" {
+  project            = var.project_id
+  service            = "sqladmin.googleapis.com"
   disable_on_destroy = false
 }
 

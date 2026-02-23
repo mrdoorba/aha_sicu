@@ -1,5 +1,5 @@
 # Cloud Scheduler: Daily automatic brand data sync
-# Triggers POST /api/v1/sync at 06:00 WIB (Asia/Jakarta) daily
+# Triggers POST /api/v1/sync at 08:00 WIB (01:00 UTC) daily — after Cloud SQL starts at 07:30
 # Only created when cloud_run_url is set (prod) or Cloud Run v2 service exists
 
 locals {
@@ -10,8 +10,8 @@ locals {
 resource "google_cloud_scheduler_job" "daily_sync" {
   name        = "aha-sicu-${var.environment}-daily-sync"
   description = "Daily brand data sync from Google Sheets"
-  schedule    = "0 6 * * *"
-  time_zone   = "Asia/Jakarta"
+  schedule    = "0 1 * * *"
+  time_zone   = "UTC"
   project     = var.project_id
   region      = var.region
 

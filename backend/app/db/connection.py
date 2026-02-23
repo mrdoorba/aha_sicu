@@ -1,4 +1,4 @@
-"""Neon connection pool management using asyncpg."""
+"""Cloud SQL connection pool management using asyncpg."""
 
 import json
 from contextlib import asynccontextmanager
@@ -18,12 +18,12 @@ async def _init_connection(conn: asyncpg.Connection) -> None:
 
 
 class DatabasePool:
-    """Manages the asyncpg connection pool for Neon PostgreSQL."""
+    """Manages the asyncpg connection pool for Cloud SQL PostgreSQL."""
 
     def __init__(self) -> None:
         self.pool: asyncpg.Pool | None = None
 
-    async def init(self, dsn: str, min_size: int = 5, max_size: int = 20) -> None:
+    async def init(self, dsn: str, min_size: int = 1, max_size: int = 5) -> None:
         """Initialize the connection pool."""
         self.pool = await asyncpg.create_pool(
             dsn, min_size=min_size, max_size=max_size, init=_init_connection

@@ -2,8 +2,8 @@
 # NOTE: Secret VALUES are NOT managed by Terraform. Inject via:
 #   echo -n "VALUE" | gcloud secrets versions add SECRET_NAME --data-file=-
 
-resource "google_secret_manager_secret" "db_url" {
-  secret_id = "aha_sicu_${var.environment}_db_url"
+resource "google_secret_manager_secret" "db_password" {
+  secret_id = "aha_sicu_${var.environment}_db_password"
   project   = var.project_id
 
   replication {
@@ -37,16 +37,16 @@ resource "google_secret_manager_secret" "firebase_admin" {
 
 # IAM: Grant Cloud Run SA access to each secret
 
-resource "google_secret_manager_secret_iam_member" "api_sa_db_url" {
-  secret_id = google_secret_manager_secret.db_url.secret_id
+resource "google_secret_manager_secret_iam_member" "api_sa_db_password" {
+  secret_id = google_secret_manager_secret.db_password.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.cloud_run.email}"
   project   = var.project_id
 }
 
-# Deploy SA needs DB URL to run migrations during CI/CD
-resource "google_secret_manager_secret_iam_member" "deploy_sa_db_url" {
-  secret_id = google_secret_manager_secret.db_url.secret_id
+# Deploy SA needs DB password to run migrations during CI/CD
+resource "google_secret_manager_secret_iam_member" "deploy_sa_db_password" {
+  secret_id = google_secret_manager_secret.db_password.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.deploy.email}"
   project   = var.project_id

@@ -8,7 +8,7 @@ variable "project_id" {
 variable "region" {
   description = "GCP region for resources"
   type        = string
-  default     = "asia-southeast1"
+  default     = "asia-southeast2"
 }
 
 variable "environment" {
@@ -87,6 +87,40 @@ variable "gsheets_vp_spreadsheet_id" {
 
 variable "gsheets_meeting_spreadsheet_id" {
   description = "Google Sheets spreadsheet ID for 1st Meeting brand data"
+  type        = string
+  default     = ""
+}
+
+# =============================================================================
+# Cloud SQL Variables
+# =============================================================================
+
+variable "cloud_sql_tier" {
+  description = "Cloud SQL machine tier"
+  type        = string
+  default     = "db-f1-micro"
+}
+
+variable "cloud_sql_disk_size" {
+  description = "Cloud SQL disk size in GB"
+  type        = number
+  default     = 10
+}
+
+variable "cloud_sql_instance_name" {
+  description = "Cloud SQL instance name"
+  type        = string
+  default     = "aha-sicu-db"
+}
+
+variable "db_user" {
+  description = "Cloud SQL database user"
+  type        = string
+  default     = "aha_sicu"
+}
+
+variable "db_name" {
+  description = "Cloud SQL database name (per environment)"
   type        = string
   default     = ""
 }
