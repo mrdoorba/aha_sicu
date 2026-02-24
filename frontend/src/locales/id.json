@@ -179,6 +179,8 @@
   "forms.competition.sellingPrice": "Harga Jual",
   "forms.competition.keyword": "Kata kunci pencarian",
   "forms.competition.link": "LINK",
+  "forms.competition.linkPlaceholder": "Isi harga jual & kata kunci",
+  "forms.competition.linkText": "Lihat di Shopee",
   "forms.competition.marketPrice": "Harga rata-rata pasaran",
   "forms.competition.notCompetitive": "• {{name}} (Rp. {{price}}) = ❌tidak kompetitif (harga kisaran pasaran: Rp. {{marketPrice}})",
   "forms.competition.competitive": "• {{name}} (Rp. {{price}}) = ✅kompetitif",

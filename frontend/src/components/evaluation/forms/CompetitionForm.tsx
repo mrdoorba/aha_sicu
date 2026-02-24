@@ -2,6 +2,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../../ui/card';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
+import { buildShopeeSearchUrl } from './competitionUtils';
 import { CurrencyField } from './CurrencyField';
 import type { CompetitionData, CompetitionProduct } from './formConfig';
 
@@ -79,7 +80,10 @@ export function CompetitionForm({ data, onChange, onBlur }: CompetitionFormProps
                     name={`competition.${product.key}.sellingPrice`}
                     label={t('forms.competition.sellingPrice')}
                     value={productData?.sellingPrice ?? null}
-                    onChange={(v) => onChange('competition', `${product.key}.sellingPrice`, v)}
+                    onChange={(v) => {
+                      onChange('competition', `${product.key}.sellingPrice`, v);
+                      onChange('competition', `${product.key}.link`, buildShopeeSearchUrl(v, productData?.keyword ?? null));
+                    }}
                     onBlur={onBlur}
                   />
 
@@ -93,9 +97,11 @@ export function CompetitionForm({ data, onChange, onBlur }: CompetitionFormProps
                       name={`competition.${product.key}.keyword`}
                       type="text"
                       value={productData?.keyword ?? ''}
-                      onChange={(e) =>
-                        onChange('competition', `${product.key}.keyword`, e.target.value || null)
-                      }
+                      onChange={(e) => {
+                        const kw = e.target.value || null;
+                        onChange('competition', `${product.key}.keyword`, kw);
+                        onChange('competition', `${product.key}.link`, buildShopeeSearchUrl(productData?.sellingPrice ?? null, kw));
+                      }}
                       onBlur={onBlur}
                       placeholder="—"
                     />
@@ -103,20 +109,19 @@ export function CompetitionForm({ data, onChange, onBlur }: CompetitionFormProps
 
                   {/* LINK */}
                   <div className="space-y-1">
-                    <Label htmlFor={`competition.${product.key}.link`}>
-                      {t('forms.competition.link')}
-                    </Label>
-                    <Input
-                      id={`competition.${product.key}.link`}
-                      name={`competition.${product.key}.link`}
-                      type="text"
-                      value={productData?.link ?? ''}
-                      onChange={(e) =>
-                        onChange('competition', `${product.key}.link`, e.target.value || null)
-                      }
-                      onBlur={onBlur}
-                      placeholder="—"
-                    />
+                    <Label>{t('forms.competition.link')}</Label>
+                    {productData?.link ? (
+                      <a
+                        href={productData.link}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="block truncate text-sm text-blue-600 underline"
+                      >
+                        {t('forms.competition.linkText')}
+                      </a>
+                    ) : (
+                      <p className="text-sm text-muted-foreground">{t('forms.competition.linkPlaceholder')}</p>
+                    )}
                   </div>
 
                   {/* Harga rata-rata pasaran */}
