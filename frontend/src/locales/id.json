@@ -61,7 +61,6 @@
   "evaluationDetail.emailOutput": "Email Output",
   "evaluationDetail.emailCopied": "Email output disalin ke clipboard",
   "evaluationDetail.copyFailed": "Gagal menyalin ke clipboard",
-  "evaluationDetail.templateInfo": "Template {{template}} · Rule v{{version}}",
 
   "history.title": "Riwayat Evaluasi",
 

@@ -19,6 +19,7 @@ import { useEvaluationDetail } from '../hooks/useEvaluationDetail';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useDeleteEvaluation } from '../hooks/useDeleteEvaluation';
 import { DeleteEvaluationDialog } from '../components/evaluations/DeleteEvaluationDialog';
+import { FinalScoreDisplay } from '../components/evaluation/scoring/FinalScoreDisplay';
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -364,15 +365,13 @@ export function EvaluationDetailPage() {
                   <CardTitle className="text-lg">{t('evaluationDetail.finalScore')}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center gap-3">
-                    <span className="text-4xl font-bold">{evaluation.final_score.toFixed(1)}</span>
-                    <span className="text-2xl">{evaluation.verdict}</span>
-                  </div>
+                  <FinalScoreDisplay
+                    totalScore={evaluation.final_score}
+                    verdict={evaluation.verdict}
+                    template={evaluation.template}
+                  />
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {t('evaluationDetail.templateInfo', {
-                      template: evaluation.template === 'fashion' ? 'Fashion' : 'Non-Fashion',
-                      version: evaluation.rule_version,
-                    })}
+                    {evaluation.template === 'fashion' ? 'Fashion' : 'Non-Fashion'}
                   </p>
                 </CardContent>
               </Card>

@@ -134,7 +134,7 @@ describe('EvaluationDetailPage', () => {
     renderPage();
 
     expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Nike Indonesia');
-    expect(screen.getByText('Fashion')).toBeInTheDocument();
+    expect(screen.getAllByText('Fashion').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText(/rina@company\.com/)).toBeInTheDocument();
     expect(screen.getByText(/2026/)).toBeInTheDocument();
   });
