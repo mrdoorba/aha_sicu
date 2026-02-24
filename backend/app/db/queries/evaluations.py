@@ -11,18 +11,16 @@ from app.db.queries.utils import escape_like
 async def get_evaluation_inputs(
     conn: Connection,
     brand_id: int,
-    user_id: int,
 ) -> dict | None:
-    """Get evaluation inputs for a specific brand and user."""
+    """Get evaluation inputs for a brand (shared — one row per brand)."""
     row = await conn.fetchrow(
         """
-        SELECT id, brand_id, user_id, category_type, manual_data,
+        SELECT id, brand_id, last_edited_by, category_type, manual_data,
                created_at, updated_at
         FROM evaluation_inputs
-        WHERE brand_id = $1 AND user_id = $2
+        WHERE brand_id = $1
         """,
         brand_id,
-        user_id,
     )
     return dict(row) if row else None
 
@@ -30,26 +28,28 @@ async def get_evaluation_inputs(
 async def upsert_evaluation_inputs(
     conn: Connection,
     brand_id: int,
-    user_id: int,
+    last_edited_by: int,
     category_type: str | None,
     manual_data: dict[str, Any] | None,
 ) -> dict:
-    """Insert or update evaluation inputs for a brand+user pair.
+    """Insert or update evaluation inputs for a brand (shared).
 
     Uses COALESCE to preserve existing values when new values are None.
+    Conflict target is (brand_id) — one row per brand.
     """
     row = await conn.fetchrow(
         """
-        INSERT INTO evaluation_inputs (brand_id, user_id, category_type, manual_data, updated_at)
+        INSERT INTO evaluation_inputs (brand_id, last_edited_by, category_type, manual_data, updated_at)
         VALUES ($1, $2, $3, $4, NOW())
-        ON CONFLICT (brand_id, user_id) DO UPDATE SET
+        ON CONFLICT (brand_id) DO UPDATE SET
+            last_edited_by = EXCLUDED.last_edited_by,
             category_type = COALESCE(EXCLUDED.category_type, evaluation_inputs.category_type),
             manual_data = COALESCE(EXCLUDED.manual_data, evaluation_inputs.manual_data),
             updated_at = NOW()
-        RETURNING id, brand_id, user_id, category_type, manual_data, created_at, updated_at
+        RETURNING id, brand_id, last_edited_by, category_type, manual_data, created_at, updated_at
         """,
         brand_id,
-        user_id,
+        last_edited_by,
         category_type,
         manual_data,
     )
@@ -335,20 +335,3 @@ async def delete_evaluation(
     return result == "DELETE 1"
 
 
-async def get_any_evaluation_inputs(
-    conn: Connection,
-    brand_id: int,
-) -> dict | None:
-    """Get evaluation inputs for a brand (any user). Used for readiness checks."""
-    row = await conn.fetchrow(
-        """
-        SELECT id, brand_id, user_id, category_type, manual_data,
-               created_at, updated_at
-        FROM evaluation_inputs
-        WHERE brand_id = $1 AND manual_data IS NOT NULL
-        ORDER BY updated_at DESC
-        LIMIT 1
-        """,
-        brand_id,
-    )
-    return dict(row) if row else None

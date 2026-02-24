@@ -237,7 +237,7 @@ async def process_upload(
         try:
             await clear_dependent_results(brand_id, file_type, conn)
             auto_calc_raw = await run_calculators_for_upload(
-                brand_id, file_type, user_id, conn
+                brand_id, file_type, conn
             )
         except Exception as e:
             logger.warning(

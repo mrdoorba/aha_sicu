@@ -219,14 +219,14 @@ async def get_evaluation_detail(evaluation_id: int) -> EvaluationDetailResponse:
 
 
 async def get_evaluation_state(
-    brand_id: int, user_id: int
+    brand_id: int,
 ) -> EvaluationStateResponse:
-    """Get the current evaluation state for a brand+user pair.
+    """Get the current evaluation state for a brand (shared).
 
     Returns null values if no evaluation inputs exist yet.
     """
     async with db.connection() as conn:
-        row = await eval_queries.get_evaluation_inputs(conn, brand_id, user_id)
+        row = await eval_queries.get_evaluation_inputs(conn, brand_id)
 
     if not row:
         return EvaluationStateResponse(brand_id=brand_id)
@@ -268,8 +268,8 @@ async def generate_score(
                 status_code=404,
             )
 
-        # Load manual data
-        eval_inputs = await eval_queries.get_evaluation_inputs(conn, brand_id, user_id)
+        # Load manual data (shared — one row per brand)
+        eval_inputs = await eval_queries.get_evaluation_inputs(conn, brand_id)
         manual_data = ensure_dict((eval_inputs or {}).get("manual_data"))
 
         if not manual_data:
@@ -409,11 +409,11 @@ async def save_evaluation(
 
 async def save_evaluation_inputs(
     brand_id: int,
-    user_id: int,
+    last_edited_by: int,
     category_type: str | None,
     manual_data: dict[str, Any] | None,
 ) -> EvaluationStateResponse:
-    """Upsert evaluation inputs for a brand+user pair.
+    """Upsert evaluation inputs for a brand (shared).
 
     Validates that the brand exists before saving.
 
@@ -431,7 +431,7 @@ async def save_evaluation_inputs(
             row = await eval_queries.upsert_evaluation_inputs(
                 conn,
                 brand_id=brand_id,
-                user_id=user_id,
+                last_edited_by=last_edited_by,
                 category_type=category_type,
                 manual_data=manual_data,
             )

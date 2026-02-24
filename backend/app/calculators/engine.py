@@ -88,16 +88,13 @@ def _build_skip_reason(status_info: dict) -> str:
 
 
 async def check_calculator_readiness(
-    brand_id: int, conn: Connection, *, user_id: int | None = None
+    brand_id: int, conn: Connection,
 ) -> dict[str, dict]:
     """Check which calculators are ready to run for a brand.
 
     Args:
         brand_id: The brand to check.
         conn: Database connection.
-        user_id: When provided, check this specific user's manual data
-            (used before execution to avoid readiness/execution mismatch).
-            When None, check any user's manual data (general status view).
 
     Returns a dict keyed by calculator_type with readiness status:
     - status: "ready" or "pending"
@@ -110,11 +107,8 @@ async def check_calculator_readiness(
     uploads = await upload_queries.get_uploads_by_brand(conn, brand_id)
     available_file_types = {u["file_type"] for u in uploads}
 
-    # Check manual data availability
-    if user_id is not None:
-        eval_inputs = await eval_queries.get_evaluation_inputs(conn, brand_id, user_id)
-    else:
-        eval_inputs = await eval_queries.get_any_evaluation_inputs(conn, brand_id)
+    # Check manual data availability (shared — one row per brand)
+    eval_inputs = await eval_queries.get_evaluation_inputs(conn, brand_id)
     has_manual_total_products = _has_total_products(
         eval_inputs["manual_data"] if eval_inputs else None
     )
@@ -154,7 +148,7 @@ async def check_calculator_readiness(
 
 
 async def run_ready_calculators(
-    brand_id: int, user_id: int, conn: Connection
+    brand_id: int, conn: Connection,
 ) -> list[dict]:
     """Run all calculators whose dependencies are satisfied.
 
@@ -163,7 +157,7 @@ async def run_ready_calculators(
     - {calculator_type, status="skipped", reason="..."}
     - {calculator_type, status="error", reason="..."}
     """
-    readiness = await check_calculator_readiness(brand_id, conn, user_id=user_id)
+    readiness = await check_calculator_readiness(brand_id, conn)
     results: list[dict] = []
 
     for calc_type, status_info in readiness.items():
@@ -177,7 +171,7 @@ async def run_ready_calculators(
 
         try:
             runner = _CALCULATOR_RUNNERS[calc_type]
-            result = await runner(brand_id, user_id)
+            result = await runner(brand_id)
             results.append({
                 "calculator_type": calc_type,
                 "status": "success",
@@ -198,7 +192,7 @@ async def run_ready_calculators(
 
 
 async def run_calculators_for_upload(
-    brand_id: int, file_type: str, user_id: int, conn: Connection
+    brand_id: int, file_type: str, conn: Connection,
 ) -> list[dict]:
     """Run only the calculators affected by a specific file upload.
 
@@ -208,7 +202,7 @@ async def run_calculators_for_upload(
     if not affected_calculators:
         return []
 
-    readiness = await check_calculator_readiness(brand_id, conn, user_id=user_id)
+    readiness = await check_calculator_readiness(brand_id, conn)
     results: list[dict] = []
 
     for calc_type in affected_calculators:
@@ -228,7 +222,7 @@ async def run_calculators_for_upload(
 
         try:
             runner = _CALCULATOR_RUNNERS[calc_type]
-            result = await runner(brand_id, user_id)
+            result = await runner(brand_id)
             results.append({
                 "calculator_type": calc_type,
                 "status": "success",

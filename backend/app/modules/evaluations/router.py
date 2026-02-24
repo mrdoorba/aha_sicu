@@ -155,12 +155,10 @@ async def get_evaluation(
 ) -> EvaluationStateResponse:
     """Get evaluation state for a brand.
 
-    Returns the current user's evaluation inputs for this brand.
+    Returns the shared evaluation inputs for this brand.
     If no inputs exist, returns the same shape with null values.
     """
-    return await get_evaluation_state(
-        brand_id=brand_id, user_id=current_user["id"]
-    )
+    return await get_evaluation_state(brand_id=brand_id)
 
 
 @router.put("/brands/{brand_id}", response_model=EvaluationStateResponse)
@@ -171,12 +169,13 @@ async def update_evaluation(
 ) -> EvaluationStateResponse:
     """Save evaluation inputs for a brand.
 
-    Upserts evaluation_inputs record for this user+brand.
+    Upserts the shared evaluation_inputs record for this brand.
+    Records the current user as last_edited_by.
     Returns 404 if brand doesn't exist.
     """
     return await save_evaluation_inputs(
         brand_id=brand_id,
-        user_id=current_user["id"],
+        last_edited_by=current_user["id"],
         category_type=body.category_type,
         manual_data=body.manual_data,
     )
@@ -224,9 +223,7 @@ async def run_ads_keyword_calculator(
     Loads required CSV data and manual inputs, runs the calculator,
     and stores the result. Returns 400 if required data is missing.
     """
-    return await _run_ads_keyword(
-        brand_id=brand_id, user_id=current_user["id"]
-    )
+    return await _run_ads_keyword(brand_id=brand_id)
 
 
 @router.post(
@@ -242,9 +239,7 @@ async def run_discount_calculator(
     Loads order export data, runs the calculator,
     and stores the result. Returns 400 if required data is missing.
     """
-    return await _run_discount(
-        brand_id=brand_id, user_id=current_user["id"]
-    )
+    return await _run_discount(brand_id=brand_id)
 
 
 @router.post(
@@ -260,9 +255,7 @@ async def run_top_sku_calculator(
     Loads order export and mass update data, runs the calculator,
     and stores the result. Returns 400 if required data is missing.
     """
-    return await _run_top_sku(
-        brand_id=brand_id, user_id=current_user["id"]
-    )
+    return await _run_top_sku(brand_id=brand_id)
 
 
 @router.post(
@@ -279,7 +272,7 @@ async def run_all_calculators(
     """
     async with db.connection() as conn:
         raw_results = await run_ready_calculators(
-            brand_id=brand_id, user_id=current_user["id"], conn=conn
+            brand_id=brand_id, conn=conn
         )
 
     results = [

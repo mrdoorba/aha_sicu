@@ -62,7 +62,7 @@ SAMPLE_MANUAL_DATA = {
 SAMPLE_EVAL_INPUTS = {
     "id": 1,
     "brand_id": 1,
-    "user_id": 1,
+    "last_edited_by": 1,
     "category_type": "fashion",
     "manual_data": SAMPLE_MANUAL_DATA,
     "created_at": datetime(2026, 2, 5, tzinfo=timezone.utc),

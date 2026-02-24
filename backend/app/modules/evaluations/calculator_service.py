@@ -16,7 +16,7 @@ from app.modules.evaluations.schemas import CalculatorResultResponse
 
 
 async def run_ads_keyword_calculator(
-    brand_id: int, user_id: int
+    brand_id: int,
 ) -> CalculatorResultResponse:
     """Execute the Ads Keyword Calculator for a brand.
 
@@ -59,9 +59,9 @@ async def run_ads_keyword_calculator(
                     detail="Keyword/Placement Report (keyword_report) has not been uploaded for this brand",
                 )
 
-            # Load total_products (AK1) from manual data
+            # Load total_products (AK1) from manual data (shared)
             eval_inputs = await eval_queries.get_evaluation_inputs(
-                conn, brand_id, user_id
+                conn, brand_id
             )
             total_products = _extract_total_products(eval_inputs)
 
@@ -276,16 +276,12 @@ def _extract_total_products(eval_inputs: dict | None) -> int:
 
 
 async def run_discount_calculator(
-    brand_id: int, user_id: int  # noqa: ARG001 — kept for API consistency with other calculators
+    brand_id: int,
 ) -> CalculatorResultResponse:
     """Execute the Discount Check Calculator for a brand.
 
     Loads order_export parsed data from brand_uploads,
     runs the pure calculator function, and stores the result.
-
-    Args:
-        brand_id: The brand to run the calculator for.
-        user_id: Unused — kept for consistent interface with run_ads_keyword_calculator.
 
     Raises:
         CalculatorException: BRAND_NOT_FOUND if brand doesn't exist.
@@ -345,16 +341,12 @@ async def run_discount_calculator(
 
 
 async def run_top_sku_calculator(
-    brand_id: int, user_id: int  # noqa: ARG001 — kept for API consistency with other calculators
+    brand_id: int,
 ) -> CalculatorResultResponse:
     """Execute the Top SKU Calculator for a brand.
 
     Loads order_export and mass_update parsed data from brand_uploads,
     runs the pure calculator function, and stores the result.
-
-    Args:
-        brand_id: The brand to run the calculator for.
-        user_id: Unused — kept for consistent interface with other calculators.
 
     Raises:
         CalculatorException: BRAND_NOT_FOUND if brand doesn't exist.

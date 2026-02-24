@@ -91,7 +91,7 @@ SAMPLE_KEYWORD_UPLOAD = {
 SAMPLE_EVAL_INPUTS = {
     "id": 1,
     "brand_id": 1,
-    "user_id": 1,
+    "last_edited_by": 1,
     "category_type": "fashion",
     "manual_data": {
         "products": {"productCount": 80},

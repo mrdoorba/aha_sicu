@@ -18,7 +18,7 @@ async def test_get_evaluation_inputs_found():
     mock_row = {
         "id": 1,
         "brand_id": 1,
-        "user_id": 1,
+        "last_edited_by": 1,
         "category_type": "fashion",
         "manual_data": {"key": "val"},
         "created_at": "2026-02-05T10:00:00+00:00",
@@ -27,17 +27,16 @@ async def test_get_evaluation_inputs_found():
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(return_value=mock_row)
 
-    result = await get_evaluation_inputs(conn, brand_id=1, user_id=1)
+    result = await get_evaluation_inputs(conn, brand_id=1)
 
     assert result is not None
     assert result["brand_id"] == 1
     assert result["category_type"] == "fashion"
     conn.fetchrow.assert_called_once()
-    # Verify parameterized query
+    # Verify parameterized query — brand_id only
     call_args = conn.fetchrow.call_args[0]
     assert "$1" in call_args[0]
     assert call_args[1] == 1  # brand_id
-    assert call_args[2] == 1  # user_id
 
 
 @pytest.mark.asyncio
@@ -46,7 +45,7 @@ async def test_get_evaluation_inputs_not_found():
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(return_value=None)
 
-    result = await get_evaluation_inputs(conn, brand_id=1, user_id=1)
+    result = await get_evaluation_inputs(conn, brand_id=1)
 
     assert result is None
 
@@ -57,7 +56,7 @@ async def test_upsert_evaluation_inputs():
     mock_row = {
         "id": 1,
         "brand_id": 1,
-        "user_id": 1,
+        "last_edited_by": 1,
         "category_type": "fashion",
         "manual_data": {"key": "val"},
         "created_at": "2026-02-05T10:00:00+00:00",
@@ -69,18 +68,18 @@ async def test_upsert_evaluation_inputs():
     result = await upsert_evaluation_inputs(
         conn,
         brand_id=1,
-        user_id=1,
+        last_edited_by=1,
         category_type="fashion",
         manual_data={"key": "val"},
     )
 
     assert result["category_type"] == "fashion"
     conn.fetchrow.assert_called_once()
-    # Verify parameterized query with ON CONFLICT
+    # Verify parameterized query with ON CONFLICT (brand_id)
     call_args = conn.fetchrow.call_args[0]
     assert "ON CONFLICT" in call_args[0]
     assert call_args[1] == 1  # brand_id
-    assert call_args[2] == 1  # user_id
+    assert call_args[2] == 1  # last_edited_by
     assert call_args[3] == "fashion"
     assert call_args[4] == {"key": "val"}
 
@@ -91,7 +90,7 @@ async def test_upsert_evaluation_inputs_with_null_manual_data():
     mock_row = {
         "id": 1,
         "brand_id": 1,
-        "user_id": 1,
+        "last_edited_by": 1,
         "category_type": "non_fashion",
         "manual_data": None,
         "created_at": "2026-02-05T10:00:00+00:00",
@@ -103,7 +102,7 @@ async def test_upsert_evaluation_inputs_with_null_manual_data():
     result = await upsert_evaluation_inputs(
         conn,
         brand_id=1,
-        user_id=1,
+        last_edited_by=1,
         category_type="non_fashion",
         manual_data=None,
     )
@@ -111,6 +110,72 @@ async def test_upsert_evaluation_inputs_with_null_manual_data():
     assert result["manual_data"] is None
     call_args = conn.fetchrow.call_args[0]
     assert call_args[4] is None  # manual_data passed as None, not json.dumps(None)
+
+
+# --- Shared model tests ---
+
+
+@pytest.mark.asyncio
+async def test_upsert_last_write_wins():
+    """Second user saving inputs for same brand overwrites first — last_edited_by reflects second user."""
+    first_row = {
+        "id": 1,
+        "brand_id": 1,
+        "last_edited_by": 10,
+        "category_type": "fashion",
+        "manual_data": {"key": "first"},
+        "created_at": "2026-02-05T10:00:00+00:00",
+        "updated_at": "2026-02-05T10:00:00+00:00",
+    }
+    second_row = {
+        **first_row,
+        "last_edited_by": 20,
+        "manual_data": {"key": "second"},
+        "updated_at": "2026-02-05T11:00:00+00:00",
+    }
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(side_effect=[first_row, second_row])
+
+    # First user saves
+    result1 = await upsert_evaluation_inputs(
+        conn, brand_id=1, last_edited_by=10,
+        category_type="fashion", manual_data={"key": "first"},
+    )
+    assert result1["last_edited_by"] == 10
+
+    # Second user overwrites (same brand)
+    result2 = await upsert_evaluation_inputs(
+        conn, brand_id=1, last_edited_by=20,
+        category_type="fashion", manual_data={"key": "second"},
+    )
+    assert result2["last_edited_by"] == 20
+    assert result2["manual_data"] == {"key": "second"}
+
+
+@pytest.mark.asyncio
+async def test_get_evaluation_inputs_returns_data_regardless_of_editor():
+    """Fetching evaluation inputs returns data by brand_id only — editor identity is irrelevant."""
+    mock_row = {
+        "id": 1,
+        "brand_id": 42,
+        "last_edited_by": 99,
+        "category_type": "non_fashion",
+        "manual_data": {"products": {"productCount": 50}},
+        "created_at": "2026-02-20T10:00:00+00:00",
+        "updated_at": "2026-02-20T10:00:00+00:00",
+    }
+    conn = AsyncMock()
+    conn.fetchrow = AsyncMock(return_value=mock_row)
+
+    result = await get_evaluation_inputs(conn, brand_id=42)
+
+    assert result is not None
+    assert result["brand_id"] == 42
+    assert result["manual_data"]["products"]["productCount"] == 50
+    # Query uses brand_id only — no user filtering
+    call_args = conn.fetchrow.call_args[0]
+    assert "user_id" not in call_args[0].lower().replace("last_edited_by", "")
+    assert call_args[1] == 42
 
 
 # --- _build_filter_clauses tests (Review M2/M5) ---

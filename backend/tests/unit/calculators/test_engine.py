@@ -162,7 +162,7 @@ class TestCheckCalculatorReadiness:
                 _make_upload("order_export"),
                 _make_upload("mass_update"),
             ])
-            mock_eq.get_any_evaluation_inputs = AsyncMock(
+            mock_eq.get_evaluation_inputs = AsyncMock(
                 return_value=_make_eval_inputs(has_products=True)
             )
             mock_cq.get_results_by_brand = AsyncMock(return_value=[])
@@ -187,7 +187,7 @@ class TestCheckCalculatorReadiness:
                 _make_upload("cpc_ad_report"),
                 _make_upload("order_export"),
             ])
-            mock_eq.get_any_evaluation_inputs = AsyncMock(
+            mock_eq.get_evaluation_inputs = AsyncMock(
                 return_value=_make_eval_inputs(has_products=True)
             )
             mock_cq.get_results_by_brand = AsyncMock(return_value=[])
@@ -216,7 +216,7 @@ class TestCheckCalculatorReadiness:
                 _make_upload("order_export"),
                 _make_upload("mass_update"),
             ])
-            mock_eq.get_any_evaluation_inputs = AsyncMock(
+            mock_eq.get_evaluation_inputs = AsyncMock(
                 return_value=_make_eval_inputs(has_products=False)
             )
             mock_cq.get_results_by_brand = AsyncMock(return_value=[])
@@ -242,7 +242,7 @@ class TestCheckCalculatorReadiness:
                 _make_upload("cpc_ad_report"),
                 _make_upload("keyword_report"),
             ])
-            mock_eq.get_any_evaluation_inputs = AsyncMock(
+            mock_eq.get_evaluation_inputs = AsyncMock(
                 return_value=_make_eval_inputs(has_products=True)
             )
             mock_cq.get_results_by_brand = AsyncMock(return_value=[])
@@ -266,7 +266,7 @@ class TestCheckCalculatorReadiness:
             mock_uq.get_uploads_by_brand = AsyncMock(return_value=[
                 _make_upload("order_export"),
             ])
-            mock_eq.get_any_evaluation_inputs = AsyncMock(return_value=None)
+            mock_eq.get_evaluation_inputs = AsyncMock(return_value=None)
             mock_cq.get_results_by_brand = AsyncMock(return_value=[
                 _make_result("discount"),
             ])
@@ -292,7 +292,7 @@ class TestCheckCalculatorReadiness:
                 _make_upload("cpc_ad_report"),
                 _make_upload("keyword_report"),
             ])
-            mock_eq.get_any_evaluation_inputs = AsyncMock(return_value=None)
+            mock_eq.get_evaluation_inputs = AsyncMock(return_value=None)
             mock_cq.get_results_by_brand = AsyncMock(return_value=[])
 
             result = await check_calculator_readiness(1, mock_conn)
@@ -300,54 +300,6 @@ class TestCheckCalculatorReadiness:
         assert result["ads_keyword"]["status"] == "pending"
         assert "total_products" in result["ads_keyword"]["missing_manual"]
 
-    @pytest.mark.anyio
-    async def test_user_id_uses_specific_user_inputs(self):
-        """When user_id is provided, use get_evaluation_inputs (not get_any)."""
-        mock_conn = AsyncMock()
-
-        with (
-            patch("app.calculators.engine.upload_queries") as mock_uq,
-            patch("app.calculators.engine.eval_queries") as mock_eq,
-            patch("app.calculators.engine.calc_queries") as mock_cq,
-        ):
-            mock_uq.get_uploads_by_brand = AsyncMock(return_value=[
-                _make_upload("cpc_ad_report"),
-                _make_upload("keyword_report"),
-            ])
-            mock_eq.get_evaluation_inputs = AsyncMock(
-                return_value=_make_eval_inputs(has_products=True)
-            )
-            mock_eq.get_any_evaluation_inputs = AsyncMock()
-            mock_cq.get_results_by_brand = AsyncMock(return_value=[])
-
-            result = await check_calculator_readiness(1, mock_conn, user_id=42)
-
-        # Should call user-specific query, not any-user query
-        mock_eq.get_evaluation_inputs.assert_called_once_with(mock_conn, 1, 42)
-        mock_eq.get_any_evaluation_inputs.assert_not_called()
-        assert result["ads_keyword"]["status"] == "ready"
-
-    @pytest.mark.anyio
-    async def test_user_id_missing_manual_data(self):
-        """When user_id provided but user lacks manual data → ads_keyword pending."""
-        mock_conn = AsyncMock()
-
-        with (
-            patch("app.calculators.engine.upload_queries") as mock_uq,
-            patch("app.calculators.engine.eval_queries") as mock_eq,
-            patch("app.calculators.engine.calc_queries") as mock_cq,
-        ):
-            mock_uq.get_uploads_by_brand = AsyncMock(return_value=[
-                _make_upload("cpc_ad_report"),
-                _make_upload("keyword_report"),
-            ])
-            mock_eq.get_evaluation_inputs = AsyncMock(return_value=None)
-            mock_cq.get_results_by_brand = AsyncMock(return_value=[])
-
-            result = await check_calculator_readiness(1, mock_conn, user_id=42)
-
-        assert result["ads_keyword"]["status"] == "pending"
-        assert "total_products" in result["ads_keyword"]["missing_manual"]
 
 
 # ---------------------------------------------------------------------------
@@ -419,7 +371,7 @@ class TestRunReadyCalculators:
             runner = AsyncMock(return_value=_FakeResult("discount"))
             mock_runners.__getitem__ = lambda self, key: runner
 
-            results = await run_ready_calculators(1, 1, mock_conn)
+            results = await run_ready_calculators(1, mock_conn)
 
         success_items = [r for r in results if r["status"] == "success"]
         skipped_items = [r for r in results if r["status"] == "skipped"]
@@ -449,7 +401,7 @@ class TestRunReadyCalculators:
                 },
             }
 
-            results = await run_ready_calculators(1, 1, mock_conn)
+            results = await run_ready_calculators(1, mock_conn)
 
         assert len(results) == 1
         assert results[0]["status"] == "skipped"
@@ -497,7 +449,7 @@ class TestRunReadyCalculators:
 
             mock_runners.__getitem__ = get_runner
 
-            results = await run_ready_calculators(1, 1, mock_conn)
+            results = await run_ready_calculators(1, mock_conn)
 
         statuses = {r["calculator_type"]: r["status"] for r in results}
         assert statuses["discount"] == "error"
@@ -545,7 +497,7 @@ class TestRunCalculatorsForUpload:
             runner = AsyncMock(return_value=_FakeResult("discount"))
             mock_runners.__getitem__ = lambda self, key: runner
 
-            results = await run_calculators_for_upload(1, "order_export", 1, mock_conn)
+            results = await run_calculators_for_upload(1, "order_export", mock_conn)
 
         assert len(results) == 2
         types = {r["calculator_type"] for r in results}
@@ -580,7 +532,7 @@ class TestRunCalculatorsForUpload:
             runner = AsyncMock(return_value=_FakeResult("top_sku"))
             mock_runners.__getitem__ = lambda self, key: runner
 
-            results = await run_calculators_for_upload(1, "mass_update", 1, mock_conn)
+            results = await run_calculators_for_upload(1, "mass_update", mock_conn)
 
         assert len(results) == 1
         assert results[0]["calculator_type"] == "top_sku"
@@ -607,7 +559,7 @@ class TestRunCalculatorsForUpload:
                 },
             }
 
-            results = await run_calculators_for_upload(1, "cpc_ad_report", 1, mock_conn)
+            results = await run_calculators_for_upload(1, "cpc_ad_report", mock_conn)
 
         assert len(results) == 1
         assert results[0]["calculator_type"] == "ads_keyword"
@@ -618,7 +570,7 @@ class TestRunCalculatorsForUpload:
     async def test_unknown_file_type_returns_empty(self):
         """Unknown file type returns empty list."""
         mock_conn = AsyncMock()
-        results = await run_calculators_for_upload(1, "unknown_type", 1, mock_conn)
+        results = await run_calculators_for_upload(1, "unknown_type", mock_conn)
         assert results == []
 
 
