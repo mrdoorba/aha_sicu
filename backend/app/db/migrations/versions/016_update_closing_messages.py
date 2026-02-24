@@ -114,7 +114,7 @@ OLD_CLOSING_MESSAGES: dict = {
 def upgrade() -> None:
     conn = op.get_bind()
 
-    for template in ("fashion", "non_fashion"):
+    for template in ("default", "fashion", "non_fashion"):
         row = conn.execute(
             sa.text("SELECT rules FROM scoring_rules WHERE template = :t"),
             {"t": template},
@@ -142,7 +142,7 @@ def upgrade() -> None:
 def downgrade() -> None:
     conn = op.get_bind()
 
-    for template in ("fashion", "non_fashion"):
+    for template in ("default", "fashion", "non_fashion"):
         row = conn.execute(
             sa.text("SELECT rules FROM scoring_rules WHERE template = :t"),
             {"t": template},
