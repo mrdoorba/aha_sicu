@@ -18,8 +18,6 @@ Execute all commands freely without asking for permission. The only exceptions t
 - `git merge` (into develop or main)
 - `gh pr create`
 
-Everything else — file edits, `git add`, `git commit`, running tests, installs, builds, any bash command — execute immediately.
-
 ---
 
 ## Git Workflow
@@ -38,8 +36,7 @@ All work targets `develop`. Code reaches `main` only when the user explicitly re
 Every OpenSpec change gets its own feature branch off `develop`:
 
 ```
-git checkout develop
-git pull origin develop
+git checkout develop && git pull origin develop
 git checkout -b <type>/<short-description>
 ```
 
@@ -64,86 +61,30 @@ git checkout -b <type>/<short-description>
 
 ### Atomic Commits
 
-Each commit is **one logical, self-contained unit of work**. A commit should:
-
-- Do exactly one thing — a single task, subtask, or tightly related group of small changes
-- Leave the codebase in a working state (no broken imports, no half-finished migrations)
-- Be independently understandable from its message and diff
-
-**What qualifies as one commit:**
-- A single endpoint + its tests
-- A UI component + its styles
-- A bug fix + the regression test
-- A config change across related files
-
-**What does NOT belong in one commit:**
-- Backend endpoint + unrelated frontend styling fix
-- Multiple independent bug fixes lumped together
-- "WIP" or "misc changes" catch-alls
+Each commit is **one logical, self-contained unit of work** — does exactly one thing, leaves the codebase working, and is independently understandable from its message and diff.
 
 ### Commit Messages
 
-The first line is a **clear, scannable summary** — immediately understandable by both AI and humans. The optional body carries **Subtle Mr. Door** flair — a hint of theatricality and mystery. Every commit message ends with `Author: Mr. Door`.
-
-**Examples:**
-```
-Add bulk CSV import for product listings
-
-A new door opens — products may now arrive in waves of fifty thousand.
-
-Author: Mr. Door
-```
-```
-Fix empty row handling in CSV parser
-
-The passage where empty rows once slipped through has been sealed.
-
-Author: Mr. Door
-```
-```
-Add error detail display on upload failure
-
-What was hidden behind a generic message is now revealed to the user.
-
-Author: Mr. Door
-```
-```
-Add dashboard analytics endpoint
-
-The foundation is laid beneath the dashboard — the numbers shall speak.
-
-Author: Mr. Door
-```
+The first line is a **clear, scannable summary** — no metaphor, immediately parseable. The optional body carries **Subtle Mr. Door** flair. Every commit ends with `Author: Mr. Door`.
 
 **Format:**
 ```
-<clear one-line summary — what was done, AI-friendly>
+<clear one-line summary — what was done>
 
 <optional Mr. Door body — personality, WHY, context>
 
 Author: Mr. Door
 ```
 
-The first line must be parseable without metaphor. The Mr. Door style lives in the body only.
-
-Use a HEREDOC for multi-line messages:
-```bash
-git commit -m "$(cat <<'EOF'
+**Example:**
+```
 Add bulk CSV import for product listings
 
 A new door opens — products may now arrive in waves of fifty thousand.
 Adds POST /api/v1/products/import with chunked processing.
 
 Author: Mr. Door
-EOF
-)"
 ```
-
-### Staging Files
-
-- Always `git add` specific files by name — never use `git add -A` or `git add .`
-- Never commit files that contain secrets (`.env`, credentials, service account keys)
-- Check `git status` before committing to verify what's staged
 
 ### Promotion: develop → main
 
@@ -190,30 +131,16 @@ Runs on every PR to `develop` or `main`:
 
 Both checks must pass before merging.
 
-### Deployments
-
-| Trigger               | Frontend                           | Backend                            |
-|------------------------|-------------------------------------|------------------------------------|
-| Push to `develop`      | Auto-deploy to Firebase Hosting (dev) | Auto-deploy to Cloud Run (dev)   |
-| Push to `main`         | Deploy to Firebase Hosting (prod, manual approval) | Deploy to Cloud Run (prod, manual approval) |
-
-**Before pushing to develop or main**, ensure:
-- All relevant tests pass locally
-- Linting passes (`ruff check .` for backend, `npm run lint` for frontend)
-- TypeScript compiles (`npx tsc --noEmit` in frontend)
-
 ### Running Tests Locally
 
 ```bash
-# Backend
-cd backend && uv run pytest -v
+# Backend (from backend/)
+uv run pytest -v
+uv run ruff check .
 
-# Frontend
-cd frontend && npx vitest run
-
-# Linting
-cd backend && uv run ruff check .
-cd frontend && npm run lint
+# Frontend (from frontend/)
+npx vitest run
+npm run lint
 ```
 
 ---
@@ -223,5 +150,3 @@ cd frontend && npm run lint
 - **Backend:** Follow existing patterns. Use `ruff` for linting. Python 3.14.
 - **Frontend:** TypeScript strict. Use existing component patterns. Vite + React.
 - **Infrastructure:** Terraform with environment-based tfvars.
-- Do not add unnecessary comments, docstrings, or type annotations to code you didn't change.
-- Keep changes minimal and focused — no drive-by refactors.
