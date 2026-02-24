@@ -208,7 +208,7 @@ export const RulesPage = () => {
           <div className="flex items-center gap-3">
             {!isEditing && (
               <span className="text-sm text-muted-foreground">
-                v{activeRule.version} &middot; Updated{' '}
+                Updated{' '}
                 {new Date(activeRule.updated_at).toLocaleDateString()}
               </span>
             )}
