@@ -1,4 +1,5 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, act } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import App from './App';
 
@@ -70,5 +71,56 @@ describe('App', () => {
     const target = document.getElementById('main-content');
     expect(target).toBeInTheDocument();
     expect(target).toHaveAttribute('tabIndex', '-1');
+  });
+
+  describe('downtime warning dialog', () => {
+    it('does not show the dialog initially', () => {
+      render(<App />);
+
+      expect(screen.queryByText('Sistem Tidak Tersedia')).not.toBeInTheDocument();
+    });
+
+    it('shows the dialog when api-server-error event is dispatched', () => {
+      render(<App />);
+
+      act(() => {
+        window.dispatchEvent(new CustomEvent('api-server-error'));
+      });
+
+      expect(screen.getByText('Sistem Tidak Tersedia')).toBeInTheDocument();
+      expect(screen.getByText('Mengerti')).toBeInTheDocument();
+    });
+
+    it('dismisses the dialog when Mengerti is clicked', async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      act(() => {
+        window.dispatchEvent(new CustomEvent('api-server-error'));
+      });
+
+      expect(screen.getByText('Sistem Tidak Tersedia')).toBeInTheDocument();
+
+      await user.click(screen.getByText('Mengerti'));
+
+      expect(screen.queryByText('Sistem Tidak Tersedia')).not.toBeInTheDocument();
+    });
+
+    it('does not reappear after dismissal on subsequent 500 events', async () => {
+      const user = userEvent.setup();
+      render(<App />);
+
+      act(() => {
+        window.dispatchEvent(new CustomEvent('api-server-error'));
+      });
+
+      await user.click(screen.getByText('Mengerti'));
+
+      act(() => {
+        window.dispatchEvent(new CustomEvent('api-server-error'));
+      });
+
+      expect(screen.queryByText('Sistem Tidak Tersedia')).not.toBeInTheDocument();
+    });
   });
 });

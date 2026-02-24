@@ -114,6 +114,68 @@ describe('apiClient', () => {
     });
   });
 
+  describe('server error middleware', () => {
+    it('dispatches api-server-error event on HTTP 500', async () => {
+      const eventHandler = vi.fn();
+      window.addEventListener('api-server-error', eventHandler);
+
+      global.fetch = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ detail: 'Internal Server Error' }), {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      mockedGetCurrentUserToken.mockResolvedValue('test-token');
+
+      const { getCurrentUser } = await import('./apiClient');
+      try { await getCurrentUser(); } catch { /* expected to throw */ }
+
+      expect(eventHandler).toHaveBeenCalledTimes(1);
+      window.removeEventListener('api-server-error', eventHandler);
+    });
+
+    it('does not dispatch event on HTTP 401', async () => {
+      const eventHandler = vi.fn();
+      window.addEventListener('api-server-error', eventHandler);
+
+      global.fetch = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ detail: 'Unauthorized' }), {
+          status: 401,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      mockedGetCurrentUserToken.mockResolvedValue('test-token');
+
+      const { getCurrentUser } = await import('./apiClient');
+      try { await getCurrentUser(); } catch { /* expected to throw */ }
+
+      expect(eventHandler).not.toHaveBeenCalled();
+      window.removeEventListener('api-server-error', eventHandler);
+    });
+
+    it('does not dispatch event on HTTP 404', async () => {
+      const eventHandler = vi.fn();
+      window.addEventListener('api-server-error', eventHandler);
+
+      global.fetch = vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ detail: 'Not found' }), {
+          status: 404,
+          headers: { 'Content-Type': 'application/json' },
+        })
+      );
+
+      mockedGetCurrentUserToken.mockResolvedValue('test-token');
+
+      const { getCurrentUser } = await import('./apiClient');
+      try { await getCurrentUser(); } catch { /* expected to throw */ }
+
+      expect(eventHandler).not.toHaveBeenCalled();
+      window.removeEventListener('api-server-error', eventHandler);
+    });
+  });
+
   describe('getCurrentUser', () => {
     it('makes request to /api/v1/me endpoint', async () => {
       let capturedUrl: string | undefined;
