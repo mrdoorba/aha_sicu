@@ -12,16 +12,18 @@ interface EvaluationHeaderProps {
 }
 
 const VP_DISPLAY_FIELDS = [
-  'BD',
-  'Link Shopee Mall / LazMall',
-  'Kategori',
-  'Shopee Mall',
-  'No OPEX Issue',
-  'Omset >100jt',
-  'Score VP',
-  'No WA',
+  'Nama PIC/ Jabatan*',
+  'No WA*',
   'Email',
+  'Kategori',
+  'Link Shopee Mall / LazMall',
 ] as const;
+
+const FIELD_LABELS: Record<string, string> = {
+  'Nama PIC/ Jabatan*': 'Nama PIC',
+  'No WA*': 'No WA',
+  'Link Shopee Mall / LazMall': 'Link Toko',
+};
 
 const META_KEYS = new Set(['id', 'created_at', 'updated_at', 'synced_at']);
 
@@ -102,7 +104,7 @@ export const EvaluationHeader = ({ brand, isLoading, isError }: EvaluationHeader
       <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
         {vpFields.map(([key, value]) => (
           <span key={key}>
-            <span className="font-medium text-foreground">{key}:</span>{' '}
+            <span className="font-medium text-foreground">{FIELD_LABELS[key] ?? key}:</span>{' '}
             {value.startsWith('https://') || value.startsWith('http://') ? (
               <a href={value} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">
                 {value}

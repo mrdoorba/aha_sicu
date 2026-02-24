@@ -81,19 +81,22 @@ export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
 
 // Priority fields to display from VP raw_data (in order of importance)
 const PRIORITY_KEYS = [
+  'Nama PIC/ Jabatan*',
   'Kategori',
-  'Score\nVP',
-  'Signed up',
-  'Shopee Mall',
-  'No OPEX Issue',
-  'Approach',
+  'No WA*',
 ];
+
+const PRIORITY_LABELS: Record<string, string> = {
+  'Nama PIC/ Jabatan*': 'Nama PIC',
+  'No WA*': 'No WA',
+};
 
 function summarizeRawData(rawData: Record<string, unknown>): string {
   const parts: string[] = [];
   for (const key of PRIORITY_KEYS) {
     if (key in rawData && rawData[key] !== '' && rawData[key] != null) {
-      parts.push(`${key.replace('\n', ' ')}: ${String(rawData[key])}`);
+      const label = PRIORITY_LABELS[key] ?? key;
+      parts.push(`${label}: ${String(rawData[key])}`);
     }
     if (parts.length >= 3) break;
   }

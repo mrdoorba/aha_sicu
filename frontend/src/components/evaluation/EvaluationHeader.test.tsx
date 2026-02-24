@@ -8,11 +8,11 @@ const SAMPLE_BRAND: BrandDetail = {
   id: 1,
   brand_name: 'Test Brand',
   raw_data: {
-    BD: 'John',
-    'Link Shopee Mall / LazMall': 'https://shopee.co.id/mall',
+    'Nama PIC/ Jabatan*': 'John',
+    'No WA*': '081234567890',
+    Email: 'john@example.com',
     Kategori: 'Electronics',
-    'Shopee Mall': 'Yes',
-    'Score VP': '85',
+    'Link Shopee Mall / LazMall': 'https://shopee.co.id/mall',
   },
   updated_at: '2026-02-05T10:00:00Z',
   meeting_raw_data: { notes: 'Good meeting', score: '8' },
@@ -37,15 +37,16 @@ describe('EvaluationHeader', () => {
     expect(screen.getByText('Test Brand')).toBeInTheDocument();
   });
 
-  it('shows curated VP data fields in order', () => {
+  it('shows curated VP data fields with mapped labels', () => {
     renderHeader({ brand: SAMPLE_BRAND, isLoading: false, isError: false });
 
-    expect(screen.getByText('BD:')).toBeInTheDocument();
+    expect(screen.getByText('Nama PIC:')).toBeInTheDocument();
     expect(screen.getByText('John')).toBeInTheDocument();
+    expect(screen.getByText('No WA:')).toBeInTheDocument();
+    expect(screen.getByText('081234567890')).toBeInTheDocument();
     expect(screen.getByText('Kategori:')).toBeInTheDocument();
     expect(screen.getByText('Electronics')).toBeInTheDocument();
-    expect(screen.getByText('Score VP:')).toBeInTheDocument();
-    expect(screen.getByText('85')).toBeInTheDocument();
+    expect(screen.getByText('Link Toko:')).toBeInTheDocument();
   });
 
   it('renders URL fields as clickable links', () => {
@@ -57,10 +58,14 @@ describe('EvaluationHeader', () => {
   });
 
   it('skips curated fields that are missing from raw_data', () => {
-    renderHeader({ brand: SAMPLE_BRAND, isLoading: false, isError: false });
+    const brandMissing = {
+      ...SAMPLE_BRAND,
+      raw_data: { Kategori: 'Electronics' },
+    };
+    renderHeader({ brand: brandMissing, isLoading: false, isError: false });
 
+    expect(screen.queryByText('Nama PIC:')).not.toBeInTheDocument();
     expect(screen.queryByText('No WA:')).not.toBeInTheDocument();
-    expect(screen.queryByText('Email:')).not.toBeInTheDocument();
   });
 
   it('shows Data Meeting badge when meeting data exists', () => {
