@@ -2248,23 +2248,35 @@ class TestMessageTemplatesG75:
                 "⭕️": "",
             },
         }}
-        assert _compute_g75("✔️", rules) == "CUSTOM APPROVED MESSAGE"
-        assert _compute_g75("❌", rules) == "CUSTOM REJECTED MESSAGE"
-        assert _compute_g75("❌ Non Mall", rules) == "CUSTOM NON MALL"
-        assert _compute_g75("❌ No Brand", rules) == "CUSTOM NO BRAND"
-        assert _compute_g75("", rules) == "CUSTOM GOOD STORE"
-        assert _compute_g75("❌ Opex", rules) == "CUSTOM OPEX"
-        assert _compute_g75("⭕️", rules) == ""
+        assert _compute_g75("✔️", "TestStore", rules) == "CUSTOM APPROVED MESSAGE"
+        assert _compute_g75("❌", "TestStore", rules) == "CUSTOM REJECTED MESSAGE"
+        assert _compute_g75("❌ Non Mall", "TestStore", rules) == "CUSTOM NON MALL"
+        assert _compute_g75("❌ No Brand", "TestStore", rules) == "CUSTOM NO BRAND"
+        assert _compute_g75("", "TestStore", rules) == "CUSTOM GOOD STORE"
+        assert _compute_g75("❌ Opex", "TestStore", rules) == "CUSTOM OPEX"
+        assert _compute_g75("⭕️", "TestStore", rules) == ""
+
+    def test_custom_closing_with_store_name_placeholder(self):
+        rules = {**DEFAULT_RULES, "interpretation": {
+            **DEFAULT_RULES["interpretation"],
+            "closing_messages": {
+                **DEFAULT_RULES["interpretation"]["closing_messages"],
+                "✔️": "Hello {store_name}, welcome!",
+            },
+        }}
+        assert _compute_g75("✔️", "BrandX", rules) == "Hello BrandX, welcome!"
 
     def test_g75_rules_none_fallback(self):
-        msg = _compute_g75("✔️", rules=None)
+        msg = _compute_g75("✔️", "TestStore", rules=None)
         assert "potensi" in msg.lower()
         assert "cal-bd2" in msg
+        assert "TestStore" in msg
 
     def test_g75_rules_missing_closing(self):
         rules = {"interpretation": {"ranges": []}}
-        msg = _compute_g75("✔️", rules=rules)
+        msg = _compute_g75("✔️", "TestStore", rules=rules)
         assert "potensi" in msg.lower()  # Falls back to hardcoded
+        assert "TestStore" in msg
 
     def test_g75_custom_closing_propagates_to_email(self, full_manual_data, full_calculator_results):
         rules = {**DEFAULT_RULES, "interpretation": {

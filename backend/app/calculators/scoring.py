@@ -372,12 +372,84 @@ DEFAULT_RULES: dict = {
             {"min": None, "max": 40, "label": "Not Recommended", "verdict": "❌"},
         ],
         "closing_messages": {
-            "✔️": "Berdasarkan data analisa diatas, potensi toko masih belum maksimal. Kami mengundang untuk berdiskusi mengenai potensi optimisasi toko melalui link berikut: cal-bd2.ahacommerce.net",
-            "❌": "Berdasarkan data analisa diatas, perlu mempertimbangkan potensi keuntungan. Silakan cek AHA Coventures: bit.ly/AHACoventures",
-            "❌ Non Mall": "Toko belum berstatus Mall. AHA dapat membantu proses pengajuan Shopee Mall. Persyaratan: HAKI (Merek Terdaftar), NIB, dan dokumen legalitas usaha.",
-            "❌ No Brand": "Toko bukan merupakan toko yang memiliki brand sendiri. Terima kasih atas waktunya, semoga sukses selalu.",
-            "": "Performa toko sudah cukup baik. Terima kasih atas waktunya, semoga sukses selalu.",
-            "❌ Opex": "Tingkat keterlambatan cukup tinggi. Disarankan untuk memperbaiki pengiriman (<2%) dan masa pengemasan (<1 hari) terlebih dahulu.",
+            "✔️": (
+                "Kami melihat bahwa potensi dari Toko {store_name} masih belum maksimal. "
+                "Silahkan klik di link berikut ini untuk menjadwalkan sesi konsultasi yang lebih mendalam "
+                "untuk menemukan solusi yang tepat bagi bisnis Anda.\n\n"
+                "cal-bd2.ahacommerce.net\n\n"
+                "Semoga apa yang kami bagikan dapat bermanfaat."
+            ),
+            "❌": (
+                "Kami sangat yakin bahwa sistem AHA dapat memberikan nilai tambah kepada toko {store_name} "
+                "secara langsung, namun kami perlu mempertimbangkan potensi keuntungan bagi kedua pihak "
+                "untuk kerja-sama ini.\n\n"
+                "Melalui pengalaman kami dengan ratusan toko online, kami mengkhawatirkan pihak brand "
+                "tidak dapat mencapai level keuntungan yang diinginkan bila ditambahkan dengan biaya jasa AHA.\n"
+                "Oleh karena itu, dengan berat hati, kami belum dapat bekerja-sama dengan {store_name} "
+                "di tahap sekarang ini.\n\n"
+                "Namun, kami memiliki skema kerjasama yang lain dimana AHA dapat menjadi partner dari brand "
+                "dan memberikan pendanaan dengan timbal balik saham dari brand. Program ini bernama AHA Coventures. "
+                "Untuk info lebih lanjut dapat dilihat di form pendaftaran berikut: bit.ly/AHACoventures"
+            ),
+            "❌ Non Mall": (
+                "Kami telah melakukan analisa pada toko {store_name} secara langsung. "
+                "Berdasarkan pengalaman kami, toko-toko yang berhasil dikelola oleh AHA Commerce umumnya "
+                "adalah toko-toko yang telah berstatus Mall, karena status tersebut menunjukkan tingkat "
+                "kepercayaan dan potensi pertumbuhan yang lebih stabil.\n\n"
+                "Namun, karena saat ini toko {store_name} belum berstatus Mall, kami belum dapat memastikan "
+                "bahwa sistem AHA dapat memberikan dampak peningkatan omzet yang signifikan.\n\n"
+                "Meski demikian, kami dapat membantu proses pengajuan Mall apabila BRAND berencana untuk "
+                "meningkat ke tahap tersebut. Terdapat beberapa persyaratan (terms) yang perlu dipenuhi, "
+                "di antaranya:\n"
+                "Brand sudah memiliki sertifikat merek HAKI untuk kelas produk\n"
+                "Sertifikat HAKI kelas 35 (jasa penjualan), dan\n"
+                "Emboss logo brand pada produk\n\n"
+                "Apabila brand bersedia dan telah melengkapi persyaratan di atas, kami dengan senang hati "
+                "untuk berdiskusi lebih lanjut dan akan membantu proses pengajuan status Mallnya dengan "
+                "menjadwalkan meeting selanjutnya pada link calendly berikut: "
+                "https://calendly.com/meeting-with-ahacommerce/2ndmeeting\n\n"
+                "Kami berharap hasil evaluasi ini dapat menjadi masukan yang berguna bagi tim {store_name} "
+                "dalam pengembangan toko ke depannya."
+            ),
+            "❌ No Brand": (
+                "Kami telah melakukan analisa pada toko {store_name} secara langsung, namun berdasarkan "
+                "pengalaman kami toko toko yang sukses dikelola AHA adalah toko toko yang memiliki brand "
+                "sendiri dan brandnya sudah mulai dikenal di pasaran\n\n"
+                "Oleh karena melihat toko {store_name} bukan merupakan toko yang memiliki brand sendiri, "
+                "maka kami belum yakin apabila sistem AHA dapat memberikan dampak peningkatan omset yang "
+                "signifikan.\n\n"
+                "Oleh karena itu, dengan berat hati, kami belum dapat bekerja-sama dengan {store_name} "
+                "di tahap sekarang ini.\n\n"
+                "Bagaimanapun juga, semoga hasil evaluasi kami bermanfaat bagi tim {store_name} untuk "
+                "mengidentifikasi bagian² yang perlu diperbaiki.\n\n"
+                "Namun, tidak menutup kemungkinan bagi peluang kerjasama {store_name} dengan AHA Commerce "
+                "di kemudian hari."
+            ),
+            "": (
+                "Kami telah melakukan analisa pada toko {store_name} secara langsung, namun kami perlu "
+                "mempertimbangkan potensi keuntungan bagi kedua pihak untuk kerja-sama ini.\n\n"
+                "Oleh karena tingkat performa toko {store_name} sudah cukup baik, maka kami belum yakin "
+                "apabila sistem AHA dapat memberikan dampak peningkatan omset yang signifikan.\n\n"
+                "Oleh karena itu, dengan berat hati, kami belum dapat bekerja-sama dengan {store_name} "
+                "di tahap sekarang ini.\n\n"
+                "Bagaimanapun juga, semoga hasil evaluasi kami bermanfaat bagi tim {store_name} untuk "
+                "mengidentifikasi bagian² yang perlu diperbaiki.\n\n"
+                "Namun, tidak menutup kemungkinan bagi peluang kerjasama {store_name} dengan AHA Commerce "
+                "di kemudian hari."
+            ),
+            "❌ Opex": (
+                "Melalui pengalaman kami dengan ratusan toko online, omzet suatu toko online sangat bergantung "
+                "pada tingkat performa operasional toko tersebut (pengiriman tepat waktu >90%, tingkat "
+                "pembatalan <1%, dll.).\n\n"
+                "Kami sangat yakin bahwa sistem AHA dapat memberikan nilai tambah kepada toko {store_name} "
+                "dari menambah jumlah orderan masuk lebih tinggi dan meningkatkan omsetnya jauh dari angka "
+                "saat ini. Tetapi kami melihat tingkat keterlambatan yang cukup tinggi sehingga kekhawatiran "
+                "kami cukup besar apabila jumlah orderan bertambah dan tingkat keterlambatan meningkat akan "
+                "berpotensi membuat toko terkena penalti dan berpengaruh pada performa toko.\n\n"
+                "Sehingga apabila dari pihak brand bisa memaksimalkan kecepatan pengiriman dan membuat "
+                "tingkat keterlambatan <2% dan masa pengemasan dibawah satu hari, kami sangat open untuk "
+                "berdiskusi lebih lanjut untuk kerjasama dengan {store_name}."
+            ),
             "⭕️": "",
         },
     },
@@ -1548,45 +1620,23 @@ def _compute_g66(
     return "\n".join(lines)
 
 
-def _compute_g75(verdict: str, rules: dict | None = None) -> str:
-    """G75: Closing message based on verdict type."""
+def _compute_g75(verdict: str, store_name: str = "", rules: dict | None = None) -> str:
+    """G75: Closing message based on verdict type.
+
+    Templates may contain {store_name} which is interpolated with the store name.
+    """
     # Try to read from rules first
     interp_rules = _get_rule_category(rules, "interpretation")
     closing = interp_rules.get("closing_messages")
 
     if closing:
-        return closing.get(verdict, "")
+        template = closing.get(verdict, "")
+    else:
+        # Fallback to hardcoded defaults (same as DEFAULT_RULES)
+        messages = DEFAULT_RULES["interpretation"]["closing_messages"]
+        template = messages.get(verdict, "")
 
-    # Fallback to hardcoded defaults
-    messages = {
-        "✔️": (
-            "Berdasarkan data analisa diatas, potensi toko masih belum maksimal. "
-            "Kami mengundang untuk berdiskusi mengenai potensi optimisasi toko melalui "
-            "link berikut: cal-bd2.ahacommerce.net"
-        ),
-        "❌": (
-            "Berdasarkan data analisa diatas, perlu mempertimbangkan potensi keuntungan. "
-            "Silakan cek AHA Coventures: bit.ly/AHACoventures"
-        ),
-        "❌ Non Mall": (
-            "Toko belum berstatus Mall. AHA dapat membantu proses pengajuan Shopee Mall. "
-            "Persyaratan: HAKI (Merek Terdaftar), NIB, dan dokumen legalitas usaha."
-        ),
-        "❌ No Brand": (
-            "Toko bukan merupakan toko yang memiliki brand sendiri. "
-            "Terima kasih atas waktunya, semoga sukses selalu."
-        ),
-        "": (
-            "Performa toko sudah cukup baik. "
-            "Terima kasih atas waktunya, semoga sukses selalu."
-        ),
-        "❌ Opex": (
-            "Tingkat keterlambatan cukup tinggi. Disarankan untuk memperbaiki pengiriman (<2%) "
-            "dan masa pengemasan (<1 hari) terlebih dahulu."
-        ),
-        "⭕️": "",
-    }
-    return messages.get(verdict, "")
+    return template.replace("{store_name}", store_name) if template else ""
 
 
 # ---------------------------------------------------------------------------
@@ -1822,7 +1872,7 @@ def calculate_score(
     marketing_label = f"📌 Estimasi persentase biaya marketing {brand_name} sekarang:"
 
     g66 = _compute_g66(all_categories, manual_data, g68)
-    g75 = _compute_g75(verdict, rules)
+    g75 = _compute_g75(verdict, store_name, rules)
 
     # --- Email ---
     email_subject = f"🏥 AHA Store Internal Check Up (Store ICU) - {store_name} {period}"

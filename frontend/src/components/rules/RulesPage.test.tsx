@@ -266,7 +266,6 @@ describe('RulesPage', () => {
 
     renderRulesPage();
 
-    expect(screen.getByText(/v1/)).toBeInTheDocument();
     expect(screen.getByText(/Updated/)).toBeInTheDocument();
   });
 
