@@ -787,8 +787,18 @@ const authMiddleware: Middleware = {
   },
 };
 
+const serverErrorMiddleware: Middleware = {
+  async onResponse({ response }) {
+    if (response.status === 500) {
+      window.dispatchEvent(new CustomEvent('api-server-error'));
+    }
+    return response;
+  },
+};
+
 const client = createClient<paths>({ baseUrl });
 client.use(authMiddleware);
+client.use(serverErrorMiddleware);
 
 export default client;
 

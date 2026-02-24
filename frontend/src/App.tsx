@@ -1,8 +1,10 @@
+import { useState, useRef, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Toaster } from './components/ui/sonner';
+import { DowntimeWarningDialog } from './components/DowntimeWarningDialog';
 import { LoginPage } from './pages/LoginPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { BrandsPage } from './pages/BrandsPage';
@@ -16,6 +18,24 @@ import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
 const queryClient = new QueryClient();
 
 function App() {
+  const [showDowntimeWarning, setShowDowntimeWarning] = useState(false);
+  const downtimeDismissedRef = useRef(false);
+
+  const handleDismiss = useCallback(() => {
+    setShowDowntimeWarning(false);
+    downtimeDismissedRef.current = true;
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      if (!downtimeDismissedRef.current) {
+        setShowDowntimeWarning(true);
+      }
+    };
+    window.addEventListener('api-server-error', handler);
+    return () => window.removeEventListener('api-server-error', handler);
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       <BrowserRouter>
@@ -26,6 +46,7 @@ function App() {
           Skip to main content
         </a>
         <AuthProvider>
+          <DowntimeWarningDialog open={showDowntimeWarning} onDismiss={handleDismiss} />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
             <Route
