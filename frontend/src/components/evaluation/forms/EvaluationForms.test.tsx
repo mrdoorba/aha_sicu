@@ -135,12 +135,12 @@ describe('EvaluationForms Integration', () => {
 
   it('renders save indicator when status is saving', () => {
     renderWithProviders({ saveStatus: 'saving' });
-    expect(screen.getByText('Saving...')).toBeInTheDocument();
+    expect(screen.getByText('Menyimpan...')).toBeInTheDocument();
   });
 
   it('renders save indicator when status is saved', () => {
     renderWithProviders({ saveStatus: 'saved', lastSaved: new Date() });
-    expect(screen.getByText('Saved just now')).toBeInTheDocument();
+    expect(screen.getByText('Baru saja tersimpan')).toBeInTheDocument();
   });
 
   it('renders save error with retry button', async () => {
@@ -148,8 +148,8 @@ describe('EvaluationForms Integration', () => {
     const user = userEvent.setup();
     renderWithProviders({ saveStatus: 'error', onRetrySave: onRetry });
 
-    expect(screen.getByText('Save failed.')).toBeInTheDocument();
-    await user.click(screen.getByText('Retry'));
+    expect(screen.getByText('Gagal menyimpan.')).toBeInTheDocument();
+    await user.click(screen.getByText('Coba Lagi'));
     expect(onRetry).toHaveBeenCalled();
   });
 
@@ -161,6 +161,6 @@ describe('EvaluationForms Integration', () => {
   it('keeps calculator results and final score placeholders', () => {
     renderWithProviders();
     expect(screen.getByText('Calculator Results')).toBeInTheDocument();
-    expect(screen.getByText('Final Score')).toBeInTheDocument();
+    expect(screen.getByText('Skor Akhir')).toBeInTheDocument();
   });
 });

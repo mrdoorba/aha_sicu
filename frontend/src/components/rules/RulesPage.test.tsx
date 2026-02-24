@@ -447,7 +447,7 @@ describe('Edit mode', () => {
     await user.click(screen.getByRole('button', { name: /simpan perubahan/i }));
 
     // Password dialog should appear
-    expect(screen.getByText('Confirm Password')).toBeInTheDocument();
+    expect(screen.getByText('Konfirmasi Password')).toBeInTheDocument();
     expect(screen.getByLabelText('Password')).toBeInTheDocument();
   });
 
@@ -482,7 +482,7 @@ describe('Edit mode', () => {
     await user.type(passwordInput, 'mypassword');
 
     // Click Confirm
-    const confirmBtn = screen.getByRole('button', { name: /^confirm$/i });
+    const confirmBtn = screen.getByRole('button', { name: /^konfirmasi$/i });
     await user.click(confirmBtn);
 
     // Verify mutation was called
@@ -521,11 +521,11 @@ describe('Edit mode', () => {
     await user.type(passwordInput, 'wrongpassword');
 
     // Click Confirm
-    const confirmBtn = screen.getByRole('button', { name: /^confirm$/i });
+    const confirmBtn = screen.getByRole('button', { name: /^konfirmasi$/i });
     await user.click(confirmBtn);
 
     // Error shown
-    expect(await screen.findByText('Incorrect password')).toBeInTheDocument();
+    expect(await screen.findByText('Password salah')).toBeInTheDocument();
     // Mutation NOT called
     expect(mockUpdateRuleMutateAsync).not.toHaveBeenCalled();
   });
@@ -609,7 +609,7 @@ describe('Edit mode', () => {
     await user.click(screen.getByRole('button', { name: /simpan perubahan/i }));
     const passwordInput = screen.getByLabelText('Password');
     await user.type(passwordInput, 'mypassword');
-    await user.click(screen.getByRole('button', { name: /^confirm$/i }));
+    await user.click(screen.getByRole('button', { name: /^konfirmasi$/i }));
 
     expect(mockToastSuccess).toHaveBeenCalledWith('Aturan berhasil diperbarui');
   });
@@ -662,7 +662,7 @@ describe('Header navigation', () => {
       isError: false,
     });
 
-    expect(screen.getByRole('link', { name: /rules/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /aturan/i })).toBeInTheDocument();
   });
 
   it('shows Rules nav link for admin role', () => {
@@ -672,7 +672,7 @@ describe('Header navigation', () => {
       isError: false,
     });
 
-    expect(screen.getByRole('link', { name: /rules/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /aturan/i })).toBeInTheDocument();
   });
 
   it('hides Rules nav link for member role', () => {
@@ -683,7 +683,7 @@ describe('Header navigation', () => {
     });
 
     const navLinks = screen.getAllByRole('link');
-    const rulesLink = navLinks.find((link) => link.textContent === 'Rules');
+    const rulesLink = navLinks.find((link) => link.textContent === 'Aturan');
     expect(rulesLink).toBeUndefined();
   });
 });
@@ -998,7 +998,7 @@ describe('Message templates', () => {
     await user.click(screen.getByRole('button', { name: /simpan perubahan/i }));
     const passwordInput = screen.getByLabelText('Password');
     await user.type(passwordInput, 'mypassword');
-    await user.click(screen.getByRole('button', { name: /^confirm$/i }));
+    await user.click(screen.getByRole('button', { name: /^konfirmasi$/i }));
 
     // Verify the mutation was called with the edited message
     expect(mockUpdateRuleMutateAsync).toHaveBeenCalled();

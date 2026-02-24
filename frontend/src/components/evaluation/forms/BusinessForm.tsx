@@ -1,4 +1,5 @@
 import { useMemo } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../../ui/card';
 import { CurrencyField } from './CurrencyField';
 import { NumberField } from './NumberField';
@@ -18,6 +19,7 @@ function formatCurrencyDisplay(value: number): string {
 }
 
 export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessFormProps) {
+  const { t } = useTranslation();
   const monthLabels = useMemo(() => generateMonthLabels(data.salesStartMonth), [data.salesStartMonth]);
 
   // Generate month options for the selector (last 12 months from now)
@@ -36,10 +38,10 @@ export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessF
   // Dynamic label overrides for sales months and conversion rate
   const getFieldLabel = (field: typeof BUSINESS_FIELDS[number], index: number): string => {
     if (field.key === 'conversionRate') {
-      return `Tingkat Konversi ${monthLabels[0]}`;
+      return t('forms.business.conversionRate', { month: monthLabels[0] });
     }
     if (field.key.startsWith('salesMonth')) {
-      return `Penjualan Bulan ${monthLabels[index]}`;
+      return t('forms.business.salesMonth', { month: monthLabels[index] });
     }
     return field.label;
   };
@@ -56,8 +58,8 @@ export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessF
     <Card className="mb-4">
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          Bisnis Analisis
-          <a href={SECTION_LINKS.business} target="_blank" rel="noopener noreferrer" aria-label="Buka Shopee Seller Center (tab baru)">
+          {t('forms.business.title')}
+          <a href={SECTION_LINKS.business} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
             <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
@@ -65,7 +67,7 @@ export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessF
         {/* Month selector */}
         <div className="mb-4">
           <label htmlFor="salesStartMonth" className="mb-1 block text-sm font-medium">
-            Bulan Awal Penjualan
+            {t('forms.business.startMonth')}
           </label>
           <select
             id="salesStartMonth"
@@ -76,7 +78,7 @@ export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessF
             }}
             onBlur={onBlur}
           >
-            <option value="">-- Pilih Bulan --</option>
+            <option value="">{t('forms.business.selectMonth')}</option>
             {monthOptions.map((opt) => (
               <option key={opt.value} value={opt.value}>{opt.label}</option>
             ))}
@@ -119,7 +121,7 @@ export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessF
 
         {/* Computed: Average sales */}
         <div className="mt-4">
-          <p className="mb-1 text-sm font-medium">Rata-rata Penjualan 6 Bulan Terakhir</p>
+          <p className="mb-1 text-sm font-medium">{t('forms.business.averageSales')}</p>
           <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
             {average == null ? '—' : formatCurrencyDisplay(average)}
           </div>

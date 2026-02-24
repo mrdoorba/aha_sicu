@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, ChevronLeft, ChevronRight, RefreshCw, XCircle } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Header } from '../components/layout/Header';
 import { SyncStatus } from '../components/sync/SyncStatus';
 import { BrandTable } from '../components/brands/BrandTable';
@@ -9,6 +10,7 @@ import { Card, CardContent } from '../components/ui/card';
 import { useBrands } from '../hooks/useBrands';
 
 export const BrandsPage = () => {
+  const { t } = useTranslation();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -34,7 +36,7 @@ export const BrandsPage = () => {
     <div className="min-h-screen bg-muted">
       <Header />
       <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8">
-        <h2 className="mb-6 text-2xl font-semibold text-foreground">Brands</h2>
+        <h2 className="mb-6 text-2xl font-semibold text-foreground">{t('brands.title')}</h2>
 
         {/* Sync Status */}
         <div className="mb-6">
@@ -46,8 +48,8 @@ export const BrandsPage = () => {
           <Search className="absolute left-3 top-1/2 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
           <Input
             type="search"
-            placeholder="Search brands..."
-            aria-label="Search brands"
+            placeholder={t('brands.searchPlaceholder')}
+            aria-label={t('brands.searchLabel')}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
@@ -61,21 +63,20 @@ export const BrandsPage = () => {
               <div className="flex flex-col items-center gap-3 py-16 text-center">
                 <XCircle className="size-10 text-destructive" aria-hidden="true" />
                 <p className="text-muted-foreground">
-                  Failed to load brands. Please try again later.
+                  {t('brands.errorLoading')}
                 </p>
               </div>
             ) : isEmpty ? (
               <div className="flex flex-col items-center gap-3 py-16 text-center">
                 <RefreshCw className="size-10 text-muted-foreground" aria-hidden="true" />
                 <p className="text-muted-foreground">
-                  No brands synced yet. Click &quot;Sync Now&quot; to get
-                  started.
+                  {t('brands.emptyState')}
                 </p>
               </div>
             ) : noResults ? (
               <div className="py-16 text-center">
                 <p className="text-muted-foreground">
-                  No brands found matching &quot;{debouncedSearch}&quot;
+                  {t('brands.noResults', { search: debouncedSearch })}
                 </p>
               </div>
             ) : (
@@ -97,10 +98,10 @@ export const BrandsPage = () => {
               disabled={page <= 1}
             >
               <ChevronLeft className="size-4" aria-hidden="true" />
-              Previous
+              {t('common.previous')}
             </Button>
             <span className="text-sm text-muted-foreground">
-              Page {page} of {totalPages}
+              {t('common.pageOf', { page, totalPages })}
             </span>
             <Button
               variant="outline"
@@ -108,7 +109,7 @@ export const BrandsPage = () => {
               onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
               disabled={page >= totalPages}
             >
-              Next
+              {t('common.next')}
               <ChevronRight className="size-4" aria-hidden="true" />
             </Button>
           </div>

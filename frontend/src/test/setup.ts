@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom';
 import { vi } from 'vitest';
+import '../i18n';
 
 // Mock Firebase to prevent auth/invalid-api-key errors in tests
 class MockFirebaseError extends Error {

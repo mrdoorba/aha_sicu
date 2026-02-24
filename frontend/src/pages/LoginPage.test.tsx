@@ -37,7 +37,7 @@ describe('LoginPage', () => {
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
     expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
-    expect(screen.getByText(/store icu login/i)).toBeInTheDocument();
+    expect(screen.getByText(/login store icu/i)).toBeInTheDocument();
   });
 
   it('shows validation error for empty email', async () => {
@@ -47,7 +47,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /login/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/email is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/email wajib diisi/i)).toBeInTheDocument();
     });
   });
 
@@ -67,7 +67,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /login/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/password is required/i)).toBeInTheDocument();
+      expect(screen.getByText(/password wajib diisi/i)).toBeInTheDocument();
     });
   });
 
@@ -101,7 +101,7 @@ describe('LoginPage', () => {
     await user.click(screen.getByRole('button', { name: /login/i }));
 
     await waitFor(() => {
-      expect(screen.getByText(/invalid email or password/i)).toBeInTheDocument();
+      expect(screen.getByText(/email atau password salah/i)).toBeInTheDocument();
     });
   });
 
@@ -120,7 +120,7 @@ describe('LoginPage', () => {
     await user.type(screen.getByLabelText(/password/i), 'password123');
     await user.click(screen.getByRole('button', { name: /login/i }));
 
-    expect(screen.getByText(/logging in/i)).toBeInTheDocument();
+    expect(screen.getByText(/sedang masuk/i)).toBeInTheDocument();
 
     // Resolve the login promise and wait for state updates
     await act(async () => {
@@ -143,7 +143,7 @@ describe('LoginPage', () => {
     await user.type(screen.getByLabelText(/password/i), 'password123');
     await user.click(screen.getByRole('button', { name: /login/i }));
 
-    expect(screen.getByRole('button', { name: /logging in/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /sedang masuk/i })).toBeDisabled();
 
     // Resolve the login promise and wait for state updates
     await act(async () => {

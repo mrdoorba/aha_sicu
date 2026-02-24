@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
 import { Header } from '../components/layout/Header';
@@ -48,6 +49,7 @@ const dateFormatter = new Intl.DateTimeFormat('id-ID', {
 });
 
 export const AccountsPage = () => {
+  const { t } = useTranslation();
   const { profile } = useCurrentUser();
   const { accounts, isLoading, isError, refetch } = useAccounts();
   const createAccount = useCreateAccount();
@@ -74,13 +76,13 @@ export const AccountsPage = () => {
         password: createPassword,
         role: createRole,
       });
-      toast.success('Akun berhasil dibuat');
+      toast.success(t('accounts.toast.createSuccess'));
       setShowCreateDialog(false);
       setCreateEmail('');
       setCreatePassword('');
       setCreateRole('member');
     } catch {
-      toast.error('Gagal membuat akun');
+      toast.error(t('accounts.toast.createError'));
     }
   };
 
@@ -90,9 +92,9 @@ export const AccountsPage = () => {
         userId,
         role: role as (typeof ROLES)[number],
       });
-      toast.success('Peran berhasil diubah');
+      toast.success(t('accounts.toast.roleChangeSuccess'));
     } catch {
-      toast.error('Gagal mengubah peran');
+      toast.error(t('accounts.toast.roleChangeError'));
     }
   };
 
@@ -103,11 +105,11 @@ export const AccountsPage = () => {
         userId: resetTarget.id,
         password: newPassword,
       });
-      toast.success('Password berhasil direset');
+      toast.success(t('accounts.toast.resetSuccess'));
       setResetTarget(null);
       setNewPassword('');
     } catch {
-      toast.error('Gagal mereset password');
+      toast.error(t('accounts.toast.resetError'));
     }
   };
 
@@ -115,10 +117,10 @@ export const AccountsPage = () => {
     if (!deleteTarget) return;
     try {
       await deleteAccount.mutateAsync(deleteTarget.id);
-      toast.success('Akun berhasil dihapus');
+      toast.success(t('accounts.toast.deleteSuccess'));
       setDeleteTarget(null);
     } catch {
-      toast.error('Gagal menghapus akun');
+      toast.error(t('accounts.toast.deleteError'));
     }
   };
 
@@ -142,8 +144,8 @@ export const AccountsPage = () => {
         <Header />
         <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
           <div className="text-center py-12">
-            <p className="text-destructive mb-4">Gagal memuat data akun.</p>
-            <Button onClick={() => refetch()}>Coba Lagi</Button>
+            <p className="text-destructive mb-4">{t('accounts.errorLoading')}</p>
+            <Button onClick={() => refetch()}>{t('common.retry')}</Button>
           </div>
         </main>
       </div>
@@ -155,18 +157,18 @@ export const AccountsPage = () => {
       <Header />
       <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold tracking-tight">Manajemen Akun</h2>
-          <Button onClick={() => setShowCreateDialog(true)}>Buat Akun</Button>
+          <h2 className="text-2xl font-bold tracking-tight">{t('accounts.title')}</h2>
+          <Button onClick={() => setShowCreateDialog(true)}>{t('accounts.createAccount')}</Button>
         </div>
 
         <div className="rounded-md border bg-background">
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Email</TableHead>
-                <TableHead className="w-40">Peran</TableHead>
-                <TableHead>Login Terakhir</TableHead>
-                <TableHead className="w-40">Aksi</TableHead>
+                <TableHead>{t('accounts.email')}</TableHead>
+                <TableHead className="w-40">{t('accounts.role')}</TableHead>
+                <TableHead>{t('accounts.lastLogin')}</TableHead>
+                <TableHead className="w-40">{t('accounts.actions')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -181,7 +183,7 @@ export const AccountsPage = () => {
                         onValueChange={(value) => handleRoleChange(account.id, value)}
                         disabled={isSelf}
                       >
-                        <SelectTrigger className="h-8 w-32" aria-label={`Peran ${account.email}`}>
+                        <SelectTrigger className="h-8 w-32" aria-label={t('accounts.roleFor', { email: account.email })}>
                           <SelectValue />
                         </SelectTrigger>
                         <SelectContent>
@@ -209,7 +211,7 @@ export const AccountsPage = () => {
                             setNewPassword('');
                           }}
                         >
-                          Reset PW
+                          {t('accounts.resetPw')}
                         </Button>
                         <Button
                           variant="destructive"
@@ -217,7 +219,7 @@ export const AccountsPage = () => {
                           disabled={isSelf}
                           onClick={() => setDeleteTarget(account)}
                         >
-                          Hapus
+                          {t('accounts.delete')}
                         </Button>
                       </div>
                     </TableCell>
@@ -233,31 +235,31 @@ export const AccountsPage = () => {
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Buat Akun Baru</DialogTitle>
+            <DialogTitle>{t('accounts.dialog.createTitle')}</DialogTitle>
             <DialogDescription>
-              Masukkan email, password, dan peran untuk akun baru.
+              {t('accounts.dialog.createDescription')}
             </DialogDescription>
           </DialogHeader>
           <div className="space-y-4">
             <Input
               type="email"
-              placeholder="Email"
+              placeholder={t('accounts.email')}
               value={createEmail}
               onChange={(e) => setCreateEmail(e.target.value)}
-              aria-label="Email"
+              aria-label={t('accounts.email')}
             />
             <Input
               type="password"
-              placeholder="Password (min. 6 karakter)"
+              placeholder={t('accounts.dialog.passwordPlaceholder')}
               value={createPassword}
               onChange={(e) => setCreatePassword(e.target.value)}
-              aria-label="Password"
+              aria-label={t('accounts.dialog.password')}
             />
             <Select
               value={createRole}
               onValueChange={(v) => setCreateRole(v as (typeof ROLES)[number])}
             >
-              <SelectTrigger aria-label="Peran">
+              <SelectTrigger aria-label={t('accounts.role')}>
                 <SelectValue />
               </SelectTrigger>
               <SelectContent>
@@ -275,14 +277,14 @@ export const AccountsPage = () => {
               onClick={() => setShowCreateDialog(false)}
               disabled={createAccount.isPending}
             >
-              Batal
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleCreate}
               disabled={!createEmail || createPassword.length < 6 || createAccount.isPending}
             >
               {createAccount.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Buat
+              {t('accounts.dialog.create')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -292,17 +294,17 @@ export const AccountsPage = () => {
       <Dialog open={!!resetTarget} onOpenChange={(open) => !open && setResetTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Reset Password</DialogTitle>
+            <DialogTitle>{t('accounts.dialog.resetTitle')}</DialogTitle>
             <DialogDescription>
-              Masukkan password baru untuk {resetTarget?.email}.
+              {t('accounts.dialog.resetDescription', { email: resetTarget?.email })}
             </DialogDescription>
           </DialogHeader>
           <Input
             type="password"
-            placeholder="Password baru (min. 6 karakter)"
+            placeholder={t('accounts.dialog.newPasswordPlaceholder')}
             value={newPassword}
             onChange={(e) => setNewPassword(e.target.value)}
-            aria-label="Password baru"
+            aria-label={t('accounts.dialog.newPassword')}
           />
           <DialogFooter>
             <Button
@@ -310,14 +312,14 @@ export const AccountsPage = () => {
               onClick={() => setResetTarget(null)}
               disabled={resetPassword.isPending}
             >
-              Batal
+              {t('common.cancel')}
             </Button>
             <Button
               onClick={handleResetPassword}
               disabled={newPassword.length < 6 || resetPassword.isPending}
             >
               {resetPassword.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Reset
+              {t('accounts.dialog.reset')}
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -327,10 +329,9 @@ export const AccountsPage = () => {
       <Dialog open={!!deleteTarget} onOpenChange={(open) => !open && setDeleteTarget(null)}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Hapus Akun</DialogTitle>
+            <DialogTitle>{t('accounts.dialog.deleteTitle')}</DialogTitle>
             <DialogDescription>
-              Apakah Anda yakin ingin menghapus akun <strong>{deleteTarget?.email}</strong>?
-              Tindakan ini tidak dapat dibatalkan. Data evaluasi akan tetap tersimpan.
+              {t('accounts.dialog.deleteDescription', { email: deleteTarget?.email })}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
@@ -339,7 +340,7 @@ export const AccountsPage = () => {
               onClick={() => setDeleteTarget(null)}
               disabled={deleteAccount.isPending}
             >
-              Batal
+              {t('common.cancel')}
             </Button>
             <Button
               variant="destructive"
@@ -347,7 +348,7 @@ export const AccountsPage = () => {
               disabled={deleteAccount.isPending}
             >
               {deleteAccount.isPending && <Loader2 className="mr-2 size-4 animate-spin" />}
-              Hapus
+              {t('accounts.delete')}
             </Button>
           </DialogFooter>
         </DialogContent>

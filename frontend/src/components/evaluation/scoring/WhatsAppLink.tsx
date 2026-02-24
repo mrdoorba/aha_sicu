@@ -1,4 +1,5 @@
 import { ExternalLink } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../ui/button';
 
 interface WhatsAppLinkProps {
@@ -6,11 +7,13 @@ interface WhatsAppLinkProps {
 }
 
 export const WhatsAppLink = ({ link }: WhatsAppLinkProps) => {
+  const { t } = useTranslation();
+
   return (
     <Button variant="outline" size="sm" asChild>
       <a href={link} target="_blank" rel="noopener noreferrer">
         <ExternalLink className="mr-1 size-3.5" aria-hidden="true" />
-        Open WhatsApp
+        {t('whatsapp.open')}
       </a>
     </Button>
   );

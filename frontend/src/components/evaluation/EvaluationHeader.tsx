@@ -1,5 +1,6 @@
 import { ArrowLeft } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import type { BrandDetail } from '../../hooks/useBrandDetail';
@@ -32,6 +33,7 @@ function getDisplayFields(rawData: Record<string, unknown>): Array<[string, stri
 }
 
 export const EvaluationHeader = ({ brand, isLoading, isError }: EvaluationHeaderProps) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
 
   if (isLoading) {
@@ -57,10 +59,10 @@ export const EvaluationHeader = ({ brand, isLoading, isError }: EvaluationHeader
           onClick={() => navigate('/brands')}
         >
           <ArrowLeft className="mr-1 size-4" aria-hidden="true" />
-          Back to Brands
+          {t('common.backToBrands')}
         </Button>
         <p className="text-destructive">
-          {isError ? 'Failed to load brand data.' : 'Brand not found.'}
+          {isError ? t('evaluationHeader.errorLoading') : t('evaluationHeader.brandNotFound')}
         </p>
       </div>
     );
@@ -84,14 +86,14 @@ export const EvaluationHeader = ({ brand, isLoading, isError }: EvaluationHeader
         onClick={() => navigate('/brands')}
       >
         <ArrowLeft className="mr-1 size-4" aria-hidden="true" />
-        Back to Brands
+        {t('common.backToBrands')}
       </Button>
 
       <div className="flex items-center gap-3">
         <h2 className="text-2xl font-bold text-foreground">{brand.brand_name}</h2>
         {brand.meeting_raw_data ? (
           <Badge className="bg-green-500 text-white hover:bg-green-500/90">
-            Meeting Data
+            {t('evaluationHeader.meetingData')}
           </Badge>
         ) : null}
       </div>
@@ -116,7 +118,7 @@ export const EvaluationHeader = ({ brand, isLoading, isError }: EvaluationHeader
       {meetingFields ? (
         <div className="rounded-md border bg-card p-3">
           <p className="mb-1 text-xs font-semibold uppercase text-muted-foreground">
-            Meeting Data
+            {t('evaluationHeader.meetingData')}
           </p>
           <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
             {meetingFields.map(([key, value]) => (
@@ -134,7 +136,7 @@ export const EvaluationHeader = ({ brand, isLoading, isError }: EvaluationHeader
           </div>
         </div>
       ) : (
-        <p className="text-sm text-muted-foreground">No meeting data available</p>
+        <p className="text-sm text-muted-foreground">{t('evaluationHeader.noMeetingData')}</p>
       )}
     </div>
   );

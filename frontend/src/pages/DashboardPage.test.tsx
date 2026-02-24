@@ -27,7 +27,7 @@ describe('DashboardPage', () => {
   it('renders welcome message', () => {
     renderDashboardPage();
 
-    expect(screen.getByText(/welcome to store icu/i)).toBeInTheDocument();
+    expect(screen.getByText(/selamat datang di store icu/i)).toBeInTheDocument();
   });
 
   it('has main content landmark with id="main-content" and tabIndex', () => {

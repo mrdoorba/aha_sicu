@@ -142,7 +142,7 @@ describe('EvaluationDetailPage', () => {
   it('renders score breakdown table with per-category scores', () => {
     renderPage();
 
-    expect(screen.getByText('Score Breakdown')).toBeInTheDocument();
+    expect(screen.getByText('Rincian Skor')).toBeInTheDocument();
     expect(screen.getByText('Operational')).toBeInTheDocument();
     expect(screen.getByText('10.0/10')).toBeInTheDocument();
     expect(screen.getByText('Business')).toBeInTheDocument();
@@ -153,23 +153,23 @@ describe('EvaluationDetailPage', () => {
   it('renders calculator results (ads keyword text, top SKU tables, discount values)', () => {
     renderPage();
 
-    expect(screen.getByText('Calculator Results')).toBeInTheDocument();
+    expect(screen.getByText('Hasil Kalkulator')).toBeInTheDocument();
     // Ads Keyword
-    expect(screen.getByText('Ads Keyword Analysis')).toBeInTheDocument();
+    expect(screen.getByText('Analisis Ads Keyword')).toBeInTheDocument();
     expect(screen.getByText('AK analysis text output')).toBeInTheDocument();
     // Top SKU
-    expect(screen.getByText('Top SKU Analysis')).toBeInTheDocument();
+    expect(screen.getByText('Analisis Top SKU')).toBeInTheDocument();
     expect(screen.getByText('V001')).toBeInTheDocument();
     expect(screen.getByText('Shoe A')).toBeInTheDocument();
     // Discount
-    expect(screen.getByText('Discount Check')).toBeInTheDocument();
+    expect(screen.getByText('Cek Diskon')).toBeInTheDocument();
     expect(screen.getByText(/Diskon TOP SKU/)).toBeInTheDocument();
   });
 
   it('renders manual inputs organized by category', () => {
     renderPage();
 
-    expect(screen.getByText('Manual Inputs')).toBeInTheDocument();
+    expect(screen.getByText('Input Manual')).toBeInTheDocument();
     expect(screen.getByText('operational')).toBeInTheDocument();
     expect(screen.getByText('business')).toBeInTheDocument();
     expect(screen.getByText('pesanan tidak terselesaikan')).toBeInTheDocument();
@@ -180,7 +180,7 @@ describe('EvaluationDetailPage', () => {
 
     expect(screen.getByText('Email Output')).toBeInTheDocument();
     expect(screen.getByText(/Brand evaluation for Nike Indonesia/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /copy email output/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /email output/i })).toBeInTheDocument();
   });
 
   it('hides email section when email_output is null', () => {
@@ -204,7 +204,7 @@ describe('EvaluationDetailPage', () => {
 
     renderPage();
 
-    const copyBtn = screen.getByRole('button', { name: /copy email output/i });
+    const copyBtn = screen.getByRole('button', { name: /email output/i });
     await userEvent.click(copyBtn);
 
     expect(writeText).toHaveBeenCalledWith(MOCK_EVALUATION.email_output);
@@ -237,8 +237,8 @@ describe('EvaluationDetailPage', () => {
 
     renderPage();
 
-    expect(screen.getByText('Failed to load evaluation details')).toBeInTheDocument();
-    const retryBtn = screen.getByRole('button', { name: /retry/i });
+    expect(screen.getByText('Gagal memuat detail evaluasi')).toBeInTheDocument();
+    const retryBtn = screen.getByRole('button', { name: /coba lagi/i });
     expect(retryBtn).toBeInTheDocument();
 
     await userEvent.click(retryBtn);
@@ -257,8 +257,8 @@ describe('EvaluationDetailPage', () => {
 
     renderPage('/history/invalid');
 
-    expect(screen.getByText('Evaluation not found')).toBeInTheDocument();
-    const backButtons = screen.getAllByRole('button', { name: /back to history/i });
+    expect(screen.getByText('Evaluasi tidak ditemukan')).toBeInTheDocument();
+    const backButtons = screen.getAllByRole('button', { name: /kembali ke riwayat/i });
     expect(backButtons.length).toBeGreaterThanOrEqual(2);
   });
 
@@ -274,15 +274,15 @@ describe('EvaluationDetailPage', () => {
 
     renderPage('/history/99999');
 
-    expect(screen.getByText('Evaluation not found')).toBeInTheDocument();
-    const backButtons = screen.getAllByRole('button', { name: /back to history/i });
+    expect(screen.getByText('Evaluasi tidak ditemukan')).toBeInTheDocument();
+    const backButtons = screen.getAllByRole('button', { name: /kembali ke riwayat/i });
     expect(backButtons.length).toBeGreaterThanOrEqual(2);
   });
 
   it('back to history button navigates to /history', async () => {
     renderPage();
 
-    const backBtn = screen.getByRole('button', { name: /back to history/i });
+    const backBtn = screen.getByRole('button', { name: /kembali ke riwayat/i });
     await userEvent.click(backBtn);
 
     await waitFor(() => {

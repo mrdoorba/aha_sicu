@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -24,6 +25,7 @@ export const PasswordConfirmDialog = ({
   onCancel,
   isLoading,
 }: PasswordConfirmDialogProps) => {
+  const { t } = useTranslation();
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isReauthing, setIsReauthing] = useState(false);
@@ -44,7 +46,7 @@ export const PasswordConfirmDialog = ({
     try {
       await reauthenticateUser(password);
     } catch {
-      setError('Incorrect password');
+      setError(t('passwordConfirm.incorrectPassword'));
       setIsReauthing(false);
       return;
     }
@@ -52,7 +54,7 @@ export const PasswordConfirmDialog = ({
     try {
       await onConfirm();
     } catch {
-      setError('Failed to save changes. Please try again.');
+      setError(t('passwordConfirm.saveFailed'));
     }
   };
 
@@ -72,15 +74,15 @@ export const PasswordConfirmDialog = ({
     <Dialog open={open} onOpenChange={handleOpenChange}>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>Confirm Password</DialogTitle>
+          <DialogTitle>{t('passwordConfirm.title')}</DialogTitle>
           <DialogDescription>
-            Enter your password to confirm scoring rule changes.
+            {t('passwordConfirm.description')}
           </DialogDescription>
         </DialogHeader>
         <div className="space-y-2">
           <Input
             type="password"
-            placeholder="Password"
+            placeholder={t('passwordConfirm.passwordPlaceholder')}
             value={password}
             onChange={(e) => {
               setPassword(e.target.value);
@@ -92,7 +94,7 @@ export const PasswordConfirmDialog = ({
               }
             }}
             disabled={isBusy}
-            aria-label="Password"
+            aria-label={t('passwordConfirm.passwordPlaceholder')}
           />
           {error && (
             <p className="text-sm text-destructive">{error}</p>
@@ -100,10 +102,10 @@ export const PasswordConfirmDialog = ({
         </div>
         <DialogFooter>
           <Button variant="outline" onClick={handleCancel} disabled={isBusy}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button onClick={handleConfirm} disabled={!password || isBusy}>
-            {isBusy ? 'Confirming...' : 'Confirm'}
+            {isBusy ? t('passwordConfirm.confirming') : t('passwordConfirm.confirm')}
           </Button>
         </DialogFooter>
       </DialogContent>

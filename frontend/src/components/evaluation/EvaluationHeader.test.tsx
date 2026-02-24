@@ -63,19 +63,19 @@ describe('EvaluationHeader', () => {
     expect(screen.queryByText('Email:')).not.toBeInTheDocument();
   });
 
-  it('shows Meeting Data badge when meeting data exists', () => {
+  it('shows Data Meeting badge when meeting data exists', () => {
     renderHeader({ brand: SAMPLE_BRAND, isLoading: false, isError: false });
 
-    // Badge and section header both say "Meeting Data" — use getAllByText
-    const meetingLabels = screen.getAllByText('Meeting Data');
+    // Badge and section header both say "Data Meeting" — use getAllByText
+    const meetingLabels = screen.getAllByText('Data Meeting');
     expect(meetingLabels.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('shows "No meeting data available" when meeting data is null', () => {
+  it('shows "Tidak ada data meeting" when meeting data is null', () => {
     const brandNoMeeting = { ...SAMPLE_BRAND, meeting_raw_data: null };
     renderHeader({ brand: brandNoMeeting, isLoading: false, isError: false });
 
-    expect(screen.getByText('No meeting data available')).toBeInTheDocument();
+    expect(screen.getByText('Tidak ada data meeting')).toBeInTheDocument();
   });
 
   it('shows loading skeleton when loading', () => {
@@ -87,12 +87,12 @@ describe('EvaluationHeader', () => {
   it('shows error message on error', () => {
     renderHeader({ brand: null, isLoading: false, isError: true });
 
-    expect(screen.getByText(/failed to load brand data/i)).toBeInTheDocument();
+    expect(screen.getByText(/gagal memuat data brand/i)).toBeInTheDocument();
   });
 
   it('renders back button', () => {
     renderHeader({ brand: SAMPLE_BRAND, isLoading: false, isError: false });
 
-    expect(screen.getByRole('button', { name: /back to brands/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /kembali ke brand/i })).toBeInTheDocument();
   });
 });

@@ -1,4 +1,5 @@
 import { useEffect, useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../ui/card';
 import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
@@ -77,6 +78,7 @@ export const EvaluationSections = ({
   saveError,
   onResetSave: _onResetSave, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: EvaluationSectionsProps) => {
+  const { t } = useTranslation();
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   useEffect(() => {
@@ -116,13 +118,13 @@ export const EvaluationSections = ({
       {/* Section 1: Brand Info & Operational */}
       <section id="section-1" ref={setSectionRef('section-1')}>
         <h3 className="mb-4 text-lg font-semibold text-foreground">
-          Step 1. Brand Info &amp; Kesehatan Operasional
+          {t('evaluationSections.step1')}
         </h3>
 
         {/* Fashion/Non-Fashion Selector */}
         <Card className="mb-4">
           <CardContent className="pt-4">
-            <p className="mb-3 text-sm font-medium">Kategori Toko</p>
+            <p className="mb-3 text-sm font-medium">{t('evaluationSections.categoryLabel')}</p>
             <RadioGroup
               value={categoryType ?? ''}
               onValueChange={onCategoryChange}
@@ -130,11 +132,11 @@ export const EvaluationSections = ({
             >
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="fashion" id="cat-fashion" />
-                <Label htmlFor="cat-fashion">Fashion</Label>
+                <Label htmlFor="cat-fashion">{t('evaluationSections.fashion')}</Label>
               </div>
               <div className="flex items-center gap-2">
                 <RadioGroupItem value="non_fashion" id="cat-non-fashion" />
-                <Label htmlFor="cat-non-fashion">Non-Fashion</Label>
+                <Label htmlFor="cat-non-fashion">{t('evaluationSections.nonFashion')}</Label>
               </div>
             </RadioGroup>
           </CardContent>
@@ -150,7 +152,7 @@ export const EvaluationSections = ({
       {/* Section 2: Bisnis Analisis & Tinjauan Pengunjung */}
       <section id="section-2" ref={setSectionRef('section-2')}>
         <h3 className="mb-4 text-lg font-semibold text-foreground">
-          Step 2. Bisnis Analisis &amp; Tinjauan Pengunjung
+          {t('evaluationSections.step2')}
         </h3>
         <BusinessForm
           data={manualData.business}
@@ -169,7 +171,7 @@ export const EvaluationSections = ({
       {/* Section 3: Promo Tools & Products/Status */}
       <section id="section-3" ref={setSectionRef('section-3')}>
         <h3 className="mb-4 text-lg font-semibold text-foreground">
-          Step 3. Alat Promosi &amp; Products/Status
+          {t('evaluationSections.step3')}
         </h3>
         <PromoToolsForm
           data={manualData.promoTools}
@@ -188,7 +190,7 @@ export const EvaluationSections = ({
       {/* Section 4: File Upload */}
       <section id="section-4" ref={setSectionRef('section-4')}>
         <h3 className="mb-4 text-lg font-semibold text-foreground">
-          Step 4. File Upload
+          {t('evaluationSections.step4')}
         </h3>
         <FileUploadSection brandId={brandId} />
       </section>
@@ -196,7 +198,7 @@ export const EvaluationSections = ({
       {/* Section 5: Data Iklan, Campaign, Kompetisi & Review */}
       <section id="section-5" ref={setSectionRef('section-5')}>
         <h3 className="mb-4 text-lg font-semibold text-foreground">
-          Step 5. Data Iklan, Campaign, Kompetisi &amp; Review
+          {t('evaluationSections.step5')}
         </h3>
         <AdsForm
           data={manualData.ads}
@@ -221,7 +223,7 @@ export const EvaluationSections = ({
         {/* Final Score */}
         <section id="section-6" ref={setSectionRef('section-6')} className="mt-4">
           <h3 className="mb-4 text-lg font-semibold text-foreground">
-            Step 6. Final Score
+            {t('evaluationSections.step6')}
           </h3>
           <ScoringSection
             onGenerate={onGenerateScore}
@@ -245,28 +247,28 @@ export const EvaluationSections = ({
             {isSaving ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
-                Saving...
+                {t('evaluationSections.saving')}
               </>
             ) : isSaved ? (
               <>
                 <Check className="mr-2 size-4" aria-hidden="true" />
-                Saved ✓
+                {t('evaluationSections.saved')}
               </>
             ) : (
               <>
                 <Save className="mr-2 size-4" aria-hidden="true" />
-                Save Evaluation
+                {t('evaluationSections.saveEvaluation')}
               </>
             )}
           </Button>
           {!scoringResult && !isSaved && (
             <p className="mt-1 text-center text-sm text-muted-foreground">
-              Generate a score first to save
+              {t('evaluationSections.generateFirst')}
             </p>
           )}
           {saveError && (
             <p className="mt-1 text-center text-sm text-destructive">
-              Failed to save evaluation. Please try again.
+              {t('evaluationSections.saveFailed')}
             </p>
           )}
         </div>

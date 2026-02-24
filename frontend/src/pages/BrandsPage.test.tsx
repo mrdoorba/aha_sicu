@@ -83,8 +83,7 @@ describe('BrandsPage', () => {
 
     renderBrandsPage();
 
-    // Title is an h2, nav link also says "Brands"
-    const heading = screen.getByRole('heading', { name: 'Brands', level: 2 });
+    const heading = screen.getByRole('heading', { name: 'Brand', level: 2 });
     expect(heading).toBeInTheDocument();
   });
 
@@ -109,7 +108,7 @@ describe('BrandsPage', () => {
     renderBrandsPage();
 
     expect(
-      screen.getByText(/no brands synced yet/i)
+      screen.getByText(/belum ada brand yang disinkronkan/i)
     ).toBeInTheDocument();
   });
 
@@ -129,11 +128,11 @@ describe('BrandsPage', () => {
       isLoading: false,
     });
 
-    const searchInput = screen.getByPlaceholderText(/search brands/i);
+    const searchInput = screen.getByPlaceholderText(/cari brand/i);
     await user.type(searchInput, 'nonexistent');
 
     await waitFor(() => {
-      expect(screen.getByText(/no brands found matching/i)).toBeInTheDocument();
+      expect(screen.getByText(/tidak ada brand yang cocok/i)).toBeInTheDocument();
     });
   });
 
@@ -146,7 +145,7 @@ describe('BrandsPage', () => {
 
     renderBrandsPage();
 
-    const searchInput = screen.getByPlaceholderText(/search brands/i);
+    const searchInput = screen.getByPlaceholderText(/cari brand/i);
     await user.type(searchInput, 'ABC');
 
     // Wait for debounce (300ms) and verify useBrands was called with search term
@@ -170,9 +169,9 @@ describe('BrandsPage', () => {
 
     renderBrandsPage();
 
-    expect(screen.getByText('Page 1 of 5')).toBeInTheDocument();
+    expect(screen.getByText('Halaman 1 dari 5')).toBeInTheDocument();
 
-    const nextButton = screen.getByRole('button', { name: /next/i });
+    const nextButton = screen.getByRole('button', { name: /berikutnya/i });
     await user.click(nextButton);
 
     await waitFor(() => {
@@ -188,10 +187,10 @@ describe('BrandsPage', () => {
 
     renderBrandsPage();
 
-    expect(screen.queryByText(/page \d+ of/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/halaman \d+ dari/i)).not.toBeInTheDocument();
   });
 
-  it('search input has accessible label "Search brands" and searchbox role', () => {
+  it('search input has accessible label and searchbox role', () => {
     mockUseBrands.mockReturnValue({
       data: BRANDS_RESPONSE,
       isLoading: false,
@@ -199,7 +198,7 @@ describe('BrandsPage', () => {
 
     renderBrandsPage();
 
-    const searchInput = screen.getByRole('searchbox', { name: /search brands/i });
+    const searchInput = screen.getByRole('searchbox', { name: /cari brand/i });
     expect(searchInput).toBeInTheDocument();
   });
 
@@ -212,7 +211,7 @@ describe('BrandsPage', () => {
     renderBrandsPage();
 
     // The search icon near the search input should be aria-hidden
-    const searchInput = screen.getByRole('searchbox', { name: /search brands/i });
+    const searchInput = screen.getByRole('searchbox', { name: /cari brand/i });
     const searchContainer = searchInput.closest('.relative');
     const searchIcon = searchContainer?.querySelector('svg');
     expect(searchIcon).toHaveAttribute('aria-hidden', 'true');

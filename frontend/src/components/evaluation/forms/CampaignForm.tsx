@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../../ui/card';
 import { NumberField } from './NumberField';
 import { ExternalLink } from 'lucide-react';
@@ -11,6 +12,7 @@ interface CampaignFormProps {
 }
 
 export function CampaignForm({ data, onChange, onBlur }: CampaignFormProps) {
+  const { t } = useTranslation();
   const nominated = data.nominatedSessions ?? 0;
   const available = data.availableSessions ?? 0;
   const participationPct = available > 0 ? (nominated / available) * 100 : null;
@@ -19,8 +21,8 @@ export function CampaignForm({ data, onChange, onBlur }: CampaignFormProps) {
     <Card className="mb-4">
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          Partisipasi Campaign
-          <a href={SECTION_LINKS.campaign} target="_blank" rel="noopener noreferrer" aria-label="Buka Shopee Seller Center (tab baru)">
+          {t('forms.campaign.title')}
+          <a href={SECTION_LINKS.campaign} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
             <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
@@ -41,7 +43,7 @@ export function CampaignForm({ data, onChange, onBlur }: CampaignFormProps) {
 
         {/* Computed: % Partisipasi Campaign */}
         <div className="mt-4">
-          <p className="mb-1 text-sm font-medium">% Partisipasi Campaign</p>
+          <p className="mb-1 text-sm font-medium">{t('forms.campaign.participationPct')}</p>
           <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
             {participationPct == null ? '—' : `${participationPct.toFixed(1)}%`}
           </div>

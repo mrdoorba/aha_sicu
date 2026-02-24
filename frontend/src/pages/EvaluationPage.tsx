@@ -1,4 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Header } from '../components/layout/Header';
 import { EvaluationHeader } from '../components/evaluation/EvaluationHeader';
 import { SectionNav } from '../components/evaluation/SectionNav';
@@ -17,6 +18,7 @@ import { useCalculatorResults } from '../hooks/useCalculator';
 import { toast } from 'sonner';
 
 export const EvaluationPage = () => {
+  const { t } = useTranslation();
   const { brandId } = useParams<{ brandId: string }>();
   const navigate = useNavigate();
   const numericBrandId = Number(brandId);
@@ -104,14 +106,14 @@ export const EvaluationPage = () => {
       },
       {
         onSuccess: () => {
-          toast.success('Evaluation saved');
+          toast.success(t('evaluation.saved'));
         },
         onError: () => {
-          toast.error('Failed to save evaluation. Please try again.');
+          toast.error(t('evaluation.saveFailed'));
         },
       },
     );
-  }, [scoringResult, calculatorResultsData, manualData, saveEvaluation]);
+  }, [scoringResult, calculatorResultsData, manualData, saveEvaluation, t]);
 
   const handleCategoryChange = useCallback(
     (value: string) => {
@@ -135,9 +137,9 @@ export const EvaluationPage = () => {
               onClick={() => navigate('/brands')}
             >
               <ArrowLeft className="mr-1 size-4" aria-hidden="true" />
-              Back to Brands
+              {t('common.backToBrands')}
             </Button>
-            <p className="text-destructive">Invalid brand ID.</p>
+            <p className="text-destructive">{t('evaluation.invalidBrandId')}</p>
           </div>
         ) : (
           <>

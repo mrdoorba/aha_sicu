@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { RefreshCw, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '../ui/card';
@@ -24,13 +25,14 @@ function formatRelativeTime(dateString: string): string {
 }
 
 export const SyncStatus = () => {
+  const { t } = useTranslation();
   const { data: syncStatus, isLoading, isError } = useSyncStatus();
   const triggerSync = useTriggerSync();
 
   const handleSyncNow = () => {
     triggerSync.mutate(undefined, {
       onSuccess: () => {
-        toast.success('Sync started successfully');
+        toast.success(t('sync.startSuccess'));
       },
       onError: (error) => {
         toast.error(error.message);
@@ -60,31 +62,31 @@ export const SyncStatus = () => {
             {isError && (
               <Badge variant="destructive">
                 <XCircle className="size-3" aria-hidden="true" />
-                Unable to load sync status
+                {t('sync.errorLoading')}
               </Badge>
             )}
             {!isError && !syncStatus && (
               <Badge variant="outline">
                 <Clock className="size-3" aria-hidden="true" />
-                Never synced
+                {t('sync.neverSynced')}
               </Badge>
             )}
             {syncStatus?.status === 'success' && (
               <Badge className="bg-green-500 text-white hover:bg-green-500/90">
                 <CheckCircle2 className="size-3" aria-hidden="true" />
-                Last synced: {formatRelativeTime(syncStatus.last_sync)}
+                {t('sync.lastSynced', { time: formatRelativeTime(syncStatus.last_sync) })}
               </Badge>
             )}
             {syncStatus?.status === 'in_progress' && (
               <Badge className="bg-amber-500 text-white hover:bg-amber-500/90">
                 <RefreshCw className="size-3 animate-spin" aria-hidden="true" />
-                Syncing...
+                {t('sync.syncing')}
               </Badge>
             )}
             {syncStatus?.status === 'failed' && (
               <Badge variant="destructive">
                 <XCircle className="size-3" aria-hidden="true" />
-                Last sync failed: {syncStatus.error_message}
+                {t('sync.lastFailed', { error: syncStatus.error_message })}
               </Badge>
             )}
           </div>
@@ -121,12 +123,12 @@ export const SyncStatus = () => {
           {isSyncing ? (
             <>
               <RefreshCw className="size-4 animate-spin" aria-hidden="true" />
-              Syncing...
+              {t('sync.syncing')}
             </>
           ) : (
             <>
               <RefreshCw className="size-4" aria-hidden="true" />
-              Sync Now
+              {t('sync.syncNow')}
             </>
           )}
         </Button>

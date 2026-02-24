@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../../ui/card';
 import { NumberField } from './NumberField';
 import { SelectField } from './SelectField';
@@ -13,13 +14,15 @@ interface ProductsStatusFormProps {
 }
 
 export function ProductsStatusForm({ data, storeLink, onChange, onBlur }: ProductsStatusFormProps) {
+  const { t } = useTranslation();
+
   return (
     <Card className="mb-4">
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          Products / Status
+          {t('forms.products.title')}
           {storeLink && (
-            <a href={storeLink} target="_blank" rel="noopener noreferrer" aria-label="Buka toko Shopee (tab baru)">
+            <a href={storeLink} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openStore')}>
               <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
             </a>
           )}

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../../ui/card';
 import { Button } from '../../ui/button';
 import { AlertTriangle, RefreshCw } from 'lucide-react';
@@ -36,6 +37,7 @@ export const ScoringSection = ({
   storeName,
   brandName,
 }: ScoringSectionProps) => {
+  const { t } = useTranslation();
   const [verdict, setVerdict] = useState('✔️');
   const [period, setPeriod] = useState('');
 
@@ -57,7 +59,7 @@ export const ScoringSection = ({
     <div className="space-y-4">
       <Card>
         <CardContent className="pt-4">
-          <p className="mb-4 font-semibold">Final Score</p>
+          <p className="mb-4 font-semibold">{t('scoring.finalScore')}</p>
 
           <div className="flex flex-wrap items-end gap-4">
             <Button
@@ -67,20 +69,20 @@ export const ScoringSection = ({
               {isGenerating ? (
                 <RefreshCw className="mr-1 size-4 animate-spin" aria-hidden="true" />
               ) : null}
-              {scoringResult && !isStale ? 'Hitung Ulang' : 'Hitung Skor'}
+              {scoringResult && !isStale ? t('scoring.recalculate') : t('scoring.calculate')}
             </Button>
           </div>
 
           {!categoryType && (
             <p className="mt-2 text-sm text-muted-foreground">
-              Pilih tipe kategori (Fashion/Non-Fashion) terlebih dahulu.
+              {t('scoring.selectCategory')}
             </p>
           )}
 
           {isStale && scoringResult && (
             <div className="mt-3 flex items-center gap-2 rounded-md bg-yellow-50 p-2 text-sm text-yellow-800">
               <AlertTriangle className="size-4 shrink-0" aria-hidden="true" />
-              Skor sudah tidak akurat — data telah berubah sejak perhitungan terakhir.
+              {t('scoring.staleWarning')}
             </div>
           )}
 
@@ -96,14 +98,14 @@ export const ScoringSection = ({
 
               <div className="space-y-1">
                 <label className="text-sm font-medium" htmlFor="scoring-period">
-                  Periode
+                  {t('scoring.period')}
                 </label>
                 <input
                   id="scoring-period"
                   type="text"
                   value={period}
                   onChange={(e) => setPeriod(e.target.value)}
-                  placeholder="cth., Jan 2026"
+                  placeholder={t('scoring.periodPlaceholder')}
                   className="h-9 w-40 rounded-md border border-input bg-background px-3 text-sm"
                 />
               </div>
@@ -117,7 +119,7 @@ export const ScoringSection = ({
                   {isGenerating ? (
                     <RefreshCw className="mr-1 size-4 animate-spin" aria-hidden="true" />
                   ) : null}
-                  Hitung Ulang dengan Keputusan
+                  {t('scoring.recalculateWithVerdict')}
                 </Button>
               )}
             </div>
@@ -139,7 +141,7 @@ export const ScoringSection = ({
 
           <Card>
             <CardContent className="pt-4">
-              <p className="mb-2 text-sm font-semibold">Per-Category Breakdown</p>
+              <p className="mb-2 text-sm font-semibold">{t('scoring.perCategoryBreakdown')}</p>
               <ScoreBreakdown categoryScores={scoringResult.category_scores} />
             </CardContent>
           </Card>

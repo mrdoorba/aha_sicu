@@ -38,7 +38,7 @@ describe('SyncStatus', () => {
     });
   });
 
-  it('renders "Last synced" for success state', () => {
+  it('renders "Terakhir disinkronkan" for success state', () => {
     mockUseSyncStatus.mockReturnValue({
       data: {
         id: 1,
@@ -56,12 +56,12 @@ describe('SyncStatus', () => {
 
     renderSyncStatus();
 
-    expect(screen.getByText(/last synced:/i)).toBeInTheDocument();
+    expect(screen.getByText(/terakhir disinkronkan/i)).toBeInTheDocument();
     expect(screen.getByText(/vp: 80 brands/i)).toBeInTheDocument();
     expect(screen.getByText(/meeting: 20 brands/i)).toBeInTheDocument();
   });
 
-  it('renders "Syncing..." for in_progress state', () => {
+  it('renders "Menyinkronkan..." for in_progress state', () => {
     mockUseSyncStatus.mockReturnValue({
       data: {
         id: 1,
@@ -76,8 +76,8 @@ describe('SyncStatus', () => {
 
     renderSyncStatus();
 
-    // Badge shows "Syncing..." and button also shows "Syncing..."
-    const syncTexts = screen.getAllByText('Syncing...');
+    // Badge shows "Menyinkronkan..." and button also shows "Menyinkronkan..."
+    const syncTexts = screen.getAllByText('Menyinkronkan...');
     expect(syncTexts.length).toBeGreaterThanOrEqual(1);
   });
 
@@ -96,10 +96,10 @@ describe('SyncStatus', () => {
 
     renderSyncStatus();
 
-    expect(screen.getByText(/last sync failed: connection timeout/i)).toBeInTheDocument();
+    expect(screen.getByText(/sinkronisasi terakhir gagal: connection timeout/i)).toBeInTheDocument();
   });
 
-  it('renders "Never synced" when no sync data exists', () => {
+  it('renders "Belum pernah disinkronkan" when no sync data exists', () => {
     mockUseSyncStatus.mockReturnValue({
       data: null,
       isLoading: false,
@@ -107,10 +107,10 @@ describe('SyncStatus', () => {
 
     renderSyncStatus();
 
-    expect(screen.getByText('Never synced')).toBeInTheDocument();
+    expect(screen.getByText('Belum pernah disinkronkan')).toBeInTheDocument();
   });
 
-  it('"Sync Now" button triggers sync mutation', async () => {
+  it('"Sinkronisasi" button triggers sync mutation', async () => {
     const user = userEvent.setup();
     mockUseSyncStatus.mockReturnValue({
       data: null,
@@ -119,13 +119,13 @@ describe('SyncStatus', () => {
 
     renderSyncStatus();
 
-    const syncButton = screen.getByRole('button', { name: /sync now/i });
+    const syncButton = screen.getByRole('button', { name: /sinkronisasi/i });
     await user.click(syncButton);
 
     expect(mockMutate).toHaveBeenCalled();
   });
 
-  it('"Sync Now" button is disabled while syncing', () => {
+  it('"Sinkronisasi" button is disabled while syncing', () => {
     mockUseSyncStatus.mockReturnValue({
       data: {
         id: 1,
@@ -140,7 +140,7 @@ describe('SyncStatus', () => {
 
     renderSyncStatus();
 
-    const syncButton = screen.getByRole('button', { name: /syncing/i });
+    const syncButton = screen.getByRole('button', { name: /menyinkronkan/i });
     expect(syncButton).toBeDisabled();
   });
 
@@ -153,8 +153,8 @@ describe('SyncStatus', () => {
     renderSyncStatus();
 
     // Should not show any status text while loading
-    expect(screen.queryByText(/last synced/i)).not.toBeInTheDocument();
-    expect(screen.queryByText(/never synced/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/terakhir disinkronkan/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/belum pernah disinkronkan/i)).not.toBeInTheDocument();
   });
 
   it('shows error state when sync status fetch fails', () => {
@@ -166,8 +166,8 @@ describe('SyncStatus', () => {
 
     renderSyncStatus();
 
-    expect(screen.getByText(/unable to load sync status/i)).toBeInTheDocument();
-    expect(screen.queryByText(/never synced/i)).not.toBeInTheDocument();
+    expect(screen.getByText(/gagal memuat status sinkronisasi/i)).toBeInTheDocument();
+    expect(screen.queryByText(/belum pernah disinkronkan/i)).not.toBeInTheDocument();
   });
 
   it('has aria-live="polite" region for sync status announcements', () => {

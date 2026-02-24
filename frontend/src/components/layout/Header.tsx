@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../../context/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { useNavigate, Link, useLocation } from 'react-router-dom';
@@ -14,6 +15,7 @@ import {
 } from '../ui/dialog';
 
 export const Header = () => {
+  const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { profile } = useCurrentUser();
   const navigate = useNavigate();
@@ -66,7 +68,7 @@ export const Header = () => {
                       : 'text-gray-300 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  Brands
+                  Brand
                 </Link>
                 <Link
                   to="/history"
@@ -76,7 +78,7 @@ export const Header = () => {
                       : 'text-gray-300 hover:bg-white/10 hover:text-white'
                   }`}
                 >
-                  History
+                  {t('header.history')}
                 </Link>
                 {canAccessRules && (
                   <Link
@@ -87,7 +89,7 @@ export const Header = () => {
                         : 'text-gray-300 hover:bg-white/10 hover:text-white'
                     }`}
                   >
-                    Rules
+                    {t('header.rules')}
                   </Link>
                 )}
                 {isAdmin && (
@@ -99,7 +101,7 @@ export const Header = () => {
                         : 'text-gray-300 hover:bg-white/10 hover:text-white'
                     }`}
                   >
-                    Akun
+                    {t('header.accounts')}
                   </Link>
                 )}
               </nav>
@@ -110,7 +112,7 @@ export const Header = () => {
                 onClick={handleLogoutClick}
                 className="px-3 py-1.5 text-sm bg-white/10 hover:bg-white/20 rounded-md transition-colors"
               >
-                Logout
+                {t('header.logout')}
               </button>
             </div>
           </div>
@@ -121,17 +123,17 @@ export const Header = () => {
       <Dialog open={showConfirm} onOpenChange={setShowConfirm}>
         <DialogContent showCloseButton={false}>
           <DialogHeader>
-            <DialogTitle>Confirm Logout</DialogTitle>
-            <DialogDescription>Are you sure you want to log out?</DialogDescription>
+            <DialogTitle>{t('header.confirmLogout')}</DialogTitle>
+            <DialogDescription>{t('header.logoutConfirmation')}</DialogDescription>
           </DialogHeader>
           <DialogFooter>
             <DialogClose asChild>
               <Button variant="outline" disabled={isLoggingOut}>
-                Cancel
+                {t('common.cancel')}
               </Button>
             </DialogClose>
             <Button variant="destructive" onClick={handleConfirmLogout} disabled={isLoggingOut}>
-              {isLoggingOut ? 'Logging out...' : 'Logout'}
+              {isLoggingOut ? t('header.loggingOut') : t('header.logout')}
             </Button>
           </DialogFooter>
         </DialogContent>

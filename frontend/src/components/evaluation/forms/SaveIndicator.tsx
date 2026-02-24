@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Check, Loader2, AlertCircle } from 'lucide-react';
 import type { SaveStatus } from '../../../hooks/useAutoSaveForm';
 
@@ -7,19 +8,21 @@ interface SaveIndicatorProps {
   onRetry?: () => void;
 }
 
-function formatTimeSince(date: Date): string {
+function formatTimeSince(date: Date, t: (key: string, opts?: Record<string, unknown>) => string): string {
   const seconds = Math.floor((Date.now() - date.getTime()) / 1000);
-  if (seconds < 60) return 'Saved just now';
+  if (seconds < 60) return t('saveIndicator.savedJustNow');
   const minutes = Math.floor(seconds / 60);
-  return `Saved ${minutes} min ago`;
+  return t('saveIndicator.savedMinAgo', { minutes });
 }
 
 export function SaveIndicator({ status, lastSaved, onRetry }: SaveIndicatorProps) {
+  const { t } = useTranslation();
+
   if (status === 'saving') {
     return (
       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
         <Loader2 className="size-3 animate-spin" aria-hidden="true" />
-        Saving...
+        {t('saveIndicator.saving')}
       </span>
     );
   }
@@ -28,14 +31,14 @@ export function SaveIndicator({ status, lastSaved, onRetry }: SaveIndicatorProps
     return (
       <span className="inline-flex items-center gap-1 text-xs text-destructive">
         <AlertCircle className="size-3" aria-hidden="true" />
-        Save failed.
+        {t('saveIndicator.saveFailed')}
         {onRetry && (
           <button
             type="button"
             onClick={onRetry}
             className="underline hover:no-underline"
           >
-            Retry
+            {t('saveIndicator.retry')}
           </button>
         )}
       </span>
@@ -46,7 +49,7 @@ export function SaveIndicator({ status, lastSaved, onRetry }: SaveIndicatorProps
     return (
       <span className="inline-flex items-center gap-1 text-xs text-muted-foreground">
         <Check className="size-3" aria-hidden="true" />
-        {formatTimeSince(lastSaved)}
+        {formatTimeSince(lastSaved, t)}
       </span>
     );
   }

@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../../ui/card';
 import { NumberField } from './NumberField';
 import { ExternalLink } from 'lucide-react';
@@ -11,12 +12,14 @@ interface OperationalFormProps {
 }
 
 export function OperationalForm({ data, onChange, onBlur }: OperationalFormProps) {
+  const { t } = useTranslation();
+
   return (
     <Card className="mb-4">
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          Kesehatan Operasional Toko
-          <a href={SECTION_LINKS.operational} target="_blank" rel="noopener noreferrer" aria-label="Buka Shopee Seller Center (tab baru)">
+          {t('forms.operational.title')}
+          <a href={SECTION_LINKS.operational} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
             <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>

@@ -1,12 +1,13 @@
+import { useTranslation } from 'react-i18next';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '../../ui/select';
 
 const VERDICT_OPTIONS = [
-  { value: '✔️', label: '✔️ Approved' },
-  { value: '❌', label: '❌ Rejected' },
-  { value: '❌ Non Mall', label: '❌ Non Mall' },
-  { value: '❌ No Brand', label: '❌ No Brand' },
-  { value: '❌ Opex', label: '❌ Opex Issue' },
-  { value: '⭕️', label: '⭕️ Special' },
+  { value: '✔️', labelKey: 'verdict.approved' },
+  { value: '❌', labelKey: 'verdict.rejected' },
+  { value: '❌ Non Mall', labelKey: 'verdict.nonMall' },
+  { value: '❌ No Brand', labelKey: 'verdict.noBrand' },
+  { value: '❌ Opex', labelKey: 'verdict.opexIssue' },
+  { value: '⭕️', labelKey: 'verdict.special' },
 ];
 
 interface VerdictSelectorProps {
@@ -15,19 +16,21 @@ interface VerdictSelectorProps {
 }
 
 export const VerdictSelector = ({ value, onChange }: VerdictSelectorProps) => {
+  const { t } = useTranslation();
+
   return (
     <div className="space-y-1">
       <label className="text-sm font-medium" htmlFor="verdict-select">
-        Verdict
+        {t('verdict.label')}
       </label>
       <Select value={value} onValueChange={onChange}>
         <SelectTrigger id="verdict-select" className="w-48">
-          <SelectValue placeholder="Select verdict" />
+          <SelectValue placeholder={t('verdict.placeholder')} />
         </SelectTrigger>
         <SelectContent>
           {VERDICT_OPTIONS.map((opt) => (
             <SelectItem key={opt.value} value={opt.value}>
-              {opt.label}
+              {t(opt.labelKey)}
             </SelectItem>
           ))}
         </SelectContent>

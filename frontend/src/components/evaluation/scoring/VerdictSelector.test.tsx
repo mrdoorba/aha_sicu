@@ -2,11 +2,12 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { VerdictSelector, VERDICT_OPTIONS } from './VerdictSelector';
+import i18n from '../../../i18n';
 
 describe('VerdictSelector', () => {
-  it('renders Verdict label', () => {
+  it('renders Keputusan label', () => {
     render(<VerdictSelector value="✔️" onChange={vi.fn()} />);
-    expect(screen.getByText('Verdict')).toBeInTheDocument();
+    expect(screen.getByText('Keputusan')).toBeInTheDocument();
   });
 
   it('renders the select trigger', () => {
@@ -21,8 +22,9 @@ describe('VerdictSelector', () => {
     await user.click(screen.getByRole('combobox'));
 
     for (const opt of VERDICT_OPTIONS) {
+      const label = i18n.t(opt.labelKey);
       // Use getAllByText since the selected option appears in both trigger and dropdown
-      const matches = screen.getAllByText(opt.label);
+      const matches = screen.getAllByText(label);
       expect(matches.length).toBeGreaterThanOrEqual(1);
     }
   });
@@ -37,13 +39,13 @@ describe('VerdictSelector', () => {
     render(<VerdictSelector value="✔️" onChange={onChange} />);
 
     await user.click(screen.getByRole('combobox'));
-    await user.click(screen.getByText('❌ Rejected'));
+    await user.click(screen.getByText('❌ Ditolak'));
 
     expect(onChange).toHaveBeenCalledWith('❌');
   });
 
   it('displays the current value in the trigger', () => {
     render(<VerdictSelector value="✔️" onChange={vi.fn()} />);
-    expect(screen.getByRole('combobox')).toHaveTextContent('✔️ Approved');
+    expect(screen.getByRole('combobox')).toHaveTextContent('✔️ Disetujui');
   });
 });

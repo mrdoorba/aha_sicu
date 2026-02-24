@@ -160,7 +160,7 @@ describe('EvaluationPage', () => {
   it('renders back to brands button', () => {
     setupMocks();
     renderEvaluationPage();
-    expect(screen.getByRole('button', { name: /back to brands/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /kembali ke brand/i })).toBeInTheDocument();
   });
 
   it('renders manual data form sections instead of placeholders', () => {
@@ -227,7 +227,7 @@ describe('EvaluationPage', () => {
     const user = userEvent.setup();
     renderEvaluationPage();
 
-    const saveBtn = screen.getByRole('button', { name: /save evaluation/i });
+    const saveBtn = screen.getByRole('button', { name: /simpan evaluasi/i });
     await user.click(saveBtn);
 
     expect(mockSaveEvaluation).toHaveBeenCalledOnce();

@@ -1,35 +1,36 @@
+import { useTranslation } from 'react-i18next';
 import { useBrandUploads, useUploadFile, type UploadInfo } from '../../hooks/useUpload';
 import { FileUploadSlot, type FileSlotConfig } from './FileUploadSlot';
 import { toast } from 'sonner';
 
 const SLOTS: FileSlotConfig[] = [
   {
-    label: 'Iklan Check Up V2A',
+    label: 'fileUpload.slot.cpcAdReport',
     fileType: 'cpc_ad_report',
     accept: '.csv',
     format: '.csv',
-    calculator: 'Calculator 1 (Ads Keyword — Sheet 1)',
+    calculator: 'fileUpload.slot.cpcAdReportCalc',
   },
   {
-    label: 'Iklan Check Up V2B',
+    label: 'fileUpload.slot.keywordReport',
     fileType: 'keyword_report',
     accept: '.csv',
     format: '.csv',
-    calculator: 'Calculator 1 (Ads Keyword — Sheet 2)',
+    calculator: 'fileUpload.slot.keywordReportCalc',
   },
   {
-    label: 'Order Export',
+    label: 'fileUpload.slot.orderExport',
     fileType: 'order_export',
     accept: '.xlsx,.zip',
     format: '.xlsx, .zip',
-    calculator: 'Calculator 2 (Top SKU) & Calculator 3 (Discount Check)',
+    calculator: 'fileUpload.slot.orderExportCalc',
   },
   {
-    label: 'Mass Update / Sales Info',
+    label: 'fileUpload.slot.massUpdate',
     fileType: 'mass_update',
     accept: '.xlsx,.zip',
     format: '.xlsx, .zip',
-    calculator: 'Calculator 2 (Top SKU)',
+    calculator: 'fileUpload.slot.massUpdateCalc',
   },
 ];
 
@@ -65,14 +66,15 @@ function SlotWrapper({
   brandId: number;
   uploadInfo: UploadInfo | null;
 }) {
+  const { t } = useTranslation();
   const { upload, progress, status, error, reset } = useUploadFile(brandId);
 
   const handleFileSelect = async (file: File) => {
     try {
       await upload(file, config.fileType);
-      toast.success(`${config.label} uploaded successfully`);
+      toast.success(t('fileUpload.uploadSuccess', { label: t(config.label) }));
     } catch {
-      toast.error(`Failed to upload ${config.label}`);
+      toast.error(t('fileUpload.uploadFailed', { label: t(config.label) }));
     }
   };
 

@@ -53,17 +53,17 @@ describe('Header', () => {
   it('displays logout button', () => {
     renderHeader();
 
-    expect(screen.getByRole('button', { name: /logout/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /keluar/i })).toBeInTheDocument();
   });
 
   it('shows confirmation dialog when logout is clicked', async () => {
     const user = userEvent.setup();
     renderHeader();
 
-    await user.click(screen.getByRole('button', { name: /logout/i }));
+    await user.click(screen.getByRole('button', { name: /keluar/i }));
 
-    expect(screen.getByText(/confirm logout/i)).toBeInTheDocument();
-    expect(screen.getByText(/are you sure you want to log out/i)).toBeInTheDocument();
+    expect(screen.getByText(/konfirmasi keluar/i)).toBeInTheDocument();
+    expect(screen.getByText(/apakah anda yakin ingin keluar/i)).toBeInTheDocument();
   });
 
   it('calls logout when confirmation is confirmed', async () => {
@@ -71,11 +71,11 @@ describe('Header', () => {
     mockLogout.mockResolvedValueOnce(undefined);
     renderHeader();
 
-    await user.click(screen.getByRole('button', { name: /^logout$/i }));
+    await user.click(screen.getByRole('button', { name: /^keluar$/i }));
 
     // Find the logout button inside the dialog using accessible role query
     const dialog = screen.getByRole('dialog');
-    const confirmButton = within(dialog).getByRole('button', { name: /logout/i });
+    const confirmButton = within(dialog).getByRole('button', { name: /keluar/i });
     await user.click(confirmButton);
 
     await waitFor(() => {
@@ -87,13 +87,13 @@ describe('Header', () => {
     const user = userEvent.setup();
     renderHeader();
 
-    await user.click(screen.getByRole('button', { name: /^logout$/i }));
-    expect(screen.getByText(/confirm logout/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^keluar$/i }));
+    expect(screen.getByText(/konfirmasi keluar/i)).toBeInTheDocument();
 
-    await user.click(screen.getByRole('button', { name: /cancel/i }));
+    await user.click(screen.getByRole('button', { name: /batal/i }));
 
     await waitFor(() => {
-      expect(screen.queryByText(/confirm logout/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/konfirmasi keluar/i)).not.toBeInTheDocument();
     });
     expect(mockLogout).not.toHaveBeenCalled();
   });
@@ -102,21 +102,21 @@ describe('Header', () => {
     const user = userEvent.setup();
     renderHeader();
 
-    await user.click(screen.getByRole('button', { name: /^logout$/i }));
-    expect(screen.getByText(/confirm logout/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /^keluar$/i }));
+    expect(screen.getByText(/konfirmasi keluar/i)).toBeInTheDocument();
 
     await user.keyboard('{Escape}');
 
     await waitFor(() => {
-      expect(screen.queryByText(/confirm logout/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/konfirmasi keluar/i)).not.toBeInTheDocument();
     });
     expect(mockLogout).not.toHaveBeenCalled();
   });
 
-  it('displays History navigation link', () => {
+  it('displays Riwayat navigation link', () => {
     renderHeader();
 
-    const historyLink = screen.getByRole('link', { name: /history/i });
+    const historyLink = screen.getByRole('link', { name: /riwayat/i });
     expect(historyLink).toBeInTheDocument();
     expect(historyLink).toHaveAttribute('href', '/history');
   });
@@ -125,7 +125,7 @@ describe('Header', () => {
     const user = userEvent.setup();
     renderHeader();
 
-    await user.click(screen.getByRole('button', { name: /^logout$/i }));
+    await user.click(screen.getByRole('button', { name: /^keluar$/i }));
 
     const dialog = screen.getByRole('dialog');
     expect(dialog).toBeInTheDocument();
@@ -135,8 +135,8 @@ describe('Header', () => {
     expect(dialog).toHaveAttribute('aria-describedby');
 
     // Verify the actual title and description text are rendered
-    expect(screen.getByText('Confirm Logout')).toBeInTheDocument();
-    expect(screen.getByText('Are you sure you want to log out?')).toBeInTheDocument();
+    expect(screen.getByText('Konfirmasi Keluar')).toBeInTheDocument();
+    expect(screen.getByText('Apakah Anda yakin ingin keluar?')).toBeInTheDocument();
   });
 
   it('does not show Akun link for leader role', () => {
@@ -144,9 +144,9 @@ describe('Header', () => {
     expect(screen.queryByRole('link', { name: /^akun$/i })).not.toBeInTheDocument();
   });
 
-  it('shows Rules link for leader role', () => {
+  it('shows Aturan link for leader role', () => {
     renderHeader();
-    expect(screen.getByRole('link', { name: /^rules$/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^aturan$/i })).toBeInTheDocument();
   });
 
   it('shows Akun link for admin role', () => {
@@ -157,10 +157,10 @@ describe('Header', () => {
     expect(akunLink).toHaveAttribute('href', '/accounts');
   });
 
-  it('shows Rules link for admin role', () => {
+  it('shows Aturan link for admin role', () => {
     mockProfile.role = 'admin';
     renderHeader();
-    expect(screen.getByRole('link', { name: /^rules$/i })).toBeInTheDocument();
+    expect(screen.getByRole('link', { name: /^aturan$/i })).toBeInTheDocument();
   });
 
   it('does not show Akun link for member role', () => {
@@ -169,9 +169,9 @@ describe('Header', () => {
     expect(screen.queryByRole('link', { name: /^akun$/i })).not.toBeInTheDocument();
   });
 
-  it('does not show Rules link for member role', () => {
+  it('does not show Aturan link for member role', () => {
     mockProfile.role = 'member';
     renderHeader();
-    expect(screen.queryByRole('link', { name: /^rules$/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /^aturan$/i })).not.toBeInTheDocument();
   });
 });

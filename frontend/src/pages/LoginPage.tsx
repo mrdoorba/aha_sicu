@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useForm } from 'react-hook-form';
 import { useNavigate, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { FirebaseError } from 'firebase/app';
 
@@ -10,6 +11,7 @@ interface LoginForm {
 }
 
 export const LoginPage = () => {
+  const { t } = useTranslation();
   const { login, user } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
@@ -41,9 +43,9 @@ export const LoginPage = () => {
       navigate(from, { replace: true });
     } catch (err) {
       if (err instanceof FirebaseError) {
-        setError(getFirebaseErrorMessage(err.code));
+        setError(getFirebaseErrorMessage(t, err.code));
       } else {
-        setError('An unexpected error occurred');
+        setError(t('login.error.unexpected'));
       }
     } finally {
       setIsSubmitting(false);
@@ -54,7 +56,7 @@ export const LoginPage = () => {
   if (user) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="text-muted-foreground">Redirecting...</div>
+        <div className="text-muted-foreground">{t('login.redirecting')}</div>
       </div>
     );
   }
@@ -63,7 +65,7 @@ export const LoginPage = () => {
     <main id="main-content" tabIndex={-1} className="min-h-screen flex items-center justify-center bg-muted">
       <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
         <h1 className="text-2xl font-semibold text-foreground mb-6 text-center">
-          Store ICU Login
+          {t('login.title')}
         </h1>
 
         <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -88,10 +90,10 @@ export const LoginPage = () => {
               aria-invalid={errors.email ? 'true' : 'false'}
               className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
               {...register('email', {
-                required: 'Email is required',
+                required: t('login.emailRequired'),
                 pattern: {
                   value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: 'Invalid email address',
+                  message: t('login.emailInvalid'),
                 },
               })}
             />
@@ -117,7 +119,7 @@ export const LoginPage = () => {
               aria-invalid={errors.password ? 'true' : 'false'}
               className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
               {...register('password', {
-                required: 'Password is required',
+                required: t('login.passwordRequired'),
               })}
             />
             {errors.password && (
@@ -132,7 +134,7 @@ export const LoginPage = () => {
             disabled={isSubmitting}
             className="w-full py-2 px-4 bg-primary text-white font-medium rounded-lg hover:bg-primary/85 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {isSubmitting ? 'Logging in...' : 'Login'}
+            {isSubmitting ? t('login.loggingIn') : 'Login'}
           </button>
         </form>
       </div>
@@ -140,17 +142,17 @@ export const LoginPage = () => {
   );
 };
 
-const getFirebaseErrorMessage = (code: string): string => {
+const getFirebaseErrorMessage = (t: (key: string) => string, code: string): string => {
   switch (code) {
     case 'auth/user-not-found':
     case 'auth/wrong-password':
     case 'auth/invalid-credential':
-      return 'Invalid email or password';
+      return t('login.error.invalidCredential');
     case 'auth/too-many-requests':
-      return 'Too many failed attempts. Please try again later.';
+      return t('login.error.tooManyRequests');
     case 'auth/user-disabled':
-      return 'This account has been disabled';
+      return t('login.error.accountDisabled');
     default:
-      return 'Login failed. Please try again.';
+      return t('login.error.loginFailed');
   }
 };

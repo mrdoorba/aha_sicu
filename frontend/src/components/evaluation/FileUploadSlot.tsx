@@ -1,4 +1,5 @@
 import { useRef } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Upload, FileText, X, Check, Loader2 } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
@@ -32,6 +33,7 @@ export function FileUploadSlot({
   onFileSelect,
   onReset,
 }: FileUploadSlotProps) {
+  const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -51,12 +53,12 @@ export function FileUploadSlot({
       <CardContent className="flex items-start gap-3 pt-4">
         <FileText className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
         <div className="min-w-0 flex-1">
-          <p className="font-medium">{config.label}</p>
+          <p className="font-medium">{t(config.label)}</p>
           <p className="text-xs text-muted-foreground">
             Format: {config.format}
           </p>
           <p className="text-xs text-muted-foreground">
-            Routes to: {config.calculator}
+            Routes to: {t(config.calculator)}
           </p>
 
           {/* Hidden file input */}
@@ -66,7 +68,7 @@ export function FileUploadSlot({
             accept={config.accept}
             onChange={handleChange}
             className="hidden"
-            aria-label={`Upload ${config.label}`}
+            aria-label={`Upload ${t(config.label)}`}
           />
 
           {/* State: Empty */}

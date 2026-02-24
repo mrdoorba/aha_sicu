@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../../ui/card';
 import { CurrencyField } from './CurrencyField';
 import { ExternalLink } from 'lucide-react';
@@ -12,6 +13,7 @@ interface PromoToolsFormProps {
 }
 
 export function PromoToolsForm({ data, salesMonth0, onChange, onBlur }: PromoToolsFormProps) {
+  const { t } = useTranslation();
   // % Penggunaan: count of tools with value > 0 / 11
   const usageCount = PROMO_TOOLS_FIELDS.filter((f) => {
     const val = data[f.key as keyof PromoToolsData];
@@ -40,8 +42,8 @@ export function PromoToolsForm({ data, salesMonth0, onChange, onBlur }: PromoToo
     <Card className="mb-4">
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          Alat Promosi
-          <a href={SECTION_LINKS.promoTools} target="_blank" rel="noopener noreferrer" aria-label="Buka Shopee Seller Center (tab baru)">
+          {t('forms.promoTools.title')}
+          <a href={SECTION_LINKS.promoTools} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
             <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
@@ -58,7 +60,7 @@ export function PromoToolsForm({ data, salesMonth0, onChange, onBlur }: PromoToo
                   onBlur={onBlur}
                 />
                 {field.link && (
-                  <a href={field.link} target="_blank" rel="noopener noreferrer" aria-label="Buka referensi Shopee (tab baru)" className="mt-5 shrink-0">
+                  <a href={field.link} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openShopeeRef')} className="mt-5 shrink-0">
                     <ExternalLink className="size-3.5 text-muted-foreground" aria-hidden="true" />
                   </a>
                 )}
@@ -70,13 +72,13 @@ export function PromoToolsForm({ data, salesMonth0, onChange, onBlur }: PromoToo
         {/* Computed fields */}
         <div className="mt-4 grid gap-4 sm:grid-cols-2">
           <div>
-            <p className="mb-1 text-sm font-medium">% Penggunaan alat promosi</p>
+            <p className="mb-1 text-sm font-medium">{t('forms.promoTools.usagePct')}</p>
             <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
               {usagePct}%
             </div>
           </div>
           <div>
-            <p className="mb-1 text-sm font-medium">% Efektifitas alat promosi</p>
+            <p className="mb-1 text-sm font-medium">{t('forms.promoTools.effectivenessPct')}</p>
             <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
               {effectivenessResult == null ? '—' : `${effectivenessResult}%`}
             </div>

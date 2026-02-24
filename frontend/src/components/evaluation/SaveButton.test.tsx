@@ -75,18 +75,18 @@ function renderWithProviders(ui: React.ReactElement) {
 describe('Save Evaluation Button', () => {
   it('is disabled when no scoring result', () => {
     renderWithProviders(<EvaluationSections {...defaultProps} scoringResult={null} />);
-    const saveBtn = screen.getByRole('button', { name: /save evaluation/i });
+    const saveBtn = screen.getByRole('button', { name: /simpan evaluasi/i });
     expect(saveBtn).toBeDisabled();
   });
 
   it('shows helper text when no scoring result', () => {
     renderWithProviders(<EvaluationSections {...defaultProps} scoringResult={null} />);
-    expect(screen.getByText(/generate a score first to save/i)).toBeInTheDocument();
+    expect(screen.getByText(/hitung skor terlebih dahulu/i)).toBeInTheDocument();
   });
 
   it('is enabled when scoring result available', () => {
     renderWithProviders(<EvaluationSections {...defaultProps} scoringResult={MOCK_SCORING_RESULT} />);
-    const saveBtn = screen.getByRole('button', { name: /save evaluation/i });
+    const saveBtn = screen.getByRole('button', { name: /simpan evaluasi/i });
     expect(saveBtn).toBeEnabled();
   });
 
@@ -98,7 +98,7 @@ describe('Save Evaluation Button', () => {
         isSaving={true}
       />,
     );
-    const saveBtn = screen.getByRole('button', { name: /saving/i });
+    const saveBtn = screen.getByRole('button', { name: /menyimpan/i });
     expect(saveBtn).toBeDisabled();
   });
 
@@ -110,7 +110,7 @@ describe('Save Evaluation Button', () => {
         isSaved={true}
       />,
     );
-    const saveBtn = screen.getByRole('button', { name: /saved ✓/i });
+    const saveBtn = screen.getByRole('button', { name: /tersimpan ✓/i });
     expect(saveBtn).toBeDisabled();
   });
 
@@ -122,7 +122,7 @@ describe('Save Evaluation Button', () => {
         saveError={new Error('Network error')}
       />,
     );
-    expect(screen.getByText(/failed to save/i)).toBeInTheDocument();
+    expect(screen.getByText(/gagal menyimpan evaluasi/i)).toBeInTheDocument();
   });
 
   it('calls onSaveEvaluation when clicked', async () => {
@@ -135,7 +135,7 @@ describe('Save Evaluation Button', () => {
         onSaveEvaluation={onSave}
       />,
     );
-    await user.click(screen.getByRole('button', { name: /save evaluation/i }));
+    await user.click(screen.getByRole('button', { name: /simpan evaluasi/i }));
     expect(onSave).toHaveBeenCalledOnce();
   });
 });

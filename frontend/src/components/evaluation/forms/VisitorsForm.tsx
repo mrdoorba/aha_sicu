@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../../ui/card';
 import { NumberField } from './NumberField';
 import { ExternalLink } from 'lucide-react';
@@ -12,6 +13,7 @@ interface VisitorsFormProps {
 }
 
 export function VisitorsForm({ data, storeLink, onChange, onBlur }: VisitorsFormProps) {
+  const { t } = useTranslation();
   const totalVisitors = data.totalVisitors ?? 0;
   const returningVisitors = data.returningVisitors ?? 0;
   const rawPct = totalVisitors > 0 ? (returningVisitors / totalVisitors) * 100 : null;
@@ -21,8 +23,8 @@ export function VisitorsForm({ data, storeLink, onChange, onBlur }: VisitorsForm
     <Card className="mb-4">
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          Tinjauan Pengunjung
-          <a href={SECTION_LINKS.visitors} target="_blank" rel="noopener noreferrer" aria-label="Buka Shopee Seller Center (tab baru)">
+          {t('forms.visitors.title')}
+          <a href={SECTION_LINKS.visitors} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
             <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
@@ -43,7 +45,7 @@ export function VisitorsForm({ data, storeLink, onChange, onBlur }: VisitorsForm
                   href={storeLink}
                   target="_blank"
                   rel="noopener noreferrer"
-                  aria-label="Buka toko Shopee (tab baru)"
+                  aria-label={t('common.aria.openStore')}
                   className="absolute right-0 top-0"
                 >
                   <ExternalLink className="size-3.5 text-muted-foreground" aria-hidden="true" />
@@ -55,7 +57,7 @@ export function VisitorsForm({ data, storeLink, onChange, onBlur }: VisitorsForm
 
         {/* Computed: % Pengunjung Lama */}
         <div className="mt-4">
-          <p className="mb-1 text-sm font-medium">% Pengunjung Lama</p>
+          <p className="mb-1 text-sm font-medium">{t('forms.visitors.returningPct')}</p>
           <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
             {data.totalVisitors == null || data.totalVisitors === 0
               ? '—'

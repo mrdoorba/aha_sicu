@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../../ui/card';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
@@ -11,9 +12,9 @@ interface CompetitionFormProps {
 }
 
 const PRODUCTS = [
-  { key: 'product1', label: 'Produk Kompetitor 1' },
-  { key: 'product2', label: 'Produk Kompetitor 2' },
-  { key: 'product3', label: 'Produk Kompetitor 3' },
+  { key: 'product1', labelKey: 'forms.competition.product1' },
+  { key: 'product2', labelKey: 'forms.competition.product2' },
+  { key: 'product3', labelKey: 'forms.competition.product3' },
 ] as const;
 
 function formatPrice(value: number): string {
@@ -21,6 +22,7 @@ function formatPrice(value: number): string {
 }
 
 function CompetitivenessResult({ product }: { product: CompetitionProduct }) {
+  const { t } = useTranslation();
   const { productName, sellingPrice, keyword, marketPrice } = product;
 
   if (sellingPrice == null || marketPrice == null || marketPrice === 0) return null;
@@ -32,8 +34,8 @@ function CompetitivenessResult({ product }: { product: CompetitionProduct }) {
     <div className={`mt-2 rounded-md bg-muted p-2 text-sm ${isNotCompetitive ? 'text-red-600' : 'text-green-600'}`} role="status" aria-live="polite">
       <p>
         {isNotCompetitive
-          ? `• ${displayName} (Rp. ${formatPrice(sellingPrice)}) = ❌tidak kompetitif (harga kisaran pasaran: Rp. ${formatPrice(marketPrice)})`
-          : `• ${displayName} (Rp. ${formatPrice(sellingPrice)}) = ✅kompetitif`}
+          ? t('forms.competition.notCompetitive', { name: displayName, price: formatPrice(sellingPrice), marketPrice: formatPrice(marketPrice) })
+          : t('forms.competition.competitive', { name: displayName, price: formatPrice(sellingPrice) })}
       </p>
       {keyword && <p className="text-muted-foreground">↪{keyword}</p>}
     </div>
@@ -41,21 +43,23 @@ function CompetitivenessResult({ product }: { product: CompetitionProduct }) {
 }
 
 export function CompetitionForm({ data, onChange, onBlur }: CompetitionFormProps) {
+  const { t } = useTranslation();
+
   return (
     <Card className="mb-4">
       <CardContent className="pt-4">
-        <p className="mb-3 text-sm font-semibold">Kompetisi TOP Produk</p>
+        <p className="mb-3 text-sm font-semibold">{t('forms.competition.title')}</p>
         <div className="space-y-4">
           {PRODUCTS.map((product) => {
             const productData = data[product.key];
             return (
               <div key={product.key} className="rounded-lg border p-4">
-                <p className="mb-3 text-sm font-medium">{product.label}</p>
+                <p className="mb-3 text-sm font-medium">{t(product.labelKey)}</p>
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                   {/* Nama Produk */}
                   <div className="space-y-1">
                     <Label htmlFor={`competition.${product.key}.productName`}>
-                      Nama Produk
+                      {t('forms.competition.productName')}
                     </Label>
                     <Input
                       id={`competition.${product.key}.productName`}
@@ -73,7 +77,7 @@ export function CompetitionForm({ data, onChange, onBlur }: CompetitionFormProps
                   {/* Harga Jual */}
                   <CurrencyField
                     name={`competition.${product.key}.sellingPrice`}
-                    label="Harga Jual"
+                    label={t('forms.competition.sellingPrice')}
                     value={productData?.sellingPrice ?? null}
                     onChange={(v) => onChange('competition', `${product.key}.sellingPrice`, v)}
                     onBlur={onBlur}
@@ -82,7 +86,7 @@ export function CompetitionForm({ data, onChange, onBlur }: CompetitionFormProps
                   {/* Kata kunci pencarian */}
                   <div className="space-y-1">
                     <Label htmlFor={`competition.${product.key}.keyword`}>
-                      Kata kunci pencarian
+                      {t('forms.competition.keyword')}
                     </Label>
                     <Input
                       id={`competition.${product.key}.keyword`}
@@ -100,7 +104,7 @@ export function CompetitionForm({ data, onChange, onBlur }: CompetitionFormProps
                   {/* LINK */}
                   <div className="space-y-1">
                     <Label htmlFor={`competition.${product.key}.link`}>
-                      LINK
+                      {t('forms.competition.link')}
                     </Label>
                     <Input
                       id={`competition.${product.key}.link`}
@@ -118,7 +122,7 @@ export function CompetitionForm({ data, onChange, onBlur }: CompetitionFormProps
                   {/* Harga rata-rata pasaran */}
                   <CurrencyField
                     name={`competition.${product.key}.marketPrice`}
-                    label="Harga rata-rata pasaran"
+                    label={t('forms.competition.marketPrice')}
                     value={productData?.marketPrice ?? null}
                     onChange={(v) => onChange('competition', `${product.key}.marketPrice`, v)}
                     onBlur={onBlur}

@@ -24,8 +24,8 @@ describe('PasswordConfirmDialog', () => {
       />,
     );
 
-    expect(screen.getByText('Confirm Password')).toBeInTheDocument();
-    expect(screen.getByText(/enter your password to confirm/i)).toBeInTheDocument();
+    expect(screen.getByText('Konfirmasi Password')).toBeInTheDocument();
+    expect(screen.getByText(/masukkan password anda untuk mengonfirmasi/i)).toBeInTheDocument();
   });
 
   it('Confirm button disabled when password is empty', () => {
@@ -38,7 +38,7 @@ describe('PasswordConfirmDialog', () => {
       />,
     );
 
-    const confirmBtn = screen.getByRole('button', { name: /confirm/i });
+    const confirmBtn = screen.getByRole('button', { name: /konfirmasi/i });
     expect(confirmBtn).toBeDisabled();
   });
 
@@ -56,7 +56,7 @@ describe('PasswordConfirmDialog', () => {
     const passwordInput = screen.getByLabelText('Password');
     await user.type(passwordInput, 'mypassword');
 
-    const confirmBtn = screen.getByRole('button', { name: /confirm/i });
+    const confirmBtn = screen.getByRole('button', { name: /konfirmasi/i });
     expect(confirmBtn).toBeEnabled();
   });
 
@@ -77,7 +77,7 @@ describe('PasswordConfirmDialog', () => {
     const passwordInput = screen.getByLabelText('Password');
     await user.type(passwordInput, 'correctpassword');
 
-    const confirmBtn = screen.getByRole('button', { name: /confirm/i });
+    const confirmBtn = screen.getByRole('button', { name: /konfirmasi/i });
     await user.click(confirmBtn);
 
     expect(mockReauthenticateUser).toHaveBeenCalledWith('correctpassword');
@@ -101,10 +101,10 @@ describe('PasswordConfirmDialog', () => {
     const passwordInput = screen.getByLabelText('Password');
     await user.type(passwordInput, 'wrongpassword');
 
-    const confirmBtn = screen.getByRole('button', { name: /confirm/i });
+    const confirmBtn = screen.getByRole('button', { name: /konfirmasi/i });
     await user.click(confirmBtn);
 
-    expect(await screen.findByText('Incorrect password')).toBeInTheDocument();
+    expect(await screen.findByText('Password salah')).toBeInTheDocument();
     expect(mockOnConfirm).not.toHaveBeenCalled();
   });
 
@@ -125,12 +125,12 @@ describe('PasswordConfirmDialog', () => {
     const passwordInput = screen.getByLabelText('Password');
     await user.type(passwordInput, 'correctpassword');
 
-    const confirmBtn = screen.getByRole('button', { name: /confirm/i });
+    const confirmBtn = screen.getByRole('button', { name: /konfirmasi/i });
     await user.click(confirmBtn);
 
     expect(mockReauthenticateUser).toHaveBeenCalledWith('correctpassword');
     expect(mockOnConfirm).toHaveBeenCalled();
-    expect(await screen.findByText('Failed to save changes. Please try again.')).toBeInTheDocument();
+    expect(await screen.findByText('Gagal menyimpan perubahan. Silakan coba lagi.')).toBeInTheDocument();
   });
 
   it('calls onCancel when Cancel is clicked', async () => {
@@ -146,7 +146,7 @@ describe('PasswordConfirmDialog', () => {
       />,
     );
 
-    const cancelBtn = screen.getByRole('button', { name: /^cancel$/i });
+    const cancelBtn = screen.getByRole('button', { name: /^batal$/i });
     await user.click(cancelBtn);
 
     expect(mockOnCancel).toHaveBeenCalled();

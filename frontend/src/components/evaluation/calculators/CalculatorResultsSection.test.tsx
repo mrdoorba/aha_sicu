@@ -140,7 +140,7 @@ describe('CalculatorResultsSection', () => {
 
     render(<CalculatorResultsSection brandId={1} />, { wrapper: createWrapper() });
 
-    expect(screen.getByText('Waiting for:')).toBeInTheDocument();
+    expect(screen.getByText('Menunggu:')).toBeInTheDocument();
     expect(screen.getByText('Mass Update / Sales Info (.xlsx)')).toBeInTheDocument();
   });
 
@@ -156,7 +156,7 @@ describe('CalculatorResultsSection', () => {
 
     render(<CalculatorResultsSection brandId={1} />, { wrapper: createWrapper() });
 
-    expect(screen.getByText('Loading calculator results...')).toBeInTheDocument();
+    expect(screen.getByText('Memuat hasil kalkulator...')).toBeInTheDocument();
   });
 
   it('recalculate all button triggers mutation', async () => {
@@ -253,7 +253,7 @@ describe('CalculatorResultsSection', () => {
     render(<CalculatorResultsSection brandId={1} />, { wrapper: createWrapper() });
 
     // Warning banner should be visible
-    expect(screen.getByText(/Auto-calculation failed: Data validation failed/)).toBeInTheDocument();
+    expect(screen.getByText(/Perhitungan otomatis gagal: Data validation failed/)).toBeInTheDocument();
 
     // Calculate button in the warning should be clickable
     const calcButtons = screen.getAllByText('Calculate');
@@ -339,7 +339,7 @@ describe('CalculatorResultsSection', () => {
     expect(screen.getByText(/Calculator execution failed/)).toBeInTheDocument();
 
     // Retry button should be visible and functional
-    const retryBtn = screen.getByText('Retry');
+    const retryBtn = screen.getByText('Coba Lagi');
     expect(retryBtn).toBeInTheDocument();
     await user.click(retryBtn);
 

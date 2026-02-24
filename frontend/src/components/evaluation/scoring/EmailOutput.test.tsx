@@ -15,9 +15,9 @@ describe('EmailOutput', () => {
     expect(screen.getByText('Email Output')).toBeInTheDocument();
   });
 
-  it('has a Copy button', () => {
+  it('has a Salin button', () => {
     render(<EmailOutput subject="Sub" body="Body" />);
-    expect(screen.getByRole('button', { name: /copy/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /salin/i })).toBeInTheDocument();
   });
 
   it('copies text to clipboard on click', async () => {
@@ -30,7 +30,7 @@ describe('EmailOutput', () => {
     });
 
     render(<EmailOutput subject="My Subject" body="My Body" />);
-    await user.click(screen.getByRole('button', { name: /copy/i }));
+    await user.click(screen.getByRole('button', { name: /salin/i }));
 
     expect(writeText).toHaveBeenCalledWith('Subject: My Subject\n\nMy Body');
   });

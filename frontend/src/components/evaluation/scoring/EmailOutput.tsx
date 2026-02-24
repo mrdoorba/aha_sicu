@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Button } from '../../ui/button';
 import { Card, CardContent } from '../../ui/card';
 import { Copy, Check } from 'lucide-react';
@@ -9,6 +10,7 @@ interface EmailOutputProps {
 }
 
 export const EmailOutput = ({ subject, body }: EmailOutputProps) => {
+  const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -22,14 +24,14 @@ export const EmailOutput = ({ subject, body }: EmailOutputProps) => {
     <Card>
       <CardContent className="pt-4">
         <div className="mb-2 flex items-center justify-between">
-          <p className="text-sm font-semibold">Email Output</p>
+          <p className="text-sm font-semibold">{t('emailOutput.title')}</p>
           <Button variant="outline" size="sm" onClick={handleCopy}>
             {copied ? (
               <Check className="mr-1 size-3.5" aria-hidden="true" />
             ) : (
               <Copy className="mr-1 size-3.5" aria-hidden="true" />
             )}
-            {copied ? 'Copied' : 'Copy'}
+            {copied ? t('emailOutput.copied') : t('emailOutput.copy')}
           </Button>
         </div>
         <p className="mb-2 text-xs text-muted-foreground">{subject}</p>

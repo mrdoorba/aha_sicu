@@ -27,7 +27,7 @@ describe('TopSkuResults', () => {
   it('renders revenue table with IDR formatting', () => {
     render(<TopSkuResults result={SAMPLE_RESULT} />);
 
-    expect(screen.getByText('Revenue Ranking')).toBeInTheDocument();
+    expect(screen.getByText('Peringkat Omzet')).toBeInTheDocument();
     // Product names appear in both tables, so use getAllByText
     expect(screen.getAllByText('Product A').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Product B').length).toBeGreaterThanOrEqual(1);
@@ -38,7 +38,7 @@ describe('TopSkuResults', () => {
   it('renders stock table', () => {
     render(<TopSkuResults result={SAMPLE_RESULT} />);
 
-    expect(screen.getByText('Stock Ranking')).toBeInTheDocument();
+    expect(screen.getByText('Peringkat Stok')).toBeInTheDocument();
     expect(screen.getByText('Red')).toBeInTheDocument();
     expect(screen.getByText('Blue')).toBeInTheDocument();
     expect(screen.getByText('50')).toBeInTheDocument();

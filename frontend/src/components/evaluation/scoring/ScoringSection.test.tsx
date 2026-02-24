@@ -82,9 +82,9 @@ describe('ScoringSection', () => {
   it('shows result sections when scoring exists', () => {
     render(<ScoringSection {...defaultProps} scoringResult={MOCK_RESULT} />);
     expect(screen.getByText('82')).toBeInTheDocument();
-    expect(screen.getByText(/per-category breakdown/i)).toBeInTheDocument();
+    expect(screen.getByText(/rincian per kategori/i)).toBeInTheDocument();
     expect(screen.getByText(/email output/i)).toBeInTheDocument();
-    expect(screen.getByText(/open whatsapp/i)).toBeInTheDocument();
+    expect(screen.getByText(/buka whatsapp/i)).toBeInTheDocument();
   });
 
   it('disables button while generating', () => {

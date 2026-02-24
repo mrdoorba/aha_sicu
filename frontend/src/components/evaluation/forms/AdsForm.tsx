@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../../ui/card';
 import { CurrencyField } from './CurrencyField';
 import { ExternalLink } from 'lucide-react';
@@ -12,6 +13,7 @@ interface AdsFormProps {
 }
 
 export function AdsForm({ data, salesMonth0, onChange, onBlur }: AdsFormProps) {
+  const { t } = useTranslation();
   const adSales = data.adSales ?? 0;
   const adCost = data.adCost ?? 0;
 
@@ -23,8 +25,8 @@ export function AdsForm({ data, salesMonth0, onChange, onBlur }: AdsFormProps) {
     <Card className="mb-4">
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
-          Data Iklan
-          <a href={SECTION_LINKS.ads} target="_blank" rel="noopener noreferrer" aria-label="Buka Shopee Seller Center (tab baru)">
+          {t('forms.ads.title')}
+          <a href={SECTION_LINKS.ads} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
             <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
@@ -45,19 +47,19 @@ export function AdsForm({ data, salesMonth0, onChange, onBlur }: AdsFormProps) {
         {/* Computed fields */}
         <div className="mt-4 grid gap-4 sm:grid-cols-3">
           <div>
-            <p className="mb-1 text-sm font-medium">ROAS</p>
+            <p className="mb-1 text-sm font-medium">{t('forms.ads.roas')}</p>
             <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
               {roi == null ? '—' : roi.toFixed(1)}
             </div>
           </div>
           <div>
-            <p className="mb-1 text-sm font-medium">% GMV Iklan / GMV Toko</p>
+            <p className="mb-1 text-sm font-medium">{t('forms.ads.gmvRatio')}</p>
             <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
               {gmvAdsPct == null ? '—' : `${Math.round(gmvAdsPct)}%`}
             </div>
           </div>
           <div>
-            <p className="mb-1 text-sm font-medium">% Biaya Iklan / GMV Toko</p>
+            <p className="mb-1 text-sm font-medium">{t('forms.ads.costRatio')}</p>
             <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
               {costAdsPct == null ? '—' : `${Math.round(costAdsPct)}%`}
             </div>

@@ -1,6 +1,7 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Copy, ClipboardCheck, Trash2 } from 'lucide-react';
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { Header } from '../components/layout/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
@@ -64,15 +65,17 @@ function LoadingSkeleton() {
 
 function ScoreBreakdownTable({
   breakdown,
+  t,
 }: {
   breakdown: Array<Record<string, unknown>>;
+  t: (key: string) => string;
 }) {
   return (
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Category</TableHead>
-          <TableHead className="text-right">Score</TableHead>
+          <TableHead>{t('evaluationDetail.category')}</TableHead>
+          <TableHead className="text-right">{t('evaluationDetail.score')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -90,39 +93,39 @@ function ScoreBreakdownTable({
   );
 }
 
-function AdsKeywordSection({ data }: { data: Record<string, unknown> }) {
+function AdsKeywordSection({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
   const text = (data.output_text as string) || '';
-  if (!text) return <p className="text-muted-foreground">No data available</p>;
+  if (!text) return <p className="text-muted-foreground">{t('common.noData')}</p>;
   return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
 }
 
-function TopSkuSection({ data }: { data: Record<string, unknown> }) {
+function TopSkuSection({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
   const details = data.details as Record<string, unknown> | undefined;
   const output1 = (details?.output_1 as Array<Record<string, unknown>>) || [];
   const output2 = (details?.output_2 as Array<Record<string, unknown>>) || [];
   const avgStock = details?.average_stock;
 
   if (output1.length === 0 && output2.length === 0) {
-    return <p className="text-muted-foreground">No data available</p>;
+    return <p className="text-muted-foreground">{t('common.noData')}</p>;
   }
 
   return (
     <div className="space-y-4">
       {avgStock !== undefined && avgStock !== null && (
         <p className="text-sm font-medium">
-          Average Stock: <span className="font-bold">{formatIDR(avgStock)}</span>
+          {t('evaluationDetail.averageStock')}: <span className="font-bold">{formatIDR(avgStock)}</span>
         </p>
       )}
       {output1.length > 0 && (
         <div>
-          <h4 className="mb-2 text-sm font-medium">Revenue Ranking</h4>
+          <h4 className="mb-2 text-sm font-medium">{t('evaluationDetail.revenueRanking')}</h4>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Kode Variasi</TableHead>
-                <TableHead>Product Name</TableHead>
-                <TableHead className="text-right">Total Omzet</TableHead>
-                <TableHead className="text-right">Rata2 Harga Jual</TableHead>
+                <TableHead>{t('topSku.kodeVariasi')}</TableHead>
+                <TableHead>{t('topSku.productName')}</TableHead>
+                <TableHead className="text-right">{t('topSku.totalOmzet')}</TableHead>
+                <TableHead className="text-right">{t('topSku.avgPrice')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -140,14 +143,14 @@ function TopSkuSection({ data }: { data: Record<string, unknown> }) {
       )}
       {output2.length > 0 && (
         <div>
-          <h4 className="mb-2 text-sm font-medium">Stock Ranking</h4>
+          <h4 className="mb-2 text-sm font-medium">{t('evaluationDetail.stockRanking')}</h4>
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>Kode Variasi</TableHead>
-                <TableHead>Nama Produk</TableHead>
-                <TableHead>Varian</TableHead>
-                <TableHead className="text-right">Stok</TableHead>
+                <TableHead>{t('topSku.kodeVariasi')}</TableHead>
+                <TableHead>{t('topSku.namaProduk')}</TableHead>
+                <TableHead>{t('topSku.varian')}</TableHead>
+                <TableHead className="text-right">{t('topSku.stok')}</TableHead>
               </TableRow>
             </TableHeader>
             <TableBody>
@@ -167,20 +170,22 @@ function TopSkuSection({ data }: { data: Record<string, unknown> }) {
   );
 }
 
-function DiscountSection({ data }: { data: Record<string, unknown> }) {
+function DiscountSection({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
   const text = (data.output_text as string) || '';
-  if (!text) return <p className="text-muted-foreground">No data available</p>;
+  if (!text) return <p className="text-muted-foreground">{t('common.noData')}</p>;
   return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
 }
 
 function ManualInputsSection({
   inputs,
+  t,
 }: {
   inputs: Record<string, unknown>;
+  t: (key: string) => string;
 }) {
   const categories = Object.entries(inputs);
   if (categories.length === 0) {
-    return <p className="text-muted-foreground">No manual inputs recorded</p>;
+    return <p className="text-muted-foreground">{t('evaluationDetail.noManualInputs')}</p>;
   }
 
   return (
@@ -206,32 +211,32 @@ function ManualInputsSection({
   );
 }
 
-function EmailOutputSection({ emailOutput }: { emailOutput: string }) {
+function EmailOutputSection({ emailOutput, t }: { emailOutput: string; t: (key: string) => string }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
     try {
       await navigator.clipboard.writeText(emailOutput);
       setCopied(true);
-      toast.success('Email output copied to clipboard');
+      toast.success(t('evaluationDetail.emailCopied'));
       setTimeout(() => setCopied(false), 2000);
     } catch {
-      toast.error('Failed to copy to clipboard');
+      toast.error(t('evaluationDetail.copyFailed'));
     }
   };
 
   return (
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">Email Output</CardTitle>
+        <CardTitle className="text-lg">{t('evaluationDetail.emailOutput')}</CardTitle>
         <Button
           variant="outline"
           size="sm"
           onClick={handleCopy}
-          aria-label="Copy email output to clipboard"
+          aria-label={t('evaluationDetail.emailOutput')}
         >
           {copied ? <ClipboardCheck className="size-4" /> : <Copy className="size-4" />}
-          {copied ? 'Copied' : 'Copy'}
+          {copied ? t('common.copied') : t('common.copy')}
         </Button>
       </CardHeader>
       <CardContent>
@@ -242,6 +247,7 @@ function EmailOutputSection({ emailOutput }: { emailOutput: string }) {
 }
 
 export function EvaluationDetailPage() {
+  const { t } = useTranslation();
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
   const id = Number(params.id);
@@ -259,11 +265,11 @@ export function EvaluationDetailPage() {
   const handleDelete = () => {
     deleteEvaluation.mutate(id, {
       onSuccess: () => {
-        toast.success('Evaluasi berhasil dihapus');
+        toast.success(t('evaluationDetail.deleteSuccess'));
         navigate('/history');
       },
       onError: () => {
-        toast.error('Gagal menghapus evaluasi');
+        toast.error(t('evaluationDetail.deleteError'));
       },
     });
   };
@@ -283,7 +289,7 @@ export function EvaluationDetailPage() {
           onClick={() => navigate('/history')}
         >
           <ArrowLeft className="size-4" />
-          Back to History
+          {t('common.backToHistory')}
         </Button>
 
         {isLoading && <LoadingSkeleton />}
@@ -291,9 +297,9 @@ export function EvaluationDetailPage() {
         {!isLoading && (!validId || isNotFound) && (
           <Card>
             <CardContent className="flex flex-col items-center gap-4 py-12">
-              <p className="text-muted-foreground">Evaluation not found</p>
+              <p className="text-muted-foreground">{t('evaluationDetail.notFound')}</p>
               <Button variant="outline" onClick={() => navigate('/history')}>
-                Back to History
+                {t('common.backToHistory')}
               </Button>
             </CardContent>
           </Card>
@@ -302,9 +308,9 @@ export function EvaluationDetailPage() {
         {!isLoading && isError && !isNotFound && (
           <Card>
             <CardContent className="flex flex-col items-center gap-4 py-12">
-              <p className="text-destructive">Failed to load evaluation details</p>
+              <p className="text-destructive">{t('evaluationDetail.errorLoading')}</p>
               <Button variant="outline" onClick={() => refetch()}>
-                Retry
+                {t('common.retry')}
               </Button>
             </CardContent>
           </Card>
@@ -333,7 +339,7 @@ export function EvaluationDetailPage() {
                         onClick={() => setDeleteDialogOpen(true)}
                       >
                         <Trash2 className="mr-1 size-4" />
-                        Hapus Evaluasi
+                        {t('evaluationDetail.deleteEvaluation')}
                       </Button>
                     )}
                   </div>
@@ -355,7 +361,7 @@ export function EvaluationDetailPage() {
             <div className="grid gap-6 md:grid-cols-2">
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Final Score</CardTitle>
+                  <CardTitle className="text-lg">{t('evaluationDetail.finalScore')}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center gap-3">
@@ -363,17 +369,20 @@ export function EvaluationDetailPage() {
                     <span className="text-2xl">{evaluation.verdict}</span>
                   </div>
                   <p className="mt-2 text-sm text-muted-foreground">
-                    {evaluation.template === 'fashion' ? 'Fashion' : 'Non-Fashion'} template &middot; Rule v{evaluation.rule_version}
+                    {t('evaluationDetail.templateInfo', {
+                      template: evaluation.template === 'fashion' ? 'Fashion' : 'Non-Fashion',
+                      version: evaluation.rule_version,
+                    })}
                   </p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader>
-                  <CardTitle className="text-lg">Score Breakdown</CardTitle>
+                  <CardTitle className="text-lg">{t('evaluationDetail.scoreBreakdown')}</CardTitle>
                 </CardHeader>
                 <CardContent>
-                  <ScoreBreakdownTable breakdown={evaluation.score_breakdown} />
+                  <ScoreBreakdownTable breakdown={evaluation.score_breakdown} t={t} />
                 </CardContent>
               </Card>
             </div>
@@ -381,39 +390,42 @@ export function EvaluationDetailPage() {
             {/* Calculator Results */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Calculator Results</CardTitle>
+                <CardTitle className="text-lg">{t('evaluationDetail.calculatorResults')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-6">
                 <div>
-                  <h3 className="mb-3 text-base font-semibold">Ads Keyword Analysis</h3>
+                  <h3 className="mb-3 text-base font-semibold">{t('evaluationDetail.adsKeywordAnalysis')}</h3>
                   {evaluation.calculator_results.ads_keyword ? (
                     <AdsKeywordSection
                       data={evaluation.calculator_results.ads_keyword as Record<string, unknown>}
+                      t={t}
                     />
                   ) : (
-                    <p className="text-muted-foreground">No data available</p>
+                    <p className="text-muted-foreground">{t('common.noData')}</p>
                   )}
                 </div>
 
                 <div>
-                  <h3 className="mb-3 text-base font-semibold">Top SKU Analysis</h3>
+                  <h3 className="mb-3 text-base font-semibold">{t('evaluationDetail.topSkuAnalysis')}</h3>
                   {evaluation.calculator_results.top_sku ? (
                     <TopSkuSection
                       data={evaluation.calculator_results.top_sku as Record<string, unknown>}
+                      t={t}
                     />
                   ) : (
-                    <p className="text-muted-foreground">No data available</p>
+                    <p className="text-muted-foreground">{t('common.noData')}</p>
                   )}
                 </div>
 
                 <div>
-                  <h3 className="mb-3 text-base font-semibold">Discount Check</h3>
+                  <h3 className="mb-3 text-base font-semibold">{t('evaluationDetail.discountCheck')}</h3>
                   {evaluation.calculator_results.discount ? (
                     <DiscountSection
                       data={evaluation.calculator_results.discount as Record<string, unknown>}
+                      t={t}
                     />
                   ) : (
-                    <p className="text-muted-foreground">No data available</p>
+                    <p className="text-muted-foreground">{t('common.noData')}</p>
                   )}
                 </div>
               </CardContent>
@@ -422,16 +434,16 @@ export function EvaluationDetailPage() {
             {/* Manual Inputs */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Manual Inputs</CardTitle>
+                <CardTitle className="text-lg">{t('evaluationDetail.manualInputs')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ManualInputsSection inputs={evaluation.manual_inputs} />
+                <ManualInputsSection inputs={evaluation.manual_inputs} t={t} />
               </CardContent>
             </Card>
 
             {/* Email Output (conditional) */}
             {evaluation.email_output && (
-              <EmailOutputSection emailOutput={evaluation.email_output} />
+              <EmailOutputSection emailOutput={evaluation.email_output} t={t} />
             )}
           </div>
         )}

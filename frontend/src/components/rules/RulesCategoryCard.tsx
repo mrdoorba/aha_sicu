@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '../ui/card';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../ui/collapsible';
 import { Badge } from '../ui/badge';
@@ -18,52 +19,52 @@ interface RulesCategoryCardProps {
 }
 
 const CATEGORY_LABELS: Record<string, string> = {
-  operational: 'Operasional',
-  business: 'Bisnis',
-  content: 'Konten',
-  visitors: 'Pengunjung',
-  promo_tools: 'Alat Promo',
-  products_status: 'Produk & Status',
-  ads: 'Iklan',
-  campaign: 'Kampanye',
-  stock: 'Stok',
-  discount: 'Diskon',
-  marketing: 'Marketing',
+  operational: 'rules.category.operational',
+  business: 'rules.category.business',
+  content: 'rules.category.content',
+  visitors: 'rules.category.visitors',
+  promo_tools: 'rules.category.promoTools',
+  products_status: 'rules.category.productsStatus',
+  ads: 'rules.category.ads',
+  campaign: 'rules.category.campaign',
+  stock: 'rules.category.stock',
+  discount: 'rules.category.discount',
+  marketing: 'rules.category.marketing',
 };
 
 const RULE_LABELS: Record<string, string> = {
-  unfulfilled_order_rate: 'Tingkat Pesanan Tidak Terselesaikan',
-  late_shipment_rate: 'Tingkat Keterlambatan Pengiriman',
-  preparation_time: 'Masa Pengemasan',
-  chat_response_rate: 'Persentase Chat Dibalas',
-  overall_rating: 'Keseluruhan Penilaian',
-  monthly_sales_trend: 'Tren Penjualan Bulanan',
-  six_month_avg_threshold: 'Rata-rata 6 Bulan',
-  conversion_rate: 'Tingkat Konversi',
-  quality_ratio: 'Rasio Kualitas',
-  returning_visitors_pct: 'Pengunjung Kembali %',
-  followers: 'Pengikut',
-  usage_pct_threshold: 'Penggunaan %',
-  effectiveness_pct_threshold: 'Efektivitas %',
-  product_count: 'Jumlah Produk',
-  store_status_points: 'Status Toko',
-  roi_threshold: 'ROI',
-  gmv_ratio_threshold: 'Rasio GMV',
-  cost_ratio_range: 'Rentang Rasio Biaya',
-  participation_pct_threshold: 'Partisipasi %',
-  high_threshold: 'Stok Tinggi',
-  mid_threshold: 'Stok Sedang',
-  low_penalty: 'Stok Rendah',
-  fake_discount_flag: 'Diskon Palsu',
-  floor: 'Batas Bawah',
-  floor_fashion: 'Batas Bawah (Fashion)',
-  base_subtraction: 'Pengurangan Dasar',
-  upper_limit_base: 'Batas Atas Dasar',
-  fashion_adjustment: 'Penyesuaian Fashion',
-  minimum_threshold: 'Ambang Minimum',
-  display_max: 'Tampilan Maks',
-  display_min: 'Tampilan Min',
-  individual_messages: 'Pesan Individual Promo',
+  unfulfilled_order_rate: 'rules.label.unfulfilledOrderRate',
+  late_shipment_rate: 'rules.label.lateShipmentRate',
+  preparation_time: 'rules.label.preparationTime',
+  chat_response_rate: 'rules.label.chatResponseRate',
+  overall_rating: 'rules.label.overallRating',
+  monthly_sales_trend: 'rules.label.monthlySalesTrend',
+  six_month_avg_threshold: 'rules.label.sixMonthAvgThreshold',
+  conversion_rate: 'rules.label.conversionRate',
+  quality_ratio: 'rules.label.qualityRatio',
+  returning_visitors_pct: 'rules.label.returningVisitorsPct',
+  followers: 'rules.label.followers',
+  usage_pct_threshold: 'rules.label.usagePctThreshold',
+  effectiveness_pct_threshold: 'rules.label.effectivenessPctThreshold',
+  product_count: 'rules.label.productCount',
+  store_status_points: 'rules.label.storeStatusPoints',
+  roi_threshold: 'rules.label.roiThreshold',
+  gmv_ratio_threshold: 'rules.label.gmvRatioThreshold',
+  cost_ratio_range: 'rules.label.costRatioRange',
+  participation_pct_threshold: 'rules.label.participationPctThreshold',
+  high_threshold: 'rules.label.highThreshold',
+  mid_threshold: 'rules.label.midThreshold',
+  low_penalty: 'rules.label.lowPenalty',
+  fake_discount_flag: 'rules.label.fakeDiscountFlag',
+  floor: 'rules.label.floor',
+  floor_fashion: 'rules.label.floorFashion',
+  base_subtraction: 'rules.label.baseSubtraction',
+  upper_limit_base: 'rules.label.upperLimitBase',
+  fashion_adjustment: 'rules.label.fashionAdjustment',
+  minimum_threshold: 'rules.label.minimumThreshold',
+  display_max: 'rules.label.displayMax',
+  display_min: 'rules.label.displayMin',
+  individual_messages: 'rules.label.individualMessages',
 };
 
 const COMPARISON_SYMBOLS: Record<string, string> = {
@@ -81,15 +82,15 @@ const MARKETING_FRACTION_KEYS = new Set([
 ]);
 
 const MESSAGE_FIELD_LABELS: Record<string, string> = {
-  message_pass: 'Lulus',
-  message_fail: 'Gagal',
-  message_fail_severe: 'Gagal (parah)',
-  message_no_ads: 'Tanpa iklan',
-  message_too_minimal: 'Terlalu minimal',
-  message_no_data: 'Tidak ada data',
-  message_zero: 'Pendapatan nol',
-  message_dependent: 'Terlalu bergantung',
-  message_pass_afiliasi: 'Lulus (afiliasi)',
+  message_pass: 'rules.message.pass',
+  message_fail: 'rules.message.fail',
+  message_fail_severe: 'rules.message.failSevere',
+  message_no_ads: 'rules.message.noAds',
+  message_too_minimal: 'rules.message.tooMinimal',
+  message_no_data: 'rules.message.noData',
+  message_zero: 'rules.message.zero',
+  message_dependent: 'rules.message.dependent',
+  message_pass_afiliasi: 'rules.message.passAfiliasi',
 };
 
 const MESSAGE_FIELDS = Object.keys(MESSAGE_FIELD_LABELS);
@@ -111,7 +112,7 @@ function extractPlaceholders(template: string): string[] {
   return [...new Set(matches)];
 }
 
-function formatThreshold(rule: RuleThreshold, key?: string): string {
+function formatThreshold(rule: RuleThreshold, key: string | undefined, t: (k: string) => string): string {
   // Value-only fields (marketing category) — display as percentage
   if (rule.value !== undefined) {
     if (key && MARKETING_FRACTION_KEYS.has(key)) {
@@ -121,14 +122,14 @@ function formatThreshold(rule: RuleThreshold, key?: string): string {
   }
   // Store status — display status type labels instead of "-"
   if (rule.mall !== undefined) {
-    return 'Per tipe toko';
+    return t('rules.perStoreType');
   }
   if (rule.min !== undefined && rule.max !== undefined && rule.min !== null && rule.max !== null) {
     return `${rule.min} - ${rule.max}`;
   }
   // Fake discount — no numeric threshold
   if (rule.points_no_flag !== undefined) {
-    return 'Cek flag';
+    return t('rules.checkFlag');
   }
   const comparison = rule.comparison ? COMPARISON_SYMBOLS[rule.comparison] || rule.comparison : '';
   const value = rule.threshold ?? rule.threshold_pct ?? '';
@@ -136,16 +137,16 @@ function formatThreshold(rule: RuleThreshold, key?: string): string {
   return `${comparison} ${value}`;
 }
 
-function formatPoints(rule: RuleThreshold): string {
-  if (rule.info_only) return 'Info saja';
+function formatPoints(rule: RuleThreshold, t: (k: string) => string): string {
+  if (rule.info_only) return t('rules.infoOnly');
   // Value-only fields (marketing) — no points column
   if (rule.value !== undefined) return '-';
-  if (rule.points !== undefined) return `${rule.points} pts`;
-  if (rule.opportunity_points !== undefined) return `${rule.opportunity_points} opp pts`;
-  if (rule.points_no_flag !== undefined) return `${rule.points_no_flag} / ${rule.points_flag} pts`;
+  if (rule.points !== undefined) return `${rule.points} ${t('rules.points.pts')}`;
+  if (rule.opportunity_points !== undefined) return `${rule.opportunity_points} ${t('rules.points.oppPts')}`;
+  if (rule.points_no_flag !== undefined) return `${rule.points_no_flag} / ${rule.points_flag} ${t('rules.points.pts')}`;
   // store_status_points
   if (rule.mall !== undefined) {
-    return `Mall: ${rule.mall}, Star+: ${rule.star_plus}, Star: ${rule.star}, Regular: ${rule.regular}`;
+    return `${t('rules.storeType.mall')}: ${rule.mall}, ${t('rules.storeType.starPlus')}: ${rule.star_plus}, ${t('rules.storeType.star')}: ${rule.star}, ${t('rules.storeType.regular')}: ${rule.regular}`;
   }
   return '-';
 }
@@ -211,7 +212,8 @@ function renderEditableThreshold(
   category: string,
   key: string,
   onRuleChange: (category: string, key: string, field: string, value: number | null) => void,
-  validationErrors?: Record<string, string>,
+  validationErrors: Record<string, string> | undefined,
+  t: (k: string) => string,
 ) {
   // Value-only fields (marketing category) — fractions 0-1
   if (rule.value !== undefined) {
@@ -238,7 +240,7 @@ function renderEditableThreshold(
   if (rule.mall !== undefined) {
     return (
       <span className="flex items-center gap-1 flex-wrap">
-        Per tipe toko
+        {t('rules.perStoreType')}
       </span>
     );
   }
@@ -256,7 +258,7 @@ function renderEditableThreshold(
 
   // Fake discount — no threshold to edit
   if (rule.points_no_flag !== undefined) {
-    return <span>Cek flag</span>;
+    return <span>{t('rules.checkFlag')}</span>;
   }
 
   // Standard threshold or threshold_pct
@@ -285,9 +287,10 @@ function renderEditablePoints(
   category: string,
   key: string,
   onRuleChange: (category: string, key: string, field: string, value: number | null) => void,
-  validationErrors?: Record<string, string>,
+  validationErrors: Record<string, string> | undefined,
+  t: (k: string) => string,
 ) {
-  if (rule.info_only) return <Badge variant="outline" className="text-muted-foreground">Info saja</Badge>;
+  if (rule.info_only) return <Badge variant="outline" className="text-muted-foreground">{t('rules.infoOnly')}</Badge>;
 
   // Value-only fields (marketing) — no points to edit
   if (rule.value !== undefined) return <span>-</span>;
@@ -296,7 +299,7 @@ function renderEditablePoints(
     return (
       <span className="flex items-center gap-1">
         <EditableNumber value={rule.points} onChange={(v) => onRuleChange(category, key, 'points', v)} label={`${key} points`} error={validationErrors?.[`${category}.${key}.points`]} />
-        <span className="text-sm">pts</span>
+        <span className="text-sm">{t('rules.points.pts')}</span>
       </span>
     );
   }
@@ -305,7 +308,7 @@ function renderEditablePoints(
     return (
       <span className="flex items-center gap-1">
         <EditableNumber value={rule.opportunity_points} onChange={(v) => onRuleChange(category, key, 'opportunity_points', v)} label={`${key} opportunity points`} error={validationErrors?.[`${category}.${key}.opportunity_points`]} />
-        <span className="text-sm">opp pts</span>
+        <span className="text-sm">{t('rules.points.oppPts')}</span>
       </span>
     );
   }
@@ -316,7 +319,7 @@ function renderEditablePoints(
         <EditableNumber value={rule.points_no_flag} onChange={(v) => onRuleChange(category, key, 'points_no_flag', v)} label={`${key} points no flag`} error={validationErrors?.[`${category}.${key}.points_no_flag`]} />
         <span className="text-sm">/</span>
         <EditableNumber value={rule.points_flag} onChange={(v) => onRuleChange(category, key, 'points_flag', v)} label={`${key} points flag`} error={validationErrors?.[`${category}.${key}.points_flag`]} />
-        <span className="text-sm">pts</span>
+        <span className="text-sm">{t('rules.points.pts')}</span>
       </span>
     );
   }
@@ -325,13 +328,13 @@ function renderEditablePoints(
   if (rule.mall !== undefined) {
     return (
       <span className="flex items-center gap-1 flex-wrap text-sm">
-        <span>Mall:</span>
+        <span>{t('rules.storeType.mall')}:</span>
         <EditableNumber value={rule.mall} onChange={(v) => onRuleChange(category, key, 'mall', v)} label={`${key} mall`} error={validationErrors?.[`${category}.${key}.mall`]} />
-        <span>Star+:</span>
+        <span>{t('rules.storeType.starPlus')}:</span>
         <EditableNumber value={rule.star_plus} onChange={(v) => onRuleChange(category, key, 'star_plus', v)} label={`${key} star plus`} error={validationErrors?.[`${category}.${key}.star_plus`]} />
-        <span>Star:</span>
+        <span>{t('rules.storeType.star')}:</span>
         <EditableNumber value={rule.star} onChange={(v) => onRuleChange(category, key, 'star', v)} label={`${key} star`} error={validationErrors?.[`${category}.${key}.star`]} />
-        <span>Reg:</span>
+        <span>{t('rules.storeType.reg')}:</span>
         <EditableNumber value={rule.regular} onChange={(v) => onRuleChange(category, key, 'regular', v)} label={`${key} regular`} error={validationErrors?.[`${category}.${key}.regular`]} />
       </span>
     );
@@ -341,10 +344,11 @@ function renderEditablePoints(
 }
 
 export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = false, onRuleChange, onMessageChange, validationErrors }: RulesCategoryCardProps) => {
+  const { t } = useTranslation();
   const [isOpen, setIsOpen] = useState(true);
   const [expandedMessages, setExpandedMessages] = useState<Set<string>>(new Set());
   const maxPoints = calculateMaxPoints(rules, category);
-  const label = CATEGORY_LABELS[category] || category;
+  const label = t(CATEGORY_LABELS[category] || category);
 
   const toggleMessages = (key: string) => {
     setExpandedMessages((prev) => {
@@ -366,9 +370,9 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
                 {label}
               </span>
               {maxPoints > 0 ? (
-                <Badge variant="secondary">Max: {maxPoints} pts</Badge>
+                <Badge variant="secondary">{t('rules.badge.max', { points: maxPoints })}</Badge>
               ) : category === 'marketing' ? (
-                <Badge variant="outline">Config</Badge>
+                <Badge variant="outline">{t('rules.badge.config')}</Badge>
               ) : null}
             </CardTitle>
           </CardHeader>
@@ -378,9 +382,9 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
             <Table>
               <TableHeader>
                 <TableRow>
-                  <TableHead>Metrik</TableHead>
-                  <TableHead>Ambang Batas</TableHead>
-                  <TableHead>Poin</TableHead>
+                  <TableHead>{t('rules.table.metric')}</TableHead>
+                  <TableHead>{t('rules.table.threshold')}</TableHead>
+                  <TableHead>{t('rules.table.points')}</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -395,10 +399,10 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
                       <TableRow className={isDiffering ? 'bg-blue-50 dark:bg-blue-950/30' : ''}>
                         <TableCell className="font-medium">
                           <span className="flex items-center gap-1">
-                            {RULE_LABELS[key] || key}
+                            {t(RULE_LABELS[key] || key)}
                             {isDiffering && (
                               <Badge variant="outline" className="ml-1 text-xs text-blue-600 border-blue-300">
-                                berbeda
+                                {t('rules.badge.different')}
                               </Badge>
                             )}
                             {hasMessages && (
@@ -406,7 +410,7 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
                                 type="button"
                                 onClick={() => toggleMessages(key)}
                                 className="ml-1 text-xs text-muted-foreground hover:text-foreground"
-                                aria-label={`Toggle messages for ${RULE_LABELS[key] || key}`}
+                                aria-label={`Toggle messages for ${t(RULE_LABELS[key] || key)}`}
                               >
                                 {messagesExpanded ? '▼' : '▶'} {messageFields.length} msg
                               </button>
@@ -415,20 +419,20 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
                         </TableCell>
                         <TableCell>
                           {isEditing && onRuleChange ? (
-                            renderEditableThreshold(rule, category, key, onRuleChange, validationErrors)
+                            renderEditableThreshold(rule, category, key, onRuleChange, validationErrors, t)
                           ) : (
                             <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
-                              {formatThreshold(rule, key)}
+                              {formatThreshold(rule, key, t)}
                             </code>
                           )}
                         </TableCell>
                         <TableCell>
                           {isEditing && onRuleChange ? (
-                            renderEditablePoints(rule, category, key, onRuleChange, validationErrors)
+                            renderEditablePoints(rule, category, key, onRuleChange, validationErrors, t)
                           ) : rule.info_only ? (
-                            <Badge variant="outline" className="text-muted-foreground">Info saja</Badge>
+                            <Badge variant="outline" className="text-muted-foreground">{t('rules.infoOnly')}</Badge>
                           ) : (
-                            <span className="text-sm">{formatPoints(rule)}</span>
+                            <span className="text-sm">{formatPoints(rule, t)}</span>
                           )}
                         </TableCell>
                       </TableRow>
@@ -441,7 +445,7 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
                                 return (
                                   <div key={field} className="flex flex-col gap-0.5">
                                     <span className="text-xs font-medium text-muted-foreground">
-                                      {MESSAGE_FIELD_LABELS[field] || field}
+                                      {t(MESSAGE_FIELD_LABELS[field] || field)}
                                     </span>
                                     {isEditing && onMessageChange ? (
                                       <div className="flex flex-col gap-0.5">
@@ -449,13 +453,13 @@ export const RulesCategoryCard = ({ category, rules, differingKeys, isEditing = 
                                           value={value}
                                           onChange={(e) => onMessageChange(category, key, field, e.target.value)}
                                           className="w-full min-h-[2.5rem] rounded-md border border-input bg-transparent px-3 py-1.5 text-sm shadow-xs focus-visible:border-ring focus-visible:ring-ring/50 focus-visible:ring-[3px] outline-none resize-y"
-                                          aria-label={`${RULE_LABELS[key] || key} ${MESSAGE_FIELD_LABELS[field] || field}`}
+                                          aria-label={`${t(RULE_LABELS[key] || key)} ${t(MESSAGE_FIELD_LABELS[field] || field)}`}
                                           rows={1}
                                           maxLength={500}
                                         />
                                         {placeholders.length > 0 && (
                                           <span className="text-xs text-muted-foreground">
-                                            Placeholder: {placeholders.map((p) => (
+                                            {t('rules.placeholder')} {placeholders.map((p) => (
                                               <code key={p} className="mx-0.5 px-1 py-0.5 bg-muted rounded text-xs">{p}</code>
                                             ))}
                                           </span>

@@ -69,7 +69,7 @@ describe('CompetitionForm', () => {
       product3: { productName: null, sellingPrice: null, keyword: null, link: null, marketPrice: null },
     };
     render(<CompetitionForm data={data} onChange={vi.fn()} onBlur={vi.fn()} />);
-    expect(screen.getByText(/kompetitif/)).toBeInTheDocument();
+    expect(screen.getByText(/✅kompetitif/)).toBeInTheDocument();
   });
 
   it('shows not competitive result when sellingPrice > marketPrice * 1.1', () => {
@@ -79,7 +79,7 @@ describe('CompetitionForm', () => {
       product3: { productName: null, sellingPrice: null, keyword: null, link: null, marketPrice: null },
     };
     render(<CompetitionForm data={data} onChange={vi.fn()} onBlur={vi.fn()} />);
-    expect(screen.getByText(/tidak kompetitif/)).toBeInTheDocument();
+    expect(screen.getByText(/❌tidak kompetitif/)).toBeInTheDocument();
   });
 
   it('handles backward compatibility — old data with only keyword + marketPrice', () => {
@@ -103,7 +103,7 @@ describe('CompetitionForm', () => {
       product3: { productName: null, sellingPrice: null, keyword: null, link: null, marketPrice: null },
     };
     render(<CompetitionForm data={data} onChange={vi.fn()} onBlur={vi.fn()} />);
-    // Should use "—" as fallback name
-    expect(screen.getByText(/— \(Rp/)).toBeInTheDocument();
+    // Should render the not-competitive translation key (sellingPrice 150000 > marketPrice 100000 * 1.1)
+    expect(screen.getByText(/❌tidak kompetitif/)).toBeInTheDocument();
   });
 });
