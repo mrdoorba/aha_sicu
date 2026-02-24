@@ -770,10 +770,6 @@ class TestG73:
         result = _compute_g73("❌", 0.15, 200_000_000)
         assert result == ""
 
-    def test_circle_verdict_suppressed(self):
-        result = _compute_g73("⭕️", 0.15, 200_000_000)
-        assert result == ""
-
     def test_rejected_non_mall_suppressed(self):
         result = _compute_g73("❌ Non Mall", 0.15, 200_000_000)
         assert result == ""
@@ -810,9 +806,9 @@ class TestG75:
         msg = _compute_g75("❌ No Brand")
         assert "brand" in msg.lower()
 
-    def test_empty_verdict(self):
+    def test_empty_verdict_returns_empty(self):
         msg = _compute_g75("")
-        assert "cukup baik" in msg.lower()
+        assert msg == ""
 
     def test_opex_verdict(self):
         msg = _compute_g75("❌ Opex")
@@ -1549,7 +1545,6 @@ class TestG73WithRules:
         """Verdict suppression still works with custom rules."""
         rules = {"marketing": {"display_max": {"value": 0.30}, "display_min": {"value": 0.05}}}
         assert _compute_g73("❌", 0.15, 200_000_000, rules=rules) == ""
-        assert _compute_g73("⭕️", 0.15, 200_000_000, rules=rules) == ""
 
 
 # ---------------------------------------------------------------------------
@@ -2243,18 +2238,14 @@ class TestMessageTemplatesG75:
                 "❌": "CUSTOM REJECTED MESSAGE",
                 "❌ Non Mall": "CUSTOM NON MALL",
                 "❌ No Brand": "CUSTOM NO BRAND",
-                "": "CUSTOM GOOD STORE",
                 "❌ Opex": "CUSTOM OPEX",
-                "⭕️": "",
             },
         }}
         assert _compute_g75("✔️", "TestStore", rules) == "CUSTOM APPROVED MESSAGE"
         assert _compute_g75("❌", "TestStore", rules) == "CUSTOM REJECTED MESSAGE"
         assert _compute_g75("❌ Non Mall", "TestStore", rules) == "CUSTOM NON MALL"
         assert _compute_g75("❌ No Brand", "TestStore", rules) == "CUSTOM NO BRAND"
-        assert _compute_g75("", "TestStore", rules) == "CUSTOM GOOD STORE"
         assert _compute_g75("❌ Opex", "TestStore", rules) == "CUSTOM OPEX"
-        assert _compute_g75("⭕️", "TestStore", rules) == ""
 
     def test_custom_closing_with_store_name_placeholder(self):
         rules = {**DEFAULT_RULES, "interpretation": {
@@ -2284,7 +2275,7 @@ class TestMessageTemplatesG75:
             "closing_messages": {
                 "✔️": "CUSTOM CLOSING IN EMAIL",
                 "❌": "", "❌ Non Mall": "", "❌ No Brand": "",
-                "": "", "❌ Opex": "", "⭕️": "",
+                "❌ Opex": "",
             },
         }}
         result = calculate_score(

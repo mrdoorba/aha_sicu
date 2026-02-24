@@ -7,7 +7,6 @@ const VERDICT_OPTIONS = [
   { value: '❌ Non Mall', labelKey: 'verdict.nonMall' },
   { value: '❌ No Brand', labelKey: 'verdict.noBrand' },
   { value: '❌ Opex', labelKey: 'verdict.opexIssue' },
-  { value: '⭕️', labelKey: 'verdict.special' },
 ];
 
 interface VerdictSelectorProps {

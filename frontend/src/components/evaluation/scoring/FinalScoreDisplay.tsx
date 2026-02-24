@@ -1,4 +1,4 @@
-import { CheckCircle, XCircle, AlertTriangle, Circle } from 'lucide-react';
+import { CheckCircle, XCircle, AlertTriangle } from 'lucide-react';
 
 interface FinalScoreDisplayProps {
   totalScore: number;
@@ -12,12 +12,10 @@ const VERDICT_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; 
   '❌ Non Mall': { icon: XCircle, color: 'text-destructive', label: 'Non Mall' },
   '❌ No Brand': { icon: XCircle, color: 'text-destructive', label: 'No Brand' },
   '❌ Opex': { icon: XCircle, color: 'text-destructive', label: 'Opex Issue' },
-  '⭕️': { icon: Circle, color: 'text-yellow-600', label: 'Special' },
-  '': { icon: AlertTriangle, color: 'text-muted-foreground', label: 'No Verdict' },
 };
 
 export const FinalScoreDisplay = ({ totalScore, verdict }: FinalScoreDisplayProps) => {
-  const config = VERDICT_CONFIG[verdict] ?? VERDICT_CONFIG[''];
+  const config = VERDICT_CONFIG[verdict] ?? { icon: AlertTriangle, color: 'text-muted-foreground', label: 'No Verdict' };
   const Icon = config.icon;
 
   return (

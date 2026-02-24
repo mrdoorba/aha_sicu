@@ -368,7 +368,7 @@ DEFAULT_RULES: dict = {
     "interpretation": {
         "ranges": [
             {"min": 71, "max": None, "label": "Good Candidate", "verdict": "✔️"},
-            {"min": 41, "max": 70, "label": "Needs Review", "verdict": "⭕️"},
+            {"min": 41, "max": 70, "label": "Needs Review", "verdict": "❌"},
             {"min": None, "max": 40, "label": "Not Recommended", "verdict": "❌"},
         ],
         "closing_messages": {
@@ -425,18 +425,6 @@ DEFAULT_RULES: dict = {
                 "Namun, tidak menutup kemungkinan bagi peluang kerjasama {store_name} dengan AHA Commerce "
                 "di kemudian hari."
             ),
-            "": (
-                "Kami telah melakukan analisa pada toko {store_name} secara langsung, namun kami perlu "
-                "mempertimbangkan potensi keuntungan bagi kedua pihak untuk kerja-sama ini.\n\n"
-                "Oleh karena tingkat performa toko {store_name} sudah cukup baik, maka kami belum yakin "
-                "apabila sistem AHA dapat memberikan dampak peningkatan omset yang signifikan.\n\n"
-                "Oleh karena itu, dengan berat hati, kami belum dapat bekerja-sama dengan {store_name} "
-                "di tahap sekarang ini.\n\n"
-                "Bagaimanapun juga, semoga hasil evaluasi kami bermanfaat bagi tim {store_name} untuk "
-                "mengidentifikasi bagian² yang perlu diperbaiki.\n\n"
-                "Namun, tidak menutup kemungkinan bagi peluang kerjasama {store_name} dengan AHA Commerce "
-                "di kemudian hari."
-            ),
             "❌ Opex": (
                 "Melalui pengalaman kami dengan ratusan toko online, omzet suatu toko online sangat bergantung "
                 "pada tingkat performa operasional toko tersebut (pengiriman tepat waktu >90%, tingkat "
@@ -450,7 +438,6 @@ DEFAULT_RULES: dict = {
                 "tingkat keterlambatan <2% dan masa pengemasan dibawah satu hari, kami sangat open untuk "
                 "berdiskusi lebih lanjut untuk kerjasama dengan {store_name}."
             ),
-            "⭕️": "",
         },
     },
 }
@@ -1538,9 +1525,9 @@ def _compute_g73(
 ) -> str:
     """G73: Marketing budget recommendation text.
 
-    Suppressed for ❌ and ⭕️ verdicts.
+    Suppressed for ❌ verdicts.
     """
-    if verdict.startswith("❌") or verdict == "⭕️":
+    if verdict.startswith("❌"):
         return ""
 
     mkt_rules = _get_rule_category(rules, "marketing")

@@ -19,11 +19,6 @@ describe('FinalScoreDisplay', () => {
     expect(screen.getByText('Rejected')).toBeInTheDocument();
   });
 
-  it('shows Special label for circle verdict', () => {
-    render(<FinalScoreDisplay totalScore={60} verdict="⭕️" template="fashion" />);
-    expect(screen.getByText('Special')).toBeInTheDocument();
-  });
-
   it('shows score and verdict for fashion template', () => {
     render(<FinalScoreDisplay totalScore={80} verdict="✔️" template="fashion" />);
     expect(screen.getByText('80')).toBeInTheDocument();
