@@ -2,6 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { ScoringSection } from './ScoringSection';
+import { generatePeriodOptions } from './periodOptions';
 import type { ScoringResult } from '../../../hooks/useScoring';
 
 const MOCK_RESULT: ScoringResult = {
@@ -59,14 +60,14 @@ describe('ScoringSection', () => {
       template: 'fashion',
       verdict: '✔️',
       store_name: 'Test Store',
-      period: '',
+      period: generatePeriodOptions()[0],
       brand_name: 'Test Brand',
     });
   });
 
   it('shows Hitung Ulang when result exists and not stale', () => {
     render(<ScoringSection {...defaultProps} scoringResult={MOCK_RESULT} />);
-    expect(screen.getByRole('button', { name: /hitung ulang/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /^hitung ulang$/i })).toBeInTheDocument();
   });
 
   it('shows stale warning when data changed', () => {
