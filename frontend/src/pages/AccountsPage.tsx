@@ -220,7 +220,6 @@ export const AccountsPage = () => {
           </TableBody>
         </Table>
       </div>
-      </main>
 
       {/* Create Account Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>

@@ -375,6 +375,6 @@ export const RulesPage = () => {
         onCancel={() => setShowPasswordDialog(false)}
         isLoading={updateRule.isPending}
       />
-    </main>
+    </div>
   );
 };
