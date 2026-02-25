@@ -33,7 +33,7 @@ export const BrandsPage = () => {
 
   return (
     <div className="p-8">
-      <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl">
+      <div className="mx-auto max-w-7xl">
         <h2 className="mb-6 text-2xl font-semibold text-foreground">{t('brands.title')}</h2>
 
         {/* Sync Status */}
@@ -112,7 +112,7 @@ export const BrandsPage = () => {
             </Button>
           </div>
         )}
-      </main>
+      </div>
     </div>
   );
 };
