@@ -56,7 +56,7 @@ function TopSkuSection({ data, t }: { data: Record<string, unknown>; t: (key: st
                   <TableHead className="font-bold">{t('topSku.kodeVariasi')}</TableHead>
                   <TableHead className="font-bold">{t('topSku.productName')}</TableHead>
                   <TableHead className="text-right font-bold">{t('topSku.totalOmzet')}</TableHead>
-                </TableHead>
+                </TableRow>
               </TableHeader>
               <TableBody>
                 {output1.slice(0, 5).map((row, i) => (
@@ -220,7 +220,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
 
             <div className="mt-8 max-w-xl p-6 rounded-3xl bg-muted/30 backdrop-blur-sm border border-border/20">
               <p className="text-xl text-foreground font-medium italic leading-relaxed text-balance">
-                "{evaluation.verdict.replace(/^[✔️❌]\s*/, '') || (isApproved ? 'This brand meets our premium criteria for direct partnership.' : 'Requires structural improvements in specific operations areas.')}"
+                "{evaluation.verdict.replace(/^(✔️|❌)\s*/, '') || (isApproved ? 'This brand meets our premium criteria for direct partnership.' : 'Requires structural improvements in specific operations areas.')}"
               </p>
             </div>
           </CardContent>
