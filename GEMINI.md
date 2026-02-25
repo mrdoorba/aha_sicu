@@ -53,7 +53,7 @@ git checkout -b <type>/<short-description>
 
 **Branch lifecycle:**
 
-1. Create branch when starting a new OpenSpec change (after `/opsx:new`, `/opsx:propose`, or when beginning work)
+1. Create branch when starting a new OpenSpec change (after `/opsx:new` or when beginning work)
 2. Work on the branch, commit atomically
 3. When done → user requests merge to `develop` (via PR or direct merge)
 4. Keep the branch alive until the OpenSpec change is archived (`/opsx:archive`)
@@ -107,7 +107,6 @@ This project uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) with the `s
 | OpenSpec Phase       | Git Action                                      |
 |----------------------|--------------------------------------------------|
 | `/opsx:new`          | Create feature branch off `develop`              |
-| `/opsx:propose`      | Create feature branch off `develop`              |
 | `/opsx:continue`     | Continue working on feature branch               |
 | `/opsx:apply`        | Implement tasks, commit atomically on feature branch |
 | `/opsx:verify`       | Verify on feature branch, fix issues if needed   |
@@ -116,7 +115,7 @@ This project uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) with the `s
 
 ### When to Create Branches
 
-- **Do create a branch:** For any change going through OpenSpec (`/opsx:new`, `/opsx:ff`, `/opsx:propose`)
+- **Do create a branch:** For any change going through OpenSpec (`/opsx:new`, `/opsx:ff`)
 - **Do NOT create a branch:** For trivial fixes the user asks for directly without OpenSpec (commit directly to `develop` instead)
 
 ---
