@@ -47,7 +47,7 @@ export const MainLayout = () => {
           </Button>
         </header>
 
-        <main id="main-content" className="flex-1 overflow-auto relative">
+        <main id="main-content" tabIndex={-1} className="flex-1 overflow-auto outline-none">
           <Outlet />
         </main>
       </div>
