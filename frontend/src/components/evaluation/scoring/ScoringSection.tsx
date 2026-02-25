@@ -8,6 +8,8 @@ import { ScoreBreakdown } from './ScoreBreakdown';
 import { EmailOutput } from './EmailOutput';
 import { WhatsAppLink } from './WhatsAppLink';
 import { VerdictSelector } from './VerdictSelector';
+import { PeriodSelector } from './PeriodSelector';
+import { generatePeriodOptions } from './periodOptions';
 import type { ScoringResult } from '../../../hooks/useScoring';
 
 interface ScoringSectionProps {
@@ -39,7 +41,7 @@ export const ScoringSection = ({
 }: ScoringSectionProps) => {
   const { t } = useTranslation();
   const [verdict, setVerdict] = useState('✔️');
-  const [period, setPeriod] = useState('');
+  const [period, setPeriod] = useState(() => generatePeriodOptions()[0]);
 
   const canGenerate = !!categoryType;
   const canSave = !!verdict && !!period;
@@ -96,19 +98,7 @@ export const ScoringSection = ({
             <div className="mt-4 flex flex-wrap items-end gap-4 border-t pt-4">
               <VerdictSelector value={verdict} onChange={setVerdict} />
 
-              <div className="space-y-1">
-                <label className="text-sm font-medium" htmlFor="scoring-period">
-                  {t('scoring.period')}
-                </label>
-                <input
-                  id="scoring-period"
-                  type="text"
-                  value={period}
-                  onChange={(e) => setPeriod(e.target.value)}
-                  placeholder={t('scoring.periodPlaceholder')}
-                  className="h-9 w-40 rounded-md border border-input bg-background px-3 text-sm"
-                />
-              </div>
+              <PeriodSelector value={period} onChange={setPeriod} />
 
               {canSave && (
                 <Button
