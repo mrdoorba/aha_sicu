@@ -7,7 +7,6 @@ import { FirebaseError } from 'firebase/app';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { cn } from '../lib/utils';
 import { ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
 
 interface LoginForm {
@@ -186,6 +185,7 @@ export const LoginPage = () => {
               <Button
                 type="submit"
                 disabled={isSubmitting}
+                aria-label="Sign In"
                 className="w-full h-12 rounded-xl text-base font-bold tracking-tight shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isSubmitting ? (

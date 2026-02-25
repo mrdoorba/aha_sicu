@@ -56,7 +56,7 @@ function TopSkuSection({ data, t }: { data: Record<string, unknown>; t: (key: st
                   <TableHead className="font-bold">{t('topSku.kodeVariasi')}</TableHead>
                   <TableHead className="font-bold">{t('topSku.productName')}</TableHead>
                   <TableHead className="text-right font-bold">{t('topSku.totalOmzet')}</TableHead>
-                </TableHead>
+                </TableRow>
               </TableHeader>
               <TableBody>
                 {output1.slice(0, 5).map((row, i) => (
