@@ -49,11 +49,18 @@ async def update_sync_status(
 
 
 async def get_latest_sync_status(conn: Connection) -> dict | None:
-    """Get the most recent sync status record."""
+    """Get the most recent sync status record.
+
+    Returns a `timed_out` flag for records that have been in progress
+    for more than 10 minutes, allowing the schema layer to map them
+    to a failed status.
+    """
     row = await conn.fetchrow(
         """
         SELECT id, started_at, completed_at, success, brands_synced,
-               error_message, sync_details
+               error_message, sync_details,
+               (completed_at IS NULL
+                AND started_at <= NOW() - INTERVAL '10 minutes') AS timed_out
         FROM sync_status
         ORDER BY started_at DESC
         LIMIT 1
@@ -63,9 +70,18 @@ async def get_latest_sync_status(conn: Connection) -> dict | None:
 
 
 async def is_sync_in_progress(conn: Connection) -> bool:
-    """Check if any sync is currently running (started but not completed)."""
+    """Check if any sync is currently running (started but not completed).
+
+    Records older than 10 minutes are considered stale and ignored,
+    preventing stuck records from blocking future syncs.
+    """
     row = await conn.fetchrow(
-        "SELECT id FROM sync_status WHERE completed_at IS NULL LIMIT 1"
+        """
+        SELECT id FROM sync_status
+        WHERE completed_at IS NULL
+          AND started_at > NOW() - INTERVAL '10 minutes'
+        LIMIT 1
+        """
     )
     return row is not None
 

@@ -71,10 +71,17 @@ class SyncStatusResponse(BaseModel):
     def compute_derived_fields(cls, data: Any) -> Any:
         """Compute last_sync and status from raw DB fields."""
         if isinstance(data, dict):
-            # Compute status from success field
+            # Pop DB-only fields not in schema
             success = data.pop("success", None)
+            timed_out = data.pop("timed_out", False)
+
+            # Compute status from success and timed_out fields
             if "status" not in data:
-                if success is None:
+                if timed_out:
+                    data["status"] = "failed"
+                    if not data.get("error_message"):
+                        data["error_message"] = "Sync timed out after 10 minutes"
+                elif success is None:
                     data["status"] = "in_progress"
                 elif success:
                     data["status"] = "success"
