@@ -15,14 +15,12 @@ export const DashboardPage = () => {
   };
 
   return (
-    <div className="p-8">
-      <main id="main-content" className="mx-auto max-w-7xl">
-        {brandId ? (
-          <PresentationDashboard brandId={Number(brandId)} onBack={handleBackToSearch} />
-        ) : (
-          <BrandSearch onSelect={handleSelectBrand} />
-        )}
-      </main>
+    <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+      {brandId ? (
+        <PresentationDashboard brandId={Number(brandId)} onBack={handleBackToSearch} />
+      ) : (
+        <BrandSearch onSelect={handleSelectBrand} />
+      )}
     </div>
   );
 };

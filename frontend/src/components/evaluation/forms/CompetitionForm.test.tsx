@@ -178,7 +178,7 @@ describe('CompetitionForm', () => {
     };
     render(<CompetitionForm data={data} onChange={onChange} onBlur={vi.fn()} />);
 
-    // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+     
     const priceInput = document.getElementById('competition.product1.sellingPrice')!;
     await user.type(priceInput, '5');
 
