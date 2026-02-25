@@ -409,11 +409,23 @@ Update scoring rules for a template. **Requires:** leader or admin role.
 
 ### POST /api/v1/sync
 
-Trigger Google Sheets data sync. Returns immediately (202 Accepted), sync runs in background.
+Trigger Google Sheets data sync. Executes synchronously and returns 200 with results when complete. Returns 409 if a sync is already in progress.
 
-**Response:** `SyncTriggerResponse`
+**Response:** `SyncStatusResponse`
 ```json
-{ "status": "started", "sync_id": 15 }
+{
+  "id": 15,
+  "last_sync": "2026-02-16T10:00:00Z",
+  "status": "success",
+  "started_at": "2026-02-16T09:59:50Z",
+  "completed_at": "2026-02-16T10:00:00Z",
+  "brands_synced": 150,
+  "error_message": null,
+  "sync_details": {
+    "vp_sheet": { "rows_synced": 150, "rows_skipped": 0, "status": "success" },
+    "meeting_sheet": { "rows_synced": 120, "rows_skipped": 0, "status": "success" }
+  }
+}
 ```
 
 ### GET /api/v1/sync/status

@@ -45,6 +45,7 @@ export function useTriggerSync() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['syncStatus'] });
+      queryClient.invalidateQueries({ queryKey: ['brands'] });
     },
   });
 }

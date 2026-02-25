@@ -1,5 +1,6 @@
 """FastAPI application entry point."""
 
+import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
@@ -18,6 +19,8 @@ from app.modules.evaluations.router import router as evaluations_router
 from app.modules.sync.router import router as sync_router
 from app.modules.rules.router import router as rules_router
 from app.modules.upload.router import router as upload_router
+
+logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(name)s: %(message)s")
 
 
 @asynccontextmanager

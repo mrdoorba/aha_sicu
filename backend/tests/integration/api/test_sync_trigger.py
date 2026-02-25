@@ -3,18 +3,7 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
-
-from app.modules.sync.schemas import SyncTriggerResponse
-
-
-# --- Task 2: Schema validation tests ---
-
-
-def test_sync_trigger_response_schema():
-    """SyncTriggerResponse schema has correct fields."""
-    resp = SyncTriggerResponse(status="started", sync_id=42)
-    assert resp.status == "started"
-    assert resp.sync_id == 42
+from app.modules.sync.schemas import SyncResult, SyncStatusResponse
 
 
 # --- Task 5: Integration tests for POST /api/v1/sync ---
@@ -27,6 +16,17 @@ MOCK_USER = {
     "created_at": datetime(2026, 1, 1, tzinfo=timezone.utc),
     "last_login": datetime(2026, 1, 1, tzinfo=timezone.utc),
 }
+
+MOCK_SYNC_STATUS = SyncStatusResponse(
+    id=99,
+    last_sync=datetime(2026, 2, 6, 10, 0, 5, tzinfo=timezone.utc),
+    status="success",
+    started_at=datetime(2026, 2, 6, 10, 0, 0, tzinfo=timezone.utc),
+    completed_at=datetime(2026, 2, 6, 10, 0, 5, tzinfo=timezone.utc),
+    brands_synced=42,
+    error_message=None,
+    sync_details=None,
+)
 
 
 def _auth_mocks():
@@ -46,8 +46,8 @@ def test_post_sync_requires_authentication(client):
     assert data["code"] == "AUTH_TOKEN_MISSING"
 
 
-def test_post_sync_returns_202_with_sync_id(client):
-    """POST /api/v1/sync returns 202 Accepted with sync_id when no sync in progress."""
+def test_post_sync_returns_200_with_sync_status(client):
+    """POST /api/v1/sync returns 200 with SyncStatusResponse after sync completes."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_auth_db,
@@ -55,7 +55,8 @@ def test_post_sync_returns_202_with_sync_id(client):
         patch("app.modules.sync.router.db") as mock_router_db,
         patch("app.modules.sync.router.is_sync_in_progress") as mock_in_progress,
         patch("app.modules.sync.router.sync_queries") as mock_sync_queries,
-        patch("app.modules.sync.router.run_sync"),
+        patch("app.modules.sync.router.run_sync") as mock_run_sync,
+        patch("app.modules.sync.router.get_latest_sync_status") as mock_get_status,
     ):
         # Auth mocks
         mock_verify.return_value = {"uid": "test-uid", "email": "test@example.com"}
@@ -72,16 +73,86 @@ def test_post_sync_returns_202_with_sync_id(client):
         # Sync mocks
         mock_in_progress.return_value = False
         mock_sync_queries.create_sync_status = AsyncMock(return_value=99)
+        mock_run_sync.return_value = SyncResult(
+            sync_id=99,
+            vp_result=None,
+            meeting_result=None,
+            total_synced=42,
+            total_errors=0,
+            success=True,
+        )
+        mock_get_status.return_value = MOCK_SYNC_STATUS
 
         response = client.post(
             "/api/v1/sync",
             headers={"Authorization": "Bearer valid-token"},
         )
 
-        assert response.status_code == 202
+        assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "started"
-        assert data["sync_id"] == 99
+        assert data["id"] == 99
+        assert data["status"] == "success"
+        assert data["brands_synced"] == 42
+        assert data["completed_at"] is not None
+        mock_run_sync.assert_awaited_once_with(sync_id=99)
+
+
+def test_post_sync_returns_200_with_failed_status_on_sync_error(client):
+    """POST /api/v1/sync returns 200 with status 'failed' when sync encounters errors."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_auth_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.sync.router.db") as mock_router_db,
+        patch("app.modules.sync.router.is_sync_in_progress") as mock_in_progress,
+        patch("app.modules.sync.router.sync_queries") as mock_sync_queries,
+        patch("app.modules.sync.router.run_sync") as mock_run_sync,
+        patch("app.modules.sync.router.get_latest_sync_status") as mock_get_status,
+    ):
+        # Auth mocks
+        mock_verify.return_value = {"uid": "test-uid", "email": "test@example.com"}
+        mock_auth_conn = AsyncMock()
+        mock_auth_db.connection.return_value.__aenter__.return_value = mock_auth_conn
+        mock_user_queries.get_user_by_firebase_uid = AsyncMock(return_value=MOCK_USER)
+        mock_user_queries.update_last_login = AsyncMock()
+
+        # Router db mock
+        mock_router_conn = AsyncMock()
+        mock_router_conn.transaction = MagicMock(return_value=AsyncMock())
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_router_conn
+
+        # Sync fails (e.g. Google Sheets API error caught inside run_sync)
+        mock_in_progress.return_value = False
+        mock_sync_queries.create_sync_status = AsyncMock(return_value=99)
+        mock_run_sync.return_value = SyncResult(
+            sync_id=99,
+            vp_result=None,
+            meeting_result=None,
+            total_synced=0,
+            total_errors=1,
+            success=False,
+        )
+        mock_get_status.return_value = SyncStatusResponse(
+            id=99,
+            last_sync=datetime(2026, 2, 6, 10, 0, 5, tzinfo=timezone.utc),
+            status="failed",
+            started_at=datetime(2026, 2, 6, 10, 0, 0, tzinfo=timezone.utc),
+            completed_at=datetime(2026, 2, 6, 10, 0, 5, tzinfo=timezone.utc),
+            brands_synced=0,
+            error_message="VP: Google Sheets API error",
+            sync_details=None,
+        )
+
+        response = client.post(
+            "/api/v1/sync",
+            headers={"Authorization": "Bearer valid-token"},
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["status"] == "failed"
+        assert data["error_message"] == "VP: Google Sheets API error"
+        assert data["brands_synced"] == 0
 
 
 def test_post_sync_returns_409_when_sync_in_progress(client):
@@ -144,8 +215,8 @@ def test_post_sync_with_invalid_token(client):
         assert data["code"] == "AUTH_TOKEN_INVALID"
 
 
-def test_post_sync_with_oidc_token_returns_202(client):
-    """POST /api/v1/sync returns 202 when authenticated via OIDC (scheduler path)."""
+def test_post_sync_with_oidc_token_returns_200(client):
+    """POST /api/v1/sync returns 200 when authenticated via OIDC (scheduler path)."""
     from app.core.exceptions import AuthException
 
     with (
@@ -155,6 +226,7 @@ def test_post_sync_with_oidc_token_returns_202(client):
         patch("app.modules.sync.router.is_sync_in_progress") as mock_in_progress,
         patch("app.modules.sync.router.sync_queries") as mock_sync_queries,
         patch("app.modules.sync.router.run_sync") as mock_run_sync,
+        patch("app.modules.sync.router.get_latest_sync_status") as mock_get_status,
     ):
         # Firebase fails — this is a scheduler request
         mock_firebase.side_effect = AuthException(
@@ -174,17 +246,35 @@ def test_post_sync_with_oidc_token_returns_202(client):
         # Sync mocks
         mock_in_progress.return_value = False
         mock_sync_queries.create_sync_status = AsyncMock(return_value=100)
+        mock_run_sync.return_value = SyncResult(
+            sync_id=100,
+            vp_result=None,
+            meeting_result=None,
+            total_synced=0,
+            total_errors=0,
+            success=True,
+        )
+        mock_get_status.return_value = SyncStatusResponse(
+            id=100,
+            last_sync=datetime(2026, 2, 6, 10, 0, 5, tzinfo=timezone.utc),
+            status="success",
+            started_at=datetime(2026, 2, 6, 10, 0, 0, tzinfo=timezone.utc),
+            completed_at=datetime(2026, 2, 6, 10, 0, 5, tzinfo=timezone.utc),
+            brands_synced=0,
+            error_message=None,
+            sync_details=None,
+        )
 
         response = client.post(
             "/api/v1/sync",
             headers={"Authorization": "Bearer oidc-scheduler-token"},
         )
 
-        assert response.status_code == 202
+        assert response.status_code == 200
         data = response.json()
-        assert data["status"] == "started"
-        assert data["sync_id"] == 100
-        mock_run_sync.assert_called_once()
+        assert data["id"] == 100
+        assert data["status"] == "success"
+        mock_run_sync.assert_awaited_once()
 
 
 def test_post_sync_oidc_rejected_when_email_not_in_allowlist(client):
@@ -227,7 +317,8 @@ def test_post_sync_oidc_skips_db_user_lookup(client):
         patch("app.modules.sync.router.db") as mock_router_db,
         patch("app.modules.sync.router.is_sync_in_progress") as mock_in_progress,
         patch("app.modules.sync.router.sync_queries") as mock_sync_queries,
-        patch("app.modules.sync.router.run_sync"),
+        patch("app.modules.sync.router.run_sync") as mock_run_sync,
+        patch("app.modules.sync.router.get_latest_sync_status") as mock_get_status,
     ):
         # Firebase fails, OIDC succeeds
         mock_firebase.side_effect = AuthException(
@@ -245,13 +336,31 @@ def test_post_sync_oidc_skips_db_user_lookup(client):
 
         mock_in_progress.return_value = False
         mock_sync_queries.create_sync_status = AsyncMock(return_value=101)
+        mock_run_sync.return_value = SyncResult(
+            sync_id=101,
+            vp_result=None,
+            meeting_result=None,
+            total_synced=0,
+            total_errors=0,
+            success=True,
+        )
+        mock_get_status.return_value = SyncStatusResponse(
+            id=101,
+            last_sync=datetime(2026, 2, 6, 10, 0, 5, tzinfo=timezone.utc),
+            status="success",
+            started_at=datetime(2026, 2, 6, 10, 0, 0, tzinfo=timezone.utc),
+            completed_at=datetime(2026, 2, 6, 10, 0, 5, tzinfo=timezone.utc),
+            brands_synced=0,
+            error_message=None,
+            sync_details=None,
+        )
 
         response = client.post(
             "/api/v1/sync",
             headers={"Authorization": "Bearer oidc-scheduler-token"},
         )
 
-        assert response.status_code == 202
+        assert response.status_code == 200
         # Verify no user DB queries were made
         mock_user_queries.get_user_by_firebase_uid.assert_not_called()
         mock_user_queries.create_user.assert_not_called()
