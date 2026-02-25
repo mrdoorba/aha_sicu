@@ -83,26 +83,10 @@ export const LoginPage = () => {
             <span className="text-3xl font-black tracking-tighter text-white">Store ICU</span>
           </div>
           
-          <div className="space-y-4">
-            <h2 className="text-5xl font-black tracking-tight text-white leading-[1.1]">
-              Elevating E-commerce <br />
-              <span className="text-sidebar-accent">Operations Intelligence</span>
-            </h2>
-            <p className="text-xl text-sidebar-accent/80 font-medium leading-relaxed max-w-lg">
-              The professional dashboard for high-value brand partner presentations and verdict-driven insights.
-            </p>
-          </div>
-
-          <div className="pt-8 flex items-center gap-6">
-            <div className="flex -space-x-3">
-              {[1, 2, 3, 4].map(i => (
-                <div key={i} className="h-10 w-10 rounded-full border-2 border-foreground bg-sidebar-accent/20 backdrop-blur-sm" />
-              ))}
-            </div>
-            <p className="text-sm font-semibold text-sidebar-accent/60">
-              Trusted by 500+ <br />Brand Evaluators
-            </p>
-          </div>
+          <h2 className="text-5xl font-black tracking-tight text-white leading-[1.1]">
+            Elevating E-commerce <br />
+            <span className="text-sidebar-accent">Operations Intelligence</span>
+          </h2>
         </div>
       </div>
 
@@ -157,14 +141,9 @@ export const LoginPage = () => {
               </div>
 
               <div className="space-y-2">
-                <div className="flex items-center justify-between ml-1">
-                  <Label htmlFor="password" className="text-sm font-bold tracking-wide uppercase text-muted-foreground">
-                    Password
-                  </Label>
-                  <button type="button" className="text-xs font-bold text-primary hover:underline">
-                    Forgot Password?
-                  </button>
-                </div>
+                <Label htmlFor="password" className="text-sm font-bold tracking-wide uppercase text-muted-foreground ml-1">
+                  Password
+                </Label>
                 <Input
                   id="password"
                   type="password"
@@ -200,9 +179,6 @@ export const LoginPage = () => {
             </form>
           </div>
 
-          <p className="text-center text-sm font-medium text-muted-foreground">
-            Don't have an account? <button className="text-primary font-bold hover:underline">Contact Administrator</button>
-          </p>
         </div>
       </main>
     </div>
