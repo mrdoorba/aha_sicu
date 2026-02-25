@@ -81,11 +81,21 @@ interface paths {
   '/api/v1/sync': {
     post: {
       responses: {
-        202: {
+        200: {
           content: {
             'application/json': {
-              status: string;
-              sync_id: number;
+              id: number;
+              last_sync: string;
+              status: 'success' | 'failed' | 'in_progress';
+              started_at: string;
+              completed_at: string | null;
+              brands_synced: number;
+              error_message: string | null;
+              sync_details: Record<string, {
+                rows_synced: number;
+                rows_skipped: number;
+                status: string;
+              }> | null;
             };
           };
         };
