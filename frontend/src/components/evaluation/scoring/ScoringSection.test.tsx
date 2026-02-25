@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { ScoringSection } from './ScoringSection';
@@ -93,5 +93,71 @@ describe('ScoringSection', () => {
     // Period is empty by default so button is disabled for multiple reasons,
     // but the button should still be in the DOM
     expect(screen.getByRole('button', { name: /hitung skor/i })).toBeDisabled();
+  });
+
+  it('auto-triggers onGenerate when verdict changes and scoringResult exists', async () => {
+    const user = userEvent.setup();
+    const onGenerate = vi.fn();
+    render(
+      <ScoringSection
+        {...defaultProps}
+        onGenerate={onGenerate}
+        scoringResult={MOCK_RESULT}
+      />,
+    );
+
+    // Find the verdict combobox (first one) and change it
+    const comboboxes = screen.getAllByRole('combobox');
+    await user.click(comboboxes[0]); // verdict selector
+    await user.click(screen.getByText('❌ Ditolak'));
+
+    await waitFor(() => {
+      expect(onGenerate).toHaveBeenCalledWith(
+        expect.objectContaining({ verdict: '❌' }),
+      );
+    });
+  });
+
+  it('auto-triggers onGenerate when period changes and scoringResult exists', async () => {
+    const user = userEvent.setup();
+    const onGenerate = vi.fn();
+    render(
+      <ScoringSection
+        {...defaultProps}
+        onGenerate={onGenerate}
+        scoringResult={MOCK_RESULT}
+      />,
+    );
+
+    const periodOptions = generatePeriodOptions();
+    const secondPeriod = periodOptions[1];
+
+    // Find the period combobox (second one) and change it
+    const comboboxes = screen.getAllByRole('combobox');
+    await user.click(comboboxes[1]); // period selector
+    await user.click(screen.getByText(secondPeriod));
+
+    await waitFor(() => {
+      expect(onGenerate).toHaveBeenCalledWith(
+        expect.objectContaining({ period: secondPeriod }),
+      );
+    });
+  });
+
+  it('does NOT auto-trigger onGenerate when scoringResult is null', () => {
+    const onGenerate = vi.fn();
+    // Render without scoringResult — dropdowns are not shown
+    render(
+      <ScoringSection
+        {...defaultProps}
+        onGenerate={onGenerate}
+        scoringResult={null}
+      />,
+    );
+
+    // Dropdowns should not be visible when scoringResult is null
+    expect(screen.queryAllByRole('combobox')).toHaveLength(0);
+    // onGenerate should not have been called by any auto-refresh
+    expect(onGenerate).not.toHaveBeenCalled();
   });
 });

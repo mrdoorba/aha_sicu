@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../../ui/card';
 import { Button } from '../../ui/button';
@@ -44,7 +44,7 @@ export const ScoringSection = ({
   const [period, setPeriod] = useState(() => generatePeriodOptions()[0]);
 
   const canGenerate = !!categoryType;
-  const canSave = !!verdict && !!period;
+  const initialMount = useRef(true);
 
   const handleGenerate = () => {
     if (!canGenerate) return;
@@ -56,6 +56,24 @@ export const ScoringSection = ({
       brand_name: brandName,
     });
   };
+
+  useEffect(() => {
+    if (initialMount.current) {
+      initialMount.current = false;
+      return;
+    }
+    if (scoringResult && categoryType) {
+      onGenerate({
+        template: categoryType as 'fashion' | 'non_fashion',
+        verdict,
+        store_name: storeName,
+        period,
+        brand_name: brandName,
+      });
+    }
+    // Only re-run when verdict or period changes
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [verdict, period]);
 
   return (
     <div className="space-y-4">
@@ -99,19 +117,6 @@ export const ScoringSection = ({
               <VerdictSelector value={verdict} onChange={setVerdict} />
 
               <PeriodSelector value={period} onChange={setPeriod} />
-
-              {canSave && (
-                <Button
-                  variant="outline"
-                  onClick={handleGenerate}
-                  disabled={isGenerating}
-                >
-                  {isGenerating ? (
-                    <RefreshCw className="mr-1 size-4 animate-spin" aria-hidden="true" />
-                  ) : null}
-                  {t('scoring.recalculateWithVerdict')}
-                </Button>
-              )}
             </div>
           )}
         </CardContent>
