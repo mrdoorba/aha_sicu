@@ -120,7 +120,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
     return (
       <div className="flex flex-col items-center justify-center py-20 animate-pulse">
         <Loader2 className="size-12 animate-spin text-primary" />
-        <p className="mt-6 text-muted-foreground text-xl font-medium tracking-tight">Gathering evaluation intelligence...</p>
+        <p className="mt-6 text-muted-foreground text-xl font-medium tracking-tight">{t('presentation.loading')}</p>
       </div>
     );
   }
@@ -135,19 +135,19 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
           </div>
         </div>
         <div className="text-center space-y-3">
-          <h2 className="text-3xl font-black tracking-tight text-foreground">No evaluation found</h2>
+          <h2 className="text-3xl font-black tracking-tight text-foreground">{t('presentation.empty.title')}</h2>
           <p className="text-muted-foreground text-lg leading-relaxed">
-            This brand hasn't been evaluated yet. Start a new evaluation to generate a presentation dashboard.
+            {t('presentation.empty.description')}
           </p>
         </div>
         <div className="flex flex-col w-full gap-3">
           <Button onClick={() => navigate(`/evaluation/${brandId}`)} size="lg" className="h-14 rounded-2xl shadow-xl shadow-primary/20 text-lg font-bold transition-all hover:scale-[1.02]">
             <PlusCircle className="mr-2 size-5" />
-            Start Evaluation
+            {t('presentation.empty.startEvaluation')}
           </Button>
           <Button onClick={onBack} variant="ghost" size="lg" className="h-14 rounded-2xl text-muted-foreground hover:text-foreground">
             <ArrowLeft className="mr-2 size-5" />
-            Back to Search
+            {t('presentation.empty.backToSearch')}
           </Button>
         </div>
       </div>
@@ -166,11 +166,11 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
         <div className="flex items-center gap-2">
           <Button variant="ghost" onClick={onBack} className="text-muted-foreground hover:text-foreground h-10 px-3">
             <ArrowLeft className="mr-2 size-4" />
-            Back
+            {t('presentation.back')}
           </Button>
           <div className="h-4 w-[1px] bg-border mx-2 hidden sm:block" />
           <Badge variant={evaluation.template === 'fashion' ? 'default' : 'secondary'} className="px-3 py-0.5 text-xs font-bold uppercase tracking-widest hidden sm:flex">
-            {evaluation.template === 'fashion' ? 'Fashion' : 'Non-Fashion'}
+            {evaluation.template === 'fashion' ? t('evaluationSections.fashion') : t('evaluationSections.nonFashion')}
           </Badge>
         </div>
         <Button 
@@ -178,7 +178,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
           className="rounded-xl h-10 px-5 font-bold shadow-lg shadow-primary/10 transition-all hover:scale-[1.03] active:scale-[0.97]"
         >
           <Edit3 className="mr-2 size-4" />
-          Edit Evaluation
+          {t('presentation.editEvaluation')}
         </Button>
       </div>
 
@@ -193,7 +193,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
               </h1>
               <div className="flex items-center justify-center gap-3">
                 <div className="h-[2px] w-8 bg-primary/30 rounded-full" />
-                <p className="text-lg text-muted-foreground font-bold uppercase tracking-[0.2em]">Partner Verdict</p>
+                <p className="text-lg text-muted-foreground font-bold uppercase tracking-[0.2em]">{t('presentation.partnerVerdict')}</p>
                 <div className="h-[2px] w-8 bg-primary/30 rounded-full" />
               </div>
             </div>
@@ -214,13 +214,13 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
                 "bg-muted text-muted-foreground border-border"
               )}>
                 {isApproved ? <CheckCircle2 className="size-7" /> : isRejected ? <XCircle className="size-7" /> : null}
-                {isApproved ? "Approved" : isRejected ? "Rejected" : "Pending"}
+                {isApproved ? t('presentation.verdict.approved') : isRejected ? t('presentation.verdict.rejected') : t('presentation.verdict.pending')}
               </div>
             </div>
 
             <div className="mt-8 max-w-xl p-6 rounded-3xl bg-muted/30 backdrop-blur-sm border border-border/20">
               <p className="text-xl text-foreground font-medium italic leading-relaxed text-balance">
-                "{evaluation.verdict.replace(/^(✔️|❌)\s*/, '') || (isApproved ? 'This brand meets our premium criteria for direct partnership.' : 'Requires structural improvements in specific operations areas.')}"
+                "{evaluation.verdict.replace(/^(✔️|❌)\s*/, '') || (isApproved ? t('presentation.verdict.fallbackApproved') : t('presentation.verdict.fallbackRejected'))}"
               </p>
             </div>
           </CardContent>
@@ -229,8 +229,8 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
         {/* Breakdown Card */}
         <Card className="border-none shadow-xl bg-card">
           <CardHeader className="pb-2">
-            <CardTitle className="text-2xl font-black tracking-tight text-foreground">Score Breakdown</CardTitle>
-            <p className="text-sm text-muted-foreground font-medium">Performance by key metrics</p>
+            <CardTitle className="text-2xl font-black tracking-tight text-foreground">{t('presentation.scoreBreakdown.title')}</CardTitle>
+            <p className="text-sm text-muted-foreground font-medium">{t('presentation.scoreBreakdown.subtitle')}</p>
           </CardHeader>
           <CardContent>
             <div className="space-y-8 pt-4">
@@ -268,14 +268,14 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
         {/* Calculator Intelligence */}
         <Card className="border-none shadow-xl bg-card lg:col-span-2 overflow-hidden">
           <CardHeader className="border-b border-border/50 bg-muted/30">
-            <CardTitle className="text-2xl font-black tracking-tight">Operation Intelligence</CardTitle>
-            <p className="text-sm text-muted-foreground font-medium">Data-driven analysis from our calculation engines</p>
+            <CardTitle className="text-2xl font-black tracking-tight">{t('presentation.operationIntelligence.title')}</CardTitle>
+            <p className="text-sm text-muted-foreground font-medium">{t('presentation.operationIntelligence.subtitle')}</p>
           </CardHeader>
           <CardContent className="p-0">
             <div className="grid gap-0 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-border/50">
               <div className="p-8 space-y-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="outline" className="rounded-md bg-primary/5 text-primary border-primary/20">Ads Analysis</Badge>
+                  <Badge variant="outline" className="rounded-md bg-primary/5 text-primary border-primary/20">{t('presentation.badge.adsAnalysis')}</Badge>
                 </div>
                 <AdsKeywordSection
                   data={(evaluation.calculator_results.ads_keyword as Record<string, unknown>) || {}}
@@ -285,7 +285,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
 
               <div className="p-8 space-y-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="outline" className="rounded-md bg-orange-500/5 text-orange-500 border-orange-500/20">SKU Strategy</Badge>
+                  <Badge variant="outline" className="rounded-md bg-orange-500/5 text-orange-500 border-orange-500/20">{t('presentation.badge.skuStrategy')}</Badge>
                 </div>
                 <TopSkuSection
                   data={(evaluation.calculator_results.top_sku as Record<string, unknown>) || {}}
@@ -295,7 +295,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
 
               <div className="p-8 space-y-6">
                 <div className="flex items-center gap-2 mb-2">
-                  <Badge variant="outline" className="rounded-md bg-purple-500/5 text-purple-500 border-purple-500/20">Discount Compliance</Badge>
+                  <Badge variant="outline" className="rounded-md bg-purple-500/5 text-purple-500 border-purple-500/20">{t('presentation.badge.discountCompliance')}</Badge>
                 </div>
                 <DiscountSection
                   data={(evaluation.calculator_results.discount as Record<string, unknown>) || {}}
@@ -313,13 +313,13 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
               <CardHeader className="bg-foreground text-white p-8">
                 <CardTitle className="text-2xl font-black tracking-tight flex items-center gap-3">
                   <div className="h-2 w-2 rounded-full bg-primary animate-pulse" />
-                  Partnership Proposal Output
+                  {t('presentation.emailOutput.title')}
                 </CardTitle>
-                <p className="text-sidebar-accent/60 font-medium">Generated communication for brand partner presentation</p>
+                <p className="text-sidebar-accent/60 font-medium">{t('presentation.emailOutput.subtitle')}</p>
               </CardHeader>
               <CardContent className="p-0">
                 <EmailOutput 
-                  subject={`Partnership Proposal: Store ICU Evaluation for ${brand?.brand_name || evaluation.brand_name}`}
+                  subject={t('presentation.emailOutput.subject', { brandName: brand?.brand_name || evaluation.brand_name })}
                   body={evaluation.email_output}
                 />
               </CardContent>
@@ -329,9 +329,9 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
       </div>
 
       <div className="pt-10 border-t border-border/50 text-center flex flex-col items-center gap-1">
-        <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">AHA Store ICU • Presentation Hub</p>
+        <p className="text-muted-foreground text-sm font-bold uppercase tracking-widest">{t('presentation.footer.title')}</p>
         <p className="text-muted-foreground/60 text-xs font-medium">
-          Evaluation conducted by <span className="text-foreground/80 font-bold">{evaluation.evaluator_email}</span> on {new Date(evaluation.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
+          {t('presentation.footer.conductedBy')} <span className="text-foreground/80 font-bold">{evaluation.evaluator_email}</span> {t('presentation.footer.onDate')} {new Date(evaluation.created_at).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric' })}
         </p>
       </div>
     </div>

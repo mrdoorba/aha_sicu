@@ -6,33 +6,33 @@ describe('FinalScoreDisplay', () => {
   it('renders total score rounded', () => {
     render(<FinalScoreDisplay totalScore={82.7} verdict="✔️" template="fashion" />);
     expect(screen.getByText('83')).toBeInTheDocument();
-    expect(screen.getByText('Total Score')).toBeInTheDocument();
+    expect(screen.getByText('Skor Total')).toBeInTheDocument();
   });
 
-  it('shows Approved label for checkmark verdict', () => {
+  it('shows Disetujui label for checkmark verdict', () => {
     render(<FinalScoreDisplay totalScore={80} verdict="✔️" template="fashion" />);
-    expect(screen.getByText('Approved')).toBeInTheDocument();
+    expect(screen.getByText('Disetujui')).toBeInTheDocument();
   });
 
-  it('shows Rejected label for cross verdict', () => {
+  it('shows Ditolak label for cross verdict', () => {
     render(<FinalScoreDisplay totalScore={50} verdict="❌" template="non_fashion" />);
-    expect(screen.getByText('Rejected')).toBeInTheDocument();
+    expect(screen.getByText('Ditolak')).toBeInTheDocument();
   });
 
   it('shows score and verdict for fashion template', () => {
     render(<FinalScoreDisplay totalScore={80} verdict="✔️" template="fashion" />);
     expect(screen.getByText('80')).toBeInTheDocument();
-    expect(screen.getByText('Approved')).toBeInTheDocument();
+    expect(screen.getByText('Disetujui')).toBeInTheDocument();
   });
 
   it('shows score and verdict for non_fashion template', () => {
     render(<FinalScoreDisplay totalScore={80} verdict="✔️" template="non_fashion" />);
     expect(screen.getByText('80')).toBeInTheDocument();
-    expect(screen.getByText('Approved')).toBeInTheDocument();
+    expect(screen.getByText('Disetujui')).toBeInTheDocument();
   });
 
-  it('falls back to No Verdict for unknown verdict', () => {
+  it('falls back to Tanpa Keputusan for unknown verdict', () => {
     render(<FinalScoreDisplay totalScore={0} verdict="unknown" template="fashion" />);
-    expect(screen.getByText('No Verdict')).toBeInTheDocument();
+    expect(screen.getByText('Tanpa Keputusan')).toBeInTheDocument();
   });
 });

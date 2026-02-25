@@ -266,7 +266,7 @@ describe('RulesPage', () => {
 
     renderRulesPage();
 
-    expect(screen.getByText(/Updated/)).toBeInTheDocument();
+    expect(screen.getByText(/Diperbarui/)).toBeInTheDocument();
   });
 
   it('shows loading state', () => {
@@ -582,8 +582,8 @@ describe('Edit mode', () => {
     const saveBtn = screen.getByRole('button', { name: /simpan perubahan/i });
     expect(saveBtn).toBeDisabled();
 
-    // Should show "Required" error
-    expect(screen.getByText('Required')).toBeInTheDocument();
+    // Should show validation error
+    expect(screen.getByText('Wajib diisi')).toBeInTheDocument();
   });
 
   it('shows success toast after save', async () => {

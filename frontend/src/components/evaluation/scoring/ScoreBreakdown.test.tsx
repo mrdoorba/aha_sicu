@@ -37,9 +37,9 @@ describe('ScoreBreakdown', () => {
 
   it('renders table headers', () => {
     render(<ScoreBreakdown categoryScores={SAMPLE_SCORES} />);
-    expect(screen.getByText('Category')).toBeInTheDocument();
-    expect(screen.getByText('Score')).toBeInTheDocument();
-    expect(screen.getByText('Max')).toBeInTheDocument();
+    expect(screen.getByText('Kategori')).toBeInTheDocument();
+    expect(screen.getByText('Skor')).toBeInTheDocument();
+    expect(screen.getByText('Maks')).toBeInTheDocument();
   });
 
   it('filters out zero-score categories', () => {

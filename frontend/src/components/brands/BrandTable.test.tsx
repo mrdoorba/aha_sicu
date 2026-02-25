@@ -40,22 +40,22 @@ describe('BrandTable', () => {
   it('renders table headers including Action column', () => {
     renderBrandTable({ brands: SAMPLE_BRANDS, isLoading: false });
 
-    expect(screen.getByText('Brand Name')).toBeInTheDocument();
-    expect(screen.getByText('Key Info')).toBeInTheDocument();
-    expect(screen.getByText('Meeting Data')).toBeInTheDocument();
-    expect(screen.getByText('Action')).toBeInTheDocument();
+    expect(screen.getByText('Nama Brand')).toBeInTheDocument();
+    expect(screen.getByText('Info Utama')).toBeInTheDocument();
+    expect(screen.getByText('Data Meeting')).toBeInTheDocument();
+    expect(screen.getByText('Aksi')).toBeInTheDocument();
   });
 
   it('shows "Available" badge when meeting data exists', () => {
     renderBrandTable({ brands: SAMPLE_BRANDS, isLoading: false });
 
-    expect(screen.getByText('Available')).toBeInTheDocument();
+    expect(screen.getByText('Tersedia')).toBeInTheDocument();
   });
 
-  it('shows "Not available" when meeting data is null', () => {
+  it('shows "Tidak tersedia" when meeting data is null', () => {
     renderBrandTable({ brands: SAMPLE_BRANDS, isLoading: false });
 
-    expect(screen.getByText(/not available/i)).toBeInTheDocument();
+    expect(screen.getByText(/tidak tersedia/i)).toBeInTheDocument();
   });
 
   it('displays raw_data summary for each brand', () => {
@@ -71,7 +71,7 @@ describe('BrandTable', () => {
     // Should show skeleton rows, not brand data
     expect(screen.queryByText('Brand ABC')).not.toBeInTheDocument();
     // But should have the table structure
-    expect(screen.getByText('Brand Name')).toBeInTheDocument();
+    expect(screen.getByText('Nama Brand')).toBeInTheDocument();
   });
 
   it('has aria-busy="true" when loading', () => {
@@ -95,10 +95,10 @@ describe('BrandTable', () => {
     expect(table).toBeInTheDocument();
   });
 
-  it('renders "Evaluate" button for each brand row', () => {
+  it('renders "Evaluasi" button for each brand row', () => {
     renderBrandTable({ brands: SAMPLE_BRANDS, isLoading: false });
 
-    const evaluateButtons = screen.getAllByRole('button', { name: /evaluate/i });
+    const evaluateButtons = screen.getAllByRole('button', { name: /evaluasi/i });
     expect(evaluateButtons).toHaveLength(2);
   });
 });

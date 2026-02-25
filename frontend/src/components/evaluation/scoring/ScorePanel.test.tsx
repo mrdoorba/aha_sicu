@@ -31,14 +31,14 @@ const MOCK_RESULT: ScoringResult = {
 };
 
 describe('ScorePanel', () => {
-  it('renders Score Summary heading', () => {
+  it('renders Ringkasan Skor heading', () => {
     render(<ScorePanel scoringResult={null} />);
-    expect(screen.getByText('Score Summary')).toBeInTheDocument();
+    expect(screen.getByText('Ringkasan Skor')).toBeInTheDocument();
   });
 
   it('shows dashes when no result', () => {
     render(<ScorePanel scoringResult={null} />);
-    expect(screen.getByText('Total Score')).toBeInTheDocument();
+    expect(screen.getByText('Skor Total')).toBeInTheDocument();
     // All category rows should show em-dash
     const dashes = screen.getAllByText('\u2014');
     expect(dashes.length).toBeGreaterThanOrEqual(11); // 11 categories + total
@@ -58,18 +58,18 @@ describe('ScorePanel', () => {
     expect(screen.getByText('-5')).toBeInTheDocument();   // Stock (negative)
   });
 
-  it('renders all category labels', () => {
+  it('renders all category labels in Indonesian', () => {
     render(<ScorePanel scoringResult={null} />);
-    expect(screen.getByText('Operational')).toBeInTheDocument();
-    expect(screen.getByText('Business')).toBeInTheDocument();
-    expect(screen.getByText('Content')).toBeInTheDocument();
-    expect(screen.getByText('Visitors')).toBeInTheDocument();
-    expect(screen.getByText('Promo Tools')).toBeInTheDocument();
-    expect(screen.getByText('Products/Status')).toBeInTheDocument();
-    expect(screen.getByText('Ads')).toBeInTheDocument();
-    expect(screen.getByText('Campaign')).toBeInTheDocument();
-    expect(screen.getByText('Competition')).toBeInTheDocument();
-    expect(screen.getByText('Stock')).toBeInTheDocument();
-    expect(screen.getByText('Discount')).toBeInTheDocument();
+    expect(screen.getByText('Operasional')).toBeInTheDocument();
+    expect(screen.getByText('Bisnis')).toBeInTheDocument();
+    expect(screen.getByText('Konten')).toBeInTheDocument();
+    expect(screen.getByText('Pengunjung')).toBeInTheDocument();
+    expect(screen.getByText('Alat Promo')).toBeInTheDocument();
+    expect(screen.getByText('Produk & Status')).toBeInTheDocument();
+    expect(screen.getByText('Iklan')).toBeInTheDocument();
+    expect(screen.getByText('Kampanye')).toBeInTheDocument();
+    expect(screen.getByText('Kompetisi')).toBeInTheDocument();
+    expect(screen.getByText('Stok')).toBeInTheDocument();
+    expect(screen.getByText('Diskon')).toBeInTheDocument();
   });
 });

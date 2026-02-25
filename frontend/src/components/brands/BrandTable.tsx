@@ -1,4 +1,5 @@
 import { useNavigate } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import {
   Table,
   TableHeader,
@@ -18,15 +19,16 @@ interface BrandTableProps {
 
 export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
   const navigate = useNavigate();
+  const { t } = useTranslation();
 
   return (
     <Table aria-label="Brand list" aria-busy={isLoading}>
       <TableHeader>
         <TableRow>
-          <TableHead className="text-xs uppercase">Brand Name</TableHead>
-          <TableHead className="text-xs uppercase">Key Info</TableHead>
-          <TableHead className="text-xs uppercase">Meeting Data</TableHead>
-          <TableHead className="text-xs uppercase">Action</TableHead>
+          <TableHead className="text-xs uppercase">{t('brandTable.header.brandName')}</TableHead>
+          <TableHead className="text-xs uppercase">{t('brandTable.header.keyInfo')}</TableHead>
+          <TableHead className="text-xs uppercase">{t('brandTable.header.meetingData')}</TableHead>
+          <TableHead className="text-xs uppercase">{t('brandTable.header.action')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
@@ -51,16 +53,16 @@ export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
               <TableRow key={brand.id} className="hover:bg-muted/50">
                 <TableCell className="font-medium">{brand.brand_name}</TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {summarizeRawData(brand.raw_data)}
+                  {summarizeRawData(brand.raw_data) || t('brandTable.fallback.noData')}
                 </TableCell>
                 <TableCell>
                   {brand.meeting_raw_data ? (
                     <Badge className="bg-green-500 text-white hover:bg-green-500/90">
-                      Available
+                      {t('brandTable.badge.available')}
                     </Badge>
                   ) : (
                     <span className="text-sm text-muted-foreground">
-                      &mdash; Not available
+                      &mdash; {t('brandTable.badge.notAvailable')}
                     </span>
                   )}
                 </TableCell>
@@ -69,7 +71,7 @@ export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
                     size="sm"
                     onClick={() => navigate(`/evaluation/${brand.id}`)}
                   >
-                    Evaluate
+                    {t('brandTable.button.evaluate')}
                   </Button>
                 </TableCell>
               </TableRow>
@@ -100,5 +102,5 @@ function summarizeRawData(rawData: Record<string, unknown>): string {
     }
     if (parts.length >= 3) break;
   }
-  return parts.join(' | ') || 'No data';
+  return parts.join(' | ');
 }

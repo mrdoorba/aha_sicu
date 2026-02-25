@@ -101,7 +101,7 @@ export const LoginPage = () => {
               {t('login.title')}
             </h1>
             <p className="text-muted-foreground font-medium">
-              Welcome back. Please enter your credentials.
+              {t('login.subtitle')}
             </p>
           </div>
 
@@ -117,7 +117,7 @@ export const LoginPage = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-sm font-bold tracking-wide uppercase text-muted-foreground ml-1">
-                  Email Address
+                  {t('login.emailLabel')}
                 </Label>
                 <Input
                   id="email"
@@ -142,7 +142,7 @@ export const LoginPage = () => {
 
               <div className="space-y-2">
                 <Label htmlFor="password" className="text-sm font-bold tracking-wide uppercase text-muted-foreground ml-1">
-                  Password
+                  {t('login.passwordLabel')}
                 </Label>
                 <Input
                   id="password"
@@ -164,14 +164,14 @@ export const LoginPage = () => {
               <Button
                 type="submit"
                 disabled={isSubmitting}
-                aria-label="Sign In"
+                aria-label={t('login.signIn')}
                 className="w-full h-12 rounded-xl text-base font-bold tracking-tight shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
               >
                 {isSubmitting ? (
                   <Loader2 className="size-5 animate-spin" />
                 ) : (
                   <>
-                    Sign In
+                    {t('login.signIn')}
                     <ArrowRight className="ml-2 size-5" />
                   </>
                 )}

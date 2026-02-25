@@ -154,7 +154,7 @@ describe('EvaluationPage', () => {
   it('renders score summary panel', () => {
     setupMocks();
     renderEvaluationPage();
-    expect(screen.getByText('Score Summary')).toBeInTheDocument();
+    expect(screen.getByText('Ringkasan Skor')).toBeInTheDocument();
   });
 
   it('renders back to brands button', () => {

@@ -88,7 +88,7 @@ export const ScoringSection = ({
 
           {error && (
             <p className="mt-2 text-sm text-destructive">
-              Error: {error.message}
+              {t('scoring.errorPrefix')} {error.message}
             </p>
           )}
 

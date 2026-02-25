@@ -55,10 +55,10 @@ export function FileUploadSlot({
         <div className="min-w-0 flex-1">
           <p className="font-medium">{t(config.label)}</p>
           <p className="text-xs text-muted-foreground">
-            Format: {config.format}
+            {t('fileUpload.format')}: {config.format}
           </p>
           <p className="text-xs text-muted-foreground">
-            Routes to: {t(config.calculator)}
+            {t('fileUpload.routesTo')}: {t(config.calculator)}
           </p>
 
           {/* Hidden file input */}
@@ -68,13 +68,13 @@ export function FileUploadSlot({
             accept={config.accept}
             onChange={handleChange}
             className="hidden"
-            aria-label={`Upload ${t(config.label)}`}
+            aria-label={t('fileUpload.aria.upload', { label: t(config.label) })}
           />
 
           {/* State: Empty */}
           {!uploadInfo && uploadStatus === 'idle' && (
             <div className="mt-2">
-              <p className="text-sm text-muted-foreground">No file uploaded</p>
+              <p className="text-sm text-muted-foreground">{t('fileUpload.status.noFile')}</p>
               <Button
                 variant="outline"
                 size="sm"
@@ -82,7 +82,7 @@ export function FileUploadSlot({
                 onClick={() => inputRef.current?.click()}
               >
                 <Upload className="mr-1.5 size-3.5" aria-hidden="true" />
-                Upload File
+                {t('fileUpload.button.upload')}
               </Button>
             </div>
           )}
@@ -93,9 +93,9 @@ export function FileUploadSlot({
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
                 <span>
-                  {uploadStatus === 'signing' && 'Preparing upload…'}
-                  {uploadStatus === 'uploading' && `Uploading… ${uploadProgress}%`}
-                  {uploadStatus === 'processing' && 'Processing file…'}
+                  {uploadStatus === 'signing' && t('fileUpload.status.preparing')}
+                  {uploadStatus === 'uploading' && t('fileUpload.status.uploading', { progress: uploadProgress })}
+                  {uploadStatus === 'processing' && t('fileUpload.status.processing')}
                 </span>
               </div>
               {uploadStatus === 'uploading' && (
@@ -109,7 +109,7 @@ export function FileUploadSlot({
             <div className="mt-2">
               <div className="flex items-center gap-2 text-sm text-muted-foreground">
                 <Loader2 className="size-3.5 animate-spin" aria-hidden="true" />
-                <span>Verifying upload…</span>
+                <span>{t('fileUpload.status.verifying')}</span>
               </div>
             </div>
           )}
@@ -128,7 +128,7 @@ export function FileUploadSlot({
                 }}
               >
                 <X className="mr-1.5 size-3.5" aria-hidden="true" />
-                Retry
+                {t('fileUpload.button.retry')}
               </Button>
             </div>
           )}
@@ -138,13 +138,13 @@ export function FileUploadSlot({
             <div className="mt-2">
               <div className="flex items-center gap-1.5 text-sm text-green-600">
                 <Check className="size-3.5" aria-hidden="true" />
-                <span>File uploaded successfully</span>
+                <span>{t('fileUpload.status.success')}</span>
               </div>
               <p className="text-xs text-muted-foreground">
                 {uploadInfo.filename}
               </p>
               <p className="text-xs text-muted-foreground">
-                {uploadInfo.row_count.toLocaleString()} rows &middot;{' '}
+                {uploadInfo.row_count.toLocaleString()} {t('fileUpload.rows')} &middot;{' '}
                 {new Date(uploadInfo.uploaded_at).toLocaleString()}
               </p>
               <Button
@@ -157,7 +157,7 @@ export function FileUploadSlot({
                 }}
               >
                 <Upload className="mr-1 size-3" aria-hidden="true" />
-                Re-upload
+                {t('fileUpload.button.reupload')}
               </Button>
             </div>
           )}
