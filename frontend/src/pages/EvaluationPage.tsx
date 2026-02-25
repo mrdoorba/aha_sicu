@@ -1,6 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Header } from '../components/layout/Header';
 import { EvaluationHeader } from '../components/evaluation/EvaluationHeader';
 import { SectionNav } from '../components/evaluation/SectionNav';
 import { EvaluationSections } from '../components/evaluation/EvaluationSections';
@@ -126,9 +125,8 @@ export const EvaluationPage = () => {
   );
 
   return (
-    <div className="min-h-screen bg-muted">
-      <Header />
-      <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8">
+    <div className="p-8">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl">
         {!isValidBrandId ? (
           <div className="space-y-3">
             <Button

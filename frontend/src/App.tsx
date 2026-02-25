@@ -14,6 +14,7 @@ import { EvaluationDetailPage } from './pages/EvaluationDetailPage';
 import { RulesPage } from './pages/RulesPage';
 import { AccountsPage } from './pages/AccountsPage';
 import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
+import { MainLayout } from './components/layout/MainLayout';
 
 const queryClient = new QueryClient();
 
@@ -49,65 +50,35 @@ function App() {
           <DowntimeWarningDialog open={showDowntimeWarning} onDismiss={handleDismiss} />
           <Routes>
             <Route path="/login" element={<LoginPage />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <DashboardPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/brands"
-              element={
-                <ProtectedRoute>
-                  <BrandsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/evaluation/:brandId"
-              element={
-                <ProtectedRoute>
-                  <EvaluationPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/history/:id"
-              element={
-                <ProtectedRoute>
-                  <EvaluationDetailPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/history"
-              element={
-                <ProtectedRoute>
-                  <HistoryPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/rules"
-              element={
-                <RoleProtectedRoute allowedRoles={['leader', 'admin']}>
-                  <RulesPage />
-                </RoleProtectedRoute>
-              }
-            />
-            <Route
-              path="/accounts"
-              element={
-                <RoleProtectedRoute
-                  allowedRoles={['admin']}
-                  accessDeniedMessage="Akses ditolak — halaman akun hanya untuk admin"
-                >
-                  <AccountsPage />
-                </RoleProtectedRoute>
-              }
-            />
+            
+            <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/brands" element={<BrandsPage />} />
+              <Route path="/evaluation/:brandId" element={<EvaluationPage />} />
+              <Route path="/history/:id" element={<EvaluationDetailPage />} />
+              <Route path="/history" element={<HistoryPage />} />
+              
+              <Route
+                path="/rules"
+                element={
+                  <RoleProtectedRoute allowedRoles={['leader', 'admin']}>
+                    <RulesPage />
+                  </RoleProtectedRoute>
+                }
+              />
+              <Route
+                path="/accounts"
+                element={
+                  <RoleProtectedRoute
+                    allowedRoles={['admin']}
+                    accessDeniedMessage="Akses ditolak — halaman akun hanya untuk admin"
+                  >
+                    <AccountsPage />
+                  </RoleProtectedRoute>
+                }
+              />
+            </Route>
+
             <Route path="/" element={<Navigate to="/dashboard" replace />} />
           </Routes>
           <Toaster />

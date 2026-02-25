@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
-import { Header } from '../components/layout/Header';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import {
   useAccounts,
@@ -126,109 +125,101 @@ export const AccountsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen bg-muted">
-        <Header />
-        <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="animate-pulse space-y-4">
-            <div className="h-8 bg-muted-foreground/10 rounded w-1/3" />
-            <div className="h-64 bg-muted-foreground/10 rounded" />
-          </div>
-        </main>
-      </div>
+      <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="animate-pulse space-y-4">
+          <div className="h-8 bg-muted-foreground/10 rounded w-1/3" />
+          <div className="h-64 bg-muted-foreground/10 rounded" />
+        </div>
+      </main>
     );
   }
 
   if (isError) {
     return (
-      <div className="min-h-screen bg-muted">
-        <Header />
-        <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-          <div className="text-center py-12">
-            <p className="text-destructive mb-4">{t('accounts.errorLoading')}</p>
-            <Button onClick={() => refetch()}>{t('common.retry')}</Button>
-          </div>
-        </main>
-      </div>
+      <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+        <div className="text-center py-12">
+          <p className="text-destructive mb-4">{t('accounts.errorLoading')}</p>
+          <Button onClick={() => refetch()}>{t('common.retry')}</Button>
+        </div>
+      </main>
     );
   }
 
   return (
-    <div className="min-h-screen bg-muted">
-      <Header />
-      <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold tracking-tight">{t('accounts.title')}</h2>
-          <Button onClick={() => setShowCreateDialog(true)}>{t('accounts.createAccount')}</Button>
-        </div>
+    <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <div className="flex items-center justify-between mb-6">
+        <h2 className="text-2xl font-bold tracking-tight">{t('accounts.title')}</h2>
+        <Button onClick={() => setShowCreateDialog(true)}>{t('accounts.createAccount')}</Button>
+      </div>
 
-        <div className="rounded-md border bg-background">
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('accounts.email')}</TableHead>
-                <TableHead className="w-40">{t('accounts.role')}</TableHead>
-                <TableHead>{t('accounts.lastLogin')}</TableHead>
-                <TableHead className="w-40">{t('accounts.actions')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {accounts.map((account) => {
-                const isSelf = account.id === Number(profile?.id);
-                return (
-                  <TableRow key={account.id}>
-                    <TableCell className="font-medium">{account.email}</TableCell>
-                    <TableCell>
-                      <Select
-                        value={account.role}
-                        onValueChange={(value) => handleRoleChange(account.id, value)}
+      <div className="rounded-md border bg-card">
+        <Table>
+          <TableHeader>
+            <TableRow>
+              <TableHead>{t('accounts.email')}</TableHead>
+              <TableHead className="w-40">{t('accounts.role')}</TableHead>
+              <TableHead>{t('accounts.lastLogin')}</TableHead>
+              <TableHead className="w-40">{t('accounts.actions')}</TableHead>
+            </TableRow>
+          </TableHeader>
+          <TableBody>
+            {accounts.map((account) => {
+              const isSelf = account.id === Number(profile?.id);
+              return (
+                <TableRow key={account.id}>
+                  <TableCell className="font-medium">{account.email}</TableCell>
+                  <TableCell>
+                    <Select
+                      value={account.role}
+                      onValueChange={(value) => handleRoleChange(account.id, value)}
+                      disabled={isSelf}
+                    >
+                      <SelectTrigger className="h-8 w-32" aria-label={t('accounts.roleFor', { email: account.email })}>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {ROLES.map((role) => (
+                          <SelectItem key={role} value={role}>
+                            {role}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </TableCell>
+                  <TableCell className="text-muted-foreground text-sm">
+                    {account.last_login
+                      ? dateFormatter.format(new Date(account.last_login))
+                      : '—'}
+                  </TableCell>
+                  <TableCell>
+                    <div className="flex gap-1">
+                      <Button
+                        variant="outline"
+                        size="sm"
                         disabled={isSelf}
+                        onClick={() => {
+                          setResetTarget(account);
+                          setNewPassword('');
+                        }}
                       >
-                        <SelectTrigger className="h-8 w-32" aria-label={t('accounts.roleFor', { email: account.email })}>
-                          <SelectValue />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {ROLES.map((role) => (
-                            <SelectItem key={role} value={role}>
-                              {role}
-                            </SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
-                    </TableCell>
-                    <TableCell className="text-muted-foreground text-sm">
-                      {account.last_login
-                        ? dateFormatter.format(new Date(account.last_login))
-                        : '—'}
-                    </TableCell>
-                    <TableCell>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          disabled={isSelf}
-                          onClick={() => {
-                            setResetTarget(account);
-                            setNewPassword('');
-                          }}
-                        >
-                          {t('accounts.resetPw')}
-                        </Button>
-                        <Button
-                          variant="destructive"
-                          size="sm"
-                          disabled={isSelf}
-                          onClick={() => setDeleteTarget(account)}
-                        >
-                          {t('accounts.delete')}
-                        </Button>
-                      </div>
-                    </TableCell>
-                  </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </div>
+                        {t('accounts.resetPw')}
+                      </Button>
+                      <Button
+                        variant="destructive"
+                        size="sm"
+                        disabled={isSelf}
+                        onClick={() => setDeleteTarget(account)}
+                      >
+                        {t('accounts.delete')}
+                      </Button>
+                    </div>
+                  </TableCell>
+                </TableRow>
+              );
+            })}
+          </TableBody>
+        </Table>
+      </div>
       </main>
 
       {/* Create Account Dialog */}
@@ -353,6 +344,6 @@ export const AccountsPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </main>
   );
 };

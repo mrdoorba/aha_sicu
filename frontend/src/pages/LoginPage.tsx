@@ -4,6 +4,11 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '../context/AuthContext';
 import { FirebaseError } from 'firebase/app';
+import { Button } from '../components/ui/button';
+import { Input } from '../components/ui/input';
+import { Label } from '../components/ui/label';
+import { cn } from '../lib/utils';
+import { ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
 
 interface LoginForm {
   email: string;
@@ -24,11 +29,8 @@ export const LoginPage = () => {
     formState: { errors },
   } = useForm<LoginForm>();
 
-  // Get the intended destination or default to /dashboard
-  const from =
-    (location.state as { from?: Location })?.from?.pathname || '/dashboard';
+  const from = (location.state as { from?: Location })?.from?.pathname || '/dashboard';
 
-  // Redirect if already logged in
   useEffect(() => {
     if (user) {
       navigate(from, { replace: true });
@@ -52,93 +54,158 @@ export const LoginPage = () => {
     }
   };
 
-  // Don't render form while redirecting (user is logged in)
   if (user) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-muted">
-        <div className="text-muted-foreground">{t('login.redirecting')}</div>
+      <div className="min-h-screen flex items-center justify-center bg-background">
+        <Loader2 className="size-8 animate-spin text-primary" />
       </div>
     );
   }
 
   return (
-    <main id="main-content" tabIndex={-1} className="min-h-screen flex items-center justify-center bg-muted">
-      <div className="bg-white p-8 rounded-lg shadow-md w-full max-w-md">
-        <h1 className="text-2xl font-semibold text-foreground mb-6 text-center">
-          {t('login.title')}
-        </h1>
+    <div className="flex min-h-screen bg-background overflow-hidden">
+      {/* Branding Pane (60%) */}
+      <div className="hidden lg:flex lg:w-3/5 bg-foreground relative overflow-hidden items-center justify-center p-16">
+        <div className="absolute inset-0 opacity-30">
+          <div className="absolute top-0 left-0 w-full h-full bg-[radial-gradient(circle_at_20%_20%,#325FEC_0%,transparent_40%)]" />
+          <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_80%_80%,#325FEC_0%,transparent_40%)]" />
+          <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,#325FEC_0%,transparent_70%)] opacity-10" />
+        </div>
+        
+        {/* Abstract shapes for premium feel */}
+        <div className="absolute top-1/4 -left-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
+        <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
 
-        <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
-          {error && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
-              <p className="text-destructive text-sm">{error}</p>
+        <div className="relative z-10 max-w-xl space-y-8">
+          <div className="flex items-center gap-3">
+            <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
+              <ShieldCheck className="text-white size-7" />
             </div>
-          )}
-
-          <div>
-            <label
-              htmlFor="email"
-              className="block text-sm font-medium text-foreground mb-1"
-            >
-              Email
-            </label>
-            <input
-              id="email"
-              type="email"
-              autoComplete="email"
-              aria-describedby={errors.email ? 'email-error' : undefined}
-              aria-invalid={errors.email ? 'true' : 'false'}
-              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-              {...register('email', {
-                required: t('login.emailRequired'),
-                pattern: {
-                  value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                  message: t('login.emailInvalid'),
-                },
-              })}
-            />
-            {errors.email && (
-              <p id="email-error" role="alert" className="mt-1 text-sm text-destructive">
-                {errors.email.message}
-              </p>
-            )}
+            <span className="text-3xl font-black tracking-tighter text-white">Store ICU</span>
+          </div>
+          
+          <div className="space-y-4">
+            <h2 className="text-5xl font-black tracking-tight text-white leading-[1.1]">
+              Elevating E-commerce <br />
+              <span className="text-sidebar-accent">Operations Intelligence</span>
+            </h2>
+            <p className="text-xl text-sidebar-accent/80 font-medium leading-relaxed max-w-lg">
+              The professional dashboard for high-value brand partner presentations and verdict-driven insights.
+            </p>
           </div>
 
-          <div>
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-foreground mb-1"
-            >
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              aria-describedby={errors.password ? 'password-error' : undefined}
-              aria-invalid={errors.password ? 'true' : 'false'}
-              className="w-full px-3 py-2 border border-input rounded-lg focus:outline-none focus:ring-2 focus:ring-ring focus:border-transparent text-foreground"
-              {...register('password', {
-                required: t('login.passwordRequired'),
-              })}
-            />
-            {errors.password && (
-              <p id="password-error" role="alert" className="mt-1 text-sm text-destructive">
-                {errors.password.message}
-              </p>
-            )}
+          <div className="pt-8 flex items-center gap-6">
+            <div className="flex -space-x-3">
+              {[1, 2, 3, 4].map(i => (
+                <div key={i} className="h-10 w-10 rounded-full border-2 border-foreground bg-sidebar-accent/20 backdrop-blur-sm" />
+              ))}
+            </div>
+            <p className="text-sm font-semibold text-sidebar-accent/60">
+              Trusted by 500+ <br />Brand Evaluators
+            </p>
           </div>
-
-          <button
-            type="submit"
-            disabled={isSubmitting}
-            className="w-full py-2 px-4 bg-primary text-white font-medium rounded-lg hover:bg-primary/85 focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            {isSubmitting ? t('login.loggingIn') : 'Login'}
-          </button>
-        </form>
+        </div>
       </div>
-    </main>
+
+      {/* Login Form Pane (40%) */}
+      <main className="w-full lg:w-2/5 flex items-center justify-center p-8 bg-background relative">
+        {/* Background decorative element */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="w-full max-w-md space-y-10 relative z-10">
+          <div className="text-center lg:text-left space-y-2">
+            <h1 className="text-3xl font-black tracking-tight text-foreground">
+              {t('login.title')}
+            </h1>
+            <p className="text-muted-foreground font-medium">
+              Welcome back. Please enter your credentials.
+            </p>
+          </div>
+
+          {/* Form container with glassmorphism */}
+          <div className="p-10 space-y-8 bg-card/30 backdrop-blur-2xl border border-border/50 shadow-2xl rounded-[2.5rem]">
+            <form onSubmit={handleSubmit(onSubmit)} className="space-y-6">
+              {error && (
+                <div className="p-4 bg-destructive/10 border border-destructive/20 rounded-2xl flex items-center gap-3">
+                  <div className="h-2 w-2 rounded-full bg-destructive animate-pulse" />
+                  <p className="text-destructive text-sm font-semibold">{error}</p>
+                </div>
+              )}
+
+              <div className="space-y-2">
+                <Label htmlFor="email" className="text-sm font-bold tracking-wide uppercase text-muted-foreground ml-1">
+                  Email Address
+                </Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="name@company.com"
+                  autoComplete="email"
+                  className="h-12 px-4 rounded-xl border-border/60 bg-background/50 focus-visible:ring-primary/20 transition-all"
+                  {...register('email', {
+                    required: t('login.emailRequired'),
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: t('login.emailInvalid'),
+                    },
+                  })}
+                />
+                {errors.email && (
+                  <p className="mt-1 text-xs font-bold text-destructive ml-1">
+                    {errors.email.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-2">
+                <div className="flex items-center justify-between ml-1">
+                  <Label htmlFor="password" className="text-sm font-bold tracking-wide uppercase text-muted-foreground">
+                    Password
+                  </Label>
+                  <button type="button" className="text-xs font-bold text-primary hover:underline">
+                    Forgot Password?
+                  </button>
+                </div>
+                <Input
+                  id="password"
+                  type="password"
+                  placeholder="••••••••"
+                  autoComplete="current-password"
+                  className="h-12 px-4 rounded-xl border-border/60 bg-background/50 focus-visible:ring-primary/20 transition-all"
+                  {...register('password', {
+                    required: t('login.passwordRequired'),
+                  })}
+                />
+                {errors.password && (
+                  <p className="mt-1 text-xs font-bold text-destructive ml-1">
+                    {errors.password.message}
+                  </p>
+                )}
+              </div>
+
+              <Button
+                type="submit"
+                disabled={isSubmitting}
+                className="w-full h-12 rounded-xl text-base font-bold tracking-tight shadow-xl shadow-primary/20 transition-all hover:scale-[1.02] active:scale-[0.98]"
+              >
+                {isSubmitting ? (
+                  <Loader2 className="size-5 animate-spin" />
+                ) : (
+                  <>
+                    Sign In
+                    <ArrowRight className="ml-2 size-5" />
+                  </>
+                )}
+              </Button>
+            </form>
+          </div>
+
+          <p className="text-center text-sm font-medium text-muted-foreground">
+            Don't have an account? <button className="text-primary font-bold hover:underline">Contact Administrator</button>
+          </p>
+        </div>
+      </main>
+    </div>
   );
 };
 

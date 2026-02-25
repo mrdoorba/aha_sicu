@@ -3,7 +3,6 @@ import { ArrowLeft, Copy, ClipboardCheck, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { Header } from '../components/layout/Header';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
@@ -276,12 +275,11 @@ export function EvaluationDetailPage() {
   };
 
   return (
-    <div className="min-h-screen bg-muted">
-      <Header />
+    <div className="p-8">
       <main
         id="main-content"
         tabIndex={-1}
-        className="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8"
+        className="mx-auto max-w-7xl"
       >
         <Button
           variant="ghost"

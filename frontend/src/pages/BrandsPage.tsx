@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Search, ChevronLeft, ChevronRight, RefreshCw, XCircle } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { Header } from '../components/layout/Header';
 import { SyncStatus } from '../components/sync/SyncStatus';
 import { BrandTable } from '../components/brands/BrandTable';
 import { Input } from '../components/ui/input';
@@ -33,9 +32,8 @@ export const BrandsPage = () => {
   const noResults = !isLoading && !isError && !hasBrands && !!debouncedSearch;
 
   return (
-    <div className="min-h-screen bg-muted">
-      <Header />
-      <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8">
+    <div className="p-8">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl">
         <h2 className="mb-6 text-2xl font-semibold text-foreground">{t('brands.title')}</h2>
 
         {/* Sync Status */}

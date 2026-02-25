@@ -1,29 +1,27 @@
-import { useTranslation } from 'react-i18next';
-import { Header } from '../components/layout/Header';
-import { useAuth } from '../context/AuthContext';
+import { useSearchParams } from 'react-router-dom';
+import { BrandSearch } from '../components/dashboard/BrandSearch';
+import { PresentationDashboard } from '../components/dashboard/PresentationDashboard';
 
 export const DashboardPage = () => {
-  const { t } = useTranslation();
-  const { user } = useAuth();
+  const [searchParams, setSearchParams] = useSearchParams();
+  const brandId = searchParams.get('brandId');
+
+  const handleSelectBrand = (id: number) => {
+    setSearchParams({ brandId: id.toString() });
+  };
+
+  const handleBackToSearch = () => {
+    setSearchParams({});
+  };
 
   return (
-    <div className="min-h-screen bg-muted">
-      <Header />
-      <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl py-6 px-4 sm:px-6 lg:px-8">
-        <div className="bg-white rounded-lg shadow p-6">
-          <h2 className="text-xl font-semibold text-foreground mb-4">
-            {t('dashboard.welcome')}
-          </h2>
-          <p className="text-muted-foreground mb-4">
-            {t('dashboard.loggedInAs')}{' '}
-            <span className="font-medium text-foreground">{user?.email}</span>
-          </p>
-          <div className="rounded-lg border-4 border-dashed border-border p-8 text-center">
-            <p className="text-muted-foreground">
-              {t('dashboard.placeholder')}
-            </p>
-          </div>
-        </div>
+    <div className="p-8">
+      <main id="main-content" className="mx-auto max-w-7xl">
+        {brandId ? (
+          <PresentationDashboard brandId={Number(brandId)} onBack={handleBackToSearch} />
+        ) : (
+          <BrandSearch onSelect={handleSelectBrand} />
+        )}
       </main>
     </div>
   );
