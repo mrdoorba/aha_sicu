@@ -47,18 +47,18 @@ describe('FileUploadSlot', () => {
 
     expect(screen.getByText('Iklan Check Up V2A')).toBeInTheDocument();
     expect(screen.getByText(/Format: .csv/)).toBeInTheDocument();
-    expect(screen.getByText(/Routes to: Calculator 1/)).toBeInTheDocument();
-    expect(screen.getByText('No file uploaded')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /upload file/i })).toBeInTheDocument();
+    expect(screen.getByText(/Dikirim ke: Calculator 1/)).toBeInTheDocument();
+    expect(screen.getByText('Belum ada file diunggah')).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /unggah file/i })).toBeInTheDocument();
   });
 
   it('renders uploaded state with filename, timestamp, row count', () => {
     renderSlot({ uploadInfo: SAMPLE_UPLOAD });
 
-    expect(screen.getByText('File uploaded successfully')).toBeInTheDocument();
+    expect(screen.getByText('File berhasil diunggah')).toBeInTheDocument();
     expect(screen.getByText('report.csv')).toBeInTheDocument();
-    expect(screen.getByText(/500 rows/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /re-upload/i })).toBeInTheDocument();
+    expect(screen.getByText(/500 baris/)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /unggah ulang/i })).toBeInTheDocument();
   });
 
   it('renders error state with message', () => {
@@ -68,34 +68,34 @@ describe('FileUploadSlot', () => {
     });
 
     expect(screen.getByText('Missing required columns')).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /coba lagi/i })).toBeInTheDocument();
   });
 
   it('renders uploading state with progress', () => {
     renderSlot({ uploadStatus: 'uploading', uploadProgress: 45 });
 
-    expect(screen.getByText(/Uploading… 45%/)).toBeInTheDocument();
+    expect(screen.getByText(/Mengunggah… 45%/)).toBeInTheDocument();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
   });
 
   it('renders signing state', () => {
     renderSlot({ uploadStatus: 'signing' });
 
-    expect(screen.getByText(/Preparing upload/)).toBeInTheDocument();
+    expect(screen.getByText(/Menyiapkan unggahan/)).toBeInTheDocument();
   });
 
   it('renders processing state', () => {
     renderSlot({ uploadStatus: 'processing' });
 
-    expect(screen.getByText(/Processing file/)).toBeInTheDocument();
+    expect(screen.getByText(/Memproses file/)).toBeInTheDocument();
   });
 
   it('renders verifying state with spinner', () => {
     renderSlot({ uploadStatus: 'verifying' });
 
-    expect(screen.getByText(/Verifying upload/)).toBeInTheDocument();
+    expect(screen.getByText(/Memverifikasi unggahan/)).toBeInTheDocument();
     // Should NOT show error or uploading states
-    expect(screen.queryByRole('button', { name: /retry/i })).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /coba lagi/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 

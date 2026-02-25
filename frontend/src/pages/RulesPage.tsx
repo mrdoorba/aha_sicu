@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useRules, type ScoringRule } from '../hooks/useRules';
 import { useUpdateRule } from '../hooks/useUpdateRule';
@@ -26,6 +27,7 @@ const CATEGORY_ORDER = [
 ] as const;
 
 export const RulesPage = () => {
+  const { t } = useTranslation();
   const { rules, isLoading, isError, refetch } = useRules();
   const { profile } = useCurrentUser();
   const updateRule = useUpdateRule();
@@ -64,7 +66,7 @@ export const RulesPage = () => {
   const handleRuleChange = (category: string, key: string, field: string, value: number | null) => {
     const errorKey = `${template}.${category}.${key}.${field}`;
     if (value === null) {
-      setValidationErrors((prev) => ({ ...prev, [errorKey]: 'Required' }));
+      setValidationErrors((prev) => ({ ...prev, [errorKey]: t('rules.validation.required') }));
     } else {
       setValidationErrors((prev) => {
         const { [errorKey]: _removed, ...rest } = prev;
@@ -135,7 +137,7 @@ export const RulesPage = () => {
     setShowPasswordDialog(false);
     setIsEditing(false);
     setEditedRules({});
-    toast.success('Aturan berhasil diperbarui');
+    toast.success(t('rules.page.saveSuccess'));
   };
 
   if (isLoading) {
@@ -156,12 +158,12 @@ export const RulesPage = () => {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="text-center py-12">
-          <p className="text-destructive mb-4">Gagal memuat aturan penilaian.</p>
+          <p className="text-destructive mb-4">{t('rules.page.errorLoading')}</p>
           <button
             onClick={() => refetch()}
             className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
           >
-            Coba Lagi
+            {t('rules.page.retry')}
           </button>
         </div>
       </div>
@@ -171,7 +173,7 @@ export const RulesPage = () => {
   if (!activeRule) {
     return (
       <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
-        <p className="text-muted-foreground text-center py-12">Tidak ada aturan penilaian ditemukan.</p>
+        <p className="text-muted-foreground text-center py-12">{t('rules.page.noRules')}</p>
       </div>
     );
   }
@@ -192,25 +194,25 @@ export const RulesPage = () => {
   return (
     <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between mb-6">
-          <h2 className="text-2xl font-bold tracking-tight">Aturan Penilaian</h2>
+          <h2 className="text-2xl font-bold tracking-tight">{t('rules.page.title')}</h2>
           <div className="flex items-center gap-3">
             {!isEditing && (
               <span className="text-sm text-muted-foreground">
-                Updated{' '}
+                {t('rules.page.updated')}{' '}
                 {new Date(activeRule.updated_at).toLocaleDateString()}
               </span>
             )}
             {canEdit && !isEditing && (
-              <Button onClick={enterEditMode}>Edit Aturan</Button>
+              <Button onClick={enterEditMode}>{t('rules.page.editRules')}</Button>
             )}
             {isEditing && (
               <>
-                <Button variant="outline" onClick={cancelEdit}>Batal</Button>
+                <Button variant="outline" onClick={cancelEdit}>{t('rules.page.cancel')}</Button>
                 <Button
                   onClick={() => setShowPasswordDialog(true)}
                   disabled={!hasChanges() || hasValidationErrors}
                 >
-                  Simpan Perubahan
+                  {t('rules.page.saveChanges')}
                 </Button>
               </>
             )}
@@ -239,13 +241,13 @@ export const RulesPage = () => {
           {rulesData.competition && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Pesan Kompetisi</CardTitle>
+                <CardTitle className="text-base">{t('rules.page.competitionMessages')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {Object.entries(rulesData.competition).map(([field, value]) => (
                   <div key={field} className="flex flex-col gap-0.5">
                     <span className="text-xs font-medium text-muted-foreground">
-                      {field === 'message_pass' ? 'Kompetitif' : field === 'message_fail' ? 'Tidak kompetitif' : field}
+                      {field === 'message_pass' ? t('rules.page.competitive') : field === 'message_fail' ? t('rules.page.notCompetitive') : field}
                     </span>
                     {isEditing ? (
                       <textarea
@@ -269,15 +271,15 @@ export const RulesPage = () => {
           {rulesData.interpretation?.ranges && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Interpretasi Skor</CardTitle>
+                <CardTitle className="text-base">{t('rules.page.scoreInterpretation')}</CardTitle>
               </CardHeader>
               <CardContent>
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Rentang Skor</TableHead>
-                      <TableHead>Label</TableHead>
-                      <TableHead>Keputusan</TableHead>
+                      <TableHead>{t('rules.page.scoreRange')}</TableHead>
+                      <TableHead>{t('rules.page.label')}</TableHead>
+                      <TableHead>{t('rules.page.verdict')}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -326,7 +328,11 @@ export const RulesPage = () => {
                                   : 'destructive'
                             }
                           >
-                            {range.label}
+                            {range.label === 'Good Candidate'
+                              ? t('rules.page.goodCandidate')
+                              : range.label === 'Needs Review'
+                                ? t('rules.page.needsReview')
+                                : range.label}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-lg">{range.verdict}</TableCell>
@@ -342,13 +348,13 @@ export const RulesPage = () => {
           {rulesData.interpretation?.closing_messages && (
             <Card>
               <CardHeader>
-                <CardTitle className="text-base">Pesan Penutup (G75)</CardTitle>
+                <CardTitle className="text-base">{t('rules.page.closingMessages')}</CardTitle>
               </CardHeader>
               <CardContent className="space-y-3">
                 {Object.entries(rulesData.interpretation.closing_messages).map(([verdict, message]) => (
                   <div key={verdict} className="flex flex-col gap-0.5">
                     <span className="text-xs font-medium text-muted-foreground">
-                      Keputusan: {verdict || '(kosong / performa baik)'}
+                      {t('rules.page.verdictPrefix')} {verdict || t('rules.page.emptyGoodPerformance')}
                     </span>
                     {isEditing ? (
                       <textarea
@@ -360,7 +366,7 @@ export const RulesPage = () => {
                         maxLength={500}
                       />
                     ) : (
-                      <span className="text-sm text-muted-foreground">{message || '(kosong)'}</span>
+                      <span className="text-sm text-muted-foreground">{message || t('rules.page.empty')}</span>
                     )}
                   </div>
                 ))}

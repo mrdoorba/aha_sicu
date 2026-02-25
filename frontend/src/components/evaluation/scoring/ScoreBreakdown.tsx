@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../../ui/table';
 import type { CategoryScore } from '../../../hooks/useScoring';
 
@@ -6,6 +7,7 @@ interface ScoreBreakdownProps {
 }
 
 export const ScoreBreakdown = ({ categoryScores }: ScoreBreakdownProps) => {
+  const { t } = useTranslation();
   // Filter to categories that have actual scoring (non-zero max or negative possible)
   const scoredCategories = categoryScores.filter(
     (cat) => cat.max_score !== 0 || cat.score !== 0,
@@ -15,9 +17,9 @@ export const ScoreBreakdown = ({ categoryScores }: ScoreBreakdownProps) => {
     <Table>
       <TableHeader>
         <TableRow>
-          <TableHead>Category</TableHead>
-          <TableHead className="text-right">Score</TableHead>
-          <TableHead className="text-right">Max</TableHead>
+          <TableHead>{t('scoreBreakdown.header.category')}</TableHead>
+          <TableHead className="text-right">{t('scoreBreakdown.header.score')}</TableHead>
+          <TableHead className="text-right">{t('scoreBreakdown.header.max')}</TableHead>
         </TableRow>
       </TableHeader>
       <TableBody>
