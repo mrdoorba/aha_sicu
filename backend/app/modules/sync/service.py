@@ -257,4 +257,5 @@ async def get_latest_sync_status() -> SyncStatusResponse | None:
         brands_synced=status["brands_synced"],
         error_message=status["error_message"],
         sync_details=status.get("sync_details"),
+        timed_out=status.get("timed_out", False),
     )
