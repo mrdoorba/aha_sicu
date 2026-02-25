@@ -276,7 +276,9 @@ export function EvaluationDetailPage() {
 
   return (
     <div className="p-8">
-      <div
+      <main
+        id="main-content"
+        tabIndex={-1}
         className="mx-auto max-w-7xl"
       >
         <Button
@@ -442,7 +444,7 @@ export function EvaluationDetailPage() {
             )}
           </div>
         )}
-      </div>
+      </main>
     </div>
   );
 }

@@ -125,28 +125,28 @@ export const AccountsPage = () => {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted-foreground/10 rounded w-1/3" />
           <div className="h-64 bg-muted-foreground/10 rounded" />
         </div>
-      </div>
+      </main>
     );
   }
 
   if (isError) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="text-center py-12">
           <p className="text-destructive mb-4">{t('accounts.errorLoading')}</p>
           <Button onClick={() => refetch()}>{t('common.retry')}</Button>
         </div>
-      </div>
+      </main>
     );
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between mb-6">
         <h2 className="text-2xl font-bold tracking-tight">{t('accounts.title')}</h2>
         <Button onClick={() => setShowCreateDialog(true)}>{t('accounts.createAccount')}</Button>
@@ -220,6 +220,7 @@ export const AccountsPage = () => {
           </TableBody>
         </Table>
       </div>
+      </main>
 
       {/* Create Account Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
@@ -343,6 +344,6 @@ export const AccountsPage = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </main>
   );
 };

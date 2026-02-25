@@ -9,6 +9,7 @@ import {
   Users, 
   LogOut, 
   ChevronLeft, 
+  ChevronRight,
   Menu
 } from 'lucide-react';
 import { cn } from '../../lib/utils';

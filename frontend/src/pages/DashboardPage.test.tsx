@@ -24,9 +24,17 @@ const renderDashboardPage = () => {
 };
 
 describe('DashboardPage', () => {
-  it('renders search for brand heading initially', () => {
+  it('renders welcome message', () => {
     renderDashboardPage();
 
-    expect(screen.getByText(/search for brand/i)).toBeInTheDocument();
+    expect(screen.getByText(/selamat datang di store icu/i)).toBeInTheDocument();
+  });
+
+  it('has main content landmark with id="main-content" and tabIndex', () => {
+    renderDashboardPage();
+
+    const main = screen.getByRole('main');
+    expect(main).toHaveAttribute('id', 'main-content');
+    expect(main).toHaveAttribute('tabIndex', '-1');
   });
 });

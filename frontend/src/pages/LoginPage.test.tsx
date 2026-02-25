@@ -36,7 +36,7 @@ describe('LoginPage', () => {
 
     expect(screen.getByLabelText(/email/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/password/i)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /sign in/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /login/i })).toBeInTheDocument();
     expect(screen.getByText(/login store icu/i)).toBeInTheDocument();
   });
 
@@ -44,7 +44,7 @@ describe('LoginPage', () => {
     const user = userEvent.setup();
     renderLoginPage();
 
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await user.click(screen.getByRole('button', { name: /login/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/email wajib diisi/i)).toBeInTheDocument();
@@ -64,7 +64,7 @@ describe('LoginPage', () => {
     renderLoginPage();
 
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await user.click(screen.getByRole('button', { name: /login/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/password wajib diisi/i)).toBeInTheDocument();
@@ -79,7 +79,7 @@ describe('LoginPage', () => {
 
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
     await user.type(screen.getByLabelText(/password/i), 'password123');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await user.click(screen.getByRole('button', { name: /login/i }));
 
     await waitFor(() => {
       expect(mockLogin).toHaveBeenCalledWith('test@example.com', 'password123');
@@ -98,7 +98,7 @@ describe('LoginPage', () => {
 
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
     await user.type(screen.getByLabelText(/password/i), 'wrongpassword');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await user.click(screen.getByRole('button', { name: /login/i }));
 
     await waitFor(() => {
       expect(screen.getByText(/email atau password salah/i)).toBeInTheDocument();
@@ -118,12 +118,9 @@ describe('LoginPage', () => {
 
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
     await user.type(screen.getByLabelText(/password/i), 'password123');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await user.click(screen.getByRole('button', { name: /login/i }));
 
-    // Button should be disabled and have no 'Sign In' text content (replaced by loader)
-    const button = screen.getByRole('button', { name: /sign in/i });
-    expect(button).toBeDisabled();
-    expect(button).not.toHaveTextContent(/sign in/i);
+    expect(screen.getByText(/sedang masuk/i)).toBeInTheDocument();
 
     // Resolve the login promise and wait for state updates
     await act(async () => {
@@ -144,9 +141,9 @@ describe('LoginPage', () => {
 
     await user.type(screen.getByLabelText(/email/i), 'test@example.com');
     await user.type(screen.getByLabelText(/password/i), 'password123');
-    await user.click(screen.getByRole('button', { name: /sign in/i }));
+    await user.click(screen.getByRole('button', { name: /login/i }));
 
-    expect(screen.getByRole('button', { name: /sign in/i })).toBeDisabled();
+    expect(screen.getByRole('button', { name: /sedang masuk/i })).toBeDisabled();
 
     // Resolve the login promise and wait for state updates
     await act(async () => {

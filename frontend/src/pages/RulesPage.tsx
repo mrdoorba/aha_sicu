@@ -140,7 +140,7 @@ export const RulesPage = () => {
 
   if (isLoading) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="animate-pulse space-y-4">
           <div className="h-8 bg-muted rounded w-1/3" />
           <div className="h-10 bg-muted rounded w-1/2" />
@@ -148,13 +148,13 @@ export const RulesPage = () => {
             <div key={i} className="h-32 bg-muted rounded" />
           ))}
         </div>
-      </div>
+      </main>
     );
   }
 
   if (isError) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <div className="text-center py-12">
           <p className="text-destructive mb-4">Gagal memuat aturan penilaian.</p>
           <button
@@ -164,15 +164,15 @@ export const RulesPage = () => {
             Coba Lagi
           </button>
         </div>
-      </div>
+      </main>
     );
   }
 
   if (!activeRule) {
     return (
-      <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+      <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
         <p className="text-muted-foreground text-center py-12">Tidak ada aturan penilaian ditemukan.</p>
-      </div>
+      </main>
     );
   }
 
@@ -190,7 +190,7 @@ export const RulesPage = () => {
   }
 
   return (
-    <div className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
+    <main id="main-content" className="mx-auto max-w-4xl px-4 py-8 sm:px-6 lg:px-8">
       <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold tracking-tight">Aturan Penilaian</h2>
           <div className="flex items-center gap-3">
@@ -368,6 +368,7 @@ export const RulesPage = () => {
             </Card>
           )}
         </div>
+      </main>
 
       <PasswordConfirmDialog
         open={showPasswordDialog}
@@ -375,6 +376,6 @@ export const RulesPage = () => {
         onCancel={() => setShowPasswordDialog(false)}
         isLoading={updateRule.isPending}
       />
-    </div>
+    </main>
   );
 };

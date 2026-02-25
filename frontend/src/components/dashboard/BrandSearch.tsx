@@ -3,6 +3,7 @@ import { Search, Loader2 } from 'lucide-react';
 import { useBrands } from '../../hooks/useBrands';
 import { Input } from '../ui/input';
 import { Card, CardContent } from '../ui/card';
+import { cn } from '../../lib/utils';
 
 interface BrandSearchProps {
   onSelect: (brandId: number) => void;

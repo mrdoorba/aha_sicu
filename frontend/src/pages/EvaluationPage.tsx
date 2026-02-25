@@ -126,7 +126,7 @@ export const EvaluationPage = () => {
 
   return (
     <div className="p-8">
-      <div className="mx-auto max-w-7xl">
+      <main id="main-content" tabIndex={-1} className="mx-auto max-w-7xl">
         {!isValidBrandId ? (
           <div className="space-y-3">
             <Button
@@ -195,7 +195,7 @@ export const EvaluationPage = () => {
             </div>
           </>
         )}
-      </div>
+      </main>
     </div>
   );
 };
