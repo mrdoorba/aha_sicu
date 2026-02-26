@@ -474,7 +474,7 @@ Paket Diskon 0.2%
 
 ### How Scoring Works
 
-The system scores the brand across **11 categories**, producing a total score that determines the verdict.
+The system scores the brand across **10 categories**, producing a total score that determines the verdict.
 
 ### Per-Category Score Breakdown
 
@@ -491,7 +491,7 @@ The system scores the brand across **11 categories**, producing a total score th
 | 9. Stok | 10 | Performance + penalty |
 | 10. Discount | 5 | Performance |
 
-> **Important — "Opportunity" scoring:** Categories 5, 7 (partial), and 8 award points when the brand **fails** the benchmark. This is because under-performance represents a business opportunity for AHA to help improve the brand. Higher total score = more attractive prospect for partnership.
+> **Important — "Opportunity" scoring:** Categories 4, 6 (partial), and 7 award points when the brand **fails** the benchmark. This is because under-performance represents a business opportunity for AHA to help improve the brand. Higher total score = more attractive prospect for partnership.
 
 ### Category Adjustments
 
@@ -522,7 +522,7 @@ The final verdict is set in cell F75:
 
 After scoring, the system generates:
 
-- **Email body:** A formatted report covering all 11 categories with emoji headers, benchmarks, and the conclusion. Subject line: "🏥 AHA Store Internal Check Up (Store ICU) - [Store Name] [Period]"
+- **Email body:** A formatted report covering all 10 categories with emoji headers, benchmarks, and the conclusion. Subject line: "🏥 AHA Store Internal Check Up (Store ICU) - [Store Name] [Period]"
 
 ---
 
