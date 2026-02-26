@@ -53,7 +53,7 @@ git checkout -b <type>/<short-description>
 
 **Branch lifecycle:**
 
-1. Create branch when starting a new OpenSpec change (after `/opsx:new`, `/opsx:propose`, or when beginning work)
+1. Create branch when starting a new OpenSpec change (after `/opsx:new`, `/opsx:ff`, or when beginning work)
 2. Work on the branch, commit atomically
 3. When done → user requests merge to `develop` (via PR or direct merge)
 4. Keep the branch alive until the OpenSpec change is archived (`/opsx:archive`)
@@ -65,7 +65,7 @@ Each commit is **one logical, self-contained unit of work** — does exactly one
 
 ### Commit Messages
 
-The first line is a **clear, scannable summary** — no metaphor, immediately parseable. The optional body carries **Subtle Mr. Door** flair. Every commit ends with `Author: Mr. Door`.
+The first line is a **clear, scannable summary** — no metaphor, immediately parseable. The optional body carries **Subtle Mr. Door** from the Lord of Mysteries series novel flair. Every commit ends with `Author: Mr. Door`.
 
 **Format:**
 ```
@@ -107,17 +107,13 @@ This project uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) with the `s
 | OpenSpec Phase       | Git Action                                      |
 |----------------------|--------------------------------------------------|
 | `/opsx:new`          | Create feature branch off `develop`              |
-| `/opsx:propose`      | Create feature branch off `develop`              |
-| `/opsx:continue`     | Continue working on feature branch               |
-| `/opsx:apply`        | Implement tasks, commit atomically on feature branch |
-| `/opsx:verify`       | Verify on feature branch, fix issues if needed   |
-| Change complete      | User requests merge to `develop`                 |
-| `/opsx:archive`      | Archive change, then delete feature branch       |
+| `/opsx:ff`           | Create feature branch off `develop`              |
+| `/opsx:apply`        | Commit atomically on the feature branch          |
+| `/opsx:archive`      | Ask user about branch deletion                   |
 
 ### When to Create Branches
 
-- **Do create a branch:** For any change going through OpenSpec (`/opsx:new`, `/opsx:ff`, `/opsx:propose`)
-- **Do NOT create a branch:** For trivial fixes the user asks for directly without OpenSpec (commit directly to `develop` instead)
+- **Do create a branch:** When starting a change via `/opsx:new` or `/opsx:ff`
 
 ---
 
@@ -148,6 +144,28 @@ npm run lint
 
 ## Code Style & Conventions
 
-- **Backend:** Follow existing patterns. Use `ruff` for linting. Python 3.14.
-- **Frontend:** TypeScript strict. Use existing component patterns. Vite + React.
-- **Infrastructure:** Terraform with environment-based tfvars.
+### General Principles
+
+Prioritize: simplicity, robustness, performance, correctness. Avoid over-engineering.
+
+### Backend
+
+- Python 3.14, FastAPI, linted with `ruff`
+- Follow existing patterns
+
+### Frontend
+
+- TypeScript strict mode, Vite + React
+- **State:** React Query (TanStack Query) for server state, React Context for auth, `useState` for local UI
+- **API:** `openapi-fetch` with typed client (`client.GET()`, `client.POST()`)
+- **UI:** Radix UI primitives + CVA (Class Variance Authority) for component variants
+- **Styling:** Tailwind CSS v4 + `cn()` utility (tailwind-merge + clsx)
+- **Routing:** React Router
+- **i18n:** react-i18next
+- **Icons:** lucide-react
+- **Testing:** Vitest + Testing Library, test files colocated (`*.test.tsx`)
+- **Path alias:** `@/` maps to `./src/`
+
+### Infrastructure
+
+- Terraform with environment-based tfvars

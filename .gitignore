@@ -64,6 +64,9 @@ override.tf.json
 .gemini/
 _bmad/
 
+# OpenSpec
+openspec/
+
 # Firebase
 .firebase/
 firebase-debug.log
