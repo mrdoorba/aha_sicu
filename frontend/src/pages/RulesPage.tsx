@@ -15,7 +15,6 @@ import { PasswordConfirmDialog } from '../components/rules/PasswordConfirmDialog
 const CATEGORY_ORDER = [
   'operational',
   'business',
-  'content',
   'visitors',
   'promo_tools',
   'products_status',
