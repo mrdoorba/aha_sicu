@@ -69,7 +69,7 @@ export function SendMailDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-2xl">
+      <DialogContent className="sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle>{t('sendMail.title')}</DialogTitle>
         </DialogHeader>
