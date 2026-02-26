@@ -791,9 +791,60 @@ class TestEmailAssembly:
         assert "Penjualan" in body
         assert "Pengunjung" in body
         assert "Promosi" in body
+        assert "📦 Jumlah Produk & Status Toko:" in body
         assert "Iklan" in body
         assert "Campaign" in body
         assert "Kesimpulan" in body
+
+    def test_jumlah_produk_section_has_both_rows(self, full_manual_data, full_calculator_results):
+        result = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="fashion",
+            verdict="✔️",
+            store_name="S",
+            period="P",
+            brand_name="B",
+        )
+        body = result.email_body
+        # Extract the section between header and next section
+        section_start = body.index("📦 Jumlah Produk & Status Toko:")
+        section_end = body.index("📣 Performa Iklan:")
+        section = body[section_start:section_end]
+        assert "Jumlah Produk = 50" in section
+        assert "Status Toko" in section
+
+    def test_promo_section_does_not_contain_status_toko(self, full_manual_data, full_calculator_results):
+        result = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="fashion",
+            verdict="✔️",
+            store_name="S",
+            period="P",
+            brand_name="B",
+        )
+        body = result.email_body
+        promo_start = body.index("🏷️ Tingkat Penggunaan Alat Promosi:")
+        promo_end = body.index("📦 Jumlah Produk & Status Toko:")
+        promo_section = body[promo_start:promo_end]
+        assert "Status Toko" not in promo_section
+
+    def test_section_ordering_promo_products_ads(self, full_manual_data, full_calculator_results):
+        result = calculate_score(
+            manual_data=full_manual_data,
+            calculator_results=full_calculator_results,
+            template="fashion",
+            verdict="✔️",
+            store_name="S",
+            period="P",
+            brand_name="B",
+        )
+        body = result.email_body
+        promo_pos = body.index("🏷️ Tingkat Penggunaan Alat Promosi:")
+        products_pos = body.index("📦 Jumlah Produk & Status Toko:")
+        ads_pos = body.index("📣 Performa Iklan:")
+        assert promo_pos < products_pos < ads_pos
 
     def test_email_subject_format(self, full_manual_data, full_calculator_results):
         result = calculate_score(

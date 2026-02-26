@@ -1629,22 +1629,22 @@ def _assemble_email_body(
             if PROMO_START_ROW <= r.row <= PROMO_START_ROW + len(PROMO_TOOLS) - 1:
                 if r.message:
                     promo_msgs.append(r.message)
-        # Add summary rows (42, 43) and store status (46)
+        # Add summary rows (42, 43)
         for r in promo_cat.rows:
             if r.row in (42, 43) and r.message:
                 promo_msgs.append(r.message)
-
-        # Include store status from products
-        products_cat = next((c for c in categories if c.category == "Jumlah Produk & Status Toko"), None)
-        if products_cat:
-            status_row = next((r for r in products_cat.rows if r.row == 46), None)
-            if status_row and status_row.message:
-                promo_msgs.append(status_row.message)
 
         if promo_msgs:
             sections.append("🏷️ Tingkat Penggunaan Alat Promosi:")
             sections.extend(promo_msgs)
             sections.append("")
+
+    # 5b. Jumlah Produk & Status Toko
+    products_msgs = _get_messages("Jumlah Produk & Status Toko")
+    if products_msgs:
+        sections.append("📦 Jumlah Produk & Status Toko:")
+        sections.extend(products_msgs)
+        sections.append("")
 
     # 6. Ads
     ads_msgs = _get_messages("Data Iklan", [50, 51, 52, 53])
