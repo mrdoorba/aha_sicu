@@ -4,10 +4,10 @@
 
 ## Database
 
-- **Provider:** Neon (serverless PostgreSQL)
+- **Provider:** Cloud SQL (managed PostgreSQL)
 - **Driver:** asyncpg (async) + psycopg2 (migrations)
-- **Migrations:** Alembic (13 migrations)
-- **Connection Pool:** 5-20 connections (configurable via env)
+- **Migrations:** Alembic (17 migrations)
+- **Connection Pool:** 1-5 connections (configurable via env)
 
 ## Schema Overview
 
@@ -15,7 +15,7 @@
 users ─────────────────┐
                        │
 brand_vp_data ────┐    │
-                  ├────┼── evaluation_inputs (per-user, per-brand)
+                  ├────┼── evaluation_inputs (shared per-brand)
 brand_meeting_data┘    │
                        ├── brand_uploads
                        │
@@ -105,18 +105,18 @@ Records of Google Sheets sync operations.
 
 ### evaluation_inputs
 
-Per-user, per-brand evaluation state (work-in-progress).
+Shared per-brand evaluation state (work-in-progress). One active draft per brand.
 
 | Column | Type | Constraints | Description |
 |--------|------|-------------|-------------|
 | `id` | SERIAL | PRIMARY KEY | Auto-increment ID |
 | `brand_id` | INTEGER | FK → brand_vp_data.id | Target brand |
-| `user_id` | INTEGER | FK → users.id | Evaluating user |
+| `last_edited_by` | INTEGER | FK → users.id, ON DELETE SET NULL | Last editor |
 | `category_type` | VARCHAR | | `fashion`, `non_fashion`, or null |
 | `manual_data` | JSONB | | All manually entered form data |
 | `updated_at` | TIMESTAMP | DEFAULT NOW() | Last auto-save time |
 
-**Unique constraint:** `(brand_id, user_id)` — one in-progress evaluation per user per brand.
+**Unique constraint:** `(brand_id)` — one in-progress evaluation per brand (shared across users).
 
 **manual_data structure:**
 ```json
@@ -247,12 +247,16 @@ Configurable scoring rules with versioning.
 | 011 | add_marketing_rules | Marketing calculation parameters |
 | 012 | add_message_templates | Email/WhatsApp message templates in rules |
 | 013 | unify_scoring_rules_template | Merge into single "default" template |
+| 014 | nullable_user_fks_for_account_deletion | Make user FKs nullable with ON DELETE SET NULL |
+| 015 | shared_evaluation_inputs | Convert evaluation_inputs from per-user to shared per-brand |
+| 016 | update_closing_messages | Update closing message templates |
+| 017 | remove_unused_verdict_closing_messages | Remove unused verdict closing messages |
 
 ## Entity Relationships
 
-- `evaluation_inputs` → `brand_vp_data` (brand_id), `users` (user_id)
-- `brand_uploads` → `brand_vp_data` (brand_id), `users` (uploaded_by)
+- `evaluation_inputs` → `brand_vp_data` (brand_id), `users` (last_edited_by, ON DELETE SET NULL)
+- `brand_uploads` → `brand_vp_data` (brand_id), `users` (uploaded_by, ON DELETE SET NULL)
 - `calculator_results` → `brand_vp_data` (brand_id)
-- `evaluations` → `brand_vp_data` (brand_id), `users` (user_id)
-- `scoring_rules` → `users` (updated_by)
+- `evaluations` → `brand_vp_data` (brand_id), `users` (user_id, ON DELETE SET NULL)
+- `scoring_rules` → `users` (updated_by, ON DELETE SET NULL)
 - `brand_vp_data` ↔ `brand_meeting_data` (via brand_name LEFT JOIN)

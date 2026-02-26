@@ -17,12 +17,12 @@
 - **Architecture:** Component-based SPA with React Query for server state
 
 ### Backend (backend)
-- **Tech Stack:** Python 3.14, FastAPI 0.115+, asyncpg, PostgreSQL (Neon), Alembic
+- **Tech Stack:** Python 3.14, FastAPI 0.115+, asyncpg, PostgreSQL (Cloud SQL), Alembic
 - **Entry Point:** `backend/app/main.py`
 - **Architecture:** Modular service-based API with pure function calculators
 
 ### Infrastructure (infra)
-- **Tech Stack:** Terraform, GCP (Cloud Run, Firebase Hosting, Cloud Storage, Secret Manager)
+- **Tech Stack:** Terraform, GCP (Cloud Run, Cloud SQL, Firebase Hosting, Cloud Storage, Secret Manager)
 - **Entry Point:** `infrastructure/terraform/main.tf`
 - **Architecture:** Cloud-native serverless with environment-based deployments (dev/prod)
 

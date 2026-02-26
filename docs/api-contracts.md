@@ -4,13 +4,13 @@
 
 ## Base URL
 
-- **Dev:** Cloud Run service URL (asia-southeast1)
+- **Dev:** Cloud Run service URL (asia-southeast2)
 - **Local:** `http://localhost:8000`
 - **API Prefix:** `/api/v1`
 
 ## Authentication
 
-All endpoints (except `/health`) require a Firebase Auth Bearer token in the `Authorization` header. The SSE endpoint (`/api/v1/events`) accepts the token via `?token=` query parameter (EventSource API limitation).
+All endpoints (except `/health`) require a Firebase Auth Bearer token in the `Authorization` header.
 
 Role-based access:
 - **member** — Standard evaluation access
@@ -132,6 +132,24 @@ List saved evaluations with filtering.
 }
 ```
 
+### GET /api/v1/evaluations/grouped
+
+List evaluations grouped by brand (latest evaluation per brand).
+
+**Response:** Grouped evaluation summaries.
+
+### GET /api/v1/evaluations/grouped/{brand_id}
+
+Get all evaluations for a specific brand.
+
+**Response:** List of evaluations for the brand.
+
+### DELETE /api/v1/evaluations/{evaluation_id}
+
+Delete a saved evaluation. **Requires:** leader or admin role.
+
+**Response:** `204 No Content`
+
 ### GET /api/v1/evaluations/{evaluation_id}
 
 Get full evaluation detail with all scores and data.
@@ -220,7 +238,6 @@ Generate final score from all inputs and calculator results.
   "closing_message": "...",
   "email_subject": "...",
   "email_body": "...",
-  "whatsapp_link": "https://wa.me/...",
   "template": "default",
   "rule_version": 5
 }
@@ -278,9 +295,11 @@ Get stored calculator results for a brand.
 
 **Response:** `CalculatorResultsListResponse` (list of calculator results)
 
-### POST /api/v1/evaluations/brands/{brand_id}/calculators/{type}
+### POST /api/v1/evaluations/brands/{brand_id}/calculators/ads_keyword
+### POST /api/v1/evaluations/brands/{brand_id}/calculators/discount
+### POST /api/v1/evaluations/brands/{brand_id}/calculators/top_sku
 
-Run a single calculator. Type: `ads_keyword`, `discount`, `top_sku`
+Run a single calculator (separate endpoint per type).
 
 **Response:** `CalculatorResultResponse`
 ```json
@@ -451,24 +470,62 @@ Get latest sync operation status.
 
 ---
 
-## Events Module (SSE)
+## Accounts Module
 
-### GET /api/v1/events?token={firebase_token}
+**Requires:** admin role for all endpoints.
 
-Server-Sent Events endpoint for real-time updates.
+### GET /api/v1/accounts
 
-**Event Types:**
-- `sync_status` — Sync operation started/completed
-- `new_evaluation` — Another user saved an evaluation
+List all user accounts.
 
-**Format:**
+**Response:** `list[AccountResponse]`
+```json
+[
+  {
+    "id": 1,
+    "email": "user@example.com",
+    "role": "member",
+    "firebase_uid": "abc123",
+    "created_at": "2026-02-16T10:00:00Z",
+    "last_login": "2026-02-16T10:00:00Z"
+  }
+]
 ```
-event: sync_status
-data: {"status": "completed", "brands_synced": 150}
 
-event: new_evaluation
-data: {"brand_name": "Brand X", "evaluator": "user@example.com"}
+### POST /api/v1/accounts
+
+Create a new user account (Firebase Auth + database).
+
+**Request:**
+```json
+{
+  "email": "newuser@example.com",
+  "password": "securepassword",
+  "role": "member"
+}
 ```
+
+### PATCH /api/v1/accounts/{user_id}/role
+
+Update a user's role.
+
+**Request:**
+```json
+{ "role": "leader" }
+```
+
+### POST /api/v1/accounts/{user_id}/reset-password
+
+Reset a user's password in Firebase Auth.
+
+**Request:**
+```json
+{ "new_password": "newsecurepassword" }
+```
+
+### DELETE /api/v1/accounts/{user_id}
+
+Delete a user account (Firebase Auth + database). Related records have ON DELETE SET NULL.
 
 ---
 

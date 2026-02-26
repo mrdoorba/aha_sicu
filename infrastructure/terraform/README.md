@@ -4,7 +4,7 @@ GCP infrastructure provisioning for Store ICU (Aha SICU) using Terraform.
 
 ## Prerequisites
 
-1. [Terraform](https://www.terraform.io/downloads) >= 1.0
+1. [Terraform](https://www.terraform.io/downloads) >= 1.5
 2. GCP account with billing enabled
 3. `gcloud` CLI authenticated (`gcloud auth application-default login`)
 4. GCP project created with billing enabled
@@ -18,12 +18,13 @@ infrastructure/terraform/
 ├── outputs.tf             # Outputs for downstream workflows (CI/CD, etc.)
 ├── iam.tf                 # Service accounts + IAM bindings
 ├── cloud_run.tf           # Cloud Run v2 API service
+├── cloud_sql.tf           # Cloud SQL PostgreSQL instance + databases
 ├── artifact_registry.tf   # Docker container registry
 ├── secrets.tf             # Secret Manager secrets (resource only, no values)
 ├── storage.tf             # GCS upload bucket
 ├── firebase.tf            # Firebase Hosting site
 ├── workload_identity.tf   # GitHub Actions OIDC federation
-├── scheduler.tf           # Cloud Scheduler daily sync job
+├── scheduler.tf           # Cloud Scheduler daily sync + SQL start/stop
 ├── README.md
 └── environments/
     ├── dev.tfvars          # Development environment values
@@ -87,9 +88,9 @@ Secret names include the environment prefix: `aha_sicu_{env}_*`
 ```bash
 # === Development environment ===
 
-# Database URL (Neon PostgreSQL connection string)
-echo -n "postgresql://user:pass@host/db?sslmode=require" | \
-  gcloud secrets versions add aha_sicu_dev_db_url --data-file=-
+# Database password (Cloud SQL)
+echo -n "YOUR_DB_PASSWORD" | \
+  gcloud secrets versions add aha_sicu_dev_db_password --data-file=-
 
 # Google Sheets service account credentials (JSON key file)
 gcloud secrets versions add aha_sicu_dev_gsheets_credentials \
@@ -101,8 +102,8 @@ gcloud secrets versions add aha_sicu_dev_firebase_admin \
 
 # === Production environment ===
 
-echo -n "postgresql://user:pass@host/db?sslmode=require" | \
-  gcloud secrets versions add aha_sicu_prod_db_url --data-file=-
+echo -n "YOUR_DB_PASSWORD" | \
+  gcloud secrets versions add aha_sicu_prod_db_password --data-file=-
 
 gcloud secrets versions add aha_sicu_prod_gsheets_credentials \
   --data-file=path/to/gsheets-service-account.json
@@ -116,32 +117,35 @@ gcloud secrets versions add aha_sicu_prod_firebase_admin \
 | Resource | Type | Purpose |
 |----------|------|---------|
 | Cloud Run v2 (`aha-sicu-api`) | `google_cloud_run_v2_service` | Backend API |
+| Cloud SQL (`aha-sicu-db`) | `google_sql_database_instance` | PostgreSQL database |
+| Cloud SQL DBs (dev + prod) | `google_sql_database` | Per-environment databases |
 | Artifact Registry (`aha-sicu-registry`) | `google_artifact_registry_repository` | Docker images |
-| Secret Manager (3 secrets) | `google_secret_manager_secret` | DB URL, Sheets creds, Firebase creds |
-| GCS Bucket (`{project_id}-aha-sicu-uploads`) | `google_storage_bucket` | Temporary file uploads (24h lifecycle) |
+| Secret Manager (3 secrets) | `google_secret_manager_secret` | DB password, Sheets creds, Firebase creds |
+| GCS Bucket (`{project_id}-aha-sicu-{env}-uploads`) | `google_storage_bucket` | Temporary file uploads (24h lifecycle) |
 | Firebase Hosting (`aha-sicu`) | `google_firebase_hosting_site` | Frontend hosting |
 | Workload Identity Pool | `google_iam_workload_identity_pool` | GitHub Actions OIDC |
-| Cloud Scheduler (`aha_sicu_daily_sync`) | `google_cloud_scheduler_job` | Daily brand sync |
+| Cloud Scheduler (sync) | `google_cloud_scheduler_job` | Daily brand sync |
+| Cloud Scheduler (SQL start/stop) | `google_cloud_scheduler_job` | Cost optimization |
 
 ## Service Accounts
 
 | Service Account | Purpose | Key Permissions |
 |-----------------|---------|-----------------|
-| `aha-sicu-api-sa` | Cloud Run runtime | Secret accessor, storage objectAdmin (bucket-level) |
-| `aha-sicu-deploy-sa` | GitHub Actions CI/CD | run.admin, artifactregistry.writer, serviceAccountUser on api-sa |
-| `aha-sicu-scheduler-sa` | Cloud Scheduler | run.invoker on Cloud Run service |
-| `aha-sicu-sheets-sa` | Google Sheets API | No GCP roles (key in Secret Manager) |
+| `aha-sicu-{env}-api-sa` | Cloud Run runtime | Secret accessor, storage objectAdmin, cloudsql.client, firebaseauth.admin |
+| `aha-sicu-{env}-deploy-sa` | GitHub Actions CI/CD | run.admin, artifactregistry.writer, cloudsql.client, secretmanager.secretAccessor |
+| `aha-sicu-{env}-scheduler-sa` | Cloud Scheduler sync | run.invoker on Cloud Run service |
+| `aha-sicu-sql-scheduler-sa` | Cloud SQL start/stop | cloudsql.admin |
 
 ## Outputs
 
 | Output | Description |
 |--------|-------------|
-| `cloud_run_url` | Production API URL |
+| `cloud_run_url` | API URL |
+| `cloud_sql_connection_name` | Cloud SQL connection name |
 | `artifact_registry_url` | Docker image push target |
-| `gcs_upload_bucket` | Upload bucket name (`{project_id}-aha-sicu-uploads`) |
+| `gcs_upload_bucket` | Upload bucket name (`{project_id}-aha-sicu-{env}-uploads`) |
 | `workload_identity_provider` | Full provider path for GitHub Actions |
 | `deploy_service_account_email` | Deploy SA email for CI/CD config |
-| `gsheets_service_account_email` | Email to share with Google Sheets |
 
 ## Security Notes
 

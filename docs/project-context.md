@@ -36,12 +36,11 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - Alembic for migrations — run via `uv run alembic upgrade head`
 - Polars + fastexcel for Excel/data processing
 - Firebase Admin for token verification
-- SSE-Starlette for Server-Sent Events
 - Ruff for linting, Pytest + pytest-asyncio (`asyncio_mode = "auto"`, no `@pytest.mark.asyncio` needed)
 
 ### Infrastructure
-- PostgreSQL on Neon (serverless)
-- GCP: Cloud Run (backend), Firebase Hosting (frontend), Cloud Storage (uploads)
+- PostgreSQL on Cloud SQL (managed)
+- GCP: Cloud Run (backend), Cloud SQL (database), Firebase Hosting (frontend), Cloud Storage (uploads)
 - Terraform for IaC, GitHub Actions for CI/CD
 - Playwright for production smoke tests
 
@@ -119,7 +118,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Auth dependency injection**: `Depends(get_current_user)` for authenticated endpoints
   - Role-based: `Depends(require_role("leader", "admin"))`
 - **Lifespan pattern**: DB pool init/cleanup in `@asynccontextmanager async def lifespan()`
-- **SSE broadcasting**: Use `EventBroadcaster` for real-time events to frontend
+- **Account management**: `accounts` module — admin-only CRUD via Firebase Admin SDK
 
 #### Cross-Stack Rules
 - **Evaluation data flow**: Form sections map 1:1 to `manual_data` JSONB keys — adding a field requires updating `formConfig.ts` (frontend) AND backend schema
@@ -154,7 +153,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 #### Smoke Tests (Playwright)
 - **Separate package**: `smoke-tests/` with independent `package.json`
 - **Production verification only** — tests run against deployed environments
-- **Test suites**: health, auth, frontend SPA, database connectivity, signed URLs, SSE
+- **Test suites**: health, auth, frontend SPA, database connectivity, signed URLs
 - **Run**: `npx playwright test` (from `smoke-tests/` directory)
 
 #### CI Pipeline Checklist
@@ -207,9 +206,9 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **`main`** — Production. NO commits unless explicitly requested
 - **`develop`** — Integration + deployment trigger. Merge from feature only when feature is complete and tested
   - Pushing to develop deploys to dev environment automatically
-- **`feature/<descriptive-name>`** — All active work goes here first
-  - Naming: lowercase, hyphen-separated (`feature/file-upload-flow`) — no ticket numbers
-- **Flow**: Create `feature/*` → atomic commits → merge to `develop` (merge commit, NOT squash/rebase) → delete feature branch
+- **Feature branches** — All active work goes here first
+  - Naming: `feat/`, `fix/`, `update/`, `refactor/`, `docs/`, `chore/` prefixes — lowercase, hyphen-separated
+- **Flow**: Create feature branch → atomic commits → merge to `develop` (merge commit, NOT squash/rebase) → delete feature branch
 - Delete feature branches immediately after merge — no stale branches
 
 #### Commit Standards
@@ -256,7 +255,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Never add I/O to calculator functions** — `app/calculators/` must remain pure
 - **Never mutate saved evaluations** — they are immutable snapshots
 - **Never skip the service layer** — routers don't call query functions directly
-- **Never nest `db.connection()` calls** — acquire once in outermost service, pass `conn` down. Nesting risks pool deadlock
+- **Never nest `db.connection()` calls** — acquire once in outermost service, pass `conn` down. Nesting risks pool deadlock (pool is only 1-5 connections)
 - **Never add a Vite proxy** — frontend calls backend directly via `VITE_API_BASE_URL`, CORS handled server-side
 
 #### Security Rules
@@ -275,7 +274,7 @@ _This file contains critical rules and patterns that AI agents must follow when 
 - **Scoring structure**: 75 rows across 11 categories with 3 rule sections (`categories`, `interpretation`, `marketing`) — changes to one affect final score
 - **Brand data split**: Brand info comes from TWO tables — `brand_vp_data` and `brand_meeting_data` — joined by `brand_name`
 - **Calculator readiness**: Not all calculators can run — `check_calculator_readiness()` in `engine.py` determines which have sufficient data
-- **SSE connections**: Clients may disconnect — `EventBroadcaster` handles cleanup, new SSE endpoints must follow the same pattern
+- **Cloud SQL scheduling**: Instance auto-stops at 18:30 WIB, auto-starts at 08:30 WIB — dev/test connections will fail outside these hours
 - **React Query cache keys**: Use structured keys — resource name first, params after (e.g., `['evaluations', page, limit]`). Inconsistent keys break invalidation
 - **Migration numbering**: Sequential prefix convention (`014_description.py`) — don't use random Alembic hex IDs
 - **date-fns v4**: Direct imports only (`import { format } from 'date-fns'`) — no subpath imports

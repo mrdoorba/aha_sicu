@@ -4,13 +4,13 @@
 
 ## Overview
 
-Infrastructure is managed as code using Terraform on Google Cloud Platform (GCP). The system runs in the `asia-southeast1` (Singapore) region with two environments: dev and prod.
+Infrastructure is managed as code using Terraform on Google Cloud Platform (GCP). The system runs in the `asia-southeast2` (Jakarta) region with two environments: dev and prod.
 
 ## Technology Stack
 
 | Category | Technology | Purpose |
 |----------|-----------|---------|
-| IaC | Terraform >= 1.0 | Infrastructure provisioning |
+| IaC | Terraform >= 1.5 | Infrastructure provisioning |
 | Provider | hashicorp/google ~7.0 | GCP resource management |
 | Cloud | Google Cloud Platform | Cloud provider |
 | CI/CD | GitHub Actions | Deployment automation |
@@ -30,7 +30,7 @@ Infrastructure is managed as code using Terraform on Google Cloud Platform (GCP)
 
 | Resource | Service | Purpose |
 |----------|---------|---------|
-| Database | Neon PostgreSQL | Serverless PostgreSQL (external) |
+| Database | Cloud SQL PostgreSQL | Managed PostgreSQL (Cloud SQL) |
 | File Storage | Cloud Storage | Uploaded Shopee report files |
 | Secrets | Secret Manager | Database URLs, API keys, credentials |
 
@@ -55,7 +55,7 @@ Infrastructure is managed as code using Terraform on Google Cloud Platform (GCP)
 
 ```hcl
 project_id          = "YOUR_GCP_PROJECT_ID"
-region              = "asia-southeast1"
+region              = "asia-southeast2"
 environment         = "dev"
 cloud_run_min_instances = 0      # Scale to zero
 cloud_run_max_instances = 2
@@ -67,7 +67,7 @@ cloud_run_cpu           = "1"
 
 ```hcl
 project_id          = "YOUR_GCP_PROJECT_ID"
-region              = "asia-southeast1"
+region              = "asia-southeast2"
 environment         = "prod"
 cloud_run_min_instances = 1      # Always-on
 cloud_run_max_instances = 4
@@ -79,7 +79,7 @@ cloud_run_cpu           = "1"
 
 ### main.tf — Provider & API Enablement
 - Google and Google-Beta providers
-- Enables 7 GCP APIs: Cloud Run, Artifact Registry, Secret Manager, IAM, Firebase, Firebase Hosting, Cloud Scheduler, Google Sheets
+- Enables 9 GCP APIs: Cloud Run, Artifact Registry, Secret Manager, IAM, Firebase, Firebase Hosting, Cloud Scheduler, Cloud SQL Admin, Google Sheets
 
 ### cloud_run.tf — Backend Service
 - Cloud Run service with Docker image from Artifact Registry
@@ -87,15 +87,21 @@ cloud_run_cpu           = "1"
 - Configurable scaling (min/max instances, memory, CPU)
 - IAM: Allow unauthenticated (public API with Firebase Auth at app level)
 
+### cloud_sql.tf — Cloud SQL Database
+- Cloud SQL PostgreSQL 18 instance: `aha-sicu-db`
+- Two databases on same instance: `aha_sicu_dev` and `aha_sicu_prod`
+- Scheduled start/stop for cost optimization (08:30-18:30 WIB)
+- Dedicated scheduler SA: `aha-sicu-sql-scheduler-sa`
+
 ### iam.tf — Service Accounts & Permissions
-- Cloud Run service account: `aha-sicu-{env}-run-sa`
+- Cloud Run service account: `aha-sicu-{env}-api-sa`
 - GitHub Actions service account: Workload Identity Federation
-- Roles: Secret Manager accessor, Cloud Storage admin, etc.
+- Roles: Secret Manager accessor, Cloud Storage admin, Cloud SQL client, Firebase Auth admin
 
 ### artifact_registry.tf — Docker Registry
 - Repository: `aha-sicu-{env}`
 - Format: Docker
-- Region: asia-southeast1
+- Region: asia-southeast2
 
 ### firebase.tf — Frontend Hosting
 - Firebase Hosting sites: `aha-sicu-dev`, `aha-sicu-prod`
@@ -104,14 +110,15 @@ cloud_run_cpu           = "1"
 
 ### secrets.tf — Secret Manager
 Managed secrets:
-- `aha_sicu_{env}_db_url` — Neon PostgreSQL connection string
-- `aha_sicu_{env}_firebase_credentials` — Firebase Admin SA JSON
+- `aha_sicu_{env}_db_password` — Cloud SQL database password
+- `aha_sicu_{env}_firebase_admin` — Firebase Admin SDK credentials
 - `aha_sicu_{env}_gsheets_credentials` — Google Sheets SA JSON
 
 ### storage.tf — Cloud Storage
-- Bucket: `aha-sicu-{env}-uploads`
+- Bucket: `{project_id}-aha-sicu-{env}-uploads`
 - Purpose: Uploaded Shopee report files
-- Lifecycle: Configurable retention
+- Lifecycle: 1-day auto-delete
+- CORS configured for Firebase Hosting + localhost
 
 ### scheduler.tf — Cloud Scheduler
 - Scheduled sync job: triggers `POST /api/v1/sync` via OIDC-authenticated HTTP
@@ -217,7 +224,7 @@ Playwright-based API-only tests (no browser):
 - Frontend SPA accessibility
 - Database connectivity
 - Signed URL generation
-- SSE endpoint connectivity
+- API endpoint connectivity
 
 ```bash
 cd smoke-tests && npx playwright test

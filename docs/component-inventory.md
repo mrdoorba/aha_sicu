@@ -4,11 +4,11 @@
 
 ## Summary
 
-- **Total Components:** 45+
-- **Pages:** 7
-- **Custom Hooks:** 13+
+- **Total Components:** 50+
+- **Pages:** 8
+- **Custom Hooks:** 18+
 - **UI Primitives (Shadcn):** 15
-- **Domain Components:** 30+
+- **Domain Components:** 35+
 
 ---
 
@@ -23,6 +23,7 @@
 | EvaluationDetailPage | `pages/EvaluationDetailPage.tsx` | `/history/:id` | View saved evaluation details |
 | HistoryPage | `pages/HistoryPage.tsx` | `/history` | Evaluation history with filters |
 | RulesPage | `pages/RulesPage.tsx` | `/rules` | Scoring rules editor (leader/admin) |
+| AccountsPage | `pages/AccountsPage.tsx` | `/accounts` | User account management (admin) |
 
 ---
 
@@ -39,7 +40,10 @@
 
 | Component | File | Props | Purpose |
 |-----------|------|-------|---------|
+| MainLayout | `layout/MainLayout.tsx` | `{ children }` | App shell with sidebar and header |
+| Sidebar | `layout/Sidebar.tsx` | none | Navigation sidebar with links |
 | Header | `layout/Header.tsx` | none | Navigation header with links and logout dialog |
+| ThemeToggle | `layout/ThemeToggle.tsx` | none | Dark/light mode toggle |
 
 ---
 
@@ -48,6 +52,15 @@
 | Component | File | Props | Purpose |
 |-----------|------|-------|---------|
 | BrandTable | `brands/BrandTable.tsx` | `{ brands, isLoading }` | Paginated brand list with raw data |
+
+---
+
+## Dashboard Components
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| BrandSearch | `dashboard/BrandSearch.tsx` | Brand search with typeahead |
+| PresentationDashboard | `dashboard/PresentationDashboard.tsx` | Dashboard presentation view |
 
 ---
 
@@ -106,7 +119,6 @@
 | ScorePanel | `scoring/ScorePanel.tsx` | Sticky sidebar with score summary |
 | VerdictSelector | `scoring/VerdictSelector.tsx` | Verdict dropdown selector |
 | EmailOutput | `scoring/EmailOutput.tsx` | Generated email template with copy |
-| WhatsAppLink | `scoring/WhatsAppLink.tsx` | WhatsApp message link generator |
 
 ---
 
@@ -115,6 +127,7 @@
 | Component | File | Purpose |
 |-----------|------|---------|
 | EvaluationHistoryTable | `evaluations/EvaluationHistoryTable.tsx` | Paginated history with sort, search, date filters |
+| DeleteEvaluationDialog | `evaluations/DeleteEvaluationDialog.tsx` | Confirmation dialog for evaluation deletion |
 
 ---
 
@@ -127,11 +140,20 @@
 
 ---
 
+## Global Components
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| DowntimeWarningDialog | `DowntimeWarningDialog.tsx` | Warning dialog for scheduled Cloud SQL downtime |
+| PeriodSelector | `dashboard/PeriodSelector.tsx` | Date range/period selection |
+
+---
+
 ## Sync Components
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| SyncStatus | `sync/SyncStatus.tsx` | Sync status badge + SSE connection + "Sync Now" button |
+| SyncStatus | `sync/SyncStatus.tsx` | Sync status badge + "Sync Now" button |
 
 ---
 
@@ -182,7 +204,10 @@ All located in `components/ui/`:
 | useUpdateRule | `hooks/useUpdateRule.ts` | Update scoring rule |
 | useUpload | `hooks/useUpload.ts` | Multi-step file upload (sign → XHR → process) |
 | useSync | `hooks/useSync.ts` | Sync status polling and trigger |
-| useSSE | `hooks/useSSE.ts` | Server-Sent Events connection |
+| useAccounts | `hooks/useAccounts.ts` | Account management (admin CRUD) |
+| useBrandEvaluations | `hooks/useBrandEvaluations.ts` | Evaluations for a specific brand |
+| useDeleteEvaluation | `hooks/useDeleteEvaluation.ts` | Delete evaluation mutation |
+| useGroupedEvaluations | `hooks/useGroupedEvaluations.ts` | Evaluations grouped by brand |
 
 ---
 
@@ -217,7 +242,6 @@ EvaluationPage
 │   │   ├── ScoreBreakdown
 │   │   └── VerdictSelector
 │   ├── EmailOutput
-│   ├── WhatsAppLink
 │   └── SaveButton
 └── ScorePanel
     ├── FinalScoreDisplay

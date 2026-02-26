@@ -16,7 +16,7 @@ Store ICU (AHA SICU) is a **brand health evaluation system** for Shopee e-commer
 | **Primary Language** | TypeScript (Frontend), Python (Backend) |
 | **Architecture** | Client-server with independent deployment pipelines |
 | **Cloud Provider** | Google Cloud Platform (GCP) |
-| **Region** | asia-southeast1 (Singapore) |
+| **Region** | asia-southeast2 (Jakarta) |
 
 ## Parts Overview
 
@@ -35,17 +35,19 @@ Store ICU (AHA SICU) is a **brand health evaluation system** for Shopee e-commer
 4. **File Upload** - 4 Shopee report types uploaded (CPC Ad, Keyword, Order Export, Mass Update)
 5. **Calculator Execution** - 3 automated calculators analyze uploaded data (Ads/Keyword, Top SKU, Discount)
 6. **Score Generation** - 75-row scoring template produces final score across 11 categories
-7. **Verdict & Output** - Score + verdict + email/WhatsApp templates generated
+7. **Verdict & Output** - Score + verdict + email template generated
 8. **Save & History** - Evaluation saved as immutable snapshot, viewable in history
 
 ## Key Features
 
 - **Role-based access**: admin, leader, member roles with Firebase Auth
-- **Real-time updates**: Server-Sent Events (SSE) for sync status and new evaluations
+- **Account management**: Admin can create, update roles, reset passwords, delete accounts
 - **Auto-save**: Debounced form auto-save (500ms) for evaluation inputs
 - **Configurable scoring**: Leader/admin can edit scoring rules with password confirmation
 - **Multi-environment**: dev and prod deployments with CI/CD automation
 - **Dual auth**: Firebase tokens for users, OIDC for Cloud Scheduler service calls
+- **Internationalization**: i18n support via i18next
+- **Cloud SQL scheduling**: Automated start/stop for cost optimization
 
 ## Technology Stack Summary
 
@@ -53,17 +55,17 @@ Store ICU (AHA SICU) is a **brand health evaluation system** for Shopee e-commer
 React 19 + TypeScript 5.9 + Vite 7.2 + Tailwind CSS 4.1 + Radix UI + TanStack (React Query & Table) + React Hook Form + openapi-fetch + Firebase Auth + Vitest
 
 ### Backend
-Python 3.14 + FastAPI + Uvicorn + asyncpg + PostgreSQL (Neon) + Alembic + Polars + Firebase Admin + Google Sheets API + SSE-Starlette + Pytest + Ruff
+Python 3.14 + FastAPI + Uvicorn + asyncpg + PostgreSQL (Cloud SQL) + Alembic + Polars + Firebase Admin + Google Sheets API + Pytest + Ruff
 
 ### Infrastructure
-Terraform + GCP (Cloud Run + Firebase Hosting + Artifact Registry + Cloud Storage + Secret Manager + Cloud Scheduler) + GitHub Actions CI/CD
+Terraform + GCP (Cloud Run + Cloud SQL + Firebase Hosting + Artifact Registry + Cloud Storage + Secret Manager + Cloud Scheduler) + GitHub Actions CI/CD
 
 ## Environments
 
 | Environment | Frontend URL | Backend | Database |
 |-------------|-------------|---------|----------|
-| **dev** | aha-sicu-dev.web.app | Cloud Run (0-2 instances, 512Mi) | Neon PostgreSQL |
-| **prod** | aha-sicu-prod.web.app | Cloud Run (1-4 instances, 512Mi) | Neon PostgreSQL |
+| **dev** | aha-sicu-dev.web.app | Cloud Run (0-2 instances, 1Gi) | Cloud SQL PostgreSQL |
+| **prod** | aha-sicu-prod.web.app | Cloud Run (0-2 instances, 1Gi) | Cloud SQL PostgreSQL |
 
 ## Links to Detailed Documentation
 

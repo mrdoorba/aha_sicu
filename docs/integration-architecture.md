@@ -4,7 +4,7 @@
 
 ## Overview
 
-Store ICU is a multi-part system with clear integration boundaries between frontend, backend, and external services. Communication follows a REST API pattern with real-time updates via Server-Sent Events.
+Store ICU is a multi-part system with clear integration boundaries between frontend, backend, and external services. Communication follows a REST API pattern.
 
 ## Integration Diagram
 
@@ -17,14 +17,14 @@ Store ICU is a multi-part system with clear integration boundaries between front
 │  │  (Frontend SPA)   │  Bearer Token    │   (Backend API)        │ │
 │  │                   │ ◄──── JSON ───── │                        │ │
 │  │  React 19         │                  │   FastAPI              │ │
-│  │  + React Query    │ ◄── SSE ──────── │   + asyncpg            │ │
+│  │  + React Query    │                  │   + asyncpg            │ │
 │  └──────────────────┘                  │                        │ │
 │                                         │         │              │ │
 │  ┌──────────────────┐                  │         │ SQL          │ │
 │  │  Firebase Auth    │ ── Token ──────── │         │              │ │
 │  │  (Authentication) │  Verification    │         ▼              │ │
 │  └──────────────────┘                  │  ┌──────────────┐     │ │
-│                                         │  │ Neon          │     │ │
+│                                         │  │ Cloud SQL     │     │ │
 │  ┌──────────────────┐  Signed URL      │  │ PostgreSQL    │     │ │
 │  │  Cloud Storage    │ ◄── Upload ───── │  └──────────────┘     │ │
 │  │  (File Uploads)   │ ── Download ──── │                        │ │
@@ -63,7 +63,6 @@ External:
 | From | To | Protocol | Auth | Description |
 |------|----|----------|------|-------------|
 | Frontend | Backend | HTTPS REST | Firebase Bearer Token | All API calls |
-| Frontend | Backend | HTTPS SSE | Firebase Token (query param) | Real-time events |
 
 - **API Base URL**: Configured via `VITE_API_BASE_URL` env var
 - **Client Library**: openapi-fetch with auth middleware
@@ -74,9 +73,9 @@ External:
 
 | From | To | Protocol | Auth | Description |
 |------|----|----------|------|-------------|
-| Backend | Neon PostgreSQL | TCP/TLS | Connection string | Async queries via asyncpg |
+| Backend | Cloud SQL PostgreSQL | Unix socket | Cloud SQL socket path | Async queries via asyncpg |
 
-- **Connection Pool**: 5-20 async connections
+- **Connection Pool**: 1-5 async connections
 - **Driver**: asyncpg (async) for runtime, psycopg2 (sync) for migrations
 - **Schema Management**: Alembic migrations
 
@@ -162,7 +161,7 @@ User (Browser)
   │
   └── 7. Save ───────────► Backend /save
                                  └──► INSERT evaluation snapshot
-                                 └──► Broadcast new_evaluation via SSE
+                                 └──► Return saved evaluation
 ```
 
 ### Sync Workflow
@@ -178,7 +177,7 @@ Cloud Scheduler (cron)
         ├── Upsert brand_vp_data (PostgreSQL)
         ├── Upsert brand_meeting_data (PostgreSQL)
         ├── Record sync_status
-        └── Broadcast sync_status via SSE → All connected clients
+        └── Return sync results
 ```
 
 ## Shared Dependencies
@@ -187,5 +186,7 @@ Cloud Scheduler (cron)
 |------------|---------|---------|
 | Firebase Project | Frontend + Backend + Infrastructure | Auth, hosting |
 | GCP Project | Backend + Infrastructure | Cloud resources |
-| Neon PostgreSQL | Backend | Data storage |
+| Cloud SQL PostgreSQL | Backend | Data storage (Unix socket connection) |
 | Google Sheets | Backend + External users | Brand data source |
+| Firebase Admin SDK | Backend | Token verification, account management |
+| Cloud SQL Scheduler | Infrastructure | Cost optimization (auto start/stop) |

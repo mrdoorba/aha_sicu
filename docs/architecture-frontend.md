@@ -23,6 +23,8 @@ The frontend is a React 19 Single Page Application (SPA) built with TypeScript 5
 | API Client | openapi-fetch | 0.15 |
 | Icons | Lucide React | 0.563 |
 | Date | date-fns | 4.1 |
+| Date Picker | react-day-picker | 9.13 |
+| i18n | i18next + react-i18next | 25.8 / 16.5 |
 | Toasts | Sonner | 2.0 |
 | Theme | next-themes | 0.4 |
 | Testing | Vitest + Testing Library | 4.0 / 16.3 |
@@ -47,13 +49,15 @@ main.tsx
           ├── Toaster (notifications)
           └── Routes
               ├── /login → LoginPage
-              ├── /dashboard → ProtectedRoute → DashboardPage
-              ├── /brands → ProtectedRoute → BrandsPage
-              ├── /evaluation/:brandId → ProtectedRoute → EvaluationPage
-              ├── /history/:id → ProtectedRoute → EvaluationDetailPage
-              ├── /history → ProtectedRoute → HistoryPage
-              ├── /rules → RoleProtectedRoute(leader/admin) → RulesPage
-              └── / → redirect to /dashboard
+              └── MainLayout (nested layout)
+                  ├── /dashboard → ProtectedRoute → DashboardPage
+                  ├── /brands → ProtectedRoute → BrandsPage
+                  ├── /evaluation/:brandId → ProtectedRoute → EvaluationPage
+                  ├── /history/:id → ProtectedRoute → EvaluationDetailPage
+                  ├── /history → ProtectedRoute → HistoryPage
+                  ├── /rules → RoleProtectedRoute(leader/admin) → RulesPage
+                  ├── /accounts → RoleProtectedRoute(admin) → AccountsPage
+                  └── / → redirect to /dashboard
 ```
 
 ## State Management
@@ -81,12 +85,6 @@ All API data is managed via React Query hooks:
 - Deep merges partial updates with server defaults
 - Tracks save status: `idle` → `saving` → `saved` / `error`
 
-### Server-Sent Events (SSE)
-`useSSE` establishes EventSource connection for real-time updates:
-- Auth via query param (EventSource API limitation)
-- Retry logic: max 5 retries with exponential backoff
-- Events: `sync_status`, `new_evaluation`
-
 ### Upload Flow (3-Step)
 1. `useRequestSignedUrl` → Get GCS signed URL from backend
 2. XHR PUT to signed URL with progress tracking
@@ -101,12 +99,13 @@ All API data is managed via React Query hooks:
 | Page | Route | Purpose | Key Components |
 |------|-------|---------|---------------|
 | LoginPage | `/login` | Email/password login | react-hook-form |
-| DashboardPage | `/dashboard` | Welcome page | Header |
+| DashboardPage | `/dashboard` | Welcome + brand search | BrandSearch, PresentationDashboard |
 | BrandsPage | `/brands` | Brand listing + sync | BrandTable, SyncStatus, Pagination |
 | EvaluationPage | `/evaluation/:brandId` | Main evaluation workflow | SectionNav, EvaluationSections, ScorePanel, FileUploadSection |
 | EvaluationDetailPage | `/history/:id` | View saved evaluation | Score breakdown tables |
-| HistoryPage | `/history` | Evaluation history list | EvaluationHistoryTable |
+| HistoryPage | `/history` | Evaluation history list | EvaluationHistoryTable, DeleteEvaluationDialog |
 | RulesPage | `/rules` | Edit scoring rules | RulesCategoryCard, PasswordConfirmDialog |
+| AccountsPage | `/accounts` | User account management | Admin-only account CRUD |
 
 ## Evaluation Page Architecture (Primary Workflow)
 
@@ -132,9 +131,8 @@ EvaluationPage
 │   │   ├── ScoringSection (generate button, stale warning)
 │   │   ├── FinalScoreDisplay (score + verdict icon)
 │   │   └── ScoreBreakdown (category table)
-│   ├── Section 5: Output (email/WhatsApp)
-│   │   ├── EmailOutput (copy button)
-│   │   └── WhatsAppLink (direct link)
+│   ├── Section 5: Output (email)
+│   │   └── EmailOutput (copy button)
 │   └── Section 6: Save
 │       └── SaveButton
 └── ScorePanel (sticky sidebar with score summary)

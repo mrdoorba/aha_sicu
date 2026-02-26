@@ -4,7 +4,7 @@
 
 ## Overview
 
-The backend is a FastAPI REST API running on Python 3.14. It provides authentication, brand data management, evaluation scoring, file processing, Google Sheets sync, and real-time events. The scoring engine implements a 75-row scoring system with configurable rules.
+The backend is a FastAPI REST API running on Python 3.14. It provides authentication, brand data management, evaluation scoring, file processing, Google Sheets sync, and account management. The scoring engine implements a 75-row scoring system with configurable rules.
 
 ## Technology Stack
 
@@ -14,7 +14,7 @@ The backend is a FastAPI REST API running on Python 3.14. It provides authentica
 | Framework | FastAPI | 0.115+ |
 | ASGI Server | Uvicorn | 0.32+ |
 | Config | Pydantic Settings | 2.6+ |
-| Database | PostgreSQL (Neon) | - |
+| Database | PostgreSQL (Cloud SQL) | - |
 | DB Driver | asyncpg | 0.30+ |
 | DB Migrations | Alembic | 1.13+ |
 | Auth | Firebase Admin SDK | 6.0+ |
@@ -22,7 +22,6 @@ The backend is a FastAPI REST API running on Python 3.14. It provides authentica
 | Excel Parsing | fastexcel | 0.12+ |
 | Cloud Storage | google-cloud-storage | 2.18+ |
 | Google Sheets | google-api-python-client | 2.150+ |
-| SSE | sse-starlette | 3.2+ |
 | Testing | Pytest + pytest-asyncio | 8.0+ |
 | Linting | Ruff | 0.11+ |
 | Package Manager | UV | latest |
@@ -35,7 +34,7 @@ The backend is a FastAPI REST API running on Python 3.14. It provides authentica
 app/
 ├── main.py              # App factory, router registration
 ├── config.py            # Environment configuration
-├── core/                # Cross-cutting concerns
+├── core/                # Cross-cutting concerns (security, oidc, exceptions, utils)
 ├── db/                  # Data access layer
 ├── modules/             # Domain modules (feature-based)
 ├── calculators/         # Pure function business logic
@@ -59,11 +58,11 @@ module/
 |--------|-----------|---------|
 | `auth` | 1 | User authentication, auto-registration |
 | `brands` | 2 | Brand data retrieval (VP + meeting data) |
-| `evaluations` | 12 | Evaluation CRUD, calculators, scoring, save |
+| `evaluations` | 16 | Evaluation CRUD, grouped views, calculators, scoring, save |
 | `rules` | 2 | Scoring rules management (leader/admin) |
 | `sync` | 2 | Google Sheets → PostgreSQL sync |
-| `upload` | 3-4 | File upload via GCS signed URLs |
-| `events` | 1 | Server-Sent Events stream |
+| `upload` | 4 | File upload via GCS signed URLs |
+| `accounts` | 5 | User account management (admin) |
 
 ## Authentication Architecture
 
@@ -92,7 +91,7 @@ async def require_role(*roles) -> Depends   # Role-based access check
 ## Database Architecture
 
 ### Connection Management
-- `asyncpg` connection pool (5-20 connections)
+- `asyncpg` connection pool (1-5 connections, configurable via `DATABASE_POOL_MIN`/`DATABASE_POOL_MAX`)
 - Pool created on app startup, closed on shutdown
 - Per-request connection via `get_db()` dependency
 
@@ -109,10 +108,11 @@ Raw SQL queries in `db/queries/` modules — no ORM:
 
 ### Migration Strategy
 Alembic migrations in `db/migrations/`:
-- 13 migrations total (001-013)
+- 17 migrations total (001-017)
 - Run via `alembic upgrade head`
 - Schema evolved from generic brands → split VP/meeting tables
 - Scoring rules unified from fashion/non_fashion → single default template
+- Later migrations: nullable user FKs, shared evaluation inputs, closing message updates
 
 ## Calculator Architecture
 
@@ -166,25 +166,6 @@ The scoring engine (`scoring.py`) implements an 11-category scoring framework:
 
 Verdicts: `✔️` (Approved), `❌` (Rejected), `❌ Non Mall`, `❌ No Brand`, `❌ Opex`, `⭕️` (Special)
 
-## Event Broadcasting
-
-### SSE Architecture
-```
-EventBroadcaster (singleton)
-├── subscribers: set[asyncio.Queue]    # Per-client message queues
-├── subscribe() → Queue                # Register client
-├── unsubscribe(queue)                 # Deregister client
-└── broadcast(event, data)             # Fan-out to all subscribers
-
-Events Router
-└── GET /api/v1/events?token=...       # SSE endpoint
-    └── Yields events until client disconnect
-```
-
-- Max 64 messages per client queue
-- Warning at 10 concurrent subscribers
-- Auth via query param (EventSource API limitation)
-
 ## Upload Processing Pipeline
 
 ```
@@ -218,7 +199,7 @@ POST /sync → Triggers background sync
   ├── Upsert to brand_vp_data table
   ├── Upsert to brand_meeting_data table
   ├── Record sync_status
-  └── Broadcast sync_status event via SSE
+  └── Return sync results
 ```
 
 ## Middleware
@@ -236,7 +217,11 @@ POST /sync → Triggers background sync
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `DATABASE_URL` | Yes | Neon PostgreSQL connection string |
+| `DATABASE_URL` | No | PostgreSQL connection string (local dev override) |
+| `DB_USER` | Prod | Cloud SQL username (default: `aha_sicu`) |
+| `DB_PASSWORD` | Prod | Cloud SQL password (from Secret Manager) |
+| `DB_NAME` | Prod | Cloud SQL database name |
+| `CLOUD_SQL_INSTANCE` | Prod | Cloud SQL connection name |
 | `FIREBASE_CREDENTIALS_PATH` | One of | Path to Firebase service account JSON |
 | `FIREBASE_CREDENTIALS_JSON` | One of | Firebase SA JSON as string |
 | `CLOUD_RUN_URL` | Prod | Cloud Run URL for OIDC audience |
@@ -245,14 +230,14 @@ POST /sync → Triggers background sync
 | `GSHEETS_CREDENTIALS_JSON` | One of | Google Sheets SA JSON string |
 | `GSHEETS_VP_SPREADSHEET_ID` | Yes | VP data Google Sheet ID |
 | `GSHEETS_MEETING_SPREADSHEET_ID` | Yes | Meeting data Google Sheet ID |
-| `DATABASE_POOL_MIN` | No | Min pool connections (default: 5) |
-| `DATABASE_POOL_MAX` | No | Max pool connections (default: 20) |
+| `DATABASE_POOL_MIN` | No | Min pool connections (default: 1) |
+| `DATABASE_POOL_MAX` | No | Max pool connections (default: 5) |
 | `ALLOWED_SCHEDULER_EMAILS` | No | Allowed OIDC service accounts |
 
 ## Testing
 
-- **41 test files** total (16 integration + 13+ unit)
+- **37 test files** total
 - `pytest --asyncio-mode=auto`
 - Integration tests mock DB and Firebase auth
 - Unit tests for calculators are pure function tests
-- Coverage areas: auth, brands, calculators, evaluations, events, rules, scoring, sync, upload
+- Coverage areas: auth, brands, calculators, evaluations, rules, scoring, sync, upload, accounts

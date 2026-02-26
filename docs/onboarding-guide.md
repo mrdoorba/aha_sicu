@@ -82,7 +82,7 @@ The page header shows the **overall sync status** — when the last successful s
 ### Triggering a Manual Sync
 
 1. Click the **Sync** button (usually at the top of the brands page).
-2. A real-time progress indicator appears via SSE (Server-Sent Events) — you'll see toast notifications as the sync progresses.
+2. A progress indicator appears — you'll see toast notifications as the sync progresses.
 3. Wait for the **sync complete** notification.
 4. The brand list refreshes automatically with the latest data.
 
@@ -503,9 +503,9 @@ The system scores the brand across **11 categories**, producing a total score th
 
 > **Important — "Opportunity" scoring:** Categories 5, 7 (partial), and 8 award points when the brand **fails** the benchmark. This is because under-performance represents a business opportunity for AHA to help improve the brand. Higher total score = more attractive prospect for partnership.
 
-### Fashion vs Non-Fashion Templates
+### Category Adjustments
 
-The scoring template adjusts based on category:
+The unified "default" template adjusts scoring based on the brand's category type:
 
 | Aspect | Fashion | Non-Fashion |
 |--------|---------|-------------|
@@ -528,12 +528,11 @@ The final verdict is set in cell F75:
 | Neutral | ⭕️ | No recommendation |
 | Empty | (blank) | Performance already good — polite acknowledgment |
 
-### Email and WhatsApp Output
+### Email Output
 
 After scoring, the system generates:
 
 - **Email body:** A formatted report covering all 11 categories with emoji headers, benchmarks, and the conclusion. Subject line: "🏥 AHA Store Internal Check Up (Store ICU) - [Store Name] [Period]"
-- **WhatsApp link:** A pre-formatted message link that can be sent directly to the brand contact.
 
 ---
 
@@ -581,14 +580,7 @@ Each row displays:
    - Calculator results (all 3 calculator outputs)
    - Per-category scores with benchmarks and verdicts
    - Final score and overall verdict
-   - Generated email body and WhatsApp link
-
-### Real-Time Notifications
-
-When another team member saves a new evaluation:
-- A **toast notification** appears in your browser (via SSE — Server-Sent Events).
-- The notification shows the brand name and who performed the evaluation.
-- The History page updates automatically.
+   - Generated email body
 
 ---
 

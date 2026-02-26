@@ -12,7 +12,7 @@
 | Git | 2.x | Version control |
 | Firebase CLI | latest | Frontend deployment |
 | gcloud CLI | latest | GCP operations |
-| Terraform | >= 1.0 | Infrastructure management |
+| Terraform | >= 1.5 | Infrastructure management |
 
 ## Quick Start
 
@@ -64,7 +64,7 @@ The app will be available at `http://localhost:5173`.
 
 | Variable | Required | Example | Description |
 |----------|----------|---------|-------------|
-| `DATABASE_URL` | Yes | `postgresql://user:pass@host/db` | Neon PostgreSQL connection string |
+| `DATABASE_URL` | Yes | `postgresql://user:pass@host/db` | PostgreSQL connection string |
 | `FIREBASE_CREDENTIALS_PATH` | One of | `./firebase-sa.json` | Firebase Admin SA file path |
 | `FIREBASE_CREDENTIALS_JSON` | One of | `{"type":"service_account",...}` | Firebase Admin SA as JSON string |
 | `GSHEETS_CREDENTIALS_PATH` | One of | `./sheets-sa.json` | Google Sheets SA file path |
@@ -73,8 +73,8 @@ The app will be available at `http://localhost:5173`.
 | `GSHEETS_MEETING_SPREADSHEET_ID` | Yes | `1def...uvw` | Meeting data Google Sheet ID |
 | `GCS_UPLOAD_BUCKET` | No | `aha-sicu-dev-uploads` | GCS bucket (empty = local storage) |
 | `CLOUD_RUN_URL` | No | `https://...run.app` | OIDC audience (empty = skip check) |
-| `DATABASE_POOL_MIN` | No | `5` | Min DB connections |
-| `DATABASE_POOL_MAX` | No | `20` | Max DB connections |
+| `DATABASE_POOL_MIN` | No | `1` | Min DB connections |
+| `DATABASE_POOL_MAX` | No | `5` | Max DB connections |
 | `DEBUG` | No | `true` | Enable debug mode |
 
 ### Frontend (.env)
@@ -122,7 +122,7 @@ npm run preview      # Preview production build
 - **Test directory:** `backend/tests/`
 - **Integration tests:** Mock database and Firebase auth
 - **Unit tests:** Pure function tests for calculators
-- **41 test files** covering all modules
+- **37 test files** covering all modules
 
 ### Frontend Tests
 
@@ -146,12 +146,12 @@ Per `CLAUDE.md` project rules:
 
 | Branch | Purpose | Policy |
 |--------|---------|--------|
-| `main` | Production | NO direct commits |
-| `develop` | Development integration | Merge from feature only |
-| `feature/*` | Active work | ALL commits go here first |
+| `main` | Production | PR-only, CI required |
+| `develop` | Staging/integration | CI required |
+| `feat/*`, `fix/*`, `update/*`, etc. | Active work | ALL commits go here first |
 
 **Flow:**
-1. Create `feature/*` branch from `develop`
+1. Create feature branch from `develop` (`feat/`, `fix/`, `update/`, `refactor/`, `docs/`, `chore/`)
 2. Make atomic commits on feature branch
 3. Merge feature → develop at milestones
 4. Delete feature branch after merge
