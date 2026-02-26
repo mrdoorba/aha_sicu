@@ -20,6 +20,26 @@ import { useDeleteEvaluation } from '../hooks/useDeleteEvaluation';
 import { DeleteEvaluationDialog } from '../components/evaluations/DeleteEvaluationDialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
 import { FinalScoreDisplay } from '../components/evaluation/scoring/FinalScoreDisplay';
+import {
+  MANUAL_DATA_FIELDS,
+  generateMonthLabels,
+  type FieldDefinition,
+} from '../components/evaluation/forms/formConfig';
+
+// Build module-level lookup: category key → { displayName, fieldMap }
+const CATEGORY_LOOKUP = new Map(
+  MANUAL_DATA_FIELDS.map((cat) => [
+    cat.key,
+    {
+      displayName: cat.displayName,
+      fieldMap: new Map(cat.fields.map((f) => [f.key, f])),
+    },
+  ]),
+);
+
+function capitalize(str: string): string {
+  return str.charAt(0).toUpperCase() + str.slice(1);
+}
 
 function formatDate(dateStr: string): string {
   const d = new Date(dateStr);
@@ -38,9 +58,22 @@ function formatIDR(value: unknown): string {
   return value.toLocaleString('id-ID');
 }
 
-function formatValue(value: unknown, key: string): string {
+function formatValue(value: unknown, key: string, fieldDef?: FieldDefinition): string {
   if (value === null || value === undefined) return '-';
   if (Array.isArray(value)) return value.map((v) => formatIDR(v)).join(', ');
+
+  // Metadata-based formatting when field definition is available
+  if (fieldDef && typeof value === 'number') {
+    if (fieldDef.inputType === 'currency') {
+      return value.toLocaleString('id-ID');
+    }
+    if (fieldDef.inputType === 'number' && fieldDef.unit === '%') {
+      return `${value}%`;
+    }
+    return String(value);
+  }
+
+  // Fallback heuristics for fields not in config
   if (typeof value === 'number') {
     if (key.includes('rate') || key.includes('percentage') || key.includes('persen')) {
       return `${value}%`;
@@ -195,6 +228,16 @@ function DiscountSection({ data, t }: { data: Record<string, unknown>; t: (key: 
   return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
 }
 
+function resolveNestedValue(obj: Record<string, unknown>, dotKey: string): unknown {
+  const parts = dotKey.split('.');
+  let val: unknown = obj;
+  for (const part of parts) {
+    if (typeof val !== 'object' || val === null) return undefined;
+    val = (val as Record<string, unknown>)[part];
+  }
+  return val;
+}
+
 function ManualInputsSection({
   inputs,
   t,
@@ -209,23 +252,76 @@ function ManualInputsSection({
 
   return (
     <div className="space-y-4">
-      {categories.map(([category, values]) => (
-        <div key={category}>
-          <h3 className="mb-2 text-sm font-semibold capitalize">{category}</h3>
-          {typeof values === 'object' && values !== null ? (
+      {categories.map(([category, values]) => {
+        const categoryInfo = CATEGORY_LOOKUP.get(category);
+        const categoryLabel = categoryInfo?.displayName ?? capitalize(category);
+
+        if (typeof values !== 'object' || values === null) {
+          return (
+            <div key={category}>
+              <h3 className="mb-2 text-sm font-semibold">{categoryLabel}</h3>
+              <p className="text-sm">{String(values)}</p>
+            </div>
+          );
+        }
+
+        const valuesObj = values as Record<string, unknown>;
+
+        // Build entries: [key, value, fieldDef, displayLabel]
+        let entries: Array<[string, unknown, FieldDefinition | undefined, string | undefined]>;
+
+        if (category === 'competition' && categoryInfo) {
+          // Flatten nested objects using dot-notation keys from COMPETITION_FIELDS
+          entries = [];
+          for (const [dotKey, fieldDef] of categoryInfo.fieldMap) {
+            const val = resolveNestedValue(valuesObj, dotKey);
+            entries.push([dotKey, val, fieldDef, undefined]);
+          }
+        } else {
+          // Generate dynamic month labels for business category
+          let monthLabels: string[] | undefined;
+          if (category === 'business' && valuesObj.salesStartMonth) {
+            monthLabels = generateMonthLabels(valuesObj.salesStartMonth as string);
+          }
+
+          entries = Object.entries(valuesObj)
+            .filter(([key]) => key !== 'salesStartMonth')
+            .map(([key, val]) => {
+              const fieldDef = categoryInfo?.fieldMap.get(key);
+              let dynamicLabel: string | undefined;
+
+              if (monthLabels && key.startsWith('salesMonth')) {
+                const idx = parseInt(key.replace('salesMonth', ''), 10);
+                if (!isNaN(idx) && idx >= 0 && idx < monthLabels.length) {
+                  dynamicLabel = `Penjualan ${monthLabels[idx]}`;
+                }
+              }
+
+              return [key, val, fieldDef, dynamicLabel] as [string, unknown, FieldDefinition | undefined, string | undefined];
+            });
+        }
+
+        return (
+          <div key={category}>
+            <h3 className="mb-2 text-sm font-semibold">{categoryLabel}</h3>
             <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
-              {Object.entries(values as Record<string, unknown>).map(([key, val]) => (
+              {entries.map(([key, val, fieldDef, dynamicLabel]) => (
                 <div key={key} className="flex justify-between gap-2 border-b border-border/50 py-1">
-                  <span className="text-muted-foreground">{key.replace(/_/g, ' ')}</span>
-                  <span className="font-medium">{formatValue(val, key)}</span>
+                  <span className="text-muted-foreground">
+                    {dynamicLabel ?? fieldDef?.label ?? key.replace(/_/g, ' ')}
+                  </span>
+                  <span className="font-medium">
+                    {formatValue(val, key, fieldDef)}
+                    {fieldDef?.benchmark && (
+                      <span className="ml-1 text-xs text-muted-foreground">({fieldDef.benchmark})</span>
+                    )}
+                  </span>
                 </div>
               ))}
             </div>
-          ) : (
-            <p className="text-sm">{String(values)}</p>
-          )}
-        </div>
-      ))}
+          </div>
+        );
+      })}
     </div>
   );
 }

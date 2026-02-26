@@ -174,8 +174,8 @@ describe('EvaluationDetailPage', () => {
     renderPage();
 
     expect(screen.getByText('Input Manual')).toBeInTheDocument();
-    expect(screen.getByText('operational')).toBeInTheDocument();
-    expect(screen.getByText('business')).toBeInTheDocument();
+    expect(screen.getByText('Kesehatan Operasional Toko')).toBeInTheDocument();
+    expect(screen.getByText('Bisnis Analisis')).toBeInTheDocument();
     expect(screen.getByText('pesanan tidak terselesaikan')).toBeInTheDocument();
   });
 
