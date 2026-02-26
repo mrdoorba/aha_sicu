@@ -62,12 +62,6 @@ SHARED_MESSAGES: dict = {
             "message_fail": "❌ Tingkat Konversi = {val_str} Kurang Baik, nilai disarankan: {benchmark}",
         },
     },
-    "content": {
-        "quality_ratio": {
-            "message_pass": "✔️ % Konten baik = {val_str} Sudah Baik",
-            "message_fail": "❌ % Konten baik = {val_str} Kurang Baik, nilai disarankan: >{threshold}%",
-        },
-    },
     "visitors": {
         "returning_visitors_pct": {
             "message_pass": "✔️ % Pengunjung Lama = {val_str} Sudah Baik",

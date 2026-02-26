@@ -123,7 +123,6 @@ Shared per-brand evaluation state (work-in-progress). One active draft per brand
 {
   "operational": { "unfulfilledOrderRate": 2.5, "lateShipmentRate": 1.0, "preparationTime": 1.5, "chatResponseRate": 95, "overallRating": 4.8 },
   "business": { "salesMonth0": 50000000, "salesMonth1": 48000000, "...": "...", "conversionRate": 3.5 },
-  "content": { "needsImprovement": 5, "goodQuality": 45 },
   "visitors": { "totalVisitors": 10000, "totalFollowers": 5000, "returningVisitors": 2000 },
   "promoTools": { "promoToko": 1000000, "paketDiskon": 500000, "...11 fields...": "..." },
   "products": { "productCount": 200, "storeStatus": "mall" },

@@ -17,7 +17,6 @@ function buildManualData(initialData: Record<string, unknown> | null): ManualDat
   return {
     operational: { ...EMPTY_MANUAL_DATA.operational, ...raw.operational },
     business: { ...EMPTY_MANUAL_DATA.business, ...raw.business },
-    content: { ...EMPTY_MANUAL_DATA.content, ...raw.content },
     visitors: { ...EMPTY_MANUAL_DATA.visitors, ...raw.visitors },
     promoTools: { ...EMPTY_MANUAL_DATA.promoTools, ...raw.promoTools },
     products: { ...EMPTY_MANUAL_DATA.products, ...raw.products },
@@ -36,7 +35,6 @@ function mergeWithOverrides(base: ManualData, overrides: Partial<ManualData>): M
   return {
     operational: { ...base.operational, ...overrides.operational },
     business: { ...base.business, ...overrides.business },
-    content: { ...base.content, ...overrides.content },
     visitors: { ...base.visitors, ...overrides.visitors },
     promoTools: { ...base.promoTools, ...overrides.promoTools },
     products: { ...base.products, ...overrides.products },

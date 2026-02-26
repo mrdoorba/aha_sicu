@@ -19,11 +19,6 @@ export interface BusinessData {
   conversionRate: number | null;
 }
 
-export interface ContentData {
-  needsImprovement: number | null;
-  goodQuality: number | null;
-}
-
 export interface VisitorsData {
   totalVisitors: number | null;
   totalFollowers: number | null;
@@ -76,7 +71,6 @@ export interface CompetitionData {
 export interface ManualData {
   operational: OperationalData;
   business: BusinessData;
-  content: ContentData;
   visitors: VisitorsData;
   promoTools: PromoToolsData;
   products: ProductsData;
@@ -171,11 +165,6 @@ export const BUSINESS_FIELDS: FieldDefinition[] = [
   { key: 'salesMonth4', label: 'Penjualan Bulan -4', inputType: 'currency', unit: 'IDR' },
   { key: 'salesMonth5', label: 'Penjualan Bulan -5', inputType: 'currency', unit: 'IDR' },
   { key: 'conversionRate', label: 'Tingkat Konversi', inputType: 'number', unit: '%', benchmark: '>3%' },
-];
-
-export const CONTENT_FIELDS: FieldDefinition[] = [
-  { key: 'needsImprovement', label: 'Perlu Ditingkatkan', inputType: 'number', unit: 'count' },
-  { key: 'goodQuality', label: 'Kualitas Baik', inputType: 'number', unit: 'count' },
 ];
 
 export const VISITORS_FIELDS: FieldDefinition[] = [
@@ -339,10 +328,6 @@ export const EMPTY_MANUAL_DATA: ManualData = {
     salesMonth4: null,
     salesMonth5: null,
     conversionRate: null,
-  },
-  content: {
-    needsImprovement: null,
-    goodQuality: null,
   },
   visitors: {
     totalVisitors: null,

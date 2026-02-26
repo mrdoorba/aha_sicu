@@ -8,7 +8,6 @@ const MOCK_RESULT: ScoringResult = {
   category_scores: [
     { category: 'Kesehatan Operasional Toko', score: 5, max_score: 10, rows: [], available: true },
     { category: 'Bisnis Analisis', score: 10, max_score: 20, rows: [], available: true },
-    { category: 'Skor Kesehatan Konten', score: 0, max_score: 0, rows: [], available: true },
     { category: 'Tinjauan Pengunjung', score: 3, max_score: 5, rows: [], available: true },
     { category: 'Promo Toko', score: 15, max_score: 15, rows: [], available: true },
     { category: 'Jumlah Produk & Status Toko', score: 15, max_score: 15, rows: [], available: true },
@@ -40,7 +39,7 @@ describe('ScorePanel', () => {
     expect(screen.getByText('Skor Total')).toBeInTheDocument();
     // All category rows should show em-dash
     const dashes = screen.getAllByText('\u2014');
-    expect(dashes.length).toBeGreaterThanOrEqual(11); // 11 categories + total
+    expect(dashes.length).toBeGreaterThanOrEqual(10); // 10 categories + total
   });
 
   it('shows total score when result exists', () => {
@@ -61,7 +60,6 @@ describe('ScorePanel', () => {
     render(<ScorePanel scoringResult={null} />);
     expect(screen.getByText('Operasional')).toBeInTheDocument();
     expect(screen.getByText('Bisnis')).toBeInTheDocument();
-    expect(screen.getByText('Konten')).toBeInTheDocument();
     expect(screen.getByText('Pengunjung')).toBeInTheDocument();
     expect(screen.getByText('Alat Promo')).toBeInTheDocument();
     expect(screen.getByText('Produk & Status')).toBeInTheDocument();

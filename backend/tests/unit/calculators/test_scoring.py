@@ -20,7 +20,6 @@ from app.calculators.scoring import (
     _score_ads,
     _score_business,
     _score_campaign,
-    _score_content,
     _score_discount_row,
     _score_operational,
     _score_products,
@@ -53,10 +52,6 @@ def full_manual_data():
             "salesMonth3": 170_000_000,
             "salesMonth4": 160_000_000,
             "salesMonth5": 150_000_000,
-        },
-        "content": {
-            "needsImprovement": 2,
-            "goodQuality": 48,
         },
         "visitors": {
             "totalVisitors": 100_000,
@@ -280,50 +275,6 @@ class TestScoreBusiness:
         # avg = 55M
         h19_row = next(r for r in cat.rows if r.row == 19)
         assert h19_row.score == 0.0  # 55M < 100M
-
-
-class TestScoreContent:
-    def test_high_quality(self):
-        data = {"content": {"needsImprovement": 2, "goodQuality": 48}}
-        cat = _score_content(data)
-        assert cat.category == "Skor Kesehatan Konten"
-        assert cat.score == 0.0  # Content has no H-column scores
-        assert cat.max_score == 0.0
-        d24_row = next(r for r in cat.rows if r.row == 24)
-        assert d24_row.verdict == "✔️"  # 48/50 = 96% > 95%
-        assert abs(d24_row.value - 0.96) < 0.01
-
-    def test_low_quality(self):
-        data = {"content": {"needsImprovement": 10, "goodQuality": 40}}
-        cat = _score_content(data)
-        d24_row = next(r for r in cat.rows if r.row == 24)
-        assert d24_row.verdict == "❌"  # 40/50 = 80% < 95%
-
-    def test_exactly_95_percent(self):
-        data = {"content": {"needsImprovement": 5, "goodQuality": 95}}
-        cat = _score_content(data)
-        d24_row = next(r for r in cat.rows if r.row == 24)
-        assert d24_row.verdict == "✔️"  # 95/100 = 95% >= 95%
-
-    def test_no_content_data(self):
-        cat = _score_content({})
-        assert len(cat.rows) == 3
-        d24_row = next(r for r in cat.rows if r.row == 24)
-        assert d24_row.verdict == "❌"  # 0/0 → 0% < 95%
-
-    def test_all_good(self):
-        data = {"content": {"needsImprovement": 0, "goodQuality": 100}}
-        cat = _score_content(data)
-        d24_row = next(r for r in cat.rows if r.row == 24)
-        assert d24_row.verdict == "✔️"
-        assert d24_row.value == 1.0  # 100%
-
-    def test_all_bad(self):
-        data = {"content": {"needsImprovement": 50, "goodQuality": 0}}
-        cat = _score_content(data)
-        d24_row = next(r for r in cat.rows if r.row == 24)
-        assert d24_row.verdict == "❌"
-        assert d24_row.value == 0.0  # 0%
 
 
 class TestScoreVisitors:
@@ -955,7 +906,7 @@ class TestCalculateScore:
         assert isinstance(result, ScoringResult)
         assert result.template == "fashion"
         assert result.verdict == "✔️"
-        assert len(result.category_scores) == 11
+        assert len(result.category_scores) == 10
         assert result.email_subject != ""
         assert result.email_body != ""
         assert result.total_score > 0
@@ -1311,25 +1262,6 @@ class TestCustomRulesBusiness:
         cat_custom = _score_business(data, custom_rules)
         h19 = next(r for r in cat_custom.rows if r.row == 19)
         assert h19.score == 12.0
-
-
-class TestCustomRulesContent:
-    """Custom content quality_ratio threshold changes verdict."""
-
-    def test_custom_quality_threshold(self):
-        data = {"content": {"needsImprovement": 10, "goodQuality": 90}}
-        # ratio = 90/100 = 90%, default threshold=95% → fail
-        cat_default = _score_content(data)
-        d24 = next(r for r in cat_default.rows if r.row == 24)
-        assert d24.verdict == "❌"
-
-        # Custom: threshold=85% → 90% >= 85% → pass
-        custom_rules = {**DEFAULT_RULES, "content": {
-            "quality_ratio": {"threshold": 85.0, "comparison": "gte", "info_only": True},
-        }}
-        cat_custom = _score_content(data, custom_rules)
-        d24 = next(r for r in cat_custom.rows if r.row == 24)
-        assert d24.verdict == "✔️"
 
 
 class TestScoringResultRuleVersion:
@@ -1872,28 +1804,6 @@ class TestMessageTemplatesBusiness:
         assert "CONV" in g20.message
 
 
-class TestMessageTemplatesContent:
-    """Test content message generators read templates from rules."""
-
-    def test_custom_content_pass(self):
-        rules = {**DEFAULT_RULES, "content": {
-            "quality_ratio": {
-                **DEFAULT_RULES["content"]["quality_ratio"],
-                "message_pass": "CONTENT GOOD: {val_str}",
-            },
-        }}
-        data = {"content": {"needsImprovement": 2, "goodQuality": 48}}
-        result = calculate_score(
-            manual_data=data, calculator_results={},
-            template="fashion", verdict="✔️",
-            store_name="S", period="P", brand_name="B",
-            rules=rules,
-        )
-        content = result.category_scores[2]
-        g24 = next(r for r in content.rows if r.row == 24)
-        assert "CONTENT GOOD:" in g24.message
-
-
 class TestMessageTemplatesVisitors:
     """Test visitor message generators read templates from rules."""
 
@@ -1912,7 +1822,7 @@ class TestMessageTemplatesVisitors:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        vis = result.category_scores[3]
+        vis = result.category_scores[2]
         g28 = next(r for r in vis.rows if r.row == 28)
         assert "VISITORS OK:" in g28.message
 
@@ -1931,7 +1841,7 @@ class TestMessageTemplatesVisitors:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        vis = result.category_scores[3]
+        vis = result.category_scores[2]
         g29 = next(r for r in vis.rows if r.row == 29)
         assert "FOLLOWERS GREAT:" in g29.message
 
@@ -1965,7 +1875,7 @@ class TestMessageTemplatesPromo:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        promo = result.category_scores[4]
+        promo = result.category_scores[3]
         # First row (promoToko=0) should use message_zero
         first_promo = next(r for r in promo.rows if r.row == 31)
         assert "ZERO:" in first_promo.message
@@ -1999,7 +1909,7 @@ class TestMessageTemplatesPromo:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        promo = result.category_scores[4]
+        promo = result.category_scores[3]
         g42 = next(r for r in promo.rows if r.row == 42)
         assert "USAGE" in g42.message
 
@@ -2022,7 +1932,7 @@ class TestMessageTemplatesProducts:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        prod = result.category_scores[5]
+        prod = result.category_scores[4]
         g45 = next(r for r in prod.rows if r.row == 45)
         assert g45.message == "PROD OK: 50 items"
 
@@ -2041,7 +1951,7 @@ class TestMessageTemplatesProducts:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        prod = result.category_scores[5]
+        prod = result.category_scores[4]
         g46 = next(r for r in prod.rows if r.row == 46)
         assert g46.message == "STATUS: Shopee Mall approved"
 
@@ -2067,7 +1977,7 @@ class TestMessageTemplatesAds:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        ads = result.category_scores[6]
+        ads = result.category_scores[5]
         g50 = next(r for r in ads.rows if r.row == 50)
         assert "ROI GOOD:" in g50.message
 
@@ -2089,7 +1999,7 @@ class TestMessageTemplatesAds:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        ads = result.category_scores[6]
+        ads = result.category_scores[5]
         g51 = next(r for r in ads.rows if r.row == 51)
         assert g51.message == "NO ADS ACTIVE"
 
@@ -2111,7 +2021,7 @@ class TestMessageTemplatesAds:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        ads = result.category_scores[6]
+        ads = result.category_scores[5]
         g52 = next(r for r in ads.rows if r.row == 52)
         assert "TOO LOW:" in g52.message
         assert "5%" in g52.message
@@ -2135,7 +2045,7 @@ class TestMessageTemplatesCampaign:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        camp = result.category_scores[7]
+        camp = result.category_scores[6]
         g57 = next(r for r in camp.rows if r.row == 57)
         assert "CAMP OK:" in g57.message
 
@@ -2153,7 +2063,7 @@ class TestMessageTemplatesCampaign:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        camp = result.category_scores[7]
+        camp = result.category_scores[6]
         g57 = next(r for r in camp.rows if r.row == 57)
         assert g57.message == "NO CAMPAIGNS"
 
@@ -2181,7 +2091,7 @@ class TestMessageTemplatesCompetition:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        comp = result.category_scores[8]
+        comp = result.category_scores[7]
         g61 = next(r for r in comp.rows if r.row == 61)
         assert "COMPETITIVE" in g61.message
 
@@ -2205,7 +2115,7 @@ class TestMessageTemplatesCompetition:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        comp = result.category_scores[8]
+        comp = result.category_scores[7]
         g61 = next(r for r in comp.rows if r.row == 61)
         assert "OVERPRICED:" in g61.message
 

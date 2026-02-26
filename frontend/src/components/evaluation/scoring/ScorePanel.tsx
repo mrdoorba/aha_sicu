@@ -5,7 +5,6 @@ import type { ScoringResult } from '../../../hooks/useScoring';
 const CATEGORY_MAP: Array<{ backend: string; labelKey: string }> = [
   { backend: 'Kesehatan Operasional Toko', labelKey: 'rules.category.operational' },
   { backend: 'Bisnis Analisis', labelKey: 'rules.category.business' },
-  { backend: 'Skor Kesehatan Konten', labelKey: 'rules.category.content' },
   { backend: 'Tinjauan Pengunjung', labelKey: 'rules.category.visitors' },
   { backend: 'Promo Toko', labelKey: 'rules.category.promoTools' },
   { backend: 'Jumlah Produk & Status Toko', labelKey: 'rules.category.productsStatus' },

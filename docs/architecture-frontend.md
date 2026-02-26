@@ -116,8 +116,8 @@ EvaluationPage
 ├── EvaluationHeader (brand info display)
 ├── SectionNav (sticky sidebar with 6 steps + progress)
 ├── EvaluationSections (main content)
-│   ├── Section 1: Manual Forms (9 domain forms)
-│   │   ├── OperationalForm, BusinessForm, ContentForm
+│   ├── Section 1: Manual Forms (8 domain forms)
+│   │   ├── OperationalForm, BusinessForm
 │   │   ├── VisitorsForm, PromoToolsForm, ProductsStatusForm
 │   │   ├── AdsForm, CampaignForm, CompetitionForm
 │   │   └── Auto-save via useAutoSaveForm

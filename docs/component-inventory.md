@@ -83,7 +83,6 @@
 |-----------|------|----------|--------|
 | OperationalForm | `forms/OperationalForm.tsx` | Operational | 5 fields (order, shipment, chat, rating) |
 | BusinessForm | `forms/BusinessForm.tsx` | Business | 7 fields (6-month sales + conversion rate) |
-| ContentForm | `forms/ContentForm.tsx` | Content | 2 fields (needs improvement, good quality) |
 | VisitorsForm | `forms/VisitorsForm.tsx` | Visitors | 3 fields (total, followers, returning) |
 | PromoToolsForm | `forms/PromoToolsForm.tsx` | Promo Tools | 11 currency fields |
 | ProductsStatusForm | `forms/ProductsStatusForm.tsx` | Products | 2 fields (count + store status select) |
@@ -223,7 +222,6 @@ EvaluationPage
 ├── EvaluationSections
 │   ├── OperationalForm → NumberField ×5
 │   ├── BusinessForm → CurrencyField ×6 + NumberField ×1
-│   ├── ContentForm → NumberField ×2
 │   ├── VisitorsForm → NumberField ×3
 │   ├── PromoToolsForm → CurrencyField ×11
 │   ├── ProductsStatusForm → NumberField + SelectField

@@ -263,13 +263,6 @@ DEFAULT_RULES: dict = {
             "message_fail": "❌ Tingkat Konversi = {val_str} Kurang Baik, nilai disarankan: {benchmark}",
         },
     },
-    "content": {
-        "quality_ratio": {
-            "threshold": 95.0, "comparison": "gte", "info_only": True,
-            "message_pass": "✔️ % Konten baik = {val_str} Sudah Baik",
-            "message_fail": "❌ % Konten baik = {val_str} Kurang Baik, nilai disarankan: >{threshold}%",
-        },
-    },
     "visitors": {
         "returning_visitors_pct": {
             "threshold": 23.0, "points": 3, "comparison": "gte",
@@ -616,41 +609,6 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
     return CategoryScore(
         category="Bisnis Analisis",
         score=total, max_score=20.0, rows=rows,
-    )
-
-
-def _score_content(manual_data: dict, rules: dict | None = None) -> CategoryScore:
-    """Score rows 22-24: Skor Kesehatan Konten.
-
-    No H-column scores. F24 verdict only.
-    """
-    content = _get_nested(manual_data, "content") or {}
-    content_rules = _get_rule_category(rules, "content")
-    rows: list[RowScore] = []
-
-    d22 = _safe_num(content.get("needsImprovement"))
-    d23 = _safe_num(content.get("goodQuality"))
-    d24 = d23 / (d23 + d22) if (d23 + d22) > 0 else 0.0
-
-    rows.append(RowScore(
-        row=22, metric="Perlu ditingkatkan",
-        value=d22, benchmark="-", verdict="-", message="", score=0.0,
-    ))
-    rows.append(RowScore(
-        row=23, metric="Kualitas baik",
-        value=d23, benchmark="-", verdict="-", message="", score=0.0,
-    ))
-
-    quality_threshold = _get_rule_value(content_rules, "quality_ratio", "threshold", 95.0) / 100
-    f24 = "✔️" if d24 >= quality_threshold else "❌"
-    rows.append(RowScore(
-        row=24, metric="% Konten baik",
-        value=d24, benchmark=f">{quality_threshold * 100:g}%", verdict=f24, message="", score=0.0,
-    ))
-
-    return CategoryScore(
-        category="Skor Kesehatan Konten",
-        score=0.0, max_score=0.0, rows=rows,
     )
 
 
@@ -1169,23 +1127,6 @@ def _generate_business_messages(cat: CategoryScore, manual_data: dict, rules: di
                 row.message = _format_message_template(tmpl, val_str=val_str, benchmark=row.benchmark)
 
 
-def _generate_content_messages(cat: CategoryScore, rules: dict | None = None) -> None:
-    """Fill G-column messages for content rows 22-24."""
-    content_rules = _get_rule_category(rules, "content")
-    for row in cat.rows:
-        if row.row == 24:
-            val_str = _fmt_pct_0dp(row.value) if isinstance(row.value, float) else str(row.value)
-            threshold = _get_rule_value(content_rules, "quality_ratio", "threshold", 95)
-            if row.verdict == "✔️":
-                tmpl = _get_rule_value(content_rules, "quality_ratio", "message_pass",
-                    "✔️ % Konten baik = {val_str} Sudah Baik")
-                row.message = _format_message_template(tmpl, val_str=val_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
-            else:
-                tmpl = _get_rule_value(content_rules, "quality_ratio", "message_fail",
-                    "❌ % Konten baik = {val_str} Kurang Baik, nilai disarankan: >{threshold}%")
-                row.message = _format_message_template(tmpl, val_str=val_str, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
-
-
 def _generate_visitors_messages(cat: CategoryScore, rules: dict | None = None) -> None:
     """Fill G-column messages for visitor rows 26-29."""
     vis_rules = _get_rule_category(rules, "visitors")
@@ -1673,14 +1614,7 @@ def _assemble_email_body(
         sections.extend(biz_msgs)
         sections.append("")
 
-    # 3. Content
-    content_msgs = _get_messages("Skor Kesehatan Konten", [24])
-    if content_msgs:
-        sections.append("📝 Kualitas Konten Produk:")
-        sections.extend(content_msgs)
-        sections.append("")
-
-    # 4. Visitors
+    # 3. Visitors
     visitor_msgs = _get_messages("Tinjauan Pengunjung", [28, 29])
     if visitor_msgs:
         sections.append("👥 Tinjauan Pengunjung:")
@@ -1798,7 +1732,6 @@ def calculate_score(
     # --- Per-category scoring ---
     cat_operational = _score_operational(manual_data, rules)
     cat_business = _score_business(manual_data, rules)
-    cat_content = _score_content(manual_data, rules)
     cat_visitors = _score_visitors(manual_data, rules)
     cat_promo = _score_promo_tools(manual_data, rules)
     cat_products = _score_products(manual_data, rules)
@@ -1817,7 +1750,7 @@ def calculate_score(
         conv_row.verdict = "✔️" if conv_row.value >= conv_threshold else "❌"
 
     all_categories = [
-        cat_operational, cat_business, cat_content, cat_visitors,
+        cat_operational, cat_business, cat_visitors,
         cat_promo, cat_products, cat_ads, cat_campaign,
         cat_competition, cat_stock, cat_discount,
     ]
@@ -1828,7 +1761,6 @@ def calculate_score(
     # --- G-column messages ---
     _generate_operational_messages(cat_operational, manual_data, rules)
     _generate_business_messages(cat_business, manual_data, rules)
-    _generate_content_messages(cat_content, rules)
     _generate_visitors_messages(cat_visitors, rules)
     _generate_promo_messages(cat_promo, manual_data, rules)
     _generate_products_messages(cat_products, rules)

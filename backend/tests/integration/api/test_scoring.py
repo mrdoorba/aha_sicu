@@ -168,7 +168,7 @@ def test_score_with_full_data(client):
         assert "total_score" in data
         assert "category_scores" in data
         assert isinstance(data["category_scores"], list)
-        assert len(data["category_scores"]) == 11
+        assert len(data["category_scores"]) == 10
         assert data["verdict"] == "✔️"
         assert data["template"] == "fashion"
         assert "email_subject" in data

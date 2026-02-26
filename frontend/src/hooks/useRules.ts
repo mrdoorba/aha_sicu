@@ -40,7 +40,6 @@ export interface InterpretationRange {
 export interface ScoringRules {
   operational: Record<string, RuleThreshold>;
   business: Record<string, RuleThreshold>;
-  content: Record<string, RuleThreshold>;
   visitors: Record<string, RuleThreshold>;
   promo_tools: Record<string, RuleThreshold>;
   products_status: Record<string, RuleThreshold>;

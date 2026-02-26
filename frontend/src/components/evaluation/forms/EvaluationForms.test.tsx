@@ -60,14 +60,10 @@ describe('EvaluationForms Integration', () => {
     expect(screen.getByLabelText(/Tingkat Pesanan Tidak Terselesaikan/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Keseluruhan Penilaian/)).toBeInTheDocument();
 
-    // Section 2: Business, Visitors (no Content)
+    // Section 2: Business, Visitors
     expect(screen.getAllByLabelText(/Penjualan Bulan/)).toHaveLength(6);
     expect(screen.getByLabelText(/Tingkat Konversi/)).toBeInTheDocument();
     expect(screen.getByLabelText(/Total Pengunjung/)).toBeInTheDocument();
-
-    // Content section should NOT be rendered
-    expect(screen.queryByLabelText(/Perlu Ditingkatkan/)).not.toBeInTheDocument();
-    expect(screen.queryByLabelText(/Kualitas Baik/)).not.toBeInTheDocument();
 
     // Section 3: Promo Tools, Products
     expect(screen.getByLabelText(/Penjualan dari Promo Toko/)).toBeInTheDocument();

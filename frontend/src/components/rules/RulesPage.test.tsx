@@ -64,9 +64,6 @@ const FASHION_RULES = {
     six_month_avg_threshold: { threshold: 100000000, points: 10, comparison: 'gte' },
     conversion_rate: { threshold: 2.0, comparison: 'gte', info_only: true },
   },
-  content: {
-    quality_ratio: { threshold: 95.0, comparison: 'gte', info_only: true },
-  },
   visitors: {
     returning_visitors_pct: { threshold: 23.0, points: 3, comparison: 'gte' },
     followers: { threshold: 50000, points: 2, comparison: 'gte' },
@@ -244,7 +241,6 @@ describe('RulesPage', () => {
     expect(screen.getByText('Aturan Penilaian')).toBeInTheDocument();
     expect(screen.getByText('Operasional')).toBeInTheDocument();
     expect(screen.getByText('Bisnis')).toBeInTheDocument();
-    expect(screen.getByText('Konten')).toBeInTheDocument();
     expect(screen.getByText('Pengunjung')).toBeInTheDocument();
     expect(screen.getByText('Alat Promo')).toBeInTheDocument();
     expect(screen.getByText('Produk & Status')).toBeInTheDocument();

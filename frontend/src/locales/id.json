@@ -158,8 +158,6 @@
   "forms.visitors.title": "Tinjauan Pengunjung",
   "forms.visitors.returningPct": "% Pengunjung Lama",
 
-  "forms.content.title": "Content",
-
   "forms.promoTools.title": "Alat Promosi",
   "forms.promoTools.usagePct": "% Penggunaan alat promosi",
   "forms.promoTools.effectivenessPct": "% Efektifitas alat promosi",
@@ -267,7 +265,6 @@
   "rules.placeholder": "Placeholder:",
   "rules.category.operational": "Operasional",
   "rules.category.business": "Bisnis",
-  "rules.category.content": "Konten",
   "rules.category.visitors": "Pengunjung",
   "rules.category.promoTools": "Alat Promo",
   "rules.category.productsStatus": "Produk & Status",

@@ -58,11 +58,10 @@ aha_sicu/
 │   │   │   │   ├── FileUploadSection.tsx
 │   │   │   │   ├── FileUploadSlot.tsx
 │   │   │   │   ├── SaveButton.tsx
-│   │   │   │   ├── forms/       # 9 domain form components
+│   │   │   │   ├── forms/       # 8 domain form components
 │   │   │   │   │   ├── formConfig.ts    # Field definitions, ManualData type
 │   │   │   │   │   ├── OperationalForm.tsx
 │   │   │   │   │   ├── BusinessForm.tsx
-│   │   │   │   │   ├── ContentForm.tsx
 │   │   │   │   │   ├── VisitorsForm.tsx
 │   │   │   │   │   ├── PromoToolsForm.tsx
 │   │   │   │   │   ├── ProductsStatusForm.tsx

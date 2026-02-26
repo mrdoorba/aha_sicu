@@ -21,7 +21,6 @@ interface RulesCategoryCardProps {
 const CATEGORY_LABELS: Record<string, string> = {
   operational: 'rules.category.operational',
   business: 'rules.category.business',
-  content: 'rules.category.content',
   visitors: 'rules.category.visitors',
   promo_tools: 'rules.category.promoTools',
   products_status: 'rules.category.productsStatus',

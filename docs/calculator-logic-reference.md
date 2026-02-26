@@ -144,7 +144,7 @@ All value formatting functions used across the calculators and scoring system. F
 | Function | Signature | Format Pattern | Example | Used By |
 |----------|-----------|---------------|---------|---------|
 | `_fmt_pct_1dp` | `_fmt_pct_1dp(value: float) -> str` | `f"{value * 100:.1f}%"` | `0.235` → `"23.5%"` | Row 28 (returning visitors %), Row 51 (GMV ratio), Row 52 (cost ratio), Row 57 (campaign %), promo tool rows |
-| `_fmt_pct_0dp` | `_fmt_pct_0dp(value: float) -> str` | `f"{value * 100:.0f}%"` | `0.95` → `"95%"` | Row 24 (content quality %), Rows 42-43 (promo usage/effectiveness %) |
+| `_fmt_pct_0dp` | `_fmt_pct_0dp(value: float) -> str` | `f"{value * 100:.0f}%"` | `0.95` → `"95%"` | Rows 42-43 (promo usage/effectiveness %) |
 | `_fmt_num_1dp` | `_fmt_num_1dp(value: float) -> str` | `f"{value:.1f}%"` | `0.5` → `"0.5%"` (raw number, not fraction) | Row 7 (unfulfilled order rate), Row 8 (late shipment rate) |
 | `_fmt_num_2dp` | `_fmt_num_2dp(value: float) -> str` | `f"{value:.2f}"` | `4.65` → `"4.65"` | Row 9 (preparation time), Row 11 (overall rating) |
 | `_fmt_idr` | `_fmt_idr(value: float) -> str` | `f"{rounded:,}".replace(",", ".")` | `1250000` → `"1.250.000"`, `-500000` → `"-500.000"` | Row 13 (sales IDR), Row 29 (followers), G73 (budget), competition rows |
@@ -1102,23 +1102,6 @@ Compute first:
 
 `change_pct` formula: `((current_month - avg_6mo) / avg_6mo) × 100` (uses absolute value in template).
 
-### Category 3: Skor Kesehatan Konten (Rows 22-24)
-
-**Max score: 0 points (informational)**
-
-| Row | Metric | Logic |
-|-----|--------|-------|
-| 22 | Perlu ditingkatkan | `content.needsImprovement` |
-| 23 | Kualitas baik | `content.goodQuality` |
-| 24 | % Konten baik | `d23 / (d23 + d22)`, pass if >= 95% |
-
-**G-column message templates (row 24):**
-
-| Row | Verdict | Template | Placeholders |
-|-----|---------|----------|-------------|
-| 24 | Pass | `✔️ % Konten baik = {val_str} Sudah Baik` | `val_str`: `_fmt_pct_0dp(value)`, `threshold`: `f"{threshold:g}"` |
-| 24 | Fail | `❌ % Konten baik = {val_str} Kurang Baik, nilai disarankan: >{threshold}%` | Same |
-
 ### Category 4: Tinjauan Pengunjung (Rows 26-29)
 
 **Max score: 5 points**
@@ -1433,16 +1416,15 @@ Multi-line text assembled from:
 |---|--------|-------------|
 | 1 | 📊 Performa Operasional Toko | Rows 7-11 G-column |
 | 2 | 📈 Performa Penjualan Toko | Rows 13, 20 G-column |
-| 3 | 📝 Kualitas Konten Produk | Row 24 G-column |
-| 4 | 👥 Tinjauan Pengunjung | Rows 28, 29 G-column |
-| 5 | 🏷️ Tingkat Penggunaan Alat Promosi | Rows 31-43 G-column + Row 46 (store status) |
-| 6 | 📣 Performa Iklan | Rows 50-53 G-column |
-| 7 | 🎯 Partisipasi Campaign | Row 57 G-column |
-| 8 | 🏆 Kompetisi TOP Produk | Rows 61-63 G-column |
-| 9 | 📋 Kesimpulan | G66 conclusion |
-| 10 | 📌 Estimasi persentase biaya marketing | G68 text |
-| 11 | (no header) | G73 budget text |
-| 12 | (no header) | G75 closing message |
+| 3 | 👥 Tinjauan Pengunjung | Rows 28, 29 G-column |
+| 4 | 🏷️ Tingkat Penggunaan Alat Promosi | Rows 31-43 G-column + Row 46 (store status) |
+| 5 | 📣 Performa Iklan | Rows 50-53 G-column |
+| 6 | 🎯 Partisipasi Campaign | Row 57 G-column |
+| 7 | 🏆 Kompetisi TOP Produk | Rows 61-63 G-column |
+| 8 | 📋 Kesimpulan | G66 conclusion |
+| 9 | 📌 Estimasi persentase biaya marketing | G68 text |
+| 10 | (no header) | G73 budget text |
+| 11 | (no header) | G75 closing message |
 
 ### WhatsApp Link
 
@@ -1467,7 +1449,6 @@ G-column message templates support `{placeholder}` syntax. Missing placeholders 
 │                                                                  │
 │  manual_data ──┬──► _score_operational()  ──► Cat 1 (rows 7-11)  │
 │                ├──► _score_business()     ──► Cat 2 (rows 13-20) │
-│                ├──► _score_content()      ──► Cat 3 (rows 22-24) │
 │                ├──► _score_visitors()     ──► Cat 4 (rows 26-29) │
 │                ├──► _score_promo_tools()  ──► Cat 5 (rows 31-43) │
 │                ├──► _score_products()     ──► Cat 6 (rows 45-46) │
@@ -1510,7 +1491,6 @@ FUNCTION calculate_score(manual_data, calculator_results, template, verdict, ...
     categories = [
         _score_operational(manual_data, rules),
         _score_business(manual_data, rules),
-        _score_content(manual_data, rules),
         _score_visitors(manual_data, rules),
         _score_promo_tools(manual_data, rules),
         _score_products(manual_data, rules),
@@ -1600,14 +1580,6 @@ FUNCTION _score_business(manual_data, rules):
     # Row 20: Conversion rate (scored with default threshold=3.0)
     # NOTE: overridden post-scoring in calculate_score() with rules threshold
     RETURN CategoryScore(sum of row 13 + 19 scores, max=20)
-
-# ─── Cat 3: Skor Kesehatan Konten (rows 22-24, info only) ───
-FUNCTION _score_content(manual_data, rules):
-    d22 = content.needsImprovement
-    d23 = content.goodQuality
-    d24 = d23 / (d23 + d22)
-    row 24: IF d24 >= 0.95 → verdict ✔️  ELSE ❌     (score always 0)
-    RETURN CategoryScore(0, max=0)
 
 # ─── Cat 4: Tinjauan Pengunjung (rows 26-29, max 5 pts) ───
 FUNCTION _score_visitors(manual_data, rules):
@@ -1759,12 +1731,6 @@ The complete `DEFAULT_RULES` dict structure, organized by category. These are th
 | | comparison | gte (info_only) |
 | | message_pass | `✔️ Tingkat Konversi = {val_str} Sudah Baik` |
 | | message_fail | `❌ Tingkat Konversi = {val_str} Kurang Baik, nilai disarankan: {benchmark}` |
-
-### Content
-
-| Key | Threshold | Comparison | Message Pass | Message Fail |
-|-----|-----------|------------|-------------|-------------|
-| `quality_ratio` | 95.0 | gte (info_only) | `✔️ % Konten baik = {val_str} Sudah Baik` | `❌ % Konten baik = {val_str} Kurang Baik, nilai disarankan: >{threshold}%` |
 
 ### Visitors
 

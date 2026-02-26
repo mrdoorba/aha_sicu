@@ -59,17 +59,6 @@ describe('generateMonthLabels', () => {
 });
 
 describe('computeSectionProgress', () => {
-  it('excludes content from section 2 progress', () => {
-    const data: ManualData = {
-      ...EMPTY_MANUAL_DATA,
-      content: { needsImprovement: 5, goodQuality: 10 },
-    };
-    const progress = computeSectionProgress(data);
-    // Section 2 = business (7 fields) + visitors (3) = 10 total, content excluded
-    expect(progress['section-2'].total).toBe(10);
-    expect(progress['section-2'].filled).toBe(0); // content data doesn't count
-  });
-
   it('excludes salesStartMonth from section 2 field count', () => {
     const data: ManualData = {
       ...EMPTY_MANUAL_DATA,
