@@ -1,14 +1,4 @@
-# CLAUDE.md — Store ICU (Aha SICU)
-
-## Project Overview
-
-Store ICU is an e-commerce operations platform. The codebase is split into:
-
-- `backend/` — FastAPI (Python 3.14, managed with `uv`)
-- `frontend/` — React + Vite (TypeScript, Node 20)
-- `infrastructure/` — Terraform IaC (GCP)
-- `smoke-tests/` — Integration tests
-- `openspec/` — AI-native workflow artifacts (spec-driven)
+# CLAUDE.md
 
 ## Command Autonomy
 
