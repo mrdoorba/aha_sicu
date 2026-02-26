@@ -179,6 +179,98 @@ describe('EvaluationDetailPage', () => {
     expect(screen.getByText('pesanan tidak terselesaikan')).toBeInTheDocument();
   });
 
+  it('renders Indonesian labels and benchmarks for known formConfig fields', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: {
+        ...MOCK_EVALUATION,
+        manual_inputs: {
+          operational: { unfulfilledOrderRate: 0.5, chatResponseRate: 96 },
+        },
+      },
+    };
+    renderPage();
+
+    // Indonesian labels from OPERATIONAL_FIELDS
+    expect(screen.getByText('Tingkat Pesanan Tidak Terselesaikan')).toBeInTheDocument();
+    expect(screen.getByText('Persentase Chat Dibalas')).toBeInTheDocument();
+    // Benchmark display in muted text
+    expect(screen.getByText('(<1%)')).toBeInTheDocument();
+    expect(screen.getByText('(>95%)')).toBeInTheDocument();
+    // Percentage formatting via inputType + unit
+    expect(screen.getByText(/0\.5%/)).toBeInTheDocument();
+    expect(screen.getByText(/96%/)).toBeInTheDocument();
+  });
+
+  it('formats currency fields using Indonesian locale', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: {
+        ...MOCK_EVALUATION,
+        manual_inputs: {
+          ads: { adSales: 1500000, adCost: 500000 },
+        },
+      },
+    };
+    renderPage();
+
+    expect(screen.getByText('Data Iklan')).toBeInTheDocument();
+    expect(screen.getByText('Penjualan Iklan')).toBeInTheDocument();
+    expect(screen.getByText('Biaya Iklan')).toBeInTheDocument();
+    expect(screen.getByText('1.500.000')).toBeInTheDocument();
+    expect(screen.getByText('500.000')).toBeInTheDocument();
+  });
+
+  it('renders competition fields with dot-notation key resolution', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: {
+        ...MOCK_EVALUATION,
+        manual_inputs: {
+          competition: {
+            product1: { productName: 'Sepatu A', sellingPrice: 250000, keyword: null, link: null, marketPrice: null },
+            product2: { productName: null, sellingPrice: null, keyword: null, link: null, marketPrice: null },
+            product3: { productName: null, sellingPrice: null, keyword: null, link: null, marketPrice: null },
+          },
+        },
+      },
+    };
+    renderPage();
+
+    expect(screen.getByText('Kompetisi TOP Produk')).toBeInTheDocument();
+    expect(screen.getByText('Produk Kompetitor 1 — Nama Produk')).toBeInTheDocument();
+    expect(screen.getByText('Sepatu A')).toBeInTheDocument();
+    expect(screen.getByText('Produk Kompetitor 1 — Harga Jual')).toBeInTheDocument();
+    expect(screen.getByText('250.000')).toBeInTheDocument();
+  });
+
+  it('renders dynamic month labels when salesStartMonth is present', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: {
+        ...MOCK_EVALUATION,
+        manual_inputs: {
+          business: {
+            salesStartMonth: '2026-02',
+            salesMonth0: 5000000,
+            salesMonth1: 4000000,
+            conversionRate: 3.5,
+          },
+        },
+      },
+    };
+    renderPage();
+
+    expect(screen.getByText('Bisnis Analisis')).toBeInTheDocument();
+    // Dynamic month labels from generateMonthLabels('2026-02')
+    expect(screen.getByText('Penjualan Feb 2026')).toBeInTheDocument();
+    expect(screen.getByText('Penjualan Jan 2026')).toBeInTheDocument();
+    // Conversion rate with benchmark
+    expect(screen.getByText('Tingkat Konversi')).toBeInTheDocument();
+    expect(screen.getByText(/3\.5%/)).toBeInTheDocument();
+    expect(screen.getByText('(>3%)')).toBeInTheDocument();
+  });
+
   it('renders email output section with copy button when email_output present', () => {
     renderPage();
 
