@@ -302,6 +302,58 @@ function ManualInputsSection({
             });
         }
 
+        // Competition section: group by product for a cleaner layout
+        if (category === 'competition') {
+          const products = ['product1', 'product2', 'product3'] as const;
+          const productLabels = ['Produk Kompetitor 1', 'Produk Kompetitor 2', 'Produk Kompetitor 3'];
+          // Strip the "Produk Kompetitor N — " prefix from labels for compact display
+          const shortLabel = (label: string) => label.replace(/^Produk Kompetitor \d — /, '');
+
+          return (
+            <div key={category}>
+              <h3 className="mb-2 text-sm font-semibold">{categoryLabel}</h3>
+              <div className="grid gap-3 sm:grid-cols-3">
+                {products.map((prefix, idx) => {
+                  const productEntries = entries.filter(([key]) => key.startsWith(prefix + '.'));
+                  return (
+                    <div key={prefix} className="rounded-lg border p-3">
+                      <h4 className="mb-2 text-xs font-semibold text-muted-foreground">{productLabels[idx]}</h4>
+                      <div className="space-y-1 text-sm">
+                        {productEntries.map(([key, val, fieldDef]) => {
+                          const isLink = key.endsWith('.link');
+                          const formatted = formatValue(val, key, fieldDef);
+                          return (
+                            <div key={key} className="flex justify-between gap-2 border-b border-border/50 py-1">
+                              <span className="shrink-0 text-muted-foreground">
+                                {shortLabel(fieldDef?.label ?? key)}
+                              </span>
+                              {isLink && formatted !== '-' ? (
+                                <a
+                                  href={formatted}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="truncate text-right font-medium text-blue-600 underline"
+                                  title={formatted}
+                                >
+                                  Lihat di Shopee
+                                </a>
+                              ) : (
+                                <span className="truncate text-right font-medium" title={formatted}>
+                                  {formatted}
+                                </span>
+                              )}
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        }
+
         return (
           <div key={category}>
             <h3 className="mb-2 text-sm font-semibold">{categoryLabel}</h3>

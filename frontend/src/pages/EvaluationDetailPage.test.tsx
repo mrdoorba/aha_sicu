@@ -244,9 +244,10 @@ describe('EvaluationDetailPage', () => {
     renderPage();
 
     expect(screen.getByText('Kompetisi TOP Produk')).toBeInTheDocument();
-    expect(screen.getByText('Produk Kompetitor 1 — Nama Produk')).toBeInTheDocument();
+    expect(screen.getByText('Produk Kompetitor 1')).toBeInTheDocument();
+    expect(screen.getAllByText('Nama Produk').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Sepatu A')).toBeInTheDocument();
-    expect(screen.getByText('Produk Kompetitor 1 — Harga Jual')).toBeInTheDocument();
+    expect(screen.getAllByText('Harga Jual').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('250.000')).toBeInTheDocument();
   });
 
