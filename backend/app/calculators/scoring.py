@@ -215,12 +215,13 @@ def _format_message_template(template: str, **kwargs: Any) -> str:
 # IMPORTANT: These are module-level constants — treat as immutable.
 #
 # NOTE (source of truth): Message templates exist in THREE places:
-#   1. Migration 012/013 — DB seed values
+#   1. Migration 012/013/019 — DB seed values
 #   2. DEFAULT_RULES below — runtime fallback when rules=None
 #   3. Inline defaults in _generate_*_messages() — per-field fallbacks
 # If changing default message text, update ALL THREE locations.
-# The test_default_rules_produce_identical_messages test catches drift
-# between (2) and (3).
+# Tests catching drift:
+#   - test_default_rules_produce_identical_messages → (2) vs (3)
+#   - TestMigrationTemplatesDrift → (1) vs (2)
 DEFAULT_RULES: dict = {
     "operational": {
         "unfulfilled_order_rate": {

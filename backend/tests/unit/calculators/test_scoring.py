@@ -2278,3 +2278,81 @@ class TestMessageTemplateEndToEnd:
         assert result_none.email_body == result_default.email_body
         # Closing message should be identical
         assert result_none.closing_message == result_default.closing_message
+
+
+class TestMigrationTemplatesDrift:
+    """Catch drift between DB migration templates and DEFAULT_RULES.
+
+    Migration 012 seeds message templates into the DB. If DEFAULT_RULES is
+    updated but the DB templates are not patched via a new migration, the DB
+    values silently override the code defaults. This test extracts the
+    effective DB state (012 + subsequent patches) and compares against
+    DEFAULT_RULES to ensure they stay in sync.
+    """
+
+    @staticmethod
+    def _build_effective_db_templates() -> dict:
+        """Replay migration 012 + 019 patches to get the effective DB state."""
+        import importlib
+
+        m012 = importlib.import_module(
+            "app.db.migrations.versions.012_add_message_templates"
+        )
+        m019 = importlib.import_module(
+            "app.db.migrations.versions.019_sync_db_message_templates_with_code"
+        )
+
+        db: dict = {}
+        # Merge shared messages from 012
+        for category, rule_messages in m012.SHARED_MESSAGES.items():
+            db[category] = {}
+            for rule_key, msg_fields in rule_messages.items():
+                db[category][rule_key] = dict(msg_fields)
+
+        # Merge competition from 012
+        db["competition"] = dict(m012.COMPETITION_MESSAGES)
+
+        # Apply 019 patches
+        m019._apply_patches(db, forward=True)
+
+        return db
+
+    @staticmethod
+    def _extract_message_keys(d: dict) -> dict[str, str]:
+        """Flatten a nested dict into {dotted_path: value} for message_* keys."""
+        result = {}
+
+        def _walk(obj: dict, prefix: str) -> None:
+            for k, v in obj.items():
+                path = f"{prefix}.{k}" if prefix else k
+                if isinstance(v, dict):
+                    _walk(v, path)
+                elif isinstance(v, str) and k.startswith("message_"):
+                    result[path] = v
+
+        _walk(d, "")
+        return result
+
+    def test_db_templates_match_default_rules(self):
+        """Every message template in the DB must match DEFAULT_RULES."""
+        db_templates = self._build_effective_db_templates()
+        db_msgs = self._extract_message_keys(db_templates)
+        code_msgs = self._extract_message_keys(DEFAULT_RULES)
+
+        mismatches = []
+        for path, db_val in db_msgs.items():
+            code_val = code_msgs.get(path)
+            if code_val is None:
+                continue  # DB has templates not in code defaults (extra is OK)
+            if db_val != code_val:
+                mismatches.append(
+                    f"  {path}:\n"
+                    f"    DB:   {db_val!r}\n"
+                    f"    Code: {code_val!r}"
+                )
+
+        assert not mismatches, (
+            "DB migration templates have drifted from DEFAULT_RULES.\n"
+            "Create a new migration to sync them, or update DEFAULT_RULES.\n"
+            + "\n".join(mismatches)
+        )
