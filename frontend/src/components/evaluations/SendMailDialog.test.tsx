@@ -123,6 +123,27 @@ describe('SendMailDialog', () => {
     windowOpen.mockRestore();
   });
 
+  it('uses edited "Kepada" value in mailto URL', async () => {
+    const onOpenChange = vi.fn();
+    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const user = userEvent.setup();
+    renderDialog({ onOpenChange });
+
+    const toInput = screen.getByLabelText('Kepada');
+    await user.clear(toInput);
+    await user.type(toInput, 'custom@recipient.com');
+
+    const sendButtons = screen.getAllByText('Kirim Email');
+    const sendButton = sendButtons.find((el) => el.closest('button') !== null)!;
+    await user.click(sendButton.closest('button')!);
+
+    const url = windowOpen.mock.calls[0][0] as string;
+    expect(url).toContain('custom%40recipient.com');
+    expect(url).not.toContain('bot%40ahacommerce.net');
+
+    windowOpen.mockRestore();
+  });
+
   it('calls onOpenChange(false) when cancel button is clicked', async () => {
     const onOpenChange = vi.fn();
     const user = userEvent.setup();

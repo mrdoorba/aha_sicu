@@ -60,7 +60,10 @@ export function SendMailDialog({
 
   const handleSend = () => {
     const mailtoUrl = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    window.open(mailtoUrl, '_blank');
+    const opened = window.open(mailtoUrl, '_blank');
+    if (!opened) {
+      window.location.href = mailtoUrl;
+    }
     onOpenChange(false);
   };
 
