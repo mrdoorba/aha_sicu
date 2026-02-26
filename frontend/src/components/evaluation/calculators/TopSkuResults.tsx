@@ -1,6 +1,6 @@
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { ArrowUpDown } from 'lucide-react';
+import { ArrowUpDown, ChevronRight, ChevronDown } from 'lucide-react';
 import {
   Table,
   TableBody,
@@ -9,6 +9,7 @@ import {
   TableHeader,
   TableRow,
 } from '../../ui/table';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible';
 import { formatIDR } from '../forms/formConfig';
 import type { CalculatorResult, TopSkuDetails } from '../../../hooks/useCalculator';
 
@@ -17,6 +18,8 @@ interface TopSkuResultsProps {
 }
 
 type SortDir = 'asc' | 'desc';
+
+const TOP_N = 5;
 
 function sortBy<T>(data: T[], field: keyof T, dir: SortDir): T[] {
   return [...data].sort((a, b) => {
@@ -32,18 +35,19 @@ export function TopSkuResults({ result }: TopSkuResultsProps) {
   const { t } = useTranslation();
   const details = result.details as TopSkuDetails;
 
+  const [isOpen, setIsOpen] = useState(false);
   const [revSortField, setRevSortField] = useState<keyof TopSkuDetails['output_1'][0]>('total_omzet');
   const [revSortDir, setRevSortDir] = useState<SortDir>('desc');
   const [stockSortField, setStockSortField] = useState<keyof TopSkuDetails['output_2'][0]>('stok');
   const [stockSortDir, setStockSortDir] = useState<SortDir>('desc');
 
   const sortedRevenue = useMemo(
-    () => sortBy(details.output_1 ?? [], revSortField, revSortDir),
+    () => sortBy(details.output_1 ?? [], revSortField, revSortDir).slice(0, TOP_N),
     [details.output_1, revSortField, revSortDir],
   );
 
   const sortedStock = useMemo(
-    () => sortBy(details.output_2 ?? [], stockSortField, stockSortDir),
+    () => sortBy(details.output_2 ?? [], stockSortField, stockSortDir).slice(0, TOP_N),
     [details.output_2, stockSortField, stockSortDir],
   );
 
@@ -78,91 +82,110 @@ export function TopSkuResults({ result }: TopSkuResultsProps) {
         {t('topSku.averageStock')}: <span data-testid="average-stock">{details.average_stock}</span>
       </p>
 
-      {/* Revenue ranking table */}
-      <p className="mb-1 text-xs font-medium text-muted-foreground">{t('topSku.revenueRanking')}</p>
-      <Table data-testid="revenue-table">
-        <TableHeader>
-          <TableRow>
-            <TableHead
-              className="cursor-pointer select-none"
-              onClick={() => toggleRevSort('kode_variasi')}
-            >
-              {t('topSku.kodeVariasi')} <ArrowUpDown className="ml-1 inline size-3" />
-            </TableHead>
-            <TableHead
-              className="cursor-pointer select-none"
-              onClick={() => toggleRevSort('product_name')}
-            >
-              {t('topSku.productName')} <ArrowUpDown className="ml-1 inline size-3" />
-            </TableHead>
-            <TableHead
-              className="cursor-pointer select-none text-right"
-              onClick={() => toggleRevSort('total_omzet')}
-            >
-              {t('topSku.totalOmzet')} <ArrowUpDown className="ml-1 inline size-3" />
-            </TableHead>
-            <TableHead
-              className="cursor-pointer select-none text-right"
-              onClick={() => toggleRevSort('rata2_harga_jual')}
-            >
-              {t('topSku.avgPrice')} <ArrowUpDown className="ml-1 inline size-3" />
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedRevenue.map((row) => (
-            <TableRow key={row.kode_variasi}>
-              <TableCell>{row.kode_variasi}</TableCell>
-              <TableCell>{row.product_name}</TableCell>
-              <TableCell className="text-right">Rp {formatIDR(row.total_omzet)}</TableCell>
-              <TableCell className="text-right">Rp {formatIDR(row.rata2_harga_jual)}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="mb-2 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            data-testid="detail-toggle"
+          >
+            {isOpen ? (
+              <ChevronDown className="size-3.5" />
+            ) : (
+              <ChevronRight className="size-3.5" />
+            )}
+            {isOpen ? t('topSku.hideDetail') : t('topSku.showDetail')}
+          </button>
+        </CollapsibleTrigger>
 
-      {/* Stock ranking table */}
-      <p className="mb-1 mt-4 text-xs font-medium text-muted-foreground">{t('topSku.stockRanking')}</p>
-      <Table data-testid="stock-table">
-        <TableHeader>
-          <TableRow>
-            <TableHead
-              className="cursor-pointer select-none"
-              onClick={() => toggleStockSort('kode_variasi')}
-            >
-              {t('topSku.kodeVariasi')} <ArrowUpDown className="ml-1 inline size-3" />
-            </TableHead>
-            <TableHead
-              className="cursor-pointer select-none"
-              onClick={() => toggleStockSort('nama_produk')}
-            >
-              {t('topSku.namaProduk')} <ArrowUpDown className="ml-1 inline size-3" />
-            </TableHead>
-            <TableHead
-              className="cursor-pointer select-none"
-              onClick={() => toggleStockSort('varian')}
-            >
-              {t('topSku.varian')} <ArrowUpDown className="ml-1 inline size-3" />
-            </TableHead>
-            <TableHead
-              className="cursor-pointer select-none text-right"
-              onClick={() => toggleStockSort('stok')}
-            >
-              {t('topSku.stok')} <ArrowUpDown className="ml-1 inline size-3" />
-            </TableHead>
-          </TableRow>
-        </TableHeader>
-        <TableBody>
-          {sortedStock.map((row) => (
-            <TableRow key={row.kode_variasi}>
-              <TableCell>{row.kode_variasi}</TableCell>
-              <TableCell>{row.nama_produk}</TableCell>
-              <TableCell>{row.varian}</TableCell>
-              <TableCell className="text-right">{row.stok}</TableCell>
-            </TableRow>
-          ))}
-        </TableBody>
-      </Table>
+        <CollapsibleContent>
+          {/* Revenue ranking table */}
+          <p className="mb-1 text-xs font-medium text-muted-foreground">{t('topSku.revenueRanking')}</p>
+          <Table data-testid="revenue-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead
+                  className="cursor-pointer select-none"
+                  onClick={() => toggleRevSort('kode_variasi')}
+                >
+                  {t('topSku.kodeVariasi')} <ArrowUpDown className="ml-1 inline size-3" />
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none"
+                  onClick={() => toggleRevSort('product_name')}
+                >
+                  {t('topSku.productName')} <ArrowUpDown className="ml-1 inline size-3" />
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none text-right"
+                  onClick={() => toggleRevSort('total_omzet')}
+                >
+                  {t('topSku.totalOmzet')} <ArrowUpDown className="ml-1 inline size-3" />
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none text-right"
+                  onClick={() => toggleRevSort('rata2_harga_jual')}
+                >
+                  {t('topSku.avgPrice')} <ArrowUpDown className="ml-1 inline size-3" />
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedRevenue.map((row) => (
+                <TableRow key={row.kode_variasi}>
+                  <TableCell>{row.kode_variasi}</TableCell>
+                  <TableCell>{row.product_name}</TableCell>
+                  <TableCell className="text-right">Rp {formatIDR(row.total_omzet)}</TableCell>
+                  <TableCell className="text-right">Rp {formatIDR(row.rata2_harga_jual)}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+
+          {/* Stock ranking table */}
+          <p className="mb-1 mt-4 text-xs font-medium text-muted-foreground">{t('topSku.stockRanking')}</p>
+          <Table data-testid="stock-table">
+            <TableHeader>
+              <TableRow>
+                <TableHead
+                  className="cursor-pointer select-none"
+                  onClick={() => toggleStockSort('kode_variasi')}
+                >
+                  {t('topSku.kodeVariasi')} <ArrowUpDown className="ml-1 inline size-3" />
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none"
+                  onClick={() => toggleStockSort('nama_produk')}
+                >
+                  {t('topSku.namaProduk')} <ArrowUpDown className="ml-1 inline size-3" />
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none"
+                  onClick={() => toggleStockSort('varian')}
+                >
+                  {t('topSku.varian')} <ArrowUpDown className="ml-1 inline size-3" />
+                </TableHead>
+                <TableHead
+                  className="cursor-pointer select-none text-right"
+                  onClick={() => toggleStockSort('stok')}
+                >
+                  {t('topSku.stok')} <ArrowUpDown className="ml-1 inline size-3" />
+                </TableHead>
+              </TableRow>
+            </TableHeader>
+            <TableBody>
+              {sortedStock.map((row) => (
+                <TableRow key={row.kode_variasi}>
+                  <TableCell>{row.kode_variasi}</TableCell>
+                  <TableCell>{row.nama_produk}</TableCell>
+                  <TableCell>{row.varian}</TableCell>
+                  <TableCell className="text-right">{row.stok}</TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }
