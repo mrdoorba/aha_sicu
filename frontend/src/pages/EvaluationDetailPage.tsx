@@ -323,25 +323,26 @@ function ManualInputsSection({
                           const isLink = key.endsWith('.link');
                           const formatted = formatValue(val, key, fieldDef);
                           return (
-                            <div key={key} className="flex justify-between gap-2 border-b border-border/50 py-1">
-                              <span className="shrink-0 text-muted-foreground">
+                            <div key={key} className="border-b border-border/50 py-1">
+                              <span className="text-muted-foreground">
                                 {shortLabel(fieldDef?.label ?? key)}
                               </span>
+                              <div className="font-medium">
                               {isLink && formatted !== '-' ? (
                                 <a
                                   href={formatted}
                                   target="_blank"
                                   rel="noopener noreferrer"
-                                  className="truncate text-right font-medium text-blue-600 underline"
-                                  title={formatted}
+                                  className="text-blue-600 underline break-all"
                                 >
                                   Lihat di Shopee
                                 </a>
                               ) : (
-                                <span className="truncate text-right font-medium" title={formatted}>
+                                <span className="break-words">
                                   {formatted}
                                 </span>
                               )}
+                              </div>
                             </div>
                           );
                         })}
