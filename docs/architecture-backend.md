@@ -148,13 +148,12 @@ discount    ← order_export
 
 ### Scoring System
 
-The scoring engine (`scoring.py`) implements an 11-category scoring framework:
+The scoring engine (`scoring.py`) implements a 10-category scoring framework:
 
 | Category | Max Score | Data Source |
 |----------|-----------|-------------|
 | Operational | 0 (info) | Manual inputs |
 | Business | 0 (info) | Manual inputs |
-| Content | 0 (info) | Manual inputs |
 | Visitors | 15 | Manual inputs |
 | Promo Tools | 15 | Manual inputs |
 | Products/Status | 10 | Manual inputs |

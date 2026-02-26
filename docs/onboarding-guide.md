@@ -283,16 +283,7 @@ After uploading files, enter manual data for each scoring category. These values
 
 > **Note:** Enter 6 months of sales data (current + 5 previous). The system calculates the 6-month average automatically.
 
-#### Category 3: Skor Kesehatan Konten (Content Health Score)
-
-| Field | Indonesian Label | Input Type | Benchmark | Where to Find |
-|-------|-----------------|------------|-----------|---------------|
-| Perlu ditingkatkan | Konten perlu ditingkatkan | Count | — | Seller Center → Produk → Content Score |
-| Kualitas baik | Konten kualitas baik | Count | — | Seller Center → Produk → Content Score |
-
-The system calculates `% Konten baik` automatically (benchmark: > 95%).
-
-#### Category 4: Tinjauan Pengunjung (Visitor Overview)
+#### Category 3: Tinjauan Pengunjung (Visitor Overview)
 
 | Field | Indonesian Label | Input Type | Benchmark | Where to Find |
 |-------|-----------------|------------|-----------|---------------|
@@ -302,7 +293,7 @@ The system calculates `% Konten baik` automatically (benchmark: > 95%).
 
 The system calculates `% Pengunjung Lama` automatically (benchmark: > 23%).
 
-#### Category 5: Promo Toko (Store Promotions)
+#### Category 4: Promo Toko (Store Promotions)
 
 Enter **revenue generated** (IDR) by each promotional tool:
 
@@ -322,7 +313,7 @@ Enter **revenue generated** (IDR) by each promotional tool:
 
 > **Note:** Enter `0` if the brand does not use a particular promotional tool. The system counts usage and effectiveness percentages automatically.
 
-#### Category 6: Jumlah Produk & Status Toko (Products & Store Status)
+#### Category 5: Jumlah Produk & Status Toko (Products & Store Status)
 
 | Field | Indonesian Label | Input Type | Benchmark | Where to Find |
 |-------|-----------------|------------|-----------|---------------|
@@ -331,7 +322,7 @@ Enter **revenue generated** (IDR) by each promotional tool:
 
 Valid values for Status Toko: `Shopee Mall`, `Star+`, or other text.
 
-#### Category 7: Data Iklan (Advertising Data)
+#### Category 6: Data Iklan (Advertising Data)
 
 | Field | Indonesian Label | Input Type | Benchmark | Where to Find |
 |-------|-----------------|------------|-----------|---------------|
@@ -340,7 +331,7 @@ Valid values for Status Toko: `Shopee Mall`, `Star+`, or other text.
 
 The system auto-calculates ROI (benchmark: > 8 Fashion / > 9 Non-Fashion), % GMV Iklan, and % Biaya Iklan.
 
-#### Category 8: Partisipasi Campaign (Campaign Participation)
+#### Category 7: Partisipasi Campaign (Campaign Participation)
 
 | Field | Indonesian Label | Input Type | Benchmark | Where to Find |
 |-------|-----------------|------------|-----------|---------------|
@@ -349,7 +340,7 @@ The system auto-calculates ROI (benchmark: > 8 Fashion / > 9 Non-Fashion), % GMV
 
 The system calculates `% Partisipasi Campaign` (benchmark: > 90%).
 
-#### Category 9: Kompetisi TOP Produk (Top Product Competition)
+#### Category 8: Kompetisi TOP Produk (Top Product Competition)
 
 For the top 3 products (from Calculator 2 output):
 
@@ -491,15 +482,14 @@ The system scores the brand across **11 categories**, producing a total score th
 |----------|-----------|------|
 | 1. Kesehatan Operasional Toko | 10 | Penalty (deducted if fail) |
 | 2. Bisnis Analisis | 20 | Performance |
-| 3. Skor Kesehatan Konten | 0 | Informational only |
-| 4. Tinjauan Pengunjung | 5 | Performance |
-| 5. Promo Toko | 15 | Opportunity (earned on fail) |
-| 6. Jumlah Produk & Status | 15 | Performance |
-| 7. Data Iklan | 10 | Mixed |
-| 8. Partisipasi Campaign | 10 | Opportunity |
-| 9. Kompetisi TOP Produk | 0 | Informational only |
-| 10. Stok | 10 | Performance + penalty |
-| 11. Discount | 5 | Performance |
+| 3. Tinjauan Pengunjung | 5 | Performance |
+| 4. Promo Toko | 15 | Opportunity (earned on fail) |
+| 5. Jumlah Produk & Status | 15 | Performance |
+| 6. Data Iklan | 10 | Mixed |
+| 7. Partisipasi Campaign | 10 | Opportunity |
+| 8. Kompetisi TOP Produk | 0 | Informational only |
+| 9. Stok | 10 | Performance + penalty |
+| 10. Discount | 5 | Performance |
 
 > **Important — "Opportunity" scoring:** Categories 5, 7 (partial), and 8 award points when the brand **fails** the benchmark. This is because under-performance represents a business opportunity for AHA to help improve the brand. Higher total score = more attractive prospect for partnership.
 
