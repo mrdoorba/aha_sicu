@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, ClipboardCheck, Trash2 } from 'lucide-react';
+import { ArrowLeft, Copy, ClipboardCheck, Trash2, ChevronRight, ChevronDown } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -18,6 +18,7 @@ import { useEvaluationDetail } from '../hooks/useEvaluationDetail';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useDeleteEvaluation } from '../hooks/useDeleteEvaluation';
 import { DeleteEvaluationDialog } from '../components/evaluations/DeleteEvaluationDialog';
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
 import { FinalScoreDisplay } from '../components/evaluation/scoring/FinalScoreDisplay';
 
 function formatDate(dateStr: string): string {
@@ -101,9 +102,10 @@ function AdsKeywordSection({ data, t }: { data: Record<string, unknown>; t: (key
 
 function TopSkuSection({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
   const details = data.details as Record<string, unknown> | undefined;
-  const output1 = (details?.output_1 as Array<Record<string, unknown>>) || [];
-  const output2 = (details?.output_2 as Array<Record<string, unknown>>) || [];
+  const output1 = ((details?.output_1 as Array<Record<string, unknown>>) || []).slice(0, 5);
+  const output2 = ((details?.output_2 as Array<Record<string, unknown>>) || []).slice(0, 5);
   const avgStock = details?.average_stock;
+  const [isOpen, setIsOpen] = useState(false);
 
   if (output1.length === 0 && output2.length === 0) {
     return <p className="text-muted-foreground">{t('common.noData')}</p>;
@@ -113,59 +115,76 @@ function TopSkuSection({ data, t }: { data: Record<string, unknown>; t: (key: st
     <div className="space-y-4">
       {avgStock !== undefined && avgStock !== null && (
         <p className="text-sm font-medium">
-          {t('evaluationDetail.averageStock')}: <span className="font-bold">{formatIDR(avgStock)}</span>
+          {t('evaluationDetail.averageStock')}: <span className="font-bold">{String(avgStock)}</span>
         </p>
       )}
-      {output1.length > 0 && (
-        <div>
-          <h4 className="mb-2 text-sm font-medium">{t('evaluationDetail.revenueRanking')}</h4>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('topSku.kodeVariasi')}</TableHead>
-                <TableHead>{t('topSku.productName')}</TableHead>
-                <TableHead className="text-right">{t('topSku.totalOmzet')}</TableHead>
-                <TableHead className="text-right">{t('topSku.avgPrice')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {output1.map((row, i) => (
-                <TableRow key={String(row.kode_variasi ?? i)}>
-                  <TableCell>{String(row.kode_variasi ?? '-')}</TableCell>
-                  <TableCell>{String(row.product_name ?? row.nama_produk ?? '-')}</TableCell>
-                  <TableCell className="text-right">{formatIDR(row.total_omzet)}</TableCell>
-                  <TableCell className="text-right">{formatIDR(row.rata2_harga_jual)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
-      {output2.length > 0 && (
-        <div>
-          <h4 className="mb-2 text-sm font-medium">{t('evaluationDetail.stockRanking')}</h4>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>{t('topSku.kodeVariasi')}</TableHead>
-                <TableHead>{t('topSku.namaProduk')}</TableHead>
-                <TableHead>{t('topSku.varian')}</TableHead>
-                <TableHead className="text-right">{t('topSku.stok')}</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {output2.map((row, i) => (
-                <TableRow key={String(row.kode_variasi ?? i)}>
-                  <TableCell>{String(row.kode_variasi ?? '-')}</TableCell>
-                  <TableCell>{String(row.nama_produk ?? '-')}</TableCell>
-                  <TableCell>{String(row.varian ?? '-')}</TableCell>
-                  <TableCell className="text-right">{formatIDR(row.stok)}</TableCell>
-                </TableRow>
-              ))}
-            </TableBody>
-          </Table>
-        </div>
-      )}
+      <Collapsible open={isOpen} onOpenChange={setIsOpen}>
+        <CollapsibleTrigger asChild>
+          <button
+            type="button"
+            className="mb-2 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+          >
+            {isOpen ? (
+              <ChevronDown className="size-3.5" />
+            ) : (
+              <ChevronRight className="size-3.5" />
+            )}
+            {isOpen ? t('topSku.hideDetail') : t('topSku.showDetail')}
+          </button>
+        </CollapsibleTrigger>
+        <CollapsibleContent>
+          {output1.length > 0 && (
+            <div>
+              <h4 className="mb-2 text-sm font-medium">{t('evaluationDetail.revenueRanking')}</h4>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('topSku.kodeVariasi')}</TableHead>
+                    <TableHead>{t('topSku.productName')}</TableHead>
+                    <TableHead className="text-right">{t('topSku.totalOmzet')}</TableHead>
+                    <TableHead className="text-right">{t('topSku.avgPrice')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {output1.map((row, i) => (
+                    <TableRow key={String(row.kode_variasi ?? i)}>
+                      <TableCell>{String(row.kode_variasi ?? '-')}</TableCell>
+                      <TableCell>{String(row.product_name ?? row.nama_produk ?? '-')}</TableCell>
+                      <TableCell className="text-right">{formatIDR(row.total_omzet)}</TableCell>
+                      <TableCell className="text-right">{formatIDR(row.rata2_harga_jual)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+          {output2.length > 0 && (
+            <div>
+              <h4 className="mb-2 mt-4 text-sm font-medium">{t('evaluationDetail.stockRanking')}</h4>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>{t('topSku.kodeVariasi')}</TableHead>
+                    <TableHead>{t('topSku.namaProduk')}</TableHead>
+                    <TableHead>{t('topSku.varian')}</TableHead>
+                    <TableHead className="text-right">{t('topSku.stok')}</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {output2.map((row, i) => (
+                    <TableRow key={String(row.kode_variasi ?? i)}>
+                      <TableCell>{String(row.kode_variasi ?? '-')}</TableCell>
+                      <TableCell>{String(row.nama_produk ?? '-')}</TableCell>
+                      <TableCell>{String(row.varian ?? '-')}</TableCell>
+                      <TableCell className="text-right">{formatIDR(row.stok)}</TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+          )}
+        </CollapsibleContent>
+      </Collapsible>
     </div>
   );
 }

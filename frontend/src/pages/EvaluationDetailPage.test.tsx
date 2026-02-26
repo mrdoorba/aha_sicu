@@ -150,15 +150,19 @@ describe('EvaluationDetailPage', () => {
     expect(screen.getByText('Promo Tools')).toBeInTheDocument();
   });
 
-  it('renders calculator results (ads keyword text, top SKU tables, discount values)', () => {
+  it('renders calculator results (ads keyword text, top SKU tables, discount values)', async () => {
+    const user = userEvent.setup();
     renderPage();
 
     expect(screen.getByText('Hasil Kalkulator')).toBeInTheDocument();
     // Ads Keyword
     expect(screen.getByText('Analisis Ads Keyword')).toBeInTheDocument();
     expect(screen.getByText('AK analysis text output')).toBeInTheDocument();
-    // Top SKU
+    // Top SKU — section heading and average stock visible before expanding
     expect(screen.getByText('Analisis Top SKU')).toBeInTheDocument();
+    expect(screen.getByText('150')).toBeInTheDocument();
+    // Expand the collapsible to see table rows
+    await user.click(screen.getByText('Lihat Detail'));
     expect(screen.getByText('V001')).toBeInTheDocument();
     expect(screen.getByText('Shoe A')).toBeInTheDocument();
     // Discount
