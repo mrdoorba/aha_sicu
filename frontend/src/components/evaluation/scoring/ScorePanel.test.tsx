@@ -26,7 +26,6 @@ const MOCK_RESULT: ScoringResult = {
   closing_message: '',
   email_subject: '',
   email_body: '',
-  whatsapp_link: '',
   template: 'fashion',
 };
 

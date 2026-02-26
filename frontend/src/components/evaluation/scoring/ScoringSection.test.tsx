@@ -18,7 +18,6 @@ const MOCK_RESULT: ScoringResult = {
   closing_message: 'Thank you',
   email_subject: 'Evaluation Result',
   email_body: 'Dear Store,\nScore: 82',
-  whatsapp_link: 'https://wa.me/?text=hello',
   template: 'fashion',
 };
 
@@ -85,7 +84,6 @@ describe('ScoringSection', () => {
     expect(screen.getByText('82')).toBeInTheDocument();
     expect(screen.getByText(/rincian per kategori/i)).toBeInTheDocument();
     expect(screen.getByText(/email output/i)).toBeInTheDocument();
-    expect(screen.getByText(/buka whatsapp/i)).toBeInTheDocument();
   });
 
   it('disables button while generating', () => {

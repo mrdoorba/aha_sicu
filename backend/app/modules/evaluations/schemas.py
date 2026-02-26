@@ -169,7 +169,6 @@ class ScoringResponse(BaseModel):
     closing_message: str
     email_subject: str
     email_body: str
-    whatsapp_link: str
     template: str
     rule_version: int
 

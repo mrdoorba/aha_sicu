@@ -173,9 +173,7 @@ def test_score_with_full_data(client):
         assert data["template"] == "fashion"
         assert "email_subject" in data
         assert "email_body" in data
-        assert "whatsapp_link" in data
         assert data["email_subject"].startswith("🏥")
-        assert data["whatsapp_link"].startswith("https://api.whatsapp.com")
         assert "rule_version" in data
         assert data["rule_version"] == 1
 

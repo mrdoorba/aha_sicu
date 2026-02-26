@@ -856,26 +856,6 @@ class TestEmailAssembly:
 
 
 # ---------------------------------------------------------------------------
-# WhatsApp link test
-# ---------------------------------------------------------------------------
-
-
-class TestWhatsAppLink:
-    def test_link_format(self, full_manual_data, full_calculator_results):
-        result = calculate_score(
-            manual_data=full_manual_data,
-            calculator_results=full_calculator_results,
-            template="fashion",
-            verdict="✔️",
-            store_name="Test Store",
-            period="Jan 2026",
-            brand_name="TEST",
-        )
-        assert result.whatsapp_link.startswith("https://api.whatsapp.com/send?text=")
-        assert "Test%20Store" in result.whatsapp_link
-
-
-# ---------------------------------------------------------------------------
 # Edge case tests
 # ---------------------------------------------------------------------------
 
@@ -974,7 +954,6 @@ class TestCalculateScore:
         assert len(result.category_scores) == 11
         assert result.email_subject != ""
         assert result.email_body != ""
-        assert result.whatsapp_link.startswith("https://")
         assert result.total_score > 0
 
     def test_non_fashion_template(self, full_manual_data, full_calculator_results):
@@ -2289,7 +2268,7 @@ class TestMessageTemplatesG75:
 
 
 class TestMessageTemplateEndToEnd:
-    """End-to-end: custom messages propagate to email body and WhatsApp."""
+    """End-to-end: custom messages propagate to email body."""
 
     def test_custom_messages_in_email_body(self, full_manual_data, full_calculator_results):
         rules = {**DEFAULT_RULES, "operational": {

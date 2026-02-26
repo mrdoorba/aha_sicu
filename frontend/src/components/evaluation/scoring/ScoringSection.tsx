@@ -6,7 +6,6 @@ import { AlertTriangle, RefreshCw } from 'lucide-react';
 import { FinalScoreDisplay } from './FinalScoreDisplay';
 import { ScoreBreakdown } from './ScoreBreakdown';
 import { EmailOutput } from './EmailOutput';
-import { WhatsAppLink } from './WhatsAppLink';
 import { VerdictSelector } from './VerdictSelector';
 import { PeriodSelector } from './PeriodSelector';
 import { generatePeriodOptions } from './periodOptions';
@@ -145,10 +144,6 @@ export const ScoringSection = ({
             subject={scoringResult.email_subject}
             body={scoringResult.email_body}
           />
-
-          <div className="flex items-center gap-3">
-            <WhatsAppLink link={scoringResult.whatsapp_link} />
-          </div>
         </>
       )}
     </div>

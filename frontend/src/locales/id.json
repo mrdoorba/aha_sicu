@@ -103,8 +103,6 @@
   "emailOutput.copy": "Salin",
   "emailOutput.copied": "Tersalin",
 
-  "whatsapp.open": "Buka WhatsApp",
-
   "sync.errorLoading": "Gagal memuat status sinkronisasi",
   "sync.neverSynced": "Belum pernah disinkronkan",
   "sync.lastSynced": "Terakhir disinkronkan: {{time}}",

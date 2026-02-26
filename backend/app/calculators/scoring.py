@@ -2,7 +2,7 @@
 
 Implements the 75-row scoring system template (Fashion/Non-Fashion variants).
 Combines manual inputs with Calculator 1-3 outputs to produce per-category
-scores, total score, verdicts, G-column messages, email body, and WhatsApp link.
+scores, total score, verdicts, G-column messages, and email body.
 
 Spec: logic/scoring-system-template-sicu.md
 """
@@ -13,7 +13,6 @@ import math
 import re
 from dataclasses import dataclass, field
 from typing import Any
-from urllib.parse import quote
 
 
 # ---------------------------------------------------------------------------
@@ -58,7 +57,6 @@ class ScoringResult:
     closing_message: str             # G75
     email_subject: str
     email_body: str                  # G1 assembled
-    whatsapp_link: str               # E1
     template: str                    # "fashion" or "non_fashion"
     rule_version: int = 1            # Version of rules used for scoring
 
@@ -1752,21 +1750,6 @@ def _assemble_email_body(
 
 
 # ---------------------------------------------------------------------------
-# WhatsApp link
-# ---------------------------------------------------------------------------
-
-def _build_whatsapp_link(store_name: str, period: str) -> str:
-    """Build api.whatsapp.com link with pre-formatted message."""
-    message = (
-        f"Halo, ini hasil Store Internal Check Up (Store ICU) "
-        f"untuk {store_name} periode {period}. "
-        f"Silakan cek email untuk detail lengkapnya."
-    )
-    encoded = quote(message, safe="")
-    return f"https://api.whatsapp.com/send?text={encoded}"
-
-
-# ---------------------------------------------------------------------------
 # Main entry point
 # ---------------------------------------------------------------------------
 
@@ -1800,7 +1783,7 @@ def calculate_score(
         rule_version: Version of the rules used (from DB).
 
     Returns:
-        ScoringResult with all scores, messages, email body, and WhatsApp link.
+        ScoringResult with all scores, messages, and email body.
     """
     is_fashion = template == "fashion"
 
@@ -1867,9 +1850,6 @@ def calculate_score(
         all_categories, g66, marketing_label, g68, g73, g75,
     )
 
-    # --- WhatsApp ---
-    whatsapp_link = _build_whatsapp_link(store_name, period)
-
     return ScoringResult(
         total_score=total_score,
         category_scores=all_categories,
@@ -1881,7 +1861,6 @@ def calculate_score(
         closing_message=g75,
         email_subject=email_subject,
         email_body=email_body,
-        whatsapp_link=whatsapp_link,
         template=template,
         rule_version=rule_version,
     )

@@ -33,7 +33,6 @@ const MOCK_SCORING_RESULT: ScoringResult = {
   closing_message: 'Thank you',
   email_subject: 'Evaluation Result',
   email_body: 'Dear Store,\nScore: 82',
-  whatsapp_link: 'https://wa.me/?text=hello',
   template: 'fashion',
 };
 

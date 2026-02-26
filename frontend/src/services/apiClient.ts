@@ -559,7 +559,6 @@ interface paths {
               closing_message: string;
               email_subject: string;
               email_body: string;
-              whatsapp_link: string;
               template: string;
             };
           };

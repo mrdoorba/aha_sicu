@@ -197,7 +197,6 @@ describe('EvaluationPage', () => {
         marketing_budget: 'Rp 1.000.000',
         closing_message: 'Thank you',
         email_subject: 'Result',
-        whatsapp_link: 'https://wa.me/',
         rule_version: 3,
       },
       isStale: false,

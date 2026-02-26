@@ -349,7 +349,6 @@ async def generate_score(
         closing_message=result.closing_message,
         email_subject=result.email_subject,
         email_body=result.email_body,
-        whatsapp_link=result.whatsapp_link,
         template=result.template,
         rule_version=result.rule_version,
     )
