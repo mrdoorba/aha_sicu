@@ -1,6 +1,13 @@
 import { useQuery } from '@tanstack/react-query';
 import client from '../services/apiClient';
 
+export interface BrandRawData {
+  email: string | null;
+  pic_name: string | null;
+  store_link: string | null;
+  kategori: string | null;
+}
+
 export interface EvaluationDetail {
   id: number;
   brand_id: number;
@@ -15,6 +22,7 @@ export interface EvaluationDetail {
   evaluator_email: string;
   created_at: string;
   rule_version: number;
+  brand_raw_data: BrandRawData;
 }
 
 class ApiError extends Error {

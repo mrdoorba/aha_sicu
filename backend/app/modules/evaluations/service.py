@@ -16,6 +16,7 @@ from app.db.queries import rules as rules_queries
 from app.modules.evaluations.schemas import (
     BrandEvaluationItem,
     BrandEvaluationListResponse,
+    BrandRawData,
     CategoryScoreItem,
     EvaluationDetailResponse,
     EvaluationListItem,
@@ -201,6 +202,15 @@ async def get_evaluation_detail(evaluation_id: int) -> EvaluationDetailResponse:
             status_code=404,
         )
 
+    # Map VP sheet raw_data keys to clean keys for email composition
+    raw_data = ensure_dict(row.get("raw_data"))
+    brand_raw_data = BrandRawData(
+        email=raw_data.get("Email"),
+        pic_name=raw_data.get("Nama PIC/ Jabatan*"),
+        store_link=raw_data.get("Link Shopee Mall / LazMall"),
+        kategori=raw_data.get("Kategori"),
+    )
+
     return EvaluationDetailResponse(
         id=row["id"],
         brand_id=row["brand_id"],
@@ -215,6 +225,7 @@ async def get_evaluation_detail(evaluation_id: int) -> EvaluationDetailResponse:
         evaluator_email=row["evaluator_email"],
         created_at=row["created_at"],
         rule_version=row["rule_version"],
+        brand_raw_data=brand_raw_data,
     )
 
 

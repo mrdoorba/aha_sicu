@@ -414,5 +414,13 @@
   "rules.page.needsReview": "Perlu Ditinjau",
   "rules.validation.required": "Wajib diisi",
 
-  "scoring.errorPrefix": "Kesalahan:"
+  "scoring.errorPrefix": "Kesalahan:",
+
+  "sendMail.title": "Kirim Email",
+  "sendMail.to": "Kepada",
+  "sendMail.picEmail": "Email PIC",
+  "sendMail.subject": "Subjek",
+  "sendMail.body": "Isi Email",
+  "sendMail.send": "Kirim Email",
+  "sendMail.cancel": "Batal"
 }

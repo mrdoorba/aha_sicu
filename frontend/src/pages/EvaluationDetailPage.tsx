@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, ClipboardCheck, Trash2, ChevronRight, ChevronDown } from 'lucide-react';
+import { ArrowLeft, Copy, ClipboardCheck, Trash2, ChevronRight, ChevronDown, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
@@ -18,6 +18,7 @@ import { useEvaluationDetail } from '../hooks/useEvaluationDetail';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useDeleteEvaluation } from '../hooks/useDeleteEvaluation';
 import { DeleteEvaluationDialog } from '../components/evaluations/DeleteEvaluationDialog';
+import { SendMailDialog } from '../components/evaluations/SendMailDialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
 import { FinalScoreDisplay } from '../components/evaluation/scoring/FinalScoreDisplay';
 import {
@@ -374,6 +375,7 @@ export function EvaluationDetailPage() {
   const { profile } = useCurrentUser();
   const deleteEvaluation = useDeleteEvaluation();
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sendMailDialogOpen, setSendMailDialogOpen] = useState(false);
 
   const canDelete = profile?.role === 'leader' || profile?.role === 'admin';
 
@@ -553,7 +555,23 @@ export function EvaluationDetailPage() {
 
             {/* Email Output (conditional) */}
             {evaluation.email_output && (
-              <EmailOutputSection emailOutput={evaluation.email_output} t={t} />
+              <>
+                <EmailOutputSection emailOutput={evaluation.email_output} t={t} />
+                <div className="flex justify-end">
+                  <Button onClick={() => setSendMailDialogOpen(true)}>
+                    <Mail className="mr-1.5 size-4" />
+                    {t('sendMail.send')}
+                  </Button>
+                </div>
+                <SendMailDialog
+                  open={sendMailDialogOpen}
+                  onOpenChange={setSendMailDialogOpen}
+                  brandName={evaluation.brand_name}
+                  createdAt={evaluation.created_at}
+                  emailOutput={evaluation.email_output}
+                  brandRawData={evaluation.brand_raw_data}
+                />
+              </>
             )}
           </div>
         )}

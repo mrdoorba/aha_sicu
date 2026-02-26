@@ -194,7 +194,7 @@ async def get_evaluation_by_id(
     """Get full evaluation details by ID, with brand name and evaluator email joins."""
     row = await conn.fetchrow(
         """
-        SELECT e.id, e.brand_id, b.brand_name,
+        SELECT e.id, e.brand_id, b.brand_name, b.raw_data,
                e.final_score, e.verdict, e.template,
                e.score_breakdown, e.calculator_results, e.manual_inputs,
                e.email_output, e.rule_version, e.created_at,

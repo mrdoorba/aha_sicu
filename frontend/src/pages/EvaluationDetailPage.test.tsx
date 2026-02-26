@@ -38,6 +38,12 @@ const MOCK_EVALUATION = {
   evaluator_email: 'rina@company.com',
   created_at: '2026-02-10T10:30:00Z',
   rule_version: 1,
+  brand_raw_data: {
+    email: 'pic@nike.com',
+    pic_name: 'Budi Santoso',
+    store_link: 'https://shopee.co.id/nike',
+    kategori: 'Fashion',
+  },
 };
 
 let mockHookReturn = {

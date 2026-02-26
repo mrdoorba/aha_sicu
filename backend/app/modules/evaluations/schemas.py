@@ -239,6 +239,15 @@ class BrandEvaluationListResponse(BaseModel):
     total: int
 
 
+class BrandRawData(BaseModel):
+    """Extracted brand raw_data fields needed for email composition."""
+
+    email: str | None = None
+    pic_name: str | None = None
+    store_link: str | None = None
+    kategori: str | None = None
+
+
 class EvaluationDetailResponse(BaseModel):
     """Full evaluation detail for the detail view page."""
 
@@ -255,6 +264,7 @@ class EvaluationDetailResponse(BaseModel):
     evaluator_email: str
     created_at: datetime
     rule_version: int
+    brand_raw_data: BrandRawData = Field(default_factory=BrandRawData)
 
     @field_validator("score_breakdown", "calculator_results", "manual_inputs", mode="before")
     @classmethod

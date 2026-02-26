@@ -19,6 +19,13 @@ EVAL_DETAIL_ROW = {
     "id": 42,
     "brand_id": 10,
     "brand_name": "Nike Indonesia",
+    "raw_data": {
+        "Email": "pic@nike.com",
+        "Nama PIC/ Jabatan*": "Budi Santoso",
+        "Link Shopee Mall / LazMall": "https://shopee.co.id/nike",
+        "Kategori": "Fashion",
+        "Other Field": "ignored",
+    },
     "final_score": Decimal("78.50"),
     "verdict": "✔️",
     "template": "fashion",
@@ -197,3 +204,90 @@ def test_get_evaluation_detail_unauthenticated(client):
     """Test unauthenticated request returns 401."""
     response = client.get("/api/v1/evaluations/42")
     assert response.status_code == 401
+
+
+def test_get_evaluation_detail_has_brand_raw_data(client):
+    """Test brand_raw_data maps VP sheet keys to clean keys."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(return_value=EVAL_DETAIL_ROW)
+
+        response = client.get(
+            "/api/v1/evaluations/42",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        raw = data["brand_raw_data"]
+        assert raw["email"] == "pic@nike.com"
+        assert raw["pic_name"] == "Budi Santoso"
+        assert raw["store_link"] == "https://shopee.co.id/nike"
+        assert raw["kategori"] == "Fashion"
+
+
+def test_get_evaluation_detail_brand_raw_data_partial(client):
+    """Test brand_raw_data returns null for missing VP sheet fields."""
+    partial_row = {
+        **EVAL_DETAIL_ROW,
+        "raw_data": {"Email": "pic@brand.com"},
+    }
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(return_value=partial_row)
+
+        response = client.get(
+            "/api/v1/evaluations/42",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        raw = response.json()["brand_raw_data"]
+        assert raw["email"] == "pic@brand.com"
+        assert raw["pic_name"] is None
+        assert raw["store_link"] is None
+        assert raw["kategori"] is None
+
+
+def test_get_evaluation_detail_brand_raw_data_null(client):
+    """Test brand_raw_data defaults when raw_data is None."""
+    null_row = {**EVAL_DETAIL_ROW, "raw_data": None}
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(return_value=null_row)
+
+        response = client.get(
+            "/api/v1/evaluations/42",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        raw = response.json()["brand_raw_data"]
+        assert raw["email"] is None
+        assert raw["pic_name"] is None
+        assert raw["store_link"] is None
+        assert raw["kategori"] is None
