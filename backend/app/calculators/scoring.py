@@ -296,7 +296,7 @@ DEFAULT_RULES: dict = {
         "individual_messages": {
             "message_zero": "{verdict} {metric} nil pendapatan",
             "message_dependent": "{verdict} {metric} = {pct_str} Terlalu mengandalkan promo, nilai disarankan: 15%-50%",
-            "message_fail": "❌ {metric} = {pct_str} Kurang Efektif, nilai disarankan: {benchmark}",
+            "message_fail": "❌ {metric} = {pct_str} [Kurang Efektif, nilai disarankan: {benchmark}]",
             "message_pass": "✔️ {metric} ({pct_str}) digunakan & persentase penggunaan baik",
             "message_pass_afiliasi": "✔️ {metric} ({pct_str}) digunakan",
         },
@@ -304,8 +304,8 @@ DEFAULT_RULES: dict = {
     "products_status": {
         "product_count": {
             "threshold": 35, "points": 5, "comparison": "gte",
-            "message_pass": "✔️ Jumlah Produk = {value_int} OK",
-            "message_fail": "❌ Jumlah Produk = {value_int} NOT OK, nilai disarankan: >={threshold}",
+            "message_pass": "✔️ Jumlah Produk = {value_int} [OK]",
+            "message_fail": "❌ Jumlah Produk = {value_int} [NOT OK, nilai disarankan: >={threshold}]",
         },
         "store_status_points": {
             "mall": 10, "star_plus": 5, "star": 0, "regular": 0,
@@ -360,8 +360,8 @@ DEFAULT_RULES: dict = {
         "display_min": {"value": 0.10},
     },
     "competition": {
-        "message_pass": "✅kompetitif",
-        "message_fail": "❌tidak kompetitif (harga kisaran pasaran: Rp. {market_price})",
+        "message_pass": "{name} (Rp. {selling_price}) = ✅kompetitif",
+        "message_fail": "{name} (Rp. {selling_price}) = ❌tidak kompetitif (harga kisaran pasaran: Rp. {market_price})",
     },
     "interpretation": {
         "ranges": [
@@ -705,18 +705,18 @@ def _score_visitors(manual_data: dict, rules: dict | None = None) -> CategorySco
     )
 
 
-def _promo_verdict(d_value: float, d13_sales: float, benchmark_pct: float) -> str:
+def _promo_verdict(d_value: float, d13_sales: float, benchmark_pct: float, key: str = "") -> str:
     """Determine F-column verdict for a promo tool row (31-41).
 
     Logic:
     - D=0 → "❌" (not used)
-    - D/D13 >= 50% → "❌" (too dependent)
+    - D/D13 >= 50% → "❌" (too dependent) — only for promoToko
     - D >= benchmark% × D13 → "✔️" (meets benchmark)
     - else → "❌"
     """
     if d_value == 0:
         return "❌"
-    if d13_sales > 0 and d_value / d13_sales >= 0.50:
+    if key == "promoToko" and d13_sales > 0 and d_value / d13_sales >= 0.50:
         return "❌"
     if benchmark_pct == 0.0:
         # gratisOngkir: any value > 0 passes
@@ -747,7 +747,7 @@ def _score_promo_tools(manual_data: dict, rules: dict | None = None) -> Category
         d_value = _safe_num(promo.get(field_key))
         benchmark_str = f">{benchmark_pct * 100:g}%" if benchmark_pct > 0 else ">0"
 
-        f_verdict = _promo_verdict(d_value, d13, benchmark_pct)
+        f_verdict = _promo_verdict(d_value, d13, benchmark_pct, key=field_key)
 
         if d_value > 0:
             used_count += 1
@@ -959,25 +959,18 @@ def _score_competition(
     """Score rows 60-63: Kompetisi TOP Produk.
 
     No H-column scores. G-column messages for competitiveness check.
-    C61-C63: selling prices from Calculator 2 output_1[0..2].rata2_harga_jual
+    C61-C63: selling prices from manual product data (sellingPrice)
     F61-F63: market price (manual input)
     """
     comp = _get_nested(manual_data, "competition") or {}
     rows: list[RowScore] = []
-
-    # Get selling prices from Calculator 2
-    top_sku_details = _get_nested(calculator_results, "top_sku", "details") or {}
-    output_1 = top_sku_details.get("output_1", [])
 
     for i in range(3):
         row_num = 61 + i
         product_key = f"product{i + 1}"
         product_data = comp.get(product_key, {}) or {}
 
-        selling_price = 0.0
-        if i < len(output_1):
-            selling_price = _safe_num(output_1[i].get("rata2_harga_jual"))
-
+        selling_price = _safe_num(product_data.get("sellingPrice"))
         market_price = _safe_num(product_data.get("marketPrice"))
 
         # F: competitive if selling price <= market price × 110%
@@ -1236,13 +1229,14 @@ def _generate_promo_messages(cat: CategoryScore, manual_data: dict, rules: dict 
             if d_value == 0:
                 tmpl = indiv.get("message_zero", "{verdict} {metric} nil pendapatan")
                 row.message = _format_message_template(tmpl, verdict=row.verdict, metric=row.metric)
-            elif d13 > 0 and d_value / d13 >= 0.50:
+            elif row.row == PROMO_START_ROW and d13 > 0 and d_value / d13 >= 0.50:
+                # "Terlalu mengandalkan promo" only applies to Promo Toko (row 31)
                 tmpl = indiv.get("message_dependent",
                     "{verdict} {metric} = {pct_str} Terlalu mengandalkan promo, nilai disarankan: 15%-50%")
                 row.message = _format_message_template(tmpl, verdict=row.verdict, metric=row.metric, pct_str=pct_str)
             elif row.verdict == "❌":
                 tmpl = indiv.get("message_fail",
-                    "❌ {metric} = {pct_str} Kurang Efektif, nilai disarankan: {benchmark}")
+                    "❌ {metric} = {pct_str} [Kurang Efektif, nilai disarankan: {benchmark}]")
                 row.message = _format_message_template(tmpl, metric=row.metric, pct_str=pct_str, benchmark=row.benchmark)
             elif row.verdict == "✔️":
                 if row.metric == "Program Afiliasi":
@@ -1286,11 +1280,11 @@ def _generate_products_messages(cat: CategoryScore, rules: dict | None = None) -
             threshold = _get_rule_value(prod_rules, "product_count", "threshold", 35)
             if row.verdict == "✔️":
                 tmpl = _get_rule_value(prod_rules, "product_count", "message_pass",
-                    "✔️ Jumlah Produk = {value_int} OK")
+                    "✔️ Jumlah Produk = {value_int} [OK]")
                 row.message = _format_message_template(tmpl, value_int=value_int, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
             else:
                 tmpl = _get_rule_value(prod_rules, "product_count", "message_fail",
-                    "❌ Jumlah Produk = {value_int} NOT OK, nilai disarankan: >={threshold}")
+                    "❌ Jumlah Produk = {value_int} [NOT OK, nilai disarankan: >={threshold}]")
                 row.message = _format_message_template(tmpl, value_int=value_int, threshold=f"{threshold:g}" if isinstance(threshold, float) else str(threshold))
         elif row.row == 46:
             store_status = str(row.value)
@@ -1403,14 +1397,28 @@ def _generate_competition_messages(cat: CategoryScore, manual_data: dict, rules:
         product_key = f"product{i + 1}"
         product_data = comp.get(product_key, {}) or {}
         market_price = _safe_num(product_data.get("marketPrice"))
+        selling_price = _safe_num(product_data.get("sellingPrice"))
+        product_name = _safe_str(product_data.get("productName")) or f"Produk {i + 1}"
+        link = _safe_str(product_data.get("link"))
 
         if row.verdict == "❌":
             tmpl = comp_rules.get("message_fail",
-                "❌tidak kompetitif (harga kisaran pasaran: Rp. {market_price})")
-            row.message = _format_message_template(tmpl, market_price=_fmt_idr(market_price))
+                "{name} (Rp. {selling_price}) = ❌tidak kompetitif (harga kisaran pasaran: Rp. {market_price})")
+            msg = _format_message_template(
+                tmpl, name=product_name, selling_price=_fmt_idr(selling_price),
+                market_price=_fmt_idr(market_price),
+            )
+            if link:
+                msg += f"\n↪{link}"
+            row.message = msg
         elif row.verdict == "✔️":
-            tmpl = comp_rules.get("message_pass", "✅kompetitif")
-            row.message = _format_message_template(tmpl)
+            tmpl = comp_rules.get("message_pass", "{name} (Rp. {selling_price}) = ✅kompetitif")
+            msg = _format_message_template(
+                tmpl, name=product_name, selling_price=_fmt_idr(selling_price),
+            )
+            if link:
+                msg += f"\n↪{link}"
+            row.message = msg
 
 
 # ---------------------------------------------------------------------------

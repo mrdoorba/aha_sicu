@@ -4,7 +4,6 @@ import client from '../services/apiClient';
 export interface BrandDetail {
   id: number;
   brand_name: string;
-  store_name: string;
   name: string;
   raw_data: Record<string, unknown>;
   updated_at: string;

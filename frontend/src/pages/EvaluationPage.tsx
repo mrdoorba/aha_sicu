@@ -173,7 +173,7 @@ export const EvaluationPage = () => {
                   saveStatus={saveStatus}
                   lastSaved={lastSaved}
                   onRetrySave={retrySave}
-                  storeName={brand?.store_name ?? ''}
+                  storeName={brand?.brand_name ?? ''}
                   brandName={brand?.name ?? ''}
                   onGenerateScore={generateScore}
                   scoringResult={scoringResult}

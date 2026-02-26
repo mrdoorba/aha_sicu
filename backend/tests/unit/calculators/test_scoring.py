@@ -89,9 +89,9 @@ def full_manual_data():
             "availableSessions": 20,
         },
         "competition": {
-            "product1": {"keyword": "sepatu", "marketPrice": 200_000},
-            "product2": {"keyword": "sandal", "marketPrice": 150_000},
-            "product3": {"keyword": "tas", "marketPrice": 300_000},
+            "product1": {"keyword": "sepatu", "sellingPrice": 180_000, "marketPrice": 200_000, "productName": "Sepatu A"},
+            "product2": {"keyword": "sandal", "sellingPrice": 140_000, "marketPrice": 150_000, "productName": "Sandal B"},
+            "product3": {"keyword": "tas", "sellingPrice": 280_000, "marketPrice": 300_000, "productName": "Tas C"},
         },
     }
 
@@ -367,9 +367,13 @@ class TestPromoVerdict:
     def test_zero_value(self):
         assert _promo_verdict(0, 200_000_000, 0.08) == "❌"
 
-    def test_too_dependent(self):
-        # 60% of sales → ❌
-        assert _promo_verdict(120_000_000, 200_000_000, 0.08) == "❌"
+    def test_too_dependent_promo_toko(self):
+        # 60% of sales → ❌ (only applies to promoToko)
+        assert _promo_verdict(120_000_000, 200_000_000, 0.08, key="promoToko") == "❌"
+
+    def test_high_pct_non_promo_toko_passes_benchmark(self):
+        # 60% of sales but NOT promoToko → 50% check skipped, meets 8% benchmark → ✔️
+        assert _promo_verdict(120_000_000, 200_000_000, 0.08, key="paketDiskon") == "✔️"
 
     def test_meets_benchmark(self):
         # 10% of 200M = 20M, benchmark 8% → 16M. 20M >= 16M → ✔️
@@ -2164,7 +2168,7 @@ class TestMessageTemplatesCompetition:
         }}
         data = {
             "competition": {
-                "product1": {"keyword": "sepatu", "marketPrice": 200_000},
+                "product1": {"keyword": "sepatu", "sellingPrice": 180_000, "marketPrice": 200_000, "productName": "Sepatu A"},
             },
         }
         calc = {"top_sku": {"details": {
@@ -2188,7 +2192,7 @@ class TestMessageTemplatesCompetition:
         }}
         data = {
             "competition": {
-                "product1": {"keyword": "sepatu", "marketPrice": 100_000},
+                "product1": {"keyword": "sepatu", "sellingPrice": 200_000, "marketPrice": 100_000, "productName": "Sepatu A"},
             },
         }
         calc = {"top_sku": {"details": {
