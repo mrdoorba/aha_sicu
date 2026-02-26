@@ -358,18 +358,18 @@ function ManualInputsSection({
         return (
           <div key={category}>
             <h3 className="mb-2 text-sm font-semibold">{categoryLabel}</h3>
-            <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-sm sm:grid-cols-3">
+            <div className="grid grid-cols-2 gap-3 text-sm sm:grid-cols-3">
               {entries.map(([key, val, fieldDef, dynamicLabel]) => (
-                <div key={key} className="flex justify-between gap-2 border-b border-border/50 py-1">
-                  <span className="text-muted-foreground">
+                <div key={key} className="rounded-lg border p-3">
+                  <span className="text-xs text-muted-foreground">
                     {dynamicLabel ?? fieldDef?.label ?? key.replace(/_/g, ' ')}
                   </span>
-                  <span className="font-medium">
+                  <div className="font-medium break-words">
                     {formatValue(val, key, fieldDef)}
                     {fieldDef?.benchmark && (
                       <span className="ml-1 text-xs text-muted-foreground">({fieldDef.benchmark})</span>
                     )}
-                  </span>
+                  </div>
                 </div>
               ))}
             </div>
