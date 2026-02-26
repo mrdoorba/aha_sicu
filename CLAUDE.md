@@ -150,22 +150,15 @@ Prioritize: simplicity, robustness, performance, correctness. Avoid over-enginee
 
 ### Backend
 
-- Python 3.14, FastAPI, linted with `ruff`
-- Follow existing patterns
+- Type hints on all function signatures
+- Stay consistent with existing patterns unless they're clearly suboptimal — then improve and flag the change
 
 ### Frontend
 
-- TypeScript strict mode, Vite + React
-- **State:** React Query (TanStack Query) for server state, React Context for auth, `useState` for local UI
-- **API:** `openapi-fetch` with typed client (`client.GET()`, `client.POST()`)
-- **UI:** Radix UI primitives + CVA (Class Variance Authority) for component variants
-- **Styling:** Tailwind CSS v4 + `cn()` utility (tailwind-merge + clsx)
-- **Routing:** React Router
-- **i18n:** react-i18next
-- **Icons:** lucide-react
-- **Testing:** Vitest + Testing Library, test files colocated (`*.test.tsx`)
-- **Path alias:** `@/` maps to `./src/`
+- TypeScript strict mode
+- Stay consistent with existing patterns unless they're clearly suboptimal — then improve and flag the change
+- Test files colocated with source (`*.test.tsx`)
 
 ### Infrastructure
 
-- Terraform with environment-based tfvars
+- Stay consistent with existing patterns unless they're clearly suboptimal — then improve and flag the change
