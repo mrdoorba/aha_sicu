@@ -70,7 +70,7 @@ function formatValue(value: unknown, key: string, fieldDef?: FieldDefinition): s
     if (fieldDef.inputType === 'number' && fieldDef.unit === '%') {
       return `${value}%`;
     }
-    return String(value);
+    return value.toLocaleString('id-ID');
   }
 
   // Fallback heuristics for fields not in config
