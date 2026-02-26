@@ -573,7 +573,7 @@ class TestGColumnMessages:
         g7 = next(r for r in ops.rows if r.row == 7)
         assert "✔️" in g7.message
         assert "0.5%" in g7.message
-        assert "Sudah Baik" in g7.message
+        assert "[Sudah Baik]" in g7.message
 
     def test_g7_fail_message(self):
         data = {"operational": {"unfulfilledOrderRate": 2.0}}
@@ -585,7 +585,7 @@ class TestGColumnMessages:
         ops = result.category_scores[0]
         g7 = next(r for r in ops.rows if r.row == 7)
         assert "❌" in g7.message
-        assert "Kurang Baik" in g7.message
+        assert "[Kurang Baik" in g7.message
 
     def test_g13_declining_sales_warning(self):
         data = {
@@ -605,7 +605,7 @@ class TestGColumnMessages:
         )
         biz = result.category_scores[1]
         g13 = next(r for r in biz.rows if r.row == 13)
-        assert "Menurun" in g13.message
+        assert "[Menurun" in g13.message
         assert "❗️" in g13.message  # > 25% decline warning
 
 
@@ -1660,8 +1660,8 @@ class TestFormatMessageTemplate:
         assert result == "Static text"
 
     def test_unicode_in_template(self):
-        result = _format_message_template("✔️ {val_str} Sudah Baik", val_str="0.5%")
-        assert result == "✔️ 0.5% Sudah Baik"
+        result = _format_message_template("✔️ {val_str} [Sudah Baik]", val_str="0.5%")
+        assert result == "✔️ 0.5% [Sudah Baik]"
 
     def test_unmatched_opening_brace(self):
         result = _format_message_template("Value is {broken", val_str="0.5%")
@@ -1761,7 +1761,7 @@ class TestMessageTemplatesOperational:
         )
         ops = result.category_scores[0]
         g7 = next(r for r in ops.rows if r.row == 7)
-        assert "Sudah Baik" in g7.message
+        assert "[Sudah Baik]" in g7.message
 
     def test_fallback_when_template_missing(self):
         """Rules without message fields still produce correct messages."""
@@ -2292,7 +2292,7 @@ class TestMigrationTemplatesDrift:
 
     @staticmethod
     def _build_effective_db_templates() -> dict:
-        """Replay migration 012 + 019 patches to get the effective DB state."""
+        """Replay migration 012 + 019 + 020 patches to get the effective DB state."""
         import importlib
 
         m012 = importlib.import_module(
@@ -2300,6 +2300,9 @@ class TestMigrationTemplatesDrift:
         )
         m019 = importlib.import_module(
             "app.db.migrations.versions.019_sync_db_message_templates_with_code"
+        )
+        m020 = importlib.import_module(
+            "app.db.migrations.versions.020_add_brackets_to_all_scoring_messages"
         )
 
         db: dict = {}
@@ -2314,6 +2317,9 @@ class TestMigrationTemplatesDrift:
 
         # Apply 019 patches
         m019._apply_patches(db, forward=True)
+
+        # Apply 020 patches
+        m020._apply_patches(db, forward=True)
 
         return db
 
