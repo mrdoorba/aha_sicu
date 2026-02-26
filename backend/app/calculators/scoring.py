@@ -1486,13 +1486,9 @@ def _compute_g73(
     display_pct = max(min(g72_value, display_max), display_min)
     pct_str = f"{display_pct * 100:.0f}%"
 
-    budget = d13 * display_pct if d13 > 0 else 0
-    budget_str = _fmt_idr(budget)
-
     return (
         f"💡Minimum anggaran marketing yang dibutuhkan AHA untuk meningkatkan "
         f"performa omzet penjualan toko = {pct_str}"
-        f" (± IDR {budget_str}/bulan)"
     )
 
 

@@ -719,7 +719,7 @@ class TestG73:
         result = _compute_g73("✔️", 0.15, 200_000_000)
         assert "💡" in result
         assert "15%" in result
-        assert "30.000.000" in result  # 200M * 15%
+        assert "IDR" not in result  # budget amount removed
 
     def test_rejected_verdict_suppressed(self):
         result = _compute_g73("❌", 0.15, 200_000_000)
