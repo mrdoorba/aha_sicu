@@ -53,7 +53,7 @@ export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps
                 <PolarGrid gridType="polygon" stroke="var(--chart-grid)" />
                 <PolarAngleAxis
                   dataKey="category"
-                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))', fontWeight: 500 }}
+                  tick={{ fontSize: 12, fill: 'var(--muted-foreground)', fontWeight: 500 }}
                   tickLine={false}
                 />
                 <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
