@@ -1,0 +1,53 @@
+import { CheckCircle2, XCircle } from 'lucide-react';
+import { cn } from '../../lib/utils';
+
+interface CategoryMetricCardProps {
+  metric: string;
+  value: unknown;
+  verdict: string;
+  score: number;
+  benchmark: string;
+  message: string;
+}
+
+export const CategoryMetricCard = ({ metric, value, verdict, score, benchmark, message }: CategoryMetricCardProps) => {
+  const isPassed = verdict === 'pass';
+
+  const displayValue = (() => {
+    if (value === null || value === undefined) return '-';
+    if (typeof value === 'number') return value.toLocaleString('id-ID');
+    return String(value);
+  })();
+
+  return (
+    <div className="rounded-lg border border-border/50 bg-card p-4 space-y-3">
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex-1 min-w-0">
+          <p className="text-sm font-semibold text-foreground truncate">{metric}</p>
+        </div>
+        <div className="text-sm font-bold tabular-nums text-muted-foreground text-right shrink-0">
+          {displayValue}
+        </div>
+        <div className="flex items-center gap-1.5 shrink-0">
+          {isPassed ? (
+            <CheckCircle2 className="size-4 text-success" />
+          ) : (
+            <XCircle className="size-4 text-destructive" />
+          )}
+          <span className={cn(
+            'text-sm font-bold tabular-nums',
+            isPassed ? 'text-success' : 'text-destructive'
+          )}>
+            {score}
+          </span>
+        </div>
+      </div>
+      {(benchmark || message) && (
+        <div className="text-xs text-muted-foreground border-t border-border/30 pt-2 space-y-0.5">
+          {benchmark && <p>Benchmark: {benchmark}</p>}
+          {message && <p className={cn(!isPassed && 'text-orange-500')}>{message}</p>}
+        </div>
+      )}
+    </div>
+  );
+};
