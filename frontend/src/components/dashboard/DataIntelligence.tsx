@@ -92,11 +92,6 @@ function TopSkuContent({ data, t }: { data: Record<string, unknown>; t: (key: st
   );
 }
 
-function DiscountContent({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
-  const text = (data.output_text as string) || '';
-  if (!text) return <p className="text-sm text-muted-foreground py-6 text-center">{t('common.noData')}</p>;
-  return <pre className="whitespace-pre-wrap rounded-lg bg-muted/50 p-4 text-sm font-mono border border-border/50">{text}</pre>;
-}
 
 export const DataIntelligence = ({ calculatorResults }: DataIntelligenceProps) => {
   const { t } = useTranslation();
@@ -108,7 +103,6 @@ export const DataIntelligence = ({ calculatorResults }: DataIntelligenceProps) =
 
   const adsData = (calculatorResults.ads_keyword as Record<string, unknown>) || {};
   const skuData = (calculatorResults.top_sku as Record<string, unknown>) || {};
-  const discountData = (calculatorResults.discount as Record<string, unknown>) || {};
 
   return (
     <Card className="border-none shadow-xl bg-card overflow-hidden">
@@ -122,7 +116,6 @@ export const DataIntelligence = ({ calculatorResults }: DataIntelligenceProps) =
           <TabsList variant="line" className="mb-6">
             <TabsTrigger value="ads">{t('presentation.intelligence.adsAnalysis')}</TabsTrigger>
             <TabsTrigger value="sku">{t('presentation.intelligence.topSku')}</TabsTrigger>
-            <TabsTrigger value="discount">{t('presentation.intelligence.discount')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="ads">
@@ -130,9 +123,6 @@ export const DataIntelligence = ({ calculatorResults }: DataIntelligenceProps) =
           </TabsContent>
           <TabsContent value="sku">
             {visitedTabs.has('sku') && <TopSkuContent data={skuData} t={t} />}
-          </TabsContent>
-          <TabsContent value="discount">
-            {visitedTabs.has('discount') && <DiscountContent data={discountData} t={t} />}
           </TabsContent>
         </Tabs>
       </CardContent>
