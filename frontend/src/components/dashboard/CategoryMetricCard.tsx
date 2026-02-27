@@ -11,7 +11,8 @@ interface CategoryMetricCardProps {
 }
 
 export const CategoryMetricCard = ({ metric, value, verdict, score, benchmark, message }: CategoryMetricCardProps) => {
-  const isPassed = verdict === 'pass';
+  const isPassed = verdict === '✔️';
+  const isNeutral = verdict === '-';
 
   const displayValue = (() => {
     if (value === null || value === undefined) return '-';
@@ -29,14 +30,11 @@ export const CategoryMetricCard = ({ metric, value, verdict, score, benchmark, m
           {displayValue}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {isPassed ? (
-            <CheckCircle2 className="size-4 text-success" />
-          ) : (
-            <XCircle className="size-4 text-destructive" />
-          )}
+          {isPassed && <CheckCircle2 className="size-4 text-success" />}
+          {!isPassed && !isNeutral && <XCircle className="size-4 text-destructive" />}
           <span className={cn(
             'text-sm font-bold tabular-nums',
-            isPassed ? 'text-success' : 'text-destructive'
+            isPassed ? 'text-success' : isNeutral ? 'text-muted-foreground' : 'text-destructive'
           )}>
             {score}
           </span>
@@ -45,7 +43,7 @@ export const CategoryMetricCard = ({ metric, value, verdict, score, benchmark, m
       {(benchmark || message) && (
         <div className="text-xs text-muted-foreground border-t border-border/30 pt-2 space-y-0.5">
           {benchmark && <p>Benchmark: {benchmark}</p>}
-          {message && <p className={cn(!isPassed && 'text-orange-500')}>{message}</p>}
+          {message && <p className={cn('break-all', !isPassed && !isNeutral && 'text-orange-500')}>{message}</p>}
         </div>
       )}
     </div>

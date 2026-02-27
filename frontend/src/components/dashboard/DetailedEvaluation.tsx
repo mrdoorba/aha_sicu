@@ -63,9 +63,9 @@ export const DetailedEvaluation = ({ scoreBreakdown }: DetailedEvaluationProps) 
             <TabsContent key={cat.category} value={cat.category}>
               {visitedTabs.has(cat.category) && (
                 <>
-                  {cat.rows && cat.rows.length > 0 ? (
+                  {cat.rows && cat.rows.filter((r) => r.metric !== 'Iklan check up').length > 0 ? (
                     <div className="grid gap-3 sm:grid-cols-2">
-                      {cat.rows.map((row, idx) => (
+                      {cat.rows.filter((r) => r.metric !== 'Iklan check up').map((row, idx) => (
                         <CategoryMetricCard
                           key={idx}
                           metric={row.metric}
