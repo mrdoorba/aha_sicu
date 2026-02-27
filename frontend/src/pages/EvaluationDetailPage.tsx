@@ -380,7 +380,7 @@ function ManualInputsSection({
   );
 }
 
-function EmailOutputSection({ emailOutput, t }: { emailOutput: string; t: (key: string) => string }) {
+function EmailOutputSection({ emailOutput, t, onSendMail }: { emailOutput: string; t: (key: string) => string; onSendMail: () => void }) {
   const [copied, setCopied] = useState(false);
 
   const handleCopy = async () => {
@@ -398,15 +398,24 @@ function EmailOutputSection({ emailOutput, t }: { emailOutput: string; t: (key: 
     <Card>
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="text-lg">{t('evaluationDetail.emailOutput')}</CardTitle>
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={handleCopy}
-          aria-label={t('evaluationDetail.emailOutput')}
-        >
-          {copied ? <ClipboardCheck className="size-4" /> : <Copy className="size-4" />}
-          {copied ? t('common.copied') : t('common.copy')}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleCopy}
+            aria-label={t('evaluationDetail.emailOutput')}
+          >
+            {copied ? <ClipboardCheck className="size-4" /> : <Copy className="size-4" />}
+            {copied ? t('common.copied') : t('common.copy')}
+          </Button>
+          <Button
+            size="sm"
+            onClick={onSendMail}
+          >
+            <Mail className="mr-1.5 size-4" />
+            {t('sendMail.send')}
+          </Button>
+        </div>
       </CardHeader>
       <CardContent>
         <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{emailOutput}</pre>
@@ -609,13 +618,7 @@ export function EvaluationDetailPage() {
             {/* Email Output (conditional) */}
             {evaluation.email_output && (
               <>
-                <EmailOutputSection emailOutput={evaluation.email_output} t={t} />
-                <div className="flex justify-end">
-                  <Button onClick={() => setSendMailDialogOpen(true)}>
-                    <Mail className="mr-1.5 size-4" />
-                    {t('sendMail.send')}
-                  </Button>
-                </div>
+                <EmailOutputSection emailOutput={evaluation.email_output} t={t} onSendMail={() => setSendMailDialogOpen(true)} />
                 <SendMailDialog
                   open={sendMailDialogOpen}
                   onOpenChange={setSendMailDialogOpen}
