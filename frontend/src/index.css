@@ -87,6 +87,10 @@
   --success: #22C55E;              /* Green */
   --warning: #F4C144;              /* Gold */
   --info: #325FEC;                 /* Primary Blue */
+  /* Radar chart */
+  --chart-radar-fill: #325FEC;
+  --chart-radar-stroke: #325FEC;
+  --chart-grid: rgba(113, 113, 122, 0.3);
 }
 
 .dark {
@@ -125,6 +129,10 @@
   --success: #22C55E;
   --warning: #F4C144;
   --info: #325FEC;
+  /* Radar chart */
+  --chart-radar-fill: #96ADF5;
+  --chart-radar-stroke: #96ADF5;
+  --chart-grid: rgba(148, 163, 184, 0.2);
 }
 
 @layer base {
