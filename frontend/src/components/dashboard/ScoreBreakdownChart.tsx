@@ -50,7 +50,7 @@ export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps
           <div className="w-full h-96">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData} outerRadius="70%">
-                <PolarGrid gridType="polygon" stroke="hsl(var(--border))" />
+                <PolarGrid gridType="polygon" stroke="hsl(var(--muted-foreground) / 0.4)" />
                 <PolarAngleAxis
                   dataKey="category"
                   tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))', fontWeight: 500 }}
@@ -62,7 +62,7 @@ export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps
                   dataKey="value"
                   stroke="hsl(var(--primary))"
                   fill="hsl(var(--primary))"
-                  fillOpacity={0.3}
+                  fillOpacity={0.4}
                   strokeWidth={2}
                 />
               </RadarChart>
@@ -84,7 +84,7 @@ export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps
                       {cat.score.toFixed(1)}<span className="text-muted-foreground/50"> / {cat.max_score.toFixed(0)}</span>
                     </span>
                   </div>
-                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted">
+                  <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted-foreground/20">
                     <div
                       className={cn(
                         'h-full rounded-full transition-all duration-1000 ease-out',

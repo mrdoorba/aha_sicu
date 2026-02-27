@@ -69,7 +69,7 @@ export const ScoreOverview = ({ score, verdict, template }: ScoreOverviewProps) 
                 >
                   <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
                   <RadialBar
-                    background={{ fill: 'var(--muted)' }}
+                    background={{ fill: 'hsl(var(--muted-foreground) / 0.15)' }}
                     dataKey="value"
                     angleAxisId={0}
                     cornerRadius={10}
