@@ -23,7 +23,7 @@ export const DashboardHeader = ({ brandName, brandId, verdict, template, onBack 
   return (
     <div className="flex items-center justify-between px-2">
       <div className="flex items-center gap-3">
-        <Button variant="ghost" onClick={onBack} className="text-muted-foreground hover:text-foreground h-10 px-3">
+        <Button variant="outline" onClick={onBack} className="text-muted-foreground hover:text-foreground h-10 px-3">
           <ArrowLeft className="mr-2 size-4" />
           {t('presentation.back')}
         </Button>
