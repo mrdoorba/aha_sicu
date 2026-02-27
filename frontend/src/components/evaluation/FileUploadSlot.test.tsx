@@ -23,6 +23,7 @@ const SAMPLE_UPLOAD: UploadInfo = {
 const noop = () => {};
 
 function renderSlot(overrides: {
+  config?: FileSlotConfig;
   uploadInfo?: UploadInfo | null;
   uploadStatus?: UploadStatus;
   uploadProgress?: number;
@@ -30,7 +31,7 @@ function renderSlot(overrides: {
 } = {}) {
   return render(
     <FileUploadSlot
-      config={CONFIG}
+      config={overrides.config ?? CONFIG}
       uploadInfo={overrides.uploadInfo ?? null}
       uploadStatus={overrides.uploadStatus ?? 'idle'}
       uploadProgress={overrides.uploadProgress ?? 0}
@@ -97,6 +98,26 @@ describe('FileUploadSlot', () => {
     // Should NOT show error or uploading states
     expect(screen.queryByRole('button', { name: /coba lagi/i })).not.toBeInTheDocument();
     expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
+  });
+
+  it('renders label as link when config.link is present', () => {
+    const configWithLink: FileSlotConfig = {
+      ...CONFIG,
+      link: 'https://seller.shopee.co.id/portal/marketing/pas/assembly',
+    };
+    renderSlot({ config: configWithLink });
+
+    const link = screen.getByRole('link', { name: /Iklan Check Up V2A/i });
+    expect(link).toHaveAttribute('href', 'https://seller.shopee.co.id/portal/marketing/pas/assembly');
+    expect(link).toHaveAttribute('target', '_blank');
+    expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('renders label as plain text when config.link is absent', () => {
+    renderSlot();
+
+    expect(screen.getByText('Iklan Check Up V2A')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Iklan Check Up V2A/i })).not.toBeInTheDocument();
   });
 
   it('has correct file input accept attribute', () => {

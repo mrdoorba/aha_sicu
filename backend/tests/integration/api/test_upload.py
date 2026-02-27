@@ -240,6 +240,10 @@ def test_process_valid_csv(client):
         assert len(data["auto_calculated"]) == 1
         assert data["auto_calculated"][0]["status"] == "skipped"
 
+        # Verify filename was prefixed with brand name before upsert
+        upsert_call_args = mock_svc_conn.fetchrow.call_args_list[-1]
+        assert "TestBrand_report.csv" in upsert_call_args.args
+
     # Clean up
     _pending_uploads.pop(upload_id, None)
 
