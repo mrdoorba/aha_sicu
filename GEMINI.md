@@ -1,14 +1,4 @@
-# CLAUDE.md — Store ICU (Aha SICU)
-
-## Project Overview
-
-Store ICU is an e-commerce operations platform. The codebase is split into:
-
-- `backend/` — FastAPI (Python 3.14, managed with `uv`)
-- `frontend/` — React + Vite (TypeScript, Node 20)
-- `infrastructure/` — Terraform IaC (GCP)
-- `smoke-tests/` — Integration tests
-- `openspec/` — AI-native workflow artifacts (spec-driven)
+# CLAUDE.md
 
 ## Command Autonomy
 
@@ -53,7 +43,7 @@ git checkout -b <type>/<short-description>
 
 **Branch lifecycle:**
 
-1. Create branch when starting a new OpenSpec change (after `/opsx:new` or when beginning work)
+1. Create branch when starting a new OpenSpec change (after `/opsx:new`, `/opsx:ff`, or when beginning work)
 2. Work on the branch, commit atomically
 3. When done → user requests merge to `develop` (via PR or direct merge)
 4. Keep the branch alive until the OpenSpec change is archived (`/opsx:archive`)
@@ -65,7 +55,7 @@ Each commit is **one logical, self-contained unit of work** — does exactly one
 
 ### Commit Messages
 
-The first line is a **clear, scannable summary** — no metaphor, immediately parseable. The optional body carries **Subtle Mr. Door** flair. Every commit ends with `Author: Mr. Door`.
+The first line is a **clear, scannable summary** — no metaphor, immediately parseable. The optional body carries **Subtle Mr. Door** from the Lord of Mysteries series novel flair. Every commit ends with `Author: Mr. Door`.
 
 **Format:**
 ```
@@ -107,16 +97,13 @@ This project uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) with the `s
 | OpenSpec Phase       | Git Action                                      |
 |----------------------|--------------------------------------------------|
 | `/opsx:new`          | Create feature branch off `develop`              |
-| `/opsx:continue`     | Continue working on feature branch               |
-| `/opsx:apply`        | Implement tasks, commit atomically on feature branch |
-| `/opsx:verify`       | Verify on feature branch, fix issues if needed   |
-| Change complete      | User requests merge to `develop`                 |
-| `/opsx:archive`      | Archive change, then delete feature branch       |
+| `/opsx:ff`           | Create feature branch off `develop`              |
+| `/opsx:apply`        | Commit atomically on the feature branch          |
+| `/opsx:archive`      | Ask user about branch deletion                   |
 
 ### When to Create Branches
 
-- **Do create a branch:** For any change going through OpenSpec (`/opsx:new`, `/opsx:ff`)
-- **Do NOT create a branch:** For trivial fixes the user asks for directly without OpenSpec (commit directly to `develop` instead)
+- **Do create a branch:** When starting a change via `/opsx:new` or `/opsx:ff`
 
 ---
 
@@ -147,6 +134,21 @@ npm run lint
 
 ## Code Style & Conventions
 
-- **Backend:** Follow existing patterns. Use `ruff` for linting. Python 3.14.
-- **Frontend:** TypeScript strict. Use existing component patterns. Vite + React.
-- **Infrastructure:** Terraform with environment-based tfvars.
+### General Principles
+
+Prioritize: simplicity, robustness, performance, correctness. Avoid over-engineering.
+
+### Backend
+
+- Type hints on all function signatures
+- Stay consistent with existing patterns unless they're clearly suboptimal — then improve and flag the change
+
+### Frontend
+
+- TypeScript strict mode
+- Stay consistent with existing patterns unless they're clearly suboptimal — then improve and flag the change
+- Test files colocated with source (`*.test.tsx`)
+
+### Infrastructure
+
+- Stay consistent with existing patterns unless they're clearly suboptimal — then improve and flag the change
