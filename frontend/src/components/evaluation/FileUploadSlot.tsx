@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, FileText, X, Check, Loader2 } from 'lucide-react';
+import { Upload, FileText, X, Check, Loader2, ExternalLink } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
@@ -12,6 +12,7 @@ export interface FileSlotConfig {
   accept: string;
   format: string;
   calculator: string;
+  link?: string;
 }
 
 interface FileUploadSlotProps {
@@ -53,7 +54,19 @@ export function FileUploadSlot({
       <CardContent className="flex items-start gap-3 pt-4">
         <FileText className="mt-0.5 size-5 shrink-0 text-muted-foreground" aria-hidden="true" />
         <div className="min-w-0 flex-1">
-          <p className="font-medium">{t(config.label)}</p>
+          {config.link ? (
+            <a
+              href={config.link}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-1 font-medium text-primary hover:underline"
+            >
+              {t(config.label)}
+              <ExternalLink className="size-3.5" aria-hidden="true" />
+            </a>
+          ) : (
+            <p className="font-medium">{t(config.label)}</p>
+          )}
           <p className="text-xs text-muted-foreground">
             {t('fileUpload.format')}: {config.format}
           </p>

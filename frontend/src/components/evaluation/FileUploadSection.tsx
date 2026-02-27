@@ -10,6 +10,7 @@ const SLOTS: FileSlotConfig[] = [
     accept: '.csv',
     format: '.csv',
     calculator: 'fileUpload.slot.cpcAdReportCalc',
+    link: 'https://seller.shopee.co.id/portal/marketing/pas/assembly?&type=all&group=last-thirty-days',
   },
   {
     label: 'fileUpload.slot.keywordReport',
@@ -17,6 +18,7 @@ const SLOTS: FileSlotConfig[] = [
     accept: '.csv',
     format: '.csv',
     calculator: 'fileUpload.slot.keywordReportCalc',
+    link: 'https://seller.shopee.co.id/portal/marketing/pas/assembly?&type=all&group=last-thirty-days',
   },
   {
     label: 'fileUpload.slot.orderExport',
@@ -24,6 +26,7 @@ const SLOTS: FileSlotConfig[] = [
     accept: '.xlsx,.zip',
     format: '.xlsx, .zip',
     calculator: 'fileUpload.slot.orderExportCalc',
+    link: 'https://seller.shopee.co.id/portal/sale/order',
   },
   {
     label: 'fileUpload.slot.massUpdate',
@@ -31,6 +34,7 @@ const SLOTS: FileSlotConfig[] = [
     accept: '.xlsx,.zip',
     format: '.xlsx, .zip',
     calculator: 'fileUpload.slot.massUpdateCalc',
+    link: 'https://seller.shopee.co.id/portal/product-mass/mass-update/download',
   },
 ];
 

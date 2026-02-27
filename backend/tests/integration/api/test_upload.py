@@ -200,11 +200,15 @@ def test_process_valid_csv(client):
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.brand_queries") as mock_brand_queries,
         patch("app.modules.upload.service.get_storage_client") as mock_storage_fn,
         patch("app.modules.upload.service.clear_dependent_results") as mock_clear,
         patch("app.modules.upload.service.run_calculators_for_upload") as mock_run,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        # Brand mock for filename prefix
+        mock_brand_queries.get_brand_by_id = AsyncMock(return_value={"id": 123, "brand_name": "TestBrand"})
 
         # Storage mock
         mock_storage = MagicMock()
@@ -259,9 +263,16 @@ def test_process_missing_columns(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.brand_queries") as mock_brand_queries,
         patch("app.modules.upload.service.get_storage_client") as mock_storage_fn,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        # Brand mock for filename prefix
+        mock_brand_queries.get_brand_by_id = AsyncMock(return_value={"id": 123, "brand_name": "TestBrand"})
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
 
         # CSV with wrong columns (still needs Shopee metadata rows)
         mock_storage = MagicMock()

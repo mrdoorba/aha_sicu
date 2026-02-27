@@ -168,6 +168,15 @@ async def process_upload(
             detail="Signed URL has expired (15 min window exceeded)",
         )
 
+    # Fetch brand to prefix filename
+    async with db.connection() as conn:
+        brand = await brand_queries.get_brand_by_id(conn, brand_id)
+    if not brand:
+        raise AppException(
+            code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
+        )
+    pending.filename = f"{brand['brand_name']}_{pending.filename}"
+
     storage = get_storage_client()
 
     # Download from storage
