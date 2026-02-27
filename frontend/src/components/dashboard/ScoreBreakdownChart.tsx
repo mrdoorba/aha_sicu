@@ -24,7 +24,13 @@ interface ScoreBreakdownChartProps {
 export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps) => {
   const { t } = useTranslation();
 
-  const radarData = scoreBreakdown.map((cat) => {
+  const EXCLUDED_CATEGORIES = ['Kompetisi TOP Produk'];
+
+  const filteredBreakdown = scoreBreakdown.filter(
+    (cat) => !EXCLUDED_CATEGORIES.includes(cat.category)
+  );
+
+  const radarData = filteredBreakdown.map((cat) => {
     const mapped = CATEGORY_MAP.find((m) => m.backend === cat.category);
     const label = mapped ? t(mapped.labelKey) : cat.category;
     const percent = cat.max_score > 0 ? (cat.score / cat.max_score) * 100 : 0;
@@ -64,7 +70,7 @@ export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps
 
           {/* Right: Horizontal Category Bars */}
           <div className="space-y-4">
-            {scoreBreakdown.map((cat, idx) => {
+            {filteredBreakdown.map((cat, idx) => {
               const mapped = CATEGORY_MAP.find((m) => m.backend === cat.category);
               const label = mapped ? t(mapped.labelKey) : cat.category;
               const percent = cat.max_score > 0 ? (cat.score / cat.max_score) * 100 : 0;
