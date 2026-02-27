@@ -66,7 +66,6 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
   }
 
   const score = Math.round(evaluation.final_score);
-  const conclusion = evaluation.verdict.replace(/^(✔️|❌)\s*/, '');
 
   const scoreBreakdown = evaluation.score_breakdown.map((cat) => ({
     category: String(cat.category),
@@ -95,9 +94,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
       <ScoreOverview
         score={score}
         verdict={evaluation.verdict}
-        conclusion={conclusion}
         template={evaluation.template}
-        ruleVersion={evaluation.rule_version}
       />
 
       <ScoreBreakdownChart scoreBreakdown={scoreBreakdown} />

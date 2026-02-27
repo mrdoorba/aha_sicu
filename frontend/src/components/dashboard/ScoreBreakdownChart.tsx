@@ -47,13 +47,14 @@ export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps
 
         <div className="grid gap-8 lg:grid-cols-2 items-center">
           {/* Left: Radar Chart */}
-          <div className="w-full h-72">
+          <div className="w-full h-96">
             <ResponsiveContainer width="100%" height="100%">
-              <RadarChart data={radarData} outerRadius="75%">
-                <PolarGrid strokeDasharray="3 3" stroke="hsl(var(--border))" />
+              <RadarChart data={radarData} outerRadius="70%">
+                <PolarGrid gridType="polygon" stroke="hsl(var(--border))" />
                 <PolarAngleAxis
                   dataKey="category"
-                  tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }}
+                  tick={{ fontSize: 12, fill: 'hsl(var(--muted-foreground))', fontWeight: 500 }}
+                  tickLine={false}
                 />
                 <PolarRadiusAxis angle={90} domain={[0, 100]} tick={false} axisLine={false} />
                 <Radar
@@ -61,7 +62,7 @@ export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps
                   dataKey="value"
                   stroke="hsl(var(--primary))"
                   fill="hsl(var(--primary))"
-                  fillOpacity={0.2}
+                  fillOpacity={0.3}
                   strokeWidth={2}
                 />
               </RadarChart>

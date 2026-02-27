@@ -8,12 +8,10 @@ import { useTranslation } from 'react-i18next';
 interface ScoreOverviewProps {
   score: number;
   verdict: string;
-  conclusion: string;
   template: string;
-  ruleVersion: number;
 }
 
-export const ScoreOverview = ({ score, verdict, conclusion, template, ruleVersion }: ScoreOverviewProps) => {
+export const ScoreOverview = ({ score, verdict, template }: ScoreOverviewProps) => {
   const { t } = useTranslation();
 
   const isApproved = verdict === '✔️';
@@ -50,14 +48,8 @@ export const ScoreOverview = ({ score, verdict, conclusion, template, ruleVersio
               {isApproved ? t('presentation.verdict.approved') : isRejected ? t('presentation.verdict.rejected') : t('presentation.verdict.pending')}
             </Badge>
 
-            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
-              {conclusion || (isApproved ? t('presentation.verdict.fallbackApproved') : t('presentation.verdict.fallbackRejected'))}
-            </p>
-
-            <div className="flex gap-2 text-xs text-muted-foreground/60">
+            <div className="text-xs text-muted-foreground/60">
               <span>{template === 'fashion' ? t('evaluationSections.fashion') : t('evaluationSections.nonFashion')}</span>
-              <span>•</span>
-              <span>v{ruleVersion}</span>
             </div>
           </div>
 
