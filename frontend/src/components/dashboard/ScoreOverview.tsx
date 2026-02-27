@@ -50,8 +50,8 @@ export const ScoreOverview = ({ score, verdict, conclusion, template, ruleVersio
               {isApproved ? t('presentation.verdict.approved') : isRejected ? t('presentation.verdict.rejected') : t('presentation.verdict.pending')}
             </Badge>
 
-            <p className="text-sm text-muted-foreground italic leading-relaxed max-w-sm">
-              "{conclusion || (isApproved ? t('presentation.verdict.fallbackApproved') : t('presentation.verdict.fallbackRejected'))}"
+            <p className="text-sm text-muted-foreground leading-relaxed max-w-sm">
+              {conclusion || (isApproved ? t('presentation.verdict.fallbackApproved') : t('presentation.verdict.fallbackRejected'))}
             </p>
 
             <div className="flex gap-2 text-xs text-muted-foreground/60">
@@ -61,9 +61,9 @@ export const ScoreOverview = ({ score, verdict, conclusion, template, ruleVersio
             </div>
           </div>
 
-          {/* Right: Radial Ring Chart */}
+          {/* Right: Radial Ring Chart with Score Inside */}
           <div className="flex justify-center">
-            <div className="w-56 h-56">
+            <div className="relative w-56 h-56">
               <ResponsiveContainer width="100%" height="100%">
                 <RadialBarChart
                   cx="50%"
@@ -84,6 +84,10 @@ export const ScoreOverview = ({ score, verdict, conclusion, template, ruleVersio
                   />
                 </RadialBarChart>
               </ResponsiveContainer>
+              <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                <span className="text-5xl font-bold tabular-nums tracking-tight">{score}</span>
+                <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">Score</span>
+              </div>
             </div>
           </div>
         </div>
