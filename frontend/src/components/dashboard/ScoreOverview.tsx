@@ -19,7 +19,7 @@ export const ScoreOverview = ({ score, verdict, conclusion, template, ruleVersio
   const isApproved = verdict === '✔️';
   const isRejected = verdict.startsWith('❌');
 
-  const chartData = [{ name: 'score', value: score, fill: isApproved ? 'hsl(var(--success))' : isRejected ? 'hsl(var(--destructive))' : 'hsl(var(--muted))' }];
+  const chartData = [{ name: 'score', value: score, fill: isApproved ? 'var(--success)' : isRejected ? 'var(--destructive)' : 'var(--muted)' }];
 
   return (
     <Card className="border-none shadow-2xl bg-gradient-to-br from-card to-muted/30 overflow-hidden relative">
@@ -77,7 +77,7 @@ export const ScoreOverview = ({ score, verdict, conclusion, template, ruleVersio
                 >
                   <PolarAngleAxis type="number" domain={[0, 100]} angleAxisId={0} tick={false} />
                   <RadialBar
-                    background={{ fill: 'hsl(var(--muted))' }}
+                    background={{ fill: 'var(--muted)' }}
                     dataKey="value"
                     angleAxisId={0}
                     cornerRadius={10}
