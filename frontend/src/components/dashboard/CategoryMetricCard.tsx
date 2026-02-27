@@ -26,7 +26,7 @@ export const CategoryMetricCard = ({ metric, value, verdict, score, benchmark, m
         <div className="flex-1 min-w-0">
           <p className="text-sm font-semibold text-foreground truncate">{metric}</p>
         </div>
-        <div className="text-sm font-bold tabular-nums text-muted-foreground text-right shrink-0">
+        <div className="text-sm font-bold tabular-nums text-muted-foreground text-right min-w-0 break-words">
           {displayValue}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
