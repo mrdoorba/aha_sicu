@@ -81,6 +81,7 @@ async def list_evaluations(
             template=row["template"],
             evaluator_email=row["evaluator_email"],
             created_at=row["created_at"],
+            period=row.get("period", ""),
         )
         for row in rows
     ]
@@ -165,6 +166,7 @@ async def list_evaluations_by_brand(
             template=row["template"],
             evaluator_email=row["evaluator_email"],
             created_at=row["created_at"],
+            period=row.get("period", ""),
         )
         for row in rows
     ]
@@ -225,6 +227,7 @@ async def get_evaluation_detail(evaluation_id: int) -> EvaluationDetailResponse:
         evaluator_email=row["evaluator_email"],
         created_at=row["created_at"],
         rule_version=row["rule_version"],
+        period=row.get("period", ""),
         brand_raw_data=brand_raw_data,
     )
 
@@ -377,6 +380,7 @@ async def save_evaluation(
     rule_version: int = 1,
     email_output: str | None = None,
     evaluator_email: str = "",
+    period: str = "",
 ) -> SaveEvaluationResponse:
     """Save a completed evaluation as a permanent, immutable record.
 
@@ -405,6 +409,7 @@ async def save_evaluation(
                 manual_inputs=manual_inputs,
                 rule_version=rule_version,
                 email_output=email_output,
+                period=period,
             )
 
     return SaveEvaluationResponse(
@@ -414,6 +419,7 @@ async def save_evaluation(
         verdict=row["verdict"],
         template=row["template"],
         created_at=row["created_at"],
+        period=row.get("period", ""),
     )
 
 

@@ -54,6 +54,7 @@ export const EvaluationPage = () => {
   const {
     generateScore,
     scoringResult,
+    lastPeriod,
     isStale,
     isGenerating,
     error: scoringError,
@@ -102,6 +103,7 @@ export const EvaluationPage = () => {
         manual_inputs: manualData as unknown as Record<string, unknown>,
         rule_version: scoringResult.rule_version,
         email_output: scoringResult.email_body || null,
+        period: lastPeriod,
       },
       {
         onSuccess: () => {
@@ -112,7 +114,7 @@ export const EvaluationPage = () => {
         },
       },
     );
-  }, [scoringResult, calculatorResultsData, manualData, saveEvaluation, t]);
+  }, [scoringResult, calculatorResultsData, manualData, saveEvaluation, t, lastPeriod]);
 
   const handleCategoryChange = useCallback(
     (value: string) => {

@@ -68,21 +68,22 @@ async def insert_evaluation(
     manual_inputs: dict[str, Any],
     rule_version: int = 1,
     email_output: str | None = None,
+    period: str = "",
 ) -> dict:
     """Insert a new evaluation record (immutable snapshot).
 
     Always creates a new record — never upserts.
-    Returns the new record's id, brand_id, final_score, verdict, template, created_at.
+    Returns the new record's id, brand_id, final_score, verdict, template, created_at, period.
     """
     row = await conn.fetchrow(
         """
         INSERT INTO evaluations (
             brand_id, user_id, template, final_score, verdict,
             score_breakdown, calculator_results, manual_inputs,
-            rule_version, email_output
+            rule_version, email_output, period
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10)
-        RETURNING id, brand_id, final_score, verdict, template, created_at
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        RETURNING id, brand_id, final_score, verdict, template, created_at, period
         """,
         brand_id,
         user_id,
@@ -94,6 +95,7 @@ async def insert_evaluation(
         manual_inputs,
         rule_version,
         email_output,
+        period,
     )
     return dict(row)
 
@@ -155,7 +157,8 @@ async def list_evaluations(
 
     query = f"""
         SELECT e.id, b.brand_name, e.final_score, e.verdict, e.template,
-               COALESCE(u.email, 'Pengguna Dihapus') AS evaluator_email, e.created_at
+               COALESCE(u.email, 'Pengguna Dihapus') AS evaluator_email, e.created_at,
+               COALESCE(e.period, '') AS period
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
         LEFT JOIN users u ON e.user_id = u.id
@@ -198,6 +201,7 @@ async def get_evaluation_by_id(
                e.final_score, e.verdict, e.template,
                e.score_breakdown, e.calculator_results, e.manual_inputs,
                e.email_output, e.rule_version, e.created_at,
+               COALESCE(e.period, '') AS period,
                COALESCE(u.email, 'Pengguna Dihapus') AS evaluator_email
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
@@ -312,7 +316,8 @@ async def list_evaluations_by_brand(
 
     query = f"""
         SELECT e.id, e.final_score, e.verdict, e.template,
-               COALESCE(u.email, 'Pengguna Dihapus') AS evaluator_email, e.created_at
+               COALESCE(u.email, 'Pengguna Dihapus') AS evaluator_email, e.created_at,
+               COALESCE(e.period, '') AS period
         FROM evaluations e
         LEFT JOIN users u ON e.user_id = u.id
         {where_clause}

@@ -22,6 +22,7 @@ export interface EvaluationDetail {
   evaluator_email: string;
   created_at: string;
   rule_version: number;
+  period: string;
   brand_raw_data: BrandRawData;
 }
 

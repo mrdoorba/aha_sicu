@@ -188,6 +188,7 @@ class EvaluationListItem(BaseModel):
     template: str
     evaluator_email: str
     created_at: datetime
+    period: str = ""
 
 
 class EvaluationListResponse(BaseModel):
@@ -230,6 +231,7 @@ class BrandEvaluationItem(BaseModel):
     template: str
     evaluator_email: str
     created_at: datetime
+    period: str = ""
 
 
 class BrandEvaluationListResponse(BaseModel):
@@ -264,6 +266,7 @@ class EvaluationDetailResponse(BaseModel):
     evaluator_email: str
     created_at: datetime
     rule_version: int
+    period: str = ""
     brand_raw_data: BrandRawData = Field(default_factory=BrandRawData)
 
     @field_validator("score_breakdown", "calculator_results", "manual_inputs", mode="before")
@@ -283,6 +286,7 @@ class SaveEvaluationRequest(BaseModel):
     manual_inputs: dict[str, Any]
     rule_version: int = 1
     email_output: str | None = None
+    period: str = ""
 
 
 class SaveEvaluationResponse(BaseModel):
@@ -294,3 +298,4 @@ class SaveEvaluationResponse(BaseModel):
     verdict: str
     template: str
     created_at: datetime
+    period: str = ""

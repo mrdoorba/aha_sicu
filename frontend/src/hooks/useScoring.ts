@@ -48,9 +48,11 @@ export function useScoring(brandId: number) {
   const queryClient = useQueryClient();
   const [scoringResult, setScoringResult] = useState<ScoringResult | null>(null);
   const [isStale, setIsStale] = useState(false);
+  const [lastPeriod, setLastPeriod] = useState('');
 
   const mutation = useMutation<ScoringResult, Error, ScoringRequest>({
     mutationFn: async (request) => {
+      setLastPeriod(request.period);
       const { data, error } = await client.POST(
         '/api/v1/evaluations/brands/{brand_id}/score',
         {
@@ -92,6 +94,7 @@ export function useScoring(brandId: number) {
   return {
     generateScore: mutation.mutate,
     scoringResult,
+    lastPeriod,
     isStale,
     markStale,
     isGenerating: mutation.isPending,

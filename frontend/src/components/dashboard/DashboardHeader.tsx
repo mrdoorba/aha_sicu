@@ -1,4 +1,4 @@
-import { ArrowLeft, Edit3 } from 'lucide-react';
+import { ArrowLeft, Edit3, Calendar } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { cn } from '../../lib/utils';
@@ -10,10 +10,11 @@ interface DashboardHeaderProps {
   brandId: number;
   verdict: string;
   template: string;
+  period?: string;
   onBack: () => void;
 }
 
-export const DashboardHeader = ({ brandName, brandId, verdict, template, onBack }: DashboardHeaderProps) => {
+export const DashboardHeader = ({ brandName, brandId, verdict, template, period, onBack }: DashboardHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -29,12 +30,18 @@ export const DashboardHeader = ({ brandName, brandId, verdict, template, onBack 
         </Button>
         <div className="h-4 w-[1px] bg-border hidden sm:block" />
         <h1 className="text-2xl font-black tracking-tight text-foreground hidden sm:block">{brandName}</h1>
+        {period && (
+          <Badge variant="outline" className="px-3 py-1 text-xs font-bold uppercase tracking-widest hidden sm:flex gap-1.5 bg-primary/5 text-primary border-primary/20">
+            <Calendar className="size-3" />
+            {period}
+          </Badge>
+        )}
         <Badge
           className={cn(
             'px-3 py-1 text-xs font-bold uppercase tracking-widest hidden sm:flex',
             isApproved ? 'bg-success/10 text-success border-success/20' :
-            isRejected ? 'bg-destructive/10 text-destructive border-destructive/20' :
-            'bg-muted text-muted-foreground border-border'
+              isRejected ? 'bg-destructive/10 text-destructive border-destructive/20' :
+                'bg-muted text-muted-foreground border-border'
           )}
           variant="outline"
         >

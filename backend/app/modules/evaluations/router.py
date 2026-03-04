@@ -360,4 +360,5 @@ async def save_evaluation_endpoint(
         rule_version=body.rule_version,
         email_output=body.email_output,
         evaluator_email=current_user["email"],
+        period=body.period,
     )

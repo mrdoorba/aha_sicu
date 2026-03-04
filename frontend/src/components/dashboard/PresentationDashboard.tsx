@@ -88,6 +88,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
         brandId={brandId}
         verdict={evaluation.verdict}
         template={evaluation.template}
+        period={evaluation.period}
         onBack={onBack}
       />
 
