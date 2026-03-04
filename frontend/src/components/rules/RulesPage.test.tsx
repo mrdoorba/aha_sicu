@@ -749,7 +749,7 @@ const RULES_WITH_MESSAGES: ScoringRule[] = [
       },
       competition: {
         message_pass: '✅kompetitif',
-        message_fail: '❌tidak kompetitif (harga kisaran pasaran: Rp. {market_price})',
+        message_fail: '❌tidak kompetitif (harga kisaran pasaran: IDR {market_price})',
       },
       interpretation: {
         ...FASHION_RULES.interpretation,

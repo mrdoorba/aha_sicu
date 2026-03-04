@@ -2125,7 +2125,7 @@ class TestMessageTemplatesCompetition:
     def test_custom_competition_pass(self):
         rules = {**DEFAULT_RULES, "competition": {
             "message_pass": "COMPETITIVE",
-            "message_fail": "NOT COMPETITIVE: Rp. {market_price}",
+            "message_fail": "NOT COMPETITIVE: IDR {market_price}",
         }}
         data = {
             "competition": {
@@ -2149,7 +2149,7 @@ class TestMessageTemplatesCompetition:
     def test_custom_competition_fail(self):
         rules = {**DEFAULT_RULES, "competition": {
             "message_pass": "COMPETITIVE",
-            "message_fail": "OVERPRICED: Rp. {market_price}",
+            "message_fail": "OVERPRICED: IDR {market_price}",
         }}
         data = {
             "competition": {

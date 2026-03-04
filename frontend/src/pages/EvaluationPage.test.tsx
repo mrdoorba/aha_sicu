@@ -194,7 +194,7 @@ describe('EvaluationPage', () => {
         conclusion: 'Approved',
         marketing_estimation: '10%',
         marketing_percentage: '10%',
-        marketing_budget: 'Rp 1.000.000',
+        marketing_budget: 'IDR 1,000,000',
         closing_message: 'Thank you',
         email_subject: 'Result',
         rule_version: 3,
