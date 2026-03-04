@@ -176,24 +176,12 @@ def calculate_sheet1(
 
     # Indonesian AK3: 2 categories (Semua Penempatan + Iklan Toko)
     # English AK3: 4 categories (Search, Recommendation, All, Shop Ad)
-    if language == "en":
-        ak3 = (
-            "• Jenis Iklan yang aktif digunakan:\n"
-            f"  {search_total} Iklan Produk Halaman Pencarian "
-            f"({search_auto} Otomatis & {search_manual} Manual).\n"
-            f"  {reco_total} Iklan Produk Halaman Rekomendasi "
-            f"({reco_auto} Otomatis & {reco_manual} Manual).\n"
-            f"  {semua_total} Iklan Produk Otomatis Semua Halaman.\n"
-            f"  {toko_total} Iklan Toko "
-            f"({toko_auto} Otomatis & {toko_manual} Manual)."
-        )
-    else:
-        ak3 = (
-            "• Jenis Iklan yang aktif digunakan:\n"
-            f"  {semua_total} Iklan Produk Otomatis Semua Halaman.\n"
-            f"  {toko_total} Iklan Toko "
-            f"({toko_auto} Otomatis & {toko_manual} Manual)."
-        )
+    ak3 = (
+        "• Jenis Iklan yang aktif digunakan:\n"
+        f"  {semua_total} Iklan Produk Otomatis Semua Halaman.\n"
+        f"  {toko_total} Iklan Toko "
+        f"({toko_auto} Otomatis & {toko_manual} Manual)."
+    )
 
     # --- AK4: Recommendation Flags ---
     # Indonesian: 3 flags | English: 9 flags
@@ -230,59 +218,7 @@ def calculate_sheet1(
     all_bidding = [_safe_str(r.get("Mode Bidding")) for r in rows]
     all_jenis = [_safe_str(r.get("Jenis Iklan")) for r in rows]
 
-    if language == "en":
-        # English flags 3-9
-        if not any(p == "Halaman Pencarian" for p in all_penempatan):
-            flags.append(
-                "📌 Iklan Produk Halaman Pencarian belum dimanfaatkan."
-            )
-
-        has_search_auto = any(
-            p == "Halaman Pencarian" and b == "Bidding Otomatis"
-            for p, b in zip(all_penempatan, all_bidding)
-        )
-        if not has_search_auto:
-            flags.append(
-                "📌 Iklan Produk Halaman Pencarian (Bidding Otomatis) "
-                "belum dimanfaatkan."
-            )
-
-        has_search_manual = any(
-            p == "Halaman Pencarian" and b == "Bidding Manual"
-            for p, b in zip(all_penempatan, all_bidding)
-        )
-        if not has_search_manual:
-            flags.append(
-                "📌 Iklan Produk Halaman Pencarian (Bidding Manual) "
-                "belum dimanfaatkan."
-            )
-
-        if not any(p == "Halaman Rekomendasi" for p in all_penempatan):
-            flags.append(
-                "📌 Iklan Produk Halaman Rekomendasi belum dimanfaatkan."
-            )
-
-        has_reco_auto = any(
-            p == "Halaman Rekomendasi" and b == "Bidding Otomatis"
-            for p, b in zip(all_penempatan, all_bidding)
-        )
-        if not has_reco_auto:
-            flags.append(
-                "📌 Iklan Produk Halaman Rekomendasi (Bidding Otomatis) "
-                "belum dimanfaatkan."
-            )
-
-        has_reco_manual = any(
-            p == "Halaman Rekomendasi" and b == "Bidding Manual"
-            for p, b in zip(all_penempatan, all_bidding)
-        )
-        if not has_reco_manual:
-            flags.append(
-                "📌 Iklan Produk Halaman Rekomendasi (Bidding Manual) "
-                "belum dimanfaatkan."
-            )
-
-    # Iklan Toko flag (both languages — Indonesian flag 3, English flag 9)
+    # Iklan Toko flag (both languages — flag 3)
     if not any(j == "Iklan Toko" for j in all_jenis):
         flags.append("📌 Iklan Toko belum dimanfaatkan.")
 
@@ -414,11 +350,8 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any
     is_top_fallback = False
     if top_primary:
         top_ads = top_primary
-    elif language == "en":
-        # English: no fallback — AL2 is empty if primary returns nothing
-        top_ads = []
     else:
-        # Indonesian: fallback query
+        # Fallback query (both languages)
         fallback_roas_threshold = max(am7 / 2, 6)
         top_ads = sorted(
             [
