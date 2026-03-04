@@ -184,7 +184,6 @@ _REQUIRED_COLUMNS: dict[str, frozenset[str]] = {
         "Nama Produk",
         "Nama Variasi",
         "Kode Variasi",
-        "Stok",
     }),
 }
 

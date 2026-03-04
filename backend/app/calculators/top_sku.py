@@ -188,7 +188,8 @@ def _build_mass_update_lookup(
         nama_produk = str(row.get("Nama Produk", "") or "").strip()
         nama_variasi = str(row.get("Nama Variasi", "") or "").strip()
         kode_variasi = str(row.get("Kode Variasi", "") or "").strip()
-        stok = int(_safe_num(row.get("Stok")))
+        stok_keys = [k for k in row if isinstance(k, str) and k.startswith("Stok")]
+        stok = int(sum(_safe_num(row.get(k)) for k in stok_keys)) if stok_keys else 0
 
         label = f"{nama_produk} - {nama_variasi}"
         if kode_variasi:

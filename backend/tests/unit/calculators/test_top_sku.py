@@ -329,6 +329,38 @@ class TestBuildMassUpdateLookup:
         assert kode_to_stok["K001"] == 100
         assert kode_to_stok["K999"] == 50
 
+    def test_multi_warehouse_columns_summed(self):
+        """Multiple Stok:* columns should be summed per row for total stock."""
+        mu_data = [
+            {
+                "Nama Produk": "Prod A",
+                "Nama Variasi": "Red",
+                "Kode Variasi": "K001",
+                "Stok:BRAND - WH1": "12",
+                "Stok:BRAND - WH2": "2",
+                "Stok:BRAND - WH3": "0",
+                "Stok:BRAND - WH4": "24",
+            },
+        ]
+        _, kode_to_stok = _build_mass_update_lookup(mu_data)
+        assert kode_to_stok["K001"] == 38  # 12 + 2 + 0 + 24
+
+    def test_single_stok_column_still_works(self):
+        """Existing single 'Stok' column behavior must be preserved."""
+        mu_data = [
+            {"Nama Produk": "Prod A", "Nama Variasi": "Red", "Kode Variasi": "K001", "Stok": 50},
+        ]
+        _, kode_to_stok = _build_mass_update_lookup(mu_data)
+        assert kode_to_stok["K001"] == 50
+
+    def test_no_stok_column_defaults_zero(self):
+        """If no Stok column exists at all, stock should default to 0."""
+        mu_data = [
+            {"Nama Produk": "Prod A", "Nama Variasi": "Red", "Kode Variasi": "K001", "Harga": "100000"},
+        ]
+        _, kode_to_stok = _build_mass_update_lookup(mu_data)
+        assert kode_to_stok["K001"] == 0
+
 
 # ---------------------------------------------------------------------------
 # _enrich_with_mass_update tests

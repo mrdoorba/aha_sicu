@@ -110,7 +110,6 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
         "Nama Variasi",
         "SKU",
         "Harga",
-        "Stok",
     ],
 }
 
