@@ -990,7 +990,7 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
     else:
         f70, h70 = "❌", low_points
 
-    if f70 == "✔️":
+    if avg_stock_int >= high_threshold:
         msg70 = f"✔️ Rata² Stok = {avg_stock_int} [Sudah Baik]"
     else:
         msg70 = f"❌ Rata² Stok = {avg_stock_int} [Kurang Baik, nilai disarankan: >={high_threshold:g}]"
