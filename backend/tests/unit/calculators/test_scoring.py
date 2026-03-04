@@ -464,28 +464,51 @@ class TestScoreCampaign:
 
 
 class TestScoreStock:
+    # -----------------------------------------------------------------------
+    # BDD Scenarios:
+    #   Scenario: High average stock with good availability
+    #     Given TOP SKU data with average_stock=30 and 0% out of stock
+    #     When scoring stock
+    #     Then score = 10 (no penalty)
+    #
+    #   Scenario: High average stock but >10% out of stock
+    #     Given TOP SKU data with average_stock=30 and 20% out of stock
+    #     When scoring stock
+    #     Then score = 10 + (-5) = 5
+    #
+    #   Scenario: Low average stock with >10% out of stock
+    #     Given TOP SKU data with average_stock=8 and 50% out of stock
+    #     When scoring stock
+    #     Then score = -5 + (-5) = -10
+    #
+    #   Scenario: Stock availability exactly at threshold (10%)
+    #     Given TOP SKU data with exactly 10% out of stock
+    #     When scoring stock
+    #     Then no penalty applied (<=10% is OK)
+    # -----------------------------------------------------------------------
+
     def test_high_stock(self):
-        results = {"top_sku": {"details": {"average_stock": 30}}}
+        results = {"top_sku": {"details": {"average_stock": 30, "out_of_stock_pct": 0.0}}}
         cat = _score_stock(results)
         assert cat.score == 10.0
 
     def test_medium_stock(self):
-        results = {"top_sku": {"details": {"average_stock": 15}}}
+        results = {"top_sku": {"details": {"average_stock": 15, "out_of_stock_pct": 0.0}}}
         cat = _score_stock(results)
         assert cat.score == 5.0
 
     def test_low_stock(self):
-        results = {"top_sku": {"details": {"average_stock": 8}}}
+        results = {"top_sku": {"details": {"average_stock": 8, "out_of_stock_pct": 0.0}}}
         cat = _score_stock(results)
         assert cat.score == -5.0
 
     def test_exactly_24(self):
-        results = {"top_sku": {"details": {"average_stock": 24}}}
+        results = {"top_sku": {"details": {"average_stock": 24, "out_of_stock_pct": 0.0}}}
         cat = _score_stock(results)
         assert cat.score == 10.0
 
     def test_exactly_12(self):
-        results = {"top_sku": {"details": {"average_stock": 12}}}
+        results = {"top_sku": {"details": {"average_stock": 12, "out_of_stock_pct": 0.0}}}
         cat = _score_stock(results)
         assert cat.score == 5.0
 
@@ -493,6 +516,61 @@ class TestScoreStock:
         cat = _score_stock({})
         assert cat.available is False
         assert cat.score == 0.0  # Missing calculator data → unavailable
+
+    # --- Stock availability penalty tests ---
+
+    def test_high_stock_with_penalty(self):
+        """High avg stock but >10% out of stock → penalty applied."""
+        # Arrange
+        results = {"top_sku": {"details": {"average_stock": 30, "out_of_stock_pct": 0.20}}}
+
+        # Act
+        cat = _score_stock(results)
+
+        # Assert — 10 (avg stock) + (-5) (penalty) = 5
+        assert cat.score == 5.0
+        assert len(cat.rows) == 2
+        assert cat.rows[1].row == 71
+        assert cat.rows[1].score == -5.0
+        assert cat.rows[1].verdict == "❌"
+
+    def test_low_stock_with_penalty_stacks(self):
+        """Low avg stock + out of stock penalty stacks."""
+        # Arrange
+        results = {"top_sku": {"details": {"average_stock": 8, "out_of_stock_pct": 0.50}}}
+
+        # Act
+        cat = _score_stock(results)
+
+        # Assert — (-5) + (-5) = -10
+        assert cat.score == -10.0
+
+    def test_at_threshold_no_penalty(self):
+        """Exactly 10% out of stock → no penalty (<=10% is OK)."""
+        # Arrange
+        results = {"top_sku": {"details": {"average_stock": 30, "out_of_stock_pct": 0.10}}}
+
+        # Act
+        cat = _score_stock(results)
+
+        # Assert — 10 (avg stock) + 0 (no penalty) = 10
+        assert cat.score == 10.0
+        assert len(cat.rows) == 2
+        assert cat.rows[1].score == 0.0
+        assert cat.rows[1].verdict == "✔️"
+
+    def test_zero_out_of_stock_no_penalty(self):
+        """0% out of stock → no penalty."""
+        # Arrange
+        results = {"top_sku": {"details": {"average_stock": 24, "out_of_stock_pct": 0.0}}}
+
+        # Act
+        cat = _score_stock(results)
+
+        # Assert
+        assert cat.score == 10.0
+        assert len(cat.rows) == 2
+        assert cat.rows[1].score == 0.0
 
 
 class TestScoreDiscount:
@@ -1112,7 +1190,7 @@ class TestCustomRulesStock:
     """Custom stock thresholds change scoring tiers."""
 
     def test_custom_stock_thresholds(self):
-        results = {"top_sku": {"details": {"average_stock": 20}}}
+        results = {"top_sku": {"details": {"average_stock": 20, "out_of_stock_pct": 0.0}}}
         # Default: >=24 → 10, >=12 → 5 → 20 falls in mid tier = 5
         cat_default = _score_stock(results)
         assert cat_default.score == 5.0
@@ -1127,7 +1205,7 @@ class TestCustomRulesStock:
         assert cat_custom.score == 7.0  # custom mid points
 
     def test_stock_reclassified_by_threshold(self):
-        results = {"top_sku": {"details": {"average_stock": 24}}}
+        results = {"top_sku": {"details": {"average_stock": 24, "out_of_stock_pct": 0.0}}}
         # Default: 24 >= 24 → high tier = 10
         cat_default = _score_stock(results)
         assert cat_default.score == 10.0
@@ -1140,6 +1218,22 @@ class TestCustomRulesStock:
         }}
         cat_custom = _score_stock(results, custom_rules)
         assert cat_custom.score == 5.0  # Reclassified from high to mid
+
+    def test_custom_out_of_stock_threshold(self):
+        """Custom out_of_stock threshold overrides the default 10%."""
+        # Arrange — 15% out of stock, default threshold 10% → penalty
+        results = {"top_sku": {"details": {"average_stock": 30, "out_of_stock_pct": 0.15}}}
+
+        # Act with default rules — 15% > 10% → penalty -5
+        cat_default = _score_stock(results)
+        assert cat_default.score == 5.0  # 10 + (-5)
+
+        # Act with custom threshold 20% — 15% <= 20% → no penalty
+        custom_rules = {**DEFAULT_RULES, "stock": {
+            "out_of_stock": {"threshold": 0.20, "penalty": -5.0},
+        }}
+        cat_custom = _score_stock(results, custom_rules)
+        assert cat_custom.score == 10.0  # 10 + 0
 
 
 class TestCustomRulesDiscount:

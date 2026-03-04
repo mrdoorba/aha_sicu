@@ -615,3 +615,84 @@ class TestCalculateTopSku:
         assert result.details["total_unique_products"] == 100
         assert result.details["output_1"][0]["product_name"] == "Product 0 - Variant 0"
         assert result.details["output_1"][0]["total_omzet"] == 20000000
+
+
+# ---------------------------------------------------------------------------
+# BDD: out_of_stock_pct in calculator output
+#   Scenario: All products in stock
+#     Given 10 TOP SKUs all with stock > 0
+#     When calculate_top_sku runs
+#     Then out_of_stock_pct = 0.0
+#
+#   Scenario: Some products out of stock
+#     Given 10 TOP SKUs, 3 with stock = 0
+#     When calculate_top_sku runs
+#     Then out_of_stock_pct = 0.3
+#
+#   Scenario: Empty order data
+#     Given empty order data
+#     When calculate_top_sku runs
+#     Then out_of_stock_pct = 0.0
+# ---------------------------------------------------------------------------
+
+
+class TestOutOfStockPct:
+    def test_all_in_stock(self):
+        """All products have stock > 0 → out_of_stock_pct = 0.0."""
+        # Arrange
+        order_data = []
+        mu_data = []
+        for i in range(5):
+            order_data.append({
+                "Nomor Referensi SKU": f"SKU{i}",
+                "Nama Produk": f"Prod {i}", "Nama Variasi": f"Var {i}",
+                "Harga Setelah Diskon": str(100000 * (5 - i)),
+                "Jumlah": 1, "Jumlah Produk di Pesan": 1,
+                "Voucher Ditanggung Penjual": "0",
+                "Cashback Koin": "0", "Diskon Dari Shopee": "0",
+            })
+            mu_data.append({
+                "Nama Produk": f"Prod {i}", "Nama Variasi": f"Var {i}",
+                "Kode Variasi": f"K{i}", "Stok": 10 + i,
+            })
+
+        # Act
+        result = calculate_top_sku(order_data, mu_data)
+
+        # Assert
+        assert result.details["out_of_stock_pct"] == 0.0
+
+    def test_some_out_of_stock(self):
+        """2 out of 5 products have stock = 0 → out_of_stock_pct = 0.4."""
+        # Arrange
+        order_data = []
+        mu_data = []
+        for i in range(5):
+            order_data.append({
+                "Nomor Referensi SKU": f"SKU{i}",
+                "Nama Produk": f"Prod {i}", "Nama Variasi": f"Var {i}",
+                "Harga Setelah Diskon": str(100000 * (5 - i)),
+                "Jumlah": 1, "Jumlah Produk di Pesan": 1,
+                "Voucher Ditanggung Penjual": "0",
+                "Cashback Koin": "0", "Diskon Dari Shopee": "0",
+            })
+            # Products 3 and 4 have stock = 0
+            stok = 0 if i >= 3 else 50
+            mu_data.append({
+                "Nama Produk": f"Prod {i}", "Nama Variasi": f"Var {i}",
+                "Kode Variasi": f"K{i}", "Stok": stok,
+            })
+
+        # Act
+        result = calculate_top_sku(order_data, mu_data)
+
+        # Assert — 2 out of 5 = 0.4
+        assert result.details["out_of_stock_pct"] == 0.4
+
+    def test_empty_order_data(self):
+        """Empty order data → out_of_stock_pct = 0.0."""
+        # Arrange / Act
+        result = calculate_top_sku([], [])
+
+        # Assert
+        assert result.details["out_of_stock_pct"] == 0.0
