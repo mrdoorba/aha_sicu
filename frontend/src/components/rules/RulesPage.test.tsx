@@ -245,7 +245,7 @@ describe('RulesPage', () => {
     expect(screen.getByText('Alat Promo')).toBeInTheDocument();
     expect(screen.getByText('Produk & Status')).toBeInTheDocument();
     expect(screen.getByText('Iklan')).toBeInTheDocument();
-    expect(screen.getByText('Kampanye')).toBeInTheDocument();
+    expect(screen.getByText('Campaign')).toBeInTheDocument();
     expect(screen.getByText('Stok')).toBeInTheDocument();
     expect(screen.getByText('Diskon')).toBeInTheDocument();
     expect(screen.getByText('Interpretasi Skor')).toBeInTheDocument();
