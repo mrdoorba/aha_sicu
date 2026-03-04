@@ -16,7 +16,7 @@ export const CategoryMetricCard = ({ metric, value, verdict, score, benchmark, m
 
   const displayValue = (() => {
     if (value === null || value === undefined) return '-';
-    if (typeof value === 'number') return value.toLocaleString('id-ID');
+    if (typeof value === 'number') return value.toLocaleString('en-US');
     return String(value);
   })();
 

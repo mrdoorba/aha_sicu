@@ -90,7 +90,7 @@ describe('TopSkuResults', () => {
     expect(screen.getByText('Peringkat Omzet')).toBeInTheDocument();
     expect(screen.getAllByText('Product A').length).toBeGreaterThanOrEqual(1);
     expect(screen.getAllByText('Product B').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getAllByText(/Rp\s/).length).toBeGreaterThanOrEqual(1);
+    expect(screen.getAllByText(/IDR\s/).length).toBeGreaterThanOrEqual(1);
   });
 
   it('renders stock table when expanded', async () => {

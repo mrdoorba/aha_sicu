@@ -237,7 +237,7 @@ export const MANUAL_DATA_FIELDS: CategoryDefinition[] = [
 
 export function formatIDR(value: number | null | undefined): string {
   if (value == null || isNaN(value)) return '';
-  return String(Math.round(value));
+  return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.round(value));
 }
 
 export function parseIDR(formatted: string): number | null {

@@ -56,7 +56,7 @@ function formatDate(dateStr: string): string {
 
 function formatIDR(value: unknown): string {
   if (typeof value !== 'number') return String(value ?? '-');
-  return value.toLocaleString('id-ID');
+  return value.toLocaleString('en-US');
 }
 
 function formatValue(value: unknown, key: string, fieldDef?: FieldDefinition): string {
@@ -66,12 +66,12 @@ function formatValue(value: unknown, key: string, fieldDef?: FieldDefinition): s
   // Metadata-based formatting when field definition is available
   if (fieldDef && typeof value === 'number') {
     if (fieldDef.inputType === 'currency') {
-      return value.toLocaleString('id-ID');
+      return value.toLocaleString('en-US');
     }
     if (fieldDef.inputType === 'number' && fieldDef.unit === '%') {
       return `${value}%`;
     }
-    return value.toLocaleString('id-ID');
+    return value.toLocaleString('en-US');
   }
 
   // Fallback heuristics for fields not in config
@@ -328,20 +328,20 @@ function ManualInputsSection({
                                 {shortLabel(fieldDef?.label ?? key)}
                               </span>
                               <div className="font-medium">
-                              {isLink && formatted !== '-' ? (
-                                <a
-                                  href={formatted}
-                                  target="_blank"
-                                  rel="noopener noreferrer"
-                                  className="text-blue-600 underline break-all"
-                                >
-                                  Lihat di Shopee
-                                </a>
-                              ) : (
-                                <span className="break-words">
-                                  {formatted}
-                                </span>
-                              )}
+                                {isLink && formatted !== '-' ? (
+                                  <a
+                                    href={formatted}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="text-blue-600 underline break-all"
+                                  >
+                                    Lihat di Shopee
+                                  </a>
+                                ) : (
+                                  <span className="break-words">
+                                    {formatted}
+                                  </span>
+                                )}
                               </div>
                             </div>
                           );

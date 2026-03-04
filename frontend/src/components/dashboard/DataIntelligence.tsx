@@ -10,7 +10,7 @@ interface DataIntelligenceProps {
 
 function formatIDR(value: unknown): string {
   if (typeof value !== 'number') return String(value ?? '-');
-  return value.toLocaleString('id-ID');
+  return value.toLocaleString('en-US');
 }
 
 function AdsContent({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {

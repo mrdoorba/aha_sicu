@@ -108,7 +108,7 @@ describe('BusinessForm', () => {
     );
     expect(screen.getByText('Rata-rata Penjualan 6 Bulan Terakhir')).toBeInTheDocument();
     // Average = 44833333.33... → should show formatted IDR
-    expect(screen.getByText(/44\.833\.333/)).toBeInTheDocument();
+    expect(screen.getByText(/44,833,333/)).toBeInTheDocument();
   });
 
   it('shows dash when all sales months are null', () => {

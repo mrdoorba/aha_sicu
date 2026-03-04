@@ -15,7 +15,7 @@ interface BusinessFormProps {
 }
 
 function formatCurrencyDisplay(value: number): string {
-  return new Intl.NumberFormat('id-ID', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 }
 
 export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessFormProps) {

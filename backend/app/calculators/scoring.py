@@ -146,11 +146,11 @@ def _fmt_num_2dp(value: float) -> str:
 
 
 def _fmt_idr(value: float) -> str:
-    """Format IDR value with Indonesian thousands separator."""
+    """Format IDR value with comma thousands separator."""
     rounded = round(value)
     if rounded < 0:
-        return f"-{abs(rounded):,}".replace(",", ".")
-    return f"{rounded:,}".replace(",", ".")
+        return f"-{abs(rounded):,}"
+    return f"{rounded:,}"
 
 
 def _rounddown(value: float, decimals: int) -> float:
@@ -354,8 +354,8 @@ DEFAULT_RULES: dict = {
         "display_min": {"value": 0.10},
     },
     "competition": {
-        "message_pass": "{name} (Rp. {selling_price}) = ✅[kompetitif]",
-        "message_fail": "{name} (Rp. {selling_price}) = ❌[tidak kompetitif (harga kisaran pasaran: Rp. {market_price})]",
+        "message_pass": "{name} (IDR {selling_price}) = ✅[kompetitif]",
+        "message_fail": "{name} (IDR {selling_price}) = ❌[tidak kompetitif (harga kisaran pasaran: IDR {market_price})]",
     },
     "interpretation": {
         "ranges": [
@@ -940,7 +940,7 @@ def _score_competition(
 
         rows.append(RowScore(
             row=row_num, metric=f"Produk {i + 1}",
-            value=selling_price, benchmark=f"Rp. {_fmt_idr(market_price)}" if market_price > 0 else "-",
+            value=selling_price, benchmark=f"IDR {_fmt_idr(market_price)}" if market_price > 0 else "-",
             verdict=f_verdict, message="", score=0.0,
         ))
 
@@ -1345,7 +1345,7 @@ def _generate_competition_messages(cat: CategoryScore, manual_data: dict, rules:
 
         if row.verdict == "❌":
             tmpl = comp_rules.get("message_fail",
-                "{name} (Rp. {selling_price}) = ❌[tidak kompetitif (harga kisaran pasaran: Rp. {market_price})]")
+                "{name} (IDR {selling_price}) = ❌[tidak kompetitif (harga kisaran pasaran: IDR {market_price})]")
             msg = _format_message_template(
                 tmpl, name=product_name, selling_price=_fmt_idr(selling_price),
                 market_price=_fmt_idr(market_price),
@@ -1354,7 +1354,7 @@ def _generate_competition_messages(cat: CategoryScore, manual_data: dict, rules:
                 msg += f"\n↪{link}"
             row.message = msg
         elif row.verdict == "✔️":
-            tmpl = comp_rules.get("message_pass", "{name} (Rp. {selling_price}) = ✅[kompetitif]")
+            tmpl = comp_rules.get("message_pass", "{name} (IDR {selling_price}) = ✅[kompetitif]")
             msg = _format_message_template(
                 tmpl, name=product_name, selling_price=_fmt_idr(selling_price),
             )

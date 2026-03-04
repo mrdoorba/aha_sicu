@@ -19,7 +19,7 @@ const PRODUCTS = [
 ] as const;
 
 function formatPrice(value: number): string {
-  return new Intl.NumberFormat('id-ID').format(value);
+  return new Intl.NumberFormat('en-US').format(value);
 }
 
 function CompetitivenessResult({ product }: { product: CompetitionProduct }) {

@@ -2304,6 +2304,9 @@ class TestMigrationTemplatesDrift:
         m020 = importlib.import_module(
             "app.db.migrations.versions.020_add_brackets_to_all_scoring_messages"
         )
+        m021 = importlib.import_module(
+            "app.db.migrations.versions.021_internationalize_currency_rp_to_idr"
+        )
 
         db: dict = {}
         # Merge shared messages from 012
@@ -2320,6 +2323,9 @@ class TestMigrationTemplatesDrift:
 
         # Apply 020 patches
         m020._apply_patches(db, forward=True)
+
+        # Apply 021 patches
+        m021._apply_patches(db, forward=True)
 
         return db
 

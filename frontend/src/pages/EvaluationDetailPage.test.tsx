@@ -223,8 +223,8 @@ describe('EvaluationDetailPage', () => {
     expect(screen.getByText('Data Iklan')).toBeInTheDocument();
     expect(screen.getByText('Penjualan Iklan')).toBeInTheDocument();
     expect(screen.getByText('Biaya Iklan')).toBeInTheDocument();
-    expect(screen.getByText('1.500.000')).toBeInTheDocument();
-    expect(screen.getByText('500.000')).toBeInTheDocument();
+    expect(screen.getByText('1,500,000')).toBeInTheDocument();
+    expect(screen.getByText('500,000')).toBeInTheDocument();
   });
 
   it('renders competition fields with dot-notation key resolution', () => {
@@ -248,7 +248,7 @@ describe('EvaluationDetailPage', () => {
     expect(screen.getAllByText('Nama Produk').length).toBeGreaterThanOrEqual(1);
     expect(screen.getByText('Sepatu A')).toBeInTheDocument();
     expect(screen.getAllByText('Harga Jual').length).toBeGreaterThanOrEqual(1);
-    expect(screen.getByText('250.000')).toBeInTheDocument();
+    expect(screen.getByText('250,000')).toBeInTheDocument();
   });
 
   it('renders dynamic month labels when salesStartMonth is present', () => {

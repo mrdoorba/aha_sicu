@@ -135,8 +135,8 @@ export function TopSkuResults({ result }: TopSkuResultsProps) {
                 <TableRow key={row.kode_variasi}>
                   <TableCell>{row.kode_variasi}</TableCell>
                   <TableCell>{row.product_name}</TableCell>
-                  <TableCell className="text-right">Rp {formatIDR(row.total_omzet)}</TableCell>
-                  <TableCell className="text-right">Rp {formatIDR(row.rata2_harga_jual)}</TableCell>
+                  <TableCell className="text-right">IDR {formatIDR(row.total_omzet)}</TableCell>
+                  <TableCell className="text-right">IDR {formatIDR(row.rata2_harga_jual)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>
