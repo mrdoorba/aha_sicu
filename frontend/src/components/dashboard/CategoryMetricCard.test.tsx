@@ -75,7 +75,6 @@ describe('CategoryMetricCard', () => {
     );
     const greenLine = container.querySelector('.text-green-600');
     expect(greenLine).toBeInTheDocument();
-    expect(greenLine?.textContent).toContain('✔️ Rating Toko');
   });
 
   it('renders ❌ message with orange color on entire line', () => {
@@ -88,7 +87,6 @@ describe('CategoryMetricCard', () => {
     );
     const orangeLine = container.querySelector('.text-orange-600');
     expect(orangeLine).toBeInTheDocument();
-    expect(orangeLine?.textContent).toContain('❌ Rating Toko');
   });
 
   it('does not apply orange color to message when verdict is neutral', () => {

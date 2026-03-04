@@ -46,8 +46,8 @@ export const CategoryMetricCard = ({ metric, value, benchmark, message }: Catego
           {message && (
             <p className={cn(
               'break-all',
-              message.startsWith('✔️') ? 'text-green-600' :
-                message.startsWith('❌') ? 'text-orange-600' : ''
+              (message.includes('✔️') || message.includes('✅')) ? 'text-green-600' :
+                message.includes('❌') ? 'text-orange-600' : ''
             )}>
               {message}
             </p>
