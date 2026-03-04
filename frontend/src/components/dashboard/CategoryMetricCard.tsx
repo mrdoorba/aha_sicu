@@ -23,13 +23,9 @@ export const CategoryMetricCard = ({ metric, value, benchmark, message }: Catego
   const displayValue = (() => {
     if (value === null || value === undefined) return '-';
     if (typeof value === 'number') {
-      // Metrics starting with "%" store raw fractions (e.g., 0.15 = 15%)
+      // Only metrics starting with "%" are percentages (e.g., % Penggunaan alat promosi)
       if (metric.startsWith('%')) {
         return `${(value * 100).toFixed(1)}%`;
-      }
-      // Metrics whose benchmark contains "%" are already in percentage form
-      if (benchmark?.includes('%')) {
-        return `${value.toLocaleString('en-US')}%`;
       }
       return value.toLocaleString('en-US');
     }
