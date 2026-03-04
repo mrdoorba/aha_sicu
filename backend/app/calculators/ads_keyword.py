@@ -447,14 +447,12 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any
     if auto_count >= 3:
         al3 = (
             "📌 Iklan dengan performa terbaik mengandalkan pengaturan "
-            "otomatis (pengaturan manual berpotensi belum dimanfaatkan "
-            "secara maksimal)."
+            "otomatis (Iklan toko manual berpotensi belum dimanfaatkan)."
         )
     elif gmv_max_count >= 3:
         al3 = (
             "📌 Iklan dengan performa terbaik mengandalkan pengaturan "
-            "otomatis (pengaturan manual berpotensi belum dimanfaatkan "
-            "secara maksimal)."
+            "otomatis (Iklan toko manual berpotensi belum dimanfaatkan)."
         )
     else:
         al3 = "📌 Iklan dengan performa terbaik sudah mengandalkan pengaturan manual."
