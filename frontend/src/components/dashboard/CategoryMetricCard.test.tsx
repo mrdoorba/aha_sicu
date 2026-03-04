@@ -73,4 +73,79 @@ describe('CategoryMetricCard', () => {
     );
     expect(screen.getByText('Informational note')).not.toHaveClass('text-orange-500');
   });
+  // ---------------------------------------------------------------------------
+  // BDD Acceptance Tests: Percentage metrics display as formatted percentages
+  //
+  //   Scenario: GMV ratio displays as percentage
+  //     Given a scoring result with "% GMV Iklan / GMV Toko" value of 1.11
+  //     When the dashboard renders the metric card
+  //     Then the displayed value should be "111.0%"
+  //
+  //   Scenario: Cost ratio displays as percentage
+  //     Given a scoring result with "% Biaya Iklan / GMV Toko" value of 0.153
+  //     When the dashboard renders the metric card
+  //     Then the displayed value should be "15.3%"
+  //
+  //   Scenario: Non-percentage metrics remain unchanged
+  //     Given a scoring result with "ROI" value of 7.245
+  //     When the dashboard renders the metric card
+  //     Then the displayed value should be "7.245"
+  // ---------------------------------------------------------------------------
+
+  it('displays GMV ratio as formatted percentage (111.0%)', () => {
+    // Arrange
+    render(
+      <CategoryMetricCard
+        metric="% GMV Iklan / GMV Toko"
+        value={1.11}
+        verdict="❌"
+        score={0}
+        benchmark="<84%"
+        message=""
+      />,
+    );
+
+    // Act (implicit — component renders on mount)
+
+    // Assert
+    expect(screen.getByText('111.0%')).toBeInTheDocument();
+  });
+
+  it('displays cost ratio as formatted percentage (15.3%)', () => {
+    // Arrange
+    render(
+      <CategoryMetricCard
+        metric="% Biaya Iklan / GMV Toko"
+        value={0.153}
+        verdict="❌"
+        score={0}
+        benchmark="<10%"
+        message=""
+      />,
+    );
+
+    // Act (implicit — component renders on mount)
+
+    // Assert
+    expect(screen.getByText('15.3%')).toBeInTheDocument();
+  });
+
+  it('does not apply percentage formatting to non-% metric (ROI)', () => {
+    // Arrange
+    render(
+      <CategoryMetricCard
+        metric="ROI"
+        value={7.245}
+        verdict="❌"
+        score={5}
+        benchmark=">9"
+        message=""
+      />,
+    );
+
+    // Act (implicit — component renders on mount)
+
+    // Assert
+    expect(screen.getByText('7.245')).toBeInTheDocument();
+  });
 });
