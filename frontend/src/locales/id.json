@@ -12,7 +12,6 @@
   "common.aria.openSellerCenter": "Buka Shopee Seller Center (tab baru)",
   "common.aria.openStore": "Buka toko Shopee (tab baru)",
   "common.aria.openShopeeRef": "Buka referensi Shopee (tab baru)",
-
   "login.title": "Login Store ICU",
   "login.subtitle": "Selamat datang kembali. Silakan masukkan kredensial Anda.",
   "login.emailLabel": "Alamat Email",
@@ -28,22 +27,18 @@
   "login.error.accountDisabled": "Akun ini telah dinonaktifkan",
   "login.error.loginFailed": "Login gagal. Silakan coba lagi.",
   "login.error.unexpected": "Terjadi kesalahan yang tidak terduga",
-
   "dashboard.welcome": "Selamat Datang di Store ICU",
   "dashboard.loggedInAs": "Anda login sebagai",
   "dashboard.placeholder": "Sistem evaluasi kesehatan brand — Dashboard placeholder",
-
   "brands.title": "Brand",
   "brands.searchPlaceholder": "Cari brand...",
   "brands.searchLabel": "Cari brand",
   "brands.errorLoading": "Gagal memuat brand. Silakan coba lagi nanti.",
   "brands.emptyState": "Belum ada brand yang disinkronkan. Klik \"Sinkronisasi\" untuk memulai.",
   "brands.noResults": "Tidak ada brand yang cocok dengan \"{{search}}\"",
-
   "evaluation.invalidBrandId": "ID brand tidak valid.",
   "evaluation.saved": "Evaluasi tersimpan",
   "evaluation.saveFailed": "Gagal menyimpan evaluasi. Silakan coba lagi.",
-
   "evaluationDetail.notFound": "Evaluasi tidak ditemukan",
   "evaluationDetail.errorLoading": "Gagal memuat detail evaluasi",
   "evaluationDetail.deleteEvaluation": "Hapus Evaluasi",
@@ -65,9 +60,7 @@
   "evaluationDetail.emailOutput": "Email Output",
   "evaluationDetail.emailCopied": "Email output disalin ke clipboard",
   "evaluationDetail.copyFailed": "Gagal menyalin ke clipboard",
-
   "history.title": "Riwayat Evaluasi",
-
   "header.history": "Riwayat",
   "header.rules": "Aturan",
   "header.accounts": "Akun",
@@ -75,13 +68,11 @@
   "header.confirmLogout": "Konfirmasi Keluar",
   "header.logoutConfirmation": "Apakah Anda yakin ingin keluar?",
   "header.loggingOut": "Sedang keluar...",
-
   "evaluationHeader.backToBrands": "Kembali ke Brand",
   "evaluationHeader.errorLoading": "Gagal memuat data brand.",
   "evaluationHeader.brandNotFound": "Brand tidak ditemukan.",
-  "evaluationHeader.meetingData": "Data Meeting",
-  "evaluationHeader.noMeetingData": "Tidak ada data meeting",
-
+  "evaluationHeader.meetingData": "Data M1",
+  "evaluationHeader.noMeetingData": "Tidak ada data M1",
   "scoring.finalScore": "Skor Akhir",
   "scoring.calculate": "Hitung Skor",
   "scoring.recalculate": "Hitung Ulang",
@@ -90,7 +81,6 @@
   "scoring.period": "Periode",
   "scoring.recalculateWithVerdict": "Hitung Ulang dengan Keputusan",
   "scoring.perCategoryBreakdown": "Rincian Per Kategori",
-
   "verdict.label": "Keputusan",
   "verdict.placeholder": "Pilih keputusan",
   "verdict.approved": "✔️ Disetujui",
@@ -98,11 +88,9 @@
   "verdict.nonMall": "❌ Non Mall",
   "verdict.noBrand": "❌ No Brand",
   "verdict.opexIssue": "❌ Opex Issue",
-
   "emailOutput.title": "Email Output",
   "emailOutput.copy": "Salin",
   "emailOutput.copied": "Tersalin",
-
   "sync.errorLoading": "Gagal memuat status sinkronisasi",
   "sync.neverSynced": "Belum pernah disinkronkan",
   "sync.lastSynced": "Terakhir disinkronkan: {{time}}",
@@ -110,7 +98,6 @@
   "sync.lastFailed": "Sinkronisasi terakhir gagal: {{error}}",
   "sync.startSuccess": "Sinkronisasi berhasil dimulai",
   "sync.syncNow": "Sinkronisasi",
-
   "topSku.title": "Kalkulator Top SKU",
   "topSku.averageStock": "Rata-rata Stok",
   "topSku.revenueRanking": "Peringkat Omzet",
@@ -124,7 +111,6 @@
   "topSku.stok": "Stok",
   "topSku.showDetail": "Lihat Detail",
   "topSku.hideDetail": "Sembunyikan Detail",
-
   "evaluationSections.step1": "Step 1. Brand Info & Kesehatan Operasional",
   "evaluationSections.step2": "Step 2. Bisnis Analisis & Tinjauan Pengunjung",
   "evaluationSections.step3": "Step 3. Alat Promosi & Products/Status",
@@ -139,37 +125,29 @@
   "evaluationSections.fashion": "Fashion",
   "evaluationSections.nonFashion": "Non-Fashion",
   "evaluationSections.saveFailed": "Gagal menyimpan evaluasi. Silakan coba lagi.",
-
   "saveIndicator.saving": "Menyimpan...",
   "saveIndicator.saveFailed": "Gagal menyimpan.",
   "saveIndicator.retry": "Coba Lagi",
   "saveIndicator.savedJustNow": "Baru saja tersimpan",
   "saveIndicator.savedMinAgo": "Tersimpan {{minutes}} menit lalu",
-
   "forms.operational.title": "Kesehatan Operasional Toko",
-
   "forms.business.title": "Bisnis Analisis",
   "forms.business.startMonth": "Bulan Awal Penjualan",
   "forms.business.selectMonth": "-- Pilih Bulan --",
   "forms.business.conversionRate": "Tingkat Konversi {{month}}",
   "forms.business.salesMonth": "Penjualan Bulan {{month}}",
   "forms.business.averageSales": "Rata-rata Penjualan 6 Bulan Terakhir",
-
   "forms.visitors.title": "Tinjauan Pengunjung",
   "forms.visitors.returningPct": "% Pengunjung Lama",
-
   "forms.promoTools.title": "Alat Promosi",
   "forms.promoTools.usagePct": "% Penggunaan alat promosi",
   "forms.promoTools.effectivenessPct": "% Efektifitas alat promosi",
-
   "forms.ads.title": "Data Iklan",
   "forms.ads.roas": "ROAS",
   "forms.ads.gmvRatio": "% GMV Iklan / GMV Toko",
   "forms.ads.costRatio": "% Biaya Iklan / GMV Toko",
-
   "forms.campaign.title": "Partisipasi Campaign",
   "forms.campaign.participationPct": "% Partisipasi Campaign",
-
   "forms.competition.title": "Kompetisi TOP Produk",
   "forms.competition.product1": "Produk Kompetitor 1",
   "forms.competition.product2": "Produk Kompetitor 2",
@@ -183,9 +161,7 @@
   "forms.competition.marketPrice": "Harga rata-rata pasaran",
   "forms.competition.notCompetitive": "• {{name}} (Rp. {{price}}) = ❌tidak kompetitif (harga kisaran pasaran: Rp. {{marketPrice}})",
   "forms.competition.competitive": "• {{name}} (Rp. {{price}}) = ✅kompetitif",
-
   "forms.products.title": "Products / Status",
-
   "fileUpload.slot.cpcAdReport": "Iklan Check Up V2A",
   "fileUpload.slot.cpcAdReportCalc": "Calculator 1 (Ads Keyword — Sheet 1)",
   "fileUpload.slot.keywordReport": "Iklan Check Up V2B",
@@ -196,7 +172,6 @@
   "fileUpload.slot.massUpdateCalc": "Calculator 2 (Top SKU)",
   "fileUpload.uploadSuccess": "{{label}} berhasil diunggah",
   "fileUpload.uploadFailed": "Gagal mengunggah {{label}}",
-
   "calculator.resultsTitle": "Calculator Results",
   "calculator.loading": "Memuat hasil kalkulator...",
   "calculator.waitingFor": "Menunggu:",
@@ -214,7 +189,6 @@
   "calculator.label.adsKeyword": "Ads Keyword Calculator",
   "calculator.label.topSku": "Top SKU Calculator",
   "calculator.label.discount": "Discount Check Calculator",
-
   "accounts.title": "Manajemen Akun",
   "accounts.createAccount": "Buat Akun",
   "accounts.email": "Email",
@@ -245,7 +219,6 @@
   "accounts.dialog.reset": "Reset",
   "accounts.dialog.deleteTitle": "Hapus Akun",
   "accounts.dialog.deleteDescription": "Apakah Anda yakin ingin menghapus akun {{email}}? Tindakan ini tidak dapat dibatalkan. Data evaluasi akan tetap tersimpan.",
-
   "rules.table.metric": "Metrik",
   "rules.table.threshold": "Ambang Batas",
   "rules.table.points": "Poin",
@@ -315,7 +288,6 @@
   "rules.message.zero": "Pendapatan nol",
   "rules.message.dependent": "Terlalu bergantung",
   "rules.message.passAfiliasi": "Lulus (afiliasi)",
-
   "passwordConfirm.title": "Konfirmasi Password",
   "passwordConfirm.description": "Masukkan password Anda untuk mengonfirmasi perubahan aturan penilaian.",
   "passwordConfirm.passwordPlaceholder": "Password",
@@ -323,7 +295,6 @@
   "passwordConfirm.saveFailed": "Gagal menyimpan perubahan. Silakan coba lagi.",
   "passwordConfirm.confirming": "Mengonfirmasi...",
   "passwordConfirm.confirm": "Konfirmasi",
-
   "presentation.loading": "Mengumpulkan data evaluasi...",
   "presentation.empty.title": "Evaluasi belum ditemukan",
   "presentation.empty.description": "Brand ini belum dievaluasi. Mulai evaluasi baru untuk membuat presentation dashboard.",
@@ -347,16 +318,14 @@
   "presentation.footer.title": "AHA Store ICU • Pusat Presentasi",
   "presentation.footer.conductedBy": "Evaluasi dilakukan oleh",
   "presentation.footer.onDate": "pada",
-
   "brandTable.header.brandName": "Nama Brand",
   "brandTable.header.keyInfo": "Info Utama",
-  "brandTable.header.meetingData": "Data Meeting",
+  "brandTable.header.meetingData": "Data M1",
   "brandTable.header.action": "Aksi",
   "brandTable.badge.available": "Tersedia",
   "brandTable.badge.notAvailable": "Tidak tersedia",
   "brandTable.button.evaluate": "Evaluasi",
   "brandTable.fallback.noData": "Tidak ada data",
-
   "finalScore.verdict.approved": "Disetujui",
   "finalScore.verdict.rejected": "Ditolak",
   "finalScore.verdict.nonMall": "Non Mall",
@@ -364,11 +333,9 @@
   "finalScore.verdict.opexIssue": "Opex Issue",
   "finalScore.verdict.noVerdict": "Tanpa Keputusan",
   "finalScore.totalScore": "Skor Total",
-
   "scorePanel.scoreSummary": "Ringkasan Skor",
   "scorePanel.totalScore": "Skor Total",
   "scorePanel.notAvailable": "N/A",
-
   "fileUpload.status.noFile": "Belum ada file diunggah",
   "fileUpload.button.upload": "Unggah File",
   "fileUpload.status.preparing": "Menyiapkan unggahan…",
@@ -382,11 +349,9 @@
   "fileUpload.routesTo": "Dikirim ke",
   "fileUpload.rows": "baris",
   "fileUpload.aria.upload": "Unggah {{label}}",
-
   "scoreBreakdown.header.category": "Kategori",
   "scoreBreakdown.header.score": "Skor",
   "scoreBreakdown.header.max": "Maks",
-
   "rules.page.title": "Aturan Penilaian",
   "rules.page.updated": "Diperbarui",
   "rules.page.editRules": "Edit Aturan",
@@ -410,9 +375,7 @@
   "rules.page.goodCandidate": "Kandidat Baik",
   "rules.page.needsReview": "Perlu Ditinjau",
   "rules.validation.required": "Wajib diisi",
-
   "scoring.errorPrefix": "Kesalahan:",
-
   "sendMail.title": "Kirim Email",
   "sendMail.to": "Kepada",
   "sendMail.picEmail": "Email PIC",

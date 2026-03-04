@@ -103,7 +103,7 @@ export const SyncStatus = () => {
               )}
               {syncStatus.sync_details.meeting_sheet && (
                 <span>
-                  Meeting: {syncStatus.sync_details.meeting_sheet.rows_synced}{' '}
+                  M1: {syncStatus.sync_details.meeting_sheet.rows_synced}{' '}
                   brands{' '}
                   {syncStatus.sync_details.meeting_sheet.status === 'success'
                     ? '\u2713'
