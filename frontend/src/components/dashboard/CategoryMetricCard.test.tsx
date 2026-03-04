@@ -11,32 +11,35 @@ const baseProps = {
 };
 
 describe('CategoryMetricCard', () => {
-  it('shows green check icon when verdict is ✔️', () => {
+  // ---------------------------------------------------------------------------
+  // BDD Scenario: No icons next to scores
+  //   Given a metric card with any verdict
+  //   When rendering the score area
+  //   Then no SVG icons (CheckCircle2/XCircle) should appear
+  // ---------------------------------------------------------------------------
+
+  it('renders NO SVG icons next to score for passing verdict', () => {
     const { container } = render(
       <CategoryMetricCard {...baseProps} verdict="✔️" />,
     );
-    // CheckCircle2 renders, XCircle does not
-    expect(container.querySelector('.text-success')).toBeInTheDocument();
-    expect(container.querySelector('.text-destructive')).not.toBeInTheDocument();
+    // No SVG icons should exist
+    expect(container.querySelectorAll('svg')).toHaveLength(0);
   });
 
-  it('shows red X icon when verdict is ❌', () => {
+  it('renders NO SVG icons next to score for failing verdict', () => {
     const { container } = render(
       <CategoryMetricCard {...baseProps} verdict="❌" />,
     );
-    expect(container.querySelector('.text-destructive')).toBeInTheDocument();
-    // No green check
-    expect(container.querySelectorAll('.text-success')).toHaveLength(0);
+    // No SVG icons should exist
+    expect(container.querySelectorAll('svg')).toHaveLength(0);
   });
 
   it('shows no icon and muted score when verdict is -', () => {
     const { container } = render(
       <CategoryMetricCard {...baseProps} verdict="-" />,
     );
-    // No check or X icons (neither success nor destructive SVG icons)
     const icons = container.querySelectorAll('svg');
     expect(icons).toHaveLength(0);
-    // Score span should have muted color
     expect(screen.getByText('10')).toHaveClass('text-muted-foreground');
   });
 
@@ -52,15 +55,41 @@ describe('CategoryMetricCard', () => {
     expect(messageEl).toHaveClass('break-all');
   });
 
-  it('applies orange color to message when verdict is failing', () => {
-    render(
+  // ---------------------------------------------------------------------------
+  // BDD Scenario: Message emoji marks rendered with colors
+  //   Given a message containing ✔️
+  //   When the card renders
+  //   Then ✔️ should be rendered in green (text-green-600)
+  //
+  //   Given a message containing ❌
+  //   When the card renders
+  //   Then ❌ should be rendered in red (text-red-600)
+  // ---------------------------------------------------------------------------
+
+  it('renders ✔️ in message with green color', () => {
+    const { container } = render(
+      <CategoryMetricCard
+        {...baseProps}
+        verdict="✔️"
+        message="✔️ Rating Toko = 4.8 [Sudah Baik]"
+      />,
+    );
+    const greenMark = container.querySelector('.text-green-600');
+    expect(greenMark).toBeInTheDocument();
+    expect(greenMark?.textContent).toBe('✔️');
+  });
+
+  it('renders ❌ in message with red color', () => {
+    const { container } = render(
       <CategoryMetricCard
         {...baseProps}
         verdict="❌"
-        message="Below benchmark"
+        message="❌ Rating Toko = 3.0 [Di Bawah Target]"
       />,
     );
-    expect(screen.getByText('Below benchmark')).toHaveClass('text-orange-500');
+    const redMark = container.querySelector('.text-red-600');
+    expect(redMark).toBeInTheDocument();
+    expect(redMark?.textContent).toBe('❌');
   });
 
   it('does not apply orange color to message when verdict is neutral', () => {
