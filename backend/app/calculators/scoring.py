@@ -990,10 +990,15 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
     else:
         f70, h70 = "❌", low_points
 
+    if f70 == "✔️":
+        msg70 = f"✔️ Rata² Stok = {avg_stock_int} [Sudah Baik]"
+    else:
+        msg70 = f"❌ Rata² Stok = {avg_stock_int} [Kurang Baik, nilai disarankan: >={high_threshold:g}]"
+
     row70 = RowScore(
         row=70, metric="Rata² Stok",
         value=avg_stock_int, benchmark=f">={high_threshold:g}", verdict=f70,
-        message="", score=h70,
+        message=msg70, score=h70,
     )
 
     # Row 71: Stock availability penalty
@@ -1007,11 +1012,16 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
         f71, h71 = "✔️", 0.0
 
     oos_pct_display = f"{out_of_stock_pct * 100:.0f}%"
+    if f71 == "✔️":
+        msg71 = f"✔️ % Ketersediaan Stok = {oos_pct_display} out of stock [Sudah Baik]"
+    else:
+        msg71 = f"❌ % Ketersediaan Stok = {oos_pct_display} out of stock [Kurang Baik, nilai disarankan: ≤{oos_threshold * 100:.0f}%]"
+
     row71 = RowScore(
         row=71, metric="% Ketersediaan Stok",
         value=out_of_stock_pct,
         benchmark=f"≤{oos_threshold * 100:.0f}% out of stock",
-        verdict=f71, message="", score=h71,
+        verdict=f71, message=msg71, score=h71,
     )
 
     total_score = h70 + h71
