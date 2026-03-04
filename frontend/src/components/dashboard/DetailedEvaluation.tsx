@@ -75,7 +75,7 @@ export const DetailedEvaluation = ({ scoreBreakdown }: DetailedEvaluationProps) 
                             />
                           </div>
                         );
-                        if (row.metric.startsWith('Rata² Penjualan')) {
+                        if (row.metric.startsWith('Rata² Penjualan') || row.metric === 'Program Afiliasi') {
                           return [card, <div key={`spacer-${idx}`} className="hidden sm:block" />];
                         }
                         return [card];
