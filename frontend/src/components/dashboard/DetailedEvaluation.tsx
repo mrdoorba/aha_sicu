@@ -62,17 +62,24 @@ export const DetailedEvaluation = ({ scoreBreakdown }: DetailedEvaluationProps) 
                 <>
                   {cat.rows && cat.rows.filter((r) => r.metric !== 'Iklan check up').length > 0 ? (
                     <div className="grid gap-3 sm:grid-cols-2">
-                      {cat.rows.filter((r) => r.metric !== 'Iklan check up').map((row, idx) => (
-                        <CategoryMetricCard
-                          key={idx}
-                          metric={row.metric}
-                          value={row.value}
-                          verdict={row.verdict}
-                          score={row.score}
-                          benchmark={row.benchmark}
-                          message={row.message}
-                        />
-                      ))}
+                      {cat.rows.filter((r) => r.metric !== 'Iklan check up').flatMap((row, idx) => {
+                        const card = (
+                          <div key={idx}>
+                            <CategoryMetricCard
+                              metric={row.metric}
+                              value={row.value}
+                              verdict={row.verdict}
+                              score={row.score}
+                              benchmark={row.benchmark}
+                              message={row.message}
+                            />
+                          </div>
+                        );
+                        if (row.metric.startsWith('Rata² Penjualan')) {
+                          return [card, <div key={`spacer-${idx}`} className="hidden sm:block" />];
+                        }
+                        return [card];
+                      })}
                     </div>
                   ) : (
                     <p className="text-sm text-muted-foreground py-8 text-center">
