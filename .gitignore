@@ -59,10 +59,14 @@ override.tf.json
 
 # AI Tools
 .agent/
+.agents/
 .claude/
 .cursor/
 .gemini/
 _bmad/
+
+# Custom/Personal
+my*/
 
 # OpenSpec
 openspec/
