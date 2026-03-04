@@ -43,15 +43,33 @@ export const CategoryMetricCard = ({ metric, value, benchmark, message }: Catego
       {(benchmark || message) && (
         <div className="text-xs text-muted-foreground border-t border-border/50 pt-2 space-y-0.5">
           {benchmark && <p>Benchmark: {benchmark}</p>}
-          {message && (
-            <p className={cn(
-              'break-all',
-              (message.includes('✔️') || message.includes('✅')) ? 'text-green-600' :
-                message.includes('❌') ? 'text-orange-600' : ''
-            )}>
-              {message}
-            </p>
-          )}
+          {message && (() => {
+            const colorClass = (message.includes('✔️') || message.includes('✅')) ? 'text-green-600' :
+              message.includes('❌') ? 'text-orange-600' : '';
+
+            // Split on ↪ to separate text from URL
+            const parts = message.split('↪');
+            const textPart = parts[0].trim();
+            const urlPart = parts[1]?.trim();
+
+            return (
+              <div className="space-y-1">
+                <p className={cn('break-all', colorClass)}>{textPart}</p>
+                {urlPart && (
+                  <p>
+                    <a
+                      href={urlPart}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-primary hover:underline break-all"
+                    >
+                      ↪ {urlPart}
+                    </a>
+                  </p>
+                )}
+              </div>
+            );
+          })()}
         </div>
       )}
     </div>
