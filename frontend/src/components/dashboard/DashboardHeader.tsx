@@ -1,7 +1,6 @@
-import { ArrowLeft, Edit3, Calendar } from 'lucide-react';
+import { ArrowLeft, Edit3, Calendar, TrendingUp } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
-import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 
@@ -14,12 +13,9 @@ interface DashboardHeaderProps {
   onBack: () => void;
 }
 
-export const DashboardHeader = ({ brandName, brandId, verdict, template, period, onBack }: DashboardHeaderProps) => {
+export const DashboardHeader = ({ brandName, brandId, template, period, onBack }: DashboardHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-
-  const isApproved = verdict === '✔️';
-  const isRejected = verdict.startsWith('❌');
 
   return (
     <div className="flex items-center justify-between px-2">
@@ -37,15 +33,11 @@ export const DashboardHeader = ({ brandName, brandId, verdict, template, period,
           </Badge>
         )}
         <Badge
-          className={cn(
-            'px-3 py-1 text-xs font-bold uppercase tracking-widest hidden sm:flex',
-            isApproved ? 'bg-success/10 text-success border-success/20' :
-              isRejected ? 'bg-destructive/10 text-destructive border-destructive/20' :
-                'bg-muted text-muted-foreground border-border'
-          )}
+          className="px-3 py-1 text-xs font-bold tracking-wide hidden sm:flex gap-1.5 bg-primary/10 text-primary border-primary/20"
           variant="outline"
         >
-          {isApproved ? t('presentation.verdict.approved') : isRejected ? t('presentation.verdict.rejected') : t('presentation.verdict.pending')}
+          <TrendingUp className="size-3" />
+          Performa dapat Ditingkatkan
         </Badge>
         <Badge variant={template === 'fashion' ? 'default' : 'secondary'} className="px-3 py-0.5 text-xs font-bold uppercase tracking-widest hidden sm:flex">
           {template === 'fashion' ? t('evaluationSections.fashion') : t('evaluationSections.nonFashion')}

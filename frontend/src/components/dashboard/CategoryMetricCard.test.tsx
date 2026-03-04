@@ -34,13 +34,12 @@ describe('CategoryMetricCard', () => {
     expect(container.querySelectorAll('svg')).toHaveLength(0);
   });
 
-  it('shows no icon and muted score when verdict is -', () => {
+  it('shows no icon when verdict is -', () => {
     const { container } = render(
       <CategoryMetricCard {...baseProps} verdict="-" />,
     );
     const icons = container.querySelectorAll('svg');
     expect(icons).toHaveLength(0);
-    expect(screen.getByText('10')).toHaveClass('text-muted-foreground');
   });
 
   it('applies break-all class to message text', () => {
@@ -56,17 +55,17 @@ describe('CategoryMetricCard', () => {
   });
 
   // ---------------------------------------------------------------------------
-  // BDD Scenario: Message emoji marks rendered with colors
-  //   Given a message containing ✔️
+  // BDD Scenario: Message lines color-coded by verdict
+  //   Given a message starting with ✔️
   //   When the card renders
-  //   Then ✔️ should be rendered in green (text-green-600)
+  //   Then the entire message line is green (text-green-600)
   //
-  //   Given a message containing ❌
+  //   Given a message starting with ❌
   //   When the card renders
-  //   Then ❌ should be rendered in red (text-red-600)
+  //   Then the entire message line is orange (text-orange-600)
   // ---------------------------------------------------------------------------
 
-  it('renders ✔️ in message with green color', () => {
+  it('renders ✔️ message with green color on entire line', () => {
     const { container } = render(
       <CategoryMetricCard
         {...baseProps}
@@ -74,12 +73,12 @@ describe('CategoryMetricCard', () => {
         message="✔️ Rating Toko = 4.8 [Sudah Baik]"
       />,
     );
-    const greenMark = container.querySelector('.text-green-600');
-    expect(greenMark).toBeInTheDocument();
-    expect(greenMark?.textContent).toBe('✔️');
+    const greenLine = container.querySelector('.text-green-600');
+    expect(greenLine).toBeInTheDocument();
+    expect(greenLine?.textContent).toContain('✔️ Rating Toko');
   });
 
-  it('renders ❌ in message with red color', () => {
+  it('renders ❌ message with orange color on entire line', () => {
     const { container } = render(
       <CategoryMetricCard
         {...baseProps}
@@ -87,9 +86,9 @@ describe('CategoryMetricCard', () => {
         message="❌ Rating Toko = 3.0 [Di Bawah Target]"
       />,
     );
-    const redMark = container.querySelector('.text-red-600');
-    expect(redMark).toBeInTheDocument();
-    expect(redMark?.textContent).toBe('❌');
+    const orangeLine = container.querySelector('.text-orange-600');
+    expect(orangeLine).toBeInTheDocument();
+    expect(orangeLine?.textContent).toContain('❌ Rating Toko');
   });
 
   it('does not apply orange color to message when verdict is neutral', () => {

@@ -10,11 +10,17 @@ import { Card, CardContent } from '../ui/card';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { CATEGORY_MAP } from '../../lib/categoryMap';
+import { computeCategoryVerdictCounts } from '../../lib/verdictCounts';
+
+interface RowData {
+  verdict: string;
+}
 
 interface CategoryBreakdown {
   category: string;
   score: number;
   max_score: number;
+  rows?: RowData[];
 }
 
 interface ScoreBreakdownChartProps {
@@ -33,8 +39,9 @@ export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps
   const radarData = filteredBreakdown.map((cat) => {
     const mapped = CATEGORY_MAP.find((m) => m.backend === cat.category);
     const label = mapped ? t(mapped.labelKey) : cat.category;
-    const percent = cat.max_score > 0 ? (cat.score / cat.max_score) * 100 : 0;
-    return { category: label, value: Math.round(percent), fullMark: 100 };
+    const counts = computeCategoryVerdictCounts(cat.rows || []);
+    const percent = counts.total > 0 ? counts.score : 0;
+    return { category: label, value: percent, fullMark: 100 };
   });
 
   return (
@@ -69,19 +76,22 @@ export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps
             </ResponsiveContainer>
           </div>
 
-          {/* Right: Horizontal Category Bars */}
+          {/* Right: Category Bars with ✔️/❌ counts */}
           <div className="space-y-4">
             {filteredBreakdown.map((cat, idx) => {
               const mapped = CATEGORY_MAP.find((m) => m.backend === cat.category);
               const label = mapped ? t(mapped.labelKey) : cat.category;
-              const percent = cat.max_score > 0 ? (cat.score / cat.max_score) * 100 : 0;
+              const counts = computeCategoryVerdictCounts(cat.rows || []);
+              const percent = counts.total > 0 ? counts.score : 0;
 
               return (
                 <div key={idx} className="space-y-1.5">
                   <div className="flex items-center justify-between text-sm">
                     <span className="font-semibold text-foreground">{label}</span>
                     <span className="font-bold tabular-nums text-muted-foreground">
-                      {cat.score.toFixed(1)}<span className="text-muted-foreground/50"> / {cat.max_score.toFixed(0)}</span>
+                      <span className="text-green-600">✔️ {counts.checks}</span>
+                      <span className="text-muted-foreground/50 mx-1">/</span>
+                      <span className="text-orange-500">❌ {counts.xs}</span>
                     </span>
                   </div>
                   <div className="h-2.5 w-full overflow-hidden rounded-full bg-muted-foreground/20">
