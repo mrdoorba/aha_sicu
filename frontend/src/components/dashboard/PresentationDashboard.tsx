@@ -96,6 +96,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
         score={score}
         verdict={evaluation.verdict}
         template={evaluation.template}
+        scoreBreakdown={scoreBreakdown}
       />
 
       <DetailedEvaluation scoreBreakdown={scoreBreakdown} />

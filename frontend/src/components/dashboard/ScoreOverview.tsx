@@ -1,23 +1,39 @@
 import { RadialBarChart, RadialBar, PolarAngleAxis, ResponsiveContainer } from 'recharts';
-import { CheckCircle2, XCircle } from 'lucide-react';
+import { CheckCircle2, XCircle, TrendingUp } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
-import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
+import { computeVerdictCounts, type VerdictCounts } from '../../lib/verdictCounts';
+
+interface RowData {
+  verdict: string;
+}
+
+interface CategoryBreakdown {
+  category: string;
+  score: number;
+  max_score: number;
+  rows?: RowData[];
+}
 
 interface ScoreOverviewProps {
   score: number;
   verdict: string;
   template: string;
+  scoreBreakdown?: CategoryBreakdown[];
 }
 
-export const ScoreOverview = ({ score, verdict, template }: ScoreOverviewProps) => {
+export const ScoreOverview = ({ score, template, scoreBreakdown }: ScoreOverviewProps) => {
   const { t } = useTranslation();
 
-  const isApproved = verdict === '✔️';
-  const isRejected = verdict.startsWith('❌');
+  // Compute partner score from ✔️/❌ verdicts
+  const counts: VerdictCounts = scoreBreakdown
+    ? computeVerdictCounts(scoreBreakdown)
+    : { checks: 0, xs: 0, total: 0, score: Math.round(score) };
 
-  const chartData = [{ name: 'score', value: score, fill: isApproved ? 'var(--success)' : isRejected ? 'var(--destructive)' : 'var(--muted)' }];
+  const partnerScore = counts.score;
+
+  const chartData = [{ name: 'score', value: partnerScore, fill: 'var(--primary)' }];
 
   return (
     <Card className="border-none shadow-2xl bg-gradient-to-br from-card to-muted/30 overflow-hidden relative">
@@ -29,23 +45,33 @@ export const ScoreOverview = ({ score, verdict, template }: ScoreOverviewProps) 
         </div>
 
         <div className="grid gap-8 md:grid-cols-2 items-center">
-          {/* Left: Score + Verdict + Conclusion */}
+          {/* Left: Score + Verdict + Counts */}
           <div className="flex flex-col items-center md:items-start gap-6">
             <div className="flex items-baseline gap-2">
-              <span className="text-7xl font-black tabular-nums tracking-tighter">{score}</span>
+              <span className="text-7xl font-black tabular-nums tracking-tighter">{partnerScore}</span>
               <span className="text-2xl text-muted-foreground font-medium">/100</span>
             </div>
 
+            {/* ✔️/❌ counts */}
+            {counts.total > 0 && (
+              <div className="flex items-center gap-4">
+                <div className="flex items-center gap-1.5">
+                  <CheckCircle2 className="size-5 text-green-600" />
+                  <span className="text-lg font-bold text-green-600 tabular-nums">{counts.checks}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <XCircle className="size-5 text-orange-500" />
+                  <span className="text-lg font-bold text-orange-500 tabular-nums">{counts.xs}</span>
+                </div>
+              </div>
+            )}
+
             <Badge
-              className={cn(
-                'flex items-center gap-2 px-6 py-2 text-base font-black uppercase tracking-widest border',
-                isApproved ? 'bg-success text-white border-success' :
-                isRejected ? 'bg-destructive text-white border-destructive' :
-                'bg-muted text-muted-foreground border-border'
-              )}
+              className="flex items-center gap-2 px-5 py-2 text-sm font-bold tracking-wide border bg-primary/10 text-primary border-primary/20"
+              variant="outline"
             >
-              {isApproved ? <CheckCircle2 className="size-5" /> : isRejected ? <XCircle className="size-5" /> : null}
-              {isApproved ? t('presentation.verdict.approved') : isRejected ? t('presentation.verdict.rejected') : t('presentation.verdict.pending')}
+              <TrendingUp className="size-4" />
+              Performa dapat Ditingkatkan
             </Badge>
 
             <div className="text-xs text-muted-foreground/60">
@@ -53,7 +79,7 @@ export const ScoreOverview = ({ score, verdict, template }: ScoreOverviewProps) 
             </div>
           </div>
 
-          {/* Right: Radial Ring Chart with Score Inside */}
+          {/* Right: Radial Ring Chart */}
           <div className="flex justify-center">
             <div className="relative w-56 h-56">
               <ResponsiveContainer width="100%" height="100%">
@@ -77,7 +103,7 @@ export const ScoreOverview = ({ score, verdict, template }: ScoreOverviewProps) 
                 </RadialBarChart>
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
-                <span className="text-5xl font-bold tabular-nums tracking-tight">{score}</span>
+                <span className="text-5xl font-bold tabular-nums tracking-tight">{partnerScore}</span>
                 <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">Score</span>
               </div>
             </div>
