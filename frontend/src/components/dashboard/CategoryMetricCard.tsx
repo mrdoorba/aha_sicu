@@ -1,4 +1,3 @@
-import { CheckCircle2, XCircle } from 'lucide-react';
 import { cn } from '../../lib/utils';
 
 interface CategoryMetricCardProps {
@@ -9,6 +8,16 @@ interface CategoryMetricCardProps {
   benchmark: string;
   message: string;
 }
+
+/** Render message text with colored emoji marks (✔️ green, ❌ red). */
+const renderMessage = (message: string) => {
+  const parts = message.split(/(✔️|❌)/);
+  return parts.map((part, i) => {
+    if (part === '✔️') return <span key={i} className="text-green-600">✔️</span>;
+    if (part === '❌') return <span key={i} className="text-red-600">❌</span>;
+    return part;
+  });
+};
 
 export const CategoryMetricCard = ({ metric, value, verdict, score, benchmark, message }: CategoryMetricCardProps) => {
   const isPassed = verdict === '✔️';
@@ -39,8 +48,6 @@ export const CategoryMetricCard = ({ metric, value, verdict, score, benchmark, m
           {displayValue}
         </div>
         <div className="flex items-center gap-1.5 shrink-0">
-          {isPassed && <CheckCircle2 className="size-4 text-success" />}
-          {!isPassed && !isNeutral && <XCircle className="size-4 text-destructive" />}
           <span className={cn(
             'text-sm font-bold tabular-nums',
             isPassed ? 'text-success' : isNeutral ? 'text-muted-foreground' : 'text-destructive'
@@ -52,7 +59,7 @@ export const CategoryMetricCard = ({ metric, value, verdict, score, benchmark, m
       {(benchmark || message) && (
         <div className="text-xs text-muted-foreground border-t border-border/50 pt-2 space-y-0.5">
           {benchmark && <p>Benchmark: {benchmark}</p>}
-          {message && <p className={cn('break-all', !isPassed && !isNeutral && 'text-orange-500')}>{message}</p>}
+          {message && <p className="break-all">{renderMessage(message)}</p>}
         </div>
       )}
     </div>
