@@ -16,7 +16,13 @@ export const CategoryMetricCard = ({ metric, value, verdict, score, benchmark, m
 
   const displayValue = (() => {
     if (value === null || value === undefined) return '-';
-    if (typeof value === 'number') return value.toLocaleString('en-US');
+    if (typeof value === 'number') {
+      // Metrics starting with "%" store raw fractions (e.g., 1.11 = 111%)
+      if (metric.startsWith('%')) {
+        return `${(value * 100).toFixed(1)}%`;
+      }
+      return value.toLocaleString('en-US');
+    }
     return String(value);
   })();
 
