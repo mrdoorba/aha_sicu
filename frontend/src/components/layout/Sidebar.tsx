@@ -1,14 +1,14 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Link, useLocation } from 'react-router-dom';
-import { 
-  LayoutDashboard, 
-  Briefcase, 
-  History, 
-  Settings, 
-  Users, 
-  LogOut, 
-  ChevronLeft, 
+import {
+  LayoutDashboard,
+  Briefcase,
+  History,
+  Settings,
+  Users,
+  LogOut,
+  ChevronLeft,
   Menu
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
@@ -145,7 +145,7 @@ export const Sidebar = ({ className }: SidebarProps) => {
               </span>
             </div>
           )}
-          <ThemeToggle isCollapsed={isCollapsed} className="mb-2" />
+          {isAdmin && <ThemeToggle isCollapsed={isCollapsed} className="mb-2" />}
           <Button
             variant="ghost"
             className={cn(
