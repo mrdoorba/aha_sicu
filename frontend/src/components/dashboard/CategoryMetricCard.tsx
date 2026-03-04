@@ -19,10 +19,7 @@ const renderMessage = (message: string) => {
   });
 };
 
-export const CategoryMetricCard = ({ metric, value, verdict, score, benchmark, message }: CategoryMetricCardProps) => {
-  const isPassed = verdict === '✔️';
-  const isNeutral = verdict === '-';
-
+export const CategoryMetricCard = ({ metric, value, benchmark, message }: CategoryMetricCardProps) => {
   const displayValue = (() => {
     if (value === null || value === undefined) return '-';
     if (typeof value === 'number') {
@@ -46,14 +43,6 @@ export const CategoryMetricCard = ({ metric, value, verdict, score, benchmark, m
           displayValue.includes('\n') ? 'text-left' : 'text-right'
         )}>
           {displayValue}
-        </div>
-        <div className="flex items-center gap-1.5 shrink-0">
-          <span className={cn(
-            'text-sm font-bold tabular-nums',
-            isPassed ? 'text-success' : isNeutral ? 'text-muted-foreground' : 'text-destructive'
-          )}>
-            {score}
-          </span>
         </div>
       </div>
       {(benchmark || message) && (

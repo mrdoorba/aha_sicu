@@ -51,9 +51,6 @@ export const DetailedEvaluation = ({ scoreBreakdown }: DetailedEvaluationProps) 
               return (
                 <TabsTrigger key={cat.category} value={cat.category} className="text-xs">
                   {label}
-                  <span className="ml-1 text-muted-foreground/70 tabular-nums">
-                    ({cat.score.toFixed(0)})
-                  </span>
                 </TabsTrigger>
               );
             })}
