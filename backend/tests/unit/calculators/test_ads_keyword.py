@@ -310,38 +310,44 @@ class TestSheet1AK3Indonesian:
 
 
 class TestSheet1AK3English:
-    """Test AK3 — English variant (4 categories)."""
+    """Test AK3 — English variant (unified: 2 categories, same as ID).
 
-    def test_ak3_en_all_four_categories(self):
-        """English AK3 outputs all 4 categories."""
+    BDD Scenario: English AK3 follows Indonesian format
+      Given an English-language ads analysis
+      When the AK3 ad type breakdown is generated
+      Then it should show only 2 categories (Semua Halaman + Iklan Toko)
+      And it should NOT include Search or Recommendation categories
+    """
+
+    def test_ak3_en_only_semua_and_toko(self):
+        """English AK3 outputs only 2 categories (unified with ID)."""
         result = calculate_sheet1(MND_CPC_DATA, total_products=80, language="en")
         ak3 = result["ak3"]
-        assert "0 Iklan Produk Halaman Pencarian (0 Otomatis & 0 Manual)." in ak3
-        assert "0 Iklan Produk Halaman Rekomendasi (0 Otomatis & 0 Manual)." in ak3
         assert "5 Iklan Produk Otomatis Semua Halaman." in ak3
         assert "0 Iklan Toko (0 Otomatis & 0 Manual)." in ak3
+        # Should NOT include Search or Recommendation categories
+        assert "Halaman Pencarian" not in ak3
+        assert "Halaman Rekomendasi" not in ak3
 
-    def test_ak3_en_counts_search_page_ads(self):
+    def test_ak3_en_counts_iklan_toko(self):
         data = [
-            _mnd_cpc_row(1, "Ad 1", "Berjalan", "Iklan Produk", "100",
+            _mnd_cpc_row(1, "Toko 1", "Berjalan", "Iklan Toko", "-",
                          "Bidding Otomatis", "Halaman Pencarian"),
-            _mnd_cpc_row(2, "Ad 2", "Berjalan", "Iklan Produk", "200",
-                         "Bidding Manual", "Halaman Pencarian"),
-            _mnd_cpc_row(3, "Ad 3", "Berjalan", "Iklan Produk", "300",
-                         "Bidding Manual", "Halaman Pencarian"),
+            _mnd_cpc_row(2, "Toko 2", "Dijeda", "Iklan Toko", "-",
+                         "Bidding Manual", "Halaman Rekomendasi"),
         ]
         result = calculate_sheet1(data, total_products=10, language="en")
-        assert "3 Iklan Produk Halaman Pencarian (1 Otomatis & 2 Manual)." in result["ak3"]
+        assert "2 Iklan Toko (1 Otomatis & 1 Manual)." in result["ak3"]
 
     def test_ak3_en_excludes_ended_ads(self):
         data = [
             _mnd_cpc_row(1, "Ad 1", "Berjalan", "Iklan Produk", "100",
-                         "Bidding Manual", "Halaman Pencarian"),
+                         "Bidding Manual", "Semua Penempatan"),
             _mnd_cpc_row(2, "Ad 2", "Berakhir", "Iklan Produk", "200",
-                         "Bidding Manual", "Halaman Pencarian"),
+                         "Bidding Manual", "Semua Penempatan"),
         ]
         result = calculate_sheet1(data, total_products=10, language="en")
-        assert "1 Iklan Produk Halaman Pencarian (0 Otomatis & 1 Manual)." in result["ak3"]
+        assert "1 Iklan Produk Otomatis Semua Halaman." in result["ak3"]
 
 
 class TestSheet1AK4Indonesian:
@@ -445,79 +451,48 @@ class TestSheet1AK4Indonesian:
 
 
 class TestSheet1AK4English:
-    """Test AK4 — English variant (9 flags)."""
+    """Test AK4 — English variant (unified: 3 flags, same as ID).
+
+    BDD Scenario: English AK4 follows Indonesian format
+      Given an English-language ads analysis
+      When the AK4 recommendation flags are generated
+      Then it should produce at most 3 flags (participation, active ratio, Iklan Toko)
+      And it should NOT include Search/Recommendation placement flags
+    """
 
     def test_mnd_all_flags_english(self):
-        """MND with English should have 9 flags (all placement types missing)."""
+        """MND with English should have 3 flags (unified with ID)."""
         result = calculate_sheet1(MND_CPC_DATA, total_products=80, language="en")
         ak4 = result["ak4"]
-        assert ak4.count("📌") == 9
+        assert ak4.count("📌") == 3
 
-    def test_en_flags3_to_9_use_all_ads(self):
-        """English flags 3-9 check ALL ads including ended."""
-        data = [
-            _mnd_cpc_row(1, "Ad A", "Berakhir", "Iklan Produk", "100",
-                         "Bidding Manual", "Halaman Pencarian"),
-        ]
-        result = calculate_sheet1(data, total_products=100, language="en")
-        # Flag 3 should NOT trigger (has Halaman Pencarian)
-        assert "Halaman Pencarian belum dimanfaatkan." not in result["ak4"]
-        # Flag 5 should NOT trigger (has Pencarian + Bidding Manual)
-        assert "Halaman Pencarian (Bidding Manual) belum dimanfaatkan." not in result["ak4"]
-
-    def test_en_search_auto_flag(self):
-        """English flag 4: Pencarian + Bidding Otomatis."""
+    def test_en_no_placement_flags(self):
+        """English AK4 should NOT include Search/Recommendation flags."""
         data = [
             _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
-                         "Bidding Otomatis", "Halaman Pencarian"),
+                         "GMV Max ROAS", "Semua Penempatan"),
         ]
         result = calculate_sheet1(data, total_products=100, language="en")
-        assert "Halaman Pencarian (Bidding Otomatis) belum dimanfaatkan." not in result["ak4"]
-        # But Bidding Manual not present → flag 5 triggers
-        assert "Halaman Pencarian (Bidding Manual) belum dimanfaatkan." in result["ak4"]
-
-    def test_en_reco_flags(self):
-        """English flags 6-8: Rekomendasi variants."""
-        data = [
-            _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
-                         "Bidding Otomatis", "Halaman Rekomendasi"),
-        ]
-        result = calculate_sheet1(data, total_products=100, language="en")
-        # Has Rekomendasi → flag 6 should NOT trigger
-        assert "Halaman Rekomendasi belum dimanfaatkan." not in result["ak4"]
-        # Has Rekomendasi + Otomatis → flag 7 should NOT trigger
-        assert "Halaman Rekomendasi (Bidding Otomatis) belum dimanfaatkan." not in result["ak4"]
-        # No Rekomendasi + Manual → flag 8 should trigger
-        assert "Halaman Rekomendasi (Bidding Manual) belum dimanfaatkan." in result["ak4"]
-
-    def test_en_all_covered_no_placement_flags(self):
-        """All placement types covered → no placement flags."""
-        data = [
-            _mnd_cpc_row(1, "A1", "Berjalan", "Iklan Produk", "100",
-                         "Bidding Otomatis", "Halaman Pencarian"),
-            _mnd_cpc_row(2, "A2", "Berjalan", "Iklan Produk", "200",
-                         "Bidding Manual", "Halaman Pencarian"),
-            _mnd_cpc_row(3, "A3", "Berjalan", "Iklan Produk", "300",
-                         "Bidding Otomatis", "Halaman Rekomendasi"),
-            _mnd_cpc_row(4, "A4", "Berjalan", "Iklan Produk", "400",
-                         "Bidding Manual", "Halaman Rekomendasi"),
-            _mnd_cpc_row(5, "A5", "Berjalan", "Iklan Toko", "-",
-                         "Bidding Otomatis", "Halaman Pencarian"),
-        ]
-        result = calculate_sheet1(data, total_products=5, language="en")
-        ak4 = result["ak4"]
-        assert "belum dimanfaatkan" not in ak4
-        # Only flag 1 and flag 2 should be present
-        assert ak4.count("📌") == 2
+        assert "Halaman Pencarian" not in result["ak4"]
+        assert "Halaman Rekomendasi" not in result["ak4"]
 
     def test_en_iklan_toko_flag(self):
-        """English flag 9: Iklan Toko belum dimanfaatkan."""
+        """English flag 3: Iklan Toko belum dimanfaatkan."""
         data = [
             _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
                          "GMV Max ROAS", "Semua Penempatan"),
         ]
         result = calculate_sheet1(data, total_products=100, language="en")
         assert "Iklan Toko belum dimanfaatkan." in result["ak4"]
+
+    def test_en_iklan_toko_present_no_flag(self):
+        """Iklan Toko flag does NOT trigger when Iklan Toko ads exist."""
+        data = [
+            _mnd_cpc_row(1, "Ad A", "Berjalan", "Iklan Toko", "-",
+                         "Bidding Otomatis", "Halaman Pencarian"),
+        ]
+        result = calculate_sheet1(data, total_products=100, language="en")
+        assert "Iklan Toko belum dimanfaatkan." not in result["ak4"]
 
 
 # ---------------------------------------------------------------------------
@@ -972,8 +947,14 @@ class TestSheet2TopFallbackVariants:
         assert result["is_top_fallback"]
         assert "Ad B" in result["al2"]
 
-    def test_en_top_no_fallback(self):
-        """English: no fallback — AL2 empty if primary returns nothing."""
+    def test_en_top_has_fallback(self):
+        """English: has fallback (unified with ID).
+
+        BDD Scenario: English TOP ads uses fallback
+          Given an English-language keyword report where no ads meet primary threshold
+          When the TOP ads analysis runs
+          Then it should use the fallback query (same as Indonesian)
+        """
         data = [
             _kw_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
                     "GMV Max ROAS", "Semua Penempatan", "kw",
@@ -983,8 +964,8 @@ class TestSheet2TopFallbackVariants:
                     omzet=8000, biaya=800, roas=8.0),
         ]
         result = calculate_sheet2(data, language="en")
-        assert result["al2"] == ""
-        assert not result["is_top_fallback"]
+        assert result["is_top_fallback"]
+        assert "Ad B" in result["al2"]
 
     def test_en_top_primary_still_works(self):
         """English: primary query still works when data qualifies."""
@@ -1109,27 +1090,27 @@ class TestCalculateAdsKeyword:
 
 
 class TestCalculateAdsKeywordEnglish:
-    """Integration test: full English-language calculator run."""
+    """Integration test: full English-language calculator run (unified output)."""
 
     def test_english_full_run(self):
-        """English run uses 4-category AK3, 9-flag AK4, and language thresholds."""
+        """English run uses 2-category AK3, 3-flag AK4, and fallback (unified with ID)."""
         result = calculate_ads_keyword(
             MND_CPC_DATA, MND_KEYWORD_DATA, 80, language="en"
         )
         assert isinstance(result, AdsKeywordResult)
 
-        # AK3 should have 4 categories (English)
-        assert "Halaman Pencarian" in result.details["ak3"]
-        assert "Halaman Rekomendasi" in result.details["ak3"]
+        # AK3 should have 2 categories (unified with ID)
         assert "Semua Halaman" in result.details["ak3"]
         assert "Iklan Toko" in result.details["ak3"]
+        assert "Halaman Pencarian" not in result.details["ak3"]
+        assert "Halaman Rekomendasi" not in result.details["ak3"]
 
-        # AK4 should have 9 flags (English)
-        assert result.details["ak4"].count("📌") == 9
+        # AK4 should have 3 flags (unified with ID)
+        assert result.details["ak4"].count("📌") == 3
 
-        # TOP should have no fallback for English (primary returns no results
-        # for MND data, so AL2 is empty)
-        assert result.details["al2"] == ""
+        # TOP should use fallback for English (unified with ID)
+        # MND data doesn't meet primary threshold → fallback activates
+        assert result.details["al2"] != ""
 
     def test_english_defaults_backwards_compatible(self):
         """Default language=id preserves Indonesian behavior."""
