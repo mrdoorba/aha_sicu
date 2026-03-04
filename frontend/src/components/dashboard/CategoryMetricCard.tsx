@@ -23,9 +23,13 @@ export const CategoryMetricCard = ({ metric, value, benchmark, message }: Catego
   const displayValue = (() => {
     if (value === null || value === undefined) return '-';
     if (typeof value === 'number') {
-      // Only metrics starting with "%" are percentages (e.g., % Penggunaan alat promosi)
+      // Metrics starting with "%" store raw fractions (e.g., 0.636 → 63.6%)
       if (metric.startsWith('%')) {
         return `${(value * 100).toFixed(1)}%`;
+      }
+      // Metrics with "Tingkat" or "Persentase" are already in percentage form
+      if (metric.includes('Tingkat') || metric.includes('Persentase')) {
+        return `${value}%`;
       }
       return value.toLocaleString('en-US');
     }
