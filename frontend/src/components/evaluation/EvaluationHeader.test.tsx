@@ -68,19 +68,19 @@ describe('EvaluationHeader', () => {
     expect(screen.queryByText('No WA:')).not.toBeInTheDocument();
   });
 
-  it('shows Data Meeting badge when meeting data exists', () => {
+  it('shows Data M1 badge when meeting data exists', () => {
     renderHeader({ brand: SAMPLE_BRAND, isLoading: false, isError: false });
 
-    // Badge and section header both say "Data Meeting" — use getAllByText
-    const meetingLabels = screen.getAllByText('Data Meeting');
+    // Badge and section header both say "Data M1" — use getAllByText
+    const meetingLabels = screen.getAllByText('Data M1');
     expect(meetingLabels.length).toBeGreaterThanOrEqual(1);
   });
 
-  it('shows "Tidak ada data meeting" when meeting data is null', () => {
+  it('shows "Tidak ada data M1" when meeting data is null', () => {
     const brandNoMeeting = { ...SAMPLE_BRAND, meeting_raw_data: null };
     renderHeader({ brand: brandNoMeeting, isLoading: false, isError: false });
 
-    expect(screen.getByText('Tidak ada data meeting')).toBeInTheDocument();
+    expect(screen.getByText('Tidak ada data M1')).toBeInTheDocument();
   });
 
   it('shows loading skeleton when loading', () => {

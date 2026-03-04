@@ -42,7 +42,7 @@ describe('BrandTable', () => {
 
     expect(screen.getByText('Nama Brand')).toBeInTheDocument();
     expect(screen.getByText('Info Utama')).toBeInTheDocument();
-    expect(screen.getByText('Data Meeting')).toBeInTheDocument();
+    expect(screen.getByText('Data M1')).toBeInTheDocument();
     expect(screen.getByText('Aksi')).toBeInTheDocument();
   });
 

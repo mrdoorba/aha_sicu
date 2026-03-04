@@ -58,7 +58,7 @@ describe('SyncStatus', () => {
 
     expect(screen.getByText(/terakhir disinkronkan/i)).toBeInTheDocument();
     expect(screen.getByText(/vp: 80 brands/i)).toBeInTheDocument();
-    expect(screen.getByText(/meeting: 20 brands/i)).toBeInTheDocument();
+    expect(screen.getByText(/M1: 20 brands/i)).toBeInTheDocument();
   });
 
   it('renders "Menyinkronkan..." for in_progress state', () => {
