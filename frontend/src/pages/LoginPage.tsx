@@ -70,7 +70,7 @@ export const LoginPage = () => {
           <div className="absolute bottom-0 right-0 w-full h-full bg-[radial-gradient(circle_at_80%_80%,#325FEC_0%,transparent_40%)]" />
           <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full h-full bg-[radial-gradient(circle_at_center,#325FEC_0%,transparent_70%)] opacity-10" />
         </div>
-        
+
         {/* Abstract shapes for premium feel */}
         <div className="absolute top-1/4 -left-20 w-64 h-64 bg-primary/10 rounded-full blur-3xl" />
         <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
@@ -82,7 +82,7 @@ export const LoginPage = () => {
             </div>
             <span className="text-3xl font-black tracking-tighter text-white">Store ICU</span>
           </div>
-          
+
           <h2 className="text-5xl font-black tracking-tight text-white leading-[1.1]">
             Elevating E-commerce <br />
             <span className="text-sidebar-accent">Operations Intelligence</span>
@@ -91,11 +91,17 @@ export const LoginPage = () => {
       </div>
 
       {/* Login Form Pane (40%) */}
-      <main className="w-full lg:w-2/5 flex items-center justify-center p-8 bg-background relative">
+      <main className="w-full lg:w-2/5 flex flex-col items-center justify-between p-8 bg-background relative py-12">
         {/* Background decorative element */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
 
-        <div className="w-full max-w-md space-y-10 relative z-10">
+        {/* Top Image */}
+        <div className="w-full flex justify-center relative z-10">
+          <img src="/images/aha-e-mail-footer-with-texture.png" alt="AHA Commerce Feature" className="h-14 md:h-20 object-contain drop-shadow-md rounded-xl overflow-hidden" />
+        </div>
+
+        {/* Center Content */}
+        <div className="w-full max-w-md space-y-10 relative z-10 flex-1 flex flex-col justify-center my-8">
           <div className="text-center lg:text-left space-y-2">
             <h1 className="text-3xl font-black tracking-tight text-foreground">
               {t('login.title')}
@@ -179,6 +185,11 @@ export const LoginPage = () => {
             </form>
           </div>
 
+        </div>
+
+        {/* Bottom Image */}
+        <div className="w-full flex justify-center relative z-10 mt-auto">
+          <img src="/images/GOPN Hi-Res-01.png" alt="Garansi Omzet dan Profit Naik" className="h-20 md:h-28 object-contain drop-shadow-sm" />
         </div>
       </main>
     </div>
