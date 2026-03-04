@@ -1013,14 +1013,14 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
 
     oos_pct_display = f"{out_of_stock_pct * 100:.0f}%"
     if f71 == "✔️":
-        msg71 = f"✔️ % Ketersediaan Stok = {oos_pct_display} out of stock [Sudah Baik]"
+        msg71 = f"✔️ % Ketersediaan Stok = {oos_pct_display} stok habis [Sudah Baik]"
     else:
-        msg71 = f"❌ % Ketersediaan Stok = {oos_pct_display} out of stock [Kurang Baik, nilai disarankan: ≤{oos_threshold * 100:.0f}%]"
+        msg71 = f"❌ % Ketersediaan Stok = {oos_pct_display} stok habis [Kurang Baik, nilai disarankan: ≤{oos_threshold * 100:.0f}%]"
 
     row71 = RowScore(
         row=71, metric="% Ketersediaan Stok",
         value=out_of_stock_pct,
-        benchmark=f"≤{oos_threshold * 100:.0f}% out of stock",
+        benchmark=f"≤{oos_threshold * 100:.0f}% stok habis",
         verdict=f71, message=msg71, score=h71,
     )
 
