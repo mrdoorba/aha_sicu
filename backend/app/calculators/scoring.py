@@ -339,6 +339,7 @@ DEFAULT_RULES: dict = {
         "high_threshold": {"threshold": 24, "points": 10, "comparison": "gte"},
         "mid_threshold": {"threshold": 12, "points": 5, "comparison": "gte"},
         "low_penalty": {"threshold": 12, "points": -5, "comparison": "lt"},
+        "out_of_stock": {"threshold": 0.10, "penalty": -5.0},
     },
     "discount": {
         "fake_discount_flag": {"points_no_flag": 5, "points_flag": 0},
@@ -951,10 +952,11 @@ def _score_competition(
 
 
 def _score_stock(calculator_results: dict, rules: dict | None = None) -> CategoryScore:
-    """Score row 70: Stock Analysis.
+    """Score rows 70-71: Stock Analysis.
 
     H70: >=24 → 10, >=12 → 5, <12 → -5
-    Source: Calculator 2 details.average_stock
+    H71: out_of_stock_pct > threshold → penalty (-5), else 0
+    Source: Calculator 2 details.average_stock, details.out_of_stock_pct
     """
     top_sku_data = _get_nested(calculator_results, "top_sku", "details")
     has_data = top_sku_data is not None and "average_stock" in (top_sku_data or {})
@@ -988,14 +990,34 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
     else:
         f70, h70 = "❌", low_points
 
-    row = RowScore(
+    row70 = RowScore(
         row=70, metric="Rata² Stok",
         value=avg_stock_int, benchmark=f">={high_threshold:g}", verdict=f70,
         message="", score=h70,
     )
+
+    # Row 71: Stock availability penalty
+    oos_threshold = float(_get_rule_value(stock_rules, "out_of_stock", "threshold", 0.10))
+    oos_penalty = float(_get_rule_value(stock_rules, "out_of_stock", "penalty", -5.0))
+    out_of_stock_pct = _safe_num(top_sku_data.get("out_of_stock_pct", 0.0))
+
+    if out_of_stock_pct > oos_threshold:
+        f71, h71 = "❌", oos_penalty
+    else:
+        f71, h71 = "✔️", 0.0
+
+    oos_pct_display = f"{out_of_stock_pct * 100:.0f}%"
+    row71 = RowScore(
+        row=71, metric="% Ketersediaan Stok",
+        value=out_of_stock_pct,
+        benchmark=f"≤{oos_threshold * 100:.0f}% out of stock",
+        verdict=f71, message="", score=h71,
+    )
+
+    total_score = h70 + h71
     return CategoryScore(
         category="Stok",
-        score=h70, max_score=10.0, rows=[row],
+        score=total_score, max_score=10.0, rows=[row70, row71],
     )
 
 

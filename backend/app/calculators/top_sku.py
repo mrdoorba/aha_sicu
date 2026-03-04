@@ -298,6 +298,14 @@ def _calculate_average_stock(enriched_products: list[EnrichedProduct]) -> int:
     return round(total_stok / len(enriched_products))
 
 
+def _calculate_out_of_stock_pct(enriched_products: list[EnrichedProduct]) -> float:
+    """Fraction of top products with stock == 0: 0.0–1.0."""
+    if not enriched_products:
+        return 0.0
+    out_count = sum(1 for p in enriched_products if p.stok == 0)
+    return round(out_count / len(enriched_products), 2)
+
+
 # ---------------------------------------------------------------------------
 # Main calculator entry point
 # ---------------------------------------------------------------------------
@@ -324,6 +332,7 @@ def calculate_top_sku(
                 "output_1": [],
                 "output_2": [],
                 "average_stock": 0,
+                "out_of_stock_pct": 0.0,
                 "product_count": 0,
                 "total_unique_products": 0,
             },
@@ -346,6 +355,9 @@ def calculate_top_sku(
     # Step 7: Average stock
     average_stock = _calculate_average_stock(enriched)
 
+    # Step 7b: Out-of-stock percentage
+    out_of_stock_pct = _calculate_out_of_stock_pct(enriched)
+
     # Step 8: Build output tables
     output_1, output_2 = _build_output_tables(enriched)
 
@@ -355,6 +367,7 @@ def calculate_top_sku(
             "output_1": output_1,
             "output_2": output_2,
             "average_stock": average_stock,
+            "out_of_stock_pct": out_of_stock_pct,
             "product_count": len(enriched),
             "total_unique_products": total_unique,
         },
