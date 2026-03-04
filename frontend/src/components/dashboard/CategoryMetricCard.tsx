@@ -9,15 +9,6 @@ interface CategoryMetricCardProps {
   message: string;
 }
 
-/** Render message text with colored emoji marks (✔️ green, ❌ red). */
-const renderMessage = (message: string) => {
-  const parts = message.split(/(✔️|❌)/);
-  return parts.map((part, i) => {
-    if (part === '✔️') return <span key={i} className="text-green-600">✔️</span>;
-    if (part === '❌') return <span key={i} className="text-red-600">❌</span>;
-    return part;
-  });
-};
 
 export const CategoryMetricCard = ({ metric, value, benchmark, message }: CategoryMetricCardProps) => {
   const displayValue = (() => {
@@ -52,7 +43,15 @@ export const CategoryMetricCard = ({ metric, value, benchmark, message }: Catego
       {(benchmark || message) && (
         <div className="text-xs text-muted-foreground border-t border-border/50 pt-2 space-y-0.5">
           {benchmark && <p>Benchmark: {benchmark}</p>}
-          {message && <p className="break-all">{renderMessage(message)}</p>}
+          {message && (
+            <p className={cn(
+              'break-all',
+              message.startsWith('✔️') ? 'text-green-600' :
+                message.startsWith('❌') ? 'text-orange-600' : ''
+            )}>
+              {message}
+            </p>
+          )}
         </div>
       )}
     </div>
