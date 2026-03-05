@@ -592,11 +592,12 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
     # Row 19: Average (computed)
     avg_threshold = _get_rule_value(biz_rules, "six_month_avg_threshold", "threshold", 100_000_000)
     avg_points = float(_get_rule_value(biz_rules, "six_month_avg_threshold", "points", 10.0))
+    e19 = f">{_fmt_idr(avg_threshold)}"
     f19 = "✔️" if avg_6mo > avg_threshold else "❌"
     h19 = avg_points if avg_6mo > avg_threshold else 0.0
     rows.append(RowScore(
         row=19, metric="Rata² Penjualan 6 bulan terakhir",
-        value=avg_6mo, benchmark="-", verdict=f19, message="", score=h19,
+        value=avg_6mo, benchmark=e19, verdict=f19, message="", score=h19,
     ))
 
     # Row 20: Conversion rate (no score) — benchmark depends on template
@@ -1148,6 +1149,16 @@ def _generate_business_messages(cat: CategoryScore, manual_data: dict, rules: di
                         "\n❗️ Potensi peningkatan harga jual signifikan atau terdapat event abnormal.")
                     msg += severe_tmpl
                 row.message = msg
+        elif row.row == 19:
+            val_str = _fmt_idr(row.value)
+            if row.verdict == "✔️":
+                tmpl = _get_rule_value(biz_rules, "six_month_avg_threshold", "message_pass",
+                    "✔️ Rata² Penjualan 6 bulan terakhir = IDR {val_str} [Sudah Baik]")
+                row.message = _format_message_template(tmpl, val_str=val_str, benchmark=row.benchmark)
+            elif row.verdict == "❌":
+                tmpl = _get_rule_value(biz_rules, "six_month_avg_threshold", "message_fail",
+                    "❌ Rata² Penjualan 6 bulan terakhir = IDR {val_str} [Kurang Baik, nilai disarankan: {benchmark}]")
+                row.message = _format_message_template(tmpl, val_str=val_str, benchmark=row.benchmark)
         elif row.row == 20:
             val_str = f"{row.value:.1f}%"
             if row.verdict == "✔️":
