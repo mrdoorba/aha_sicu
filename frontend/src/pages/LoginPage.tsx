@@ -76,8 +76,8 @@ export const LoginPage = () => {
         <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
 
         <div className="relative z-10 max-w-xl space-y-8">
-          <div className="flex flex-col gap-10">
-            <img src="/images/AHA-Logo-Color.png" alt="AHA Commerce" className="h-24 md:h-32 w-fit drop-shadow-md brightness-0 invert" />
+          <div className="flex flex-col gap-16">
+            <img src="/images/AHA-Logo-Color.png" alt="AHA Commerce" className="h-40 md:h-48 w-fit drop-shadow-md brightness-0 invert" />
             <div className="flex items-center gap-3">
               <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-white/20">
                 <img src="/images/02 AHA-LogoIcon-Flat.png" alt="Store ICU Logo" className="size-8 object-contain" />
