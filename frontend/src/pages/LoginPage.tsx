@@ -7,7 +7,7 @@ import { FirebaseError } from 'firebase/app';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
 import { Label } from '../components/ui/label';
-import { ShieldCheck, ArrowRight, Loader2 } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
 
 interface LoginForm {
   email: string;
@@ -76,11 +76,14 @@ export const LoginPage = () => {
         <div className="absolute bottom-1/4 -right-20 w-80 h-80 bg-primary/10 rounded-full blur-3xl" />
 
         <div className="relative z-10 max-w-xl space-y-8">
-          <div className="flex items-center gap-3">
-            <div className="h-12 w-12 rounded-2xl bg-primary flex items-center justify-center shadow-lg shadow-primary/20">
-              <ShieldCheck className="text-white size-7" />
+          <div className="flex flex-col gap-6">
+            <img src="/images/AHA-Logo-Color.png" alt="AHA Commerce" className="h-10 w-fit drop-shadow-md brightness-0 invert" />
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-white/20">
+                <img src="/images/02 AHA-LogoIcon-Flat.png" alt="Store ICU Logo" className="size-8 object-contain" />
+              </div>
+              <span className="text-3xl font-black tracking-tighter text-white">Store ICU</span>
             </div>
-            <span className="text-3xl font-black tracking-tighter text-white">Store ICU</span>
           </div>
 
           <h2 className="text-5xl font-black tracking-tight text-white leading-[1.1]">
@@ -94,11 +97,6 @@ export const LoginPage = () => {
       <main className="w-full lg:w-2/5 flex flex-col items-center justify-between p-8 bg-background relative py-12">
         {/* Background decorative element */}
         <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[500px] h-[500px] bg-primary/5 rounded-full blur-3xl pointer-events-none" />
-
-        {/* Top Image */}
-        <div className="w-full flex justify-center relative z-10">
-          <img src="/images/aha-e-mail-footer-with-texture.png" alt="AHA Commerce Feature" className="h-14 md:h-20 object-contain drop-shadow-md rounded-xl overflow-hidden" />
-        </div>
 
         {/* Center Content */}
         <div className="w-full max-w-md space-y-10 relative z-10 flex-1 flex flex-col justify-center my-8">
