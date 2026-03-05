@@ -8,8 +8,7 @@ import {
   Settings,
   Users,
   LogOut,
-  ChevronLeft,
-  Menu
+  ChevronLeft
 } from 'lucide-react';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
@@ -91,18 +90,32 @@ export const Sidebar = ({ className }: SidebarProps) => {
           className
         )}
       >
-        <div className="flex h-16 items-center justify-between px-4">
-          {!isCollapsed && (
-            <span className="text-xl font-bold tracking-tight text-sidebar-primary">Store ICU</span>
+        <div className={cn("flex h-16 items-center", isCollapsed ? "justify-center px-0" : "justify-between px-4")}>
+          {!isCollapsed ? (
+            <>
+              <div className="flex items-center gap-2">
+                <img src="/images/02%20AHA-LogoIcon-Flat.png" alt="Store ICU Logo" className="size-7 object-contain" />
+                <span className="text-xl font-bold tracking-tight text-sidebar-primary">Store ICU</span>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+                onClick={() => setIsCollapsed(true)}
+              >
+                <ChevronLeft className="h-4 w-4" />
+              </Button>
+            </>
+          ) : (
+            <Button
+              variant="ghost"
+              size="icon"
+              className="h-10 w-10 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-lg"
+              onClick={() => setIsCollapsed(false)}
+            >
+              <img src="/images/02%20AHA-LogoIcon-Flat.png" alt="Store ICU Logo" className="size-7 object-contain" />
+            </Button>
           )}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-            onClick={() => setIsCollapsed(!isCollapsed)}
-          >
-            {isCollapsed ? <Menu className="h-4 w-4" /> : <ChevronLeft className="h-4 w-4" />}
-          </Button>
         </div>
 
         <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto scrollbar-hide">
