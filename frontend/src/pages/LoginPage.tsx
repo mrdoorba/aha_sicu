@@ -77,12 +77,12 @@ export const LoginPage = () => {
 
         <div className="relative z-10 max-w-xl space-y-8">
           <div className="flex flex-col gap-10">
-            <img src="/images/AHA-Logo-Color.png" alt="AHA Commerce" className="h-16 md:h-20 w-fit drop-shadow-md brightness-0 invert" />
-            <div className="flex items-center gap-4">
-              <div className="h-20 w-20 rounded-3xl bg-white flex items-center justify-center shadow-lg shadow-white/20">
-                <img src="/images/02 AHA-LogoIcon-Flat.png" alt="Store ICU Logo" className="size-14 object-contain" />
+            <img src="/images/AHA-Logo-Color.png" alt="AHA Commerce" className="h-24 md:h-32 w-fit drop-shadow-md brightness-0 invert" />
+            <div className="flex items-center gap-3">
+              <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-white/20">
+                <img src="/images/02 AHA-LogoIcon-Flat.png" alt="Store ICU Logo" className="size-8 object-contain" />
               </div>
-              <span className="text-5xl font-black tracking-tighter text-white">Store ICU</span>
+              <span className="text-3xl font-black tracking-tighter text-white">Store ICU</span>
             </div>
           </div>
 
