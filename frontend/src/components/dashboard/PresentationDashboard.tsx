@@ -71,14 +71,14 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
     category: String(cat.category),
     score: Number(cat.score),
     max_score: Number(cat.max_score),
-    rows: (cat.rows as Array<{
+    rows: ((cat.rows as Array<{
       metric: string;
       value: unknown;
       benchmark: string;
       verdict: string;
       message: string;
       score: number;
-    }>) || [],
+    }>) || []).filter((r) => r.metric !== 'Iklan check up'),
   }));
 
   return (
