@@ -78,7 +78,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
       verdict: string;
       message: string;
       score: number;
-    }>) || []).filter((r) => r.metric !== 'Iklan check up'),
+    }>) || []).filter((r) => r.metric !== 'Iklan check up' && !r.metric.startsWith('Rata² Penjualan')),
   }));
 
   return (

@@ -276,6 +276,29 @@ class TestScoreBusiness:
         h19_row = next(r for r in cat.rows if r.row == 19)
         assert h19_row.score == 0.0  # 55M < 100M
 
+    def test_rata_penjualan_message_is_empty(self):
+        from app.calculators.scoring import _generate_business_messages, RowScore, CategoryScore
+        data = {
+            "business": {
+                "salesMonth0": 120_000_000,
+                "salesMonth1": 120_000_000,
+                "salesMonth2": 120_000_000,
+                "salesMonth3": 120_000_000,
+                "salesMonth4": 120_000_000,
+                "salesMonth5": 120_000_000,
+            }
+        }
+        # Create a mock category score for row 19
+        cat = CategoryScore(
+            category="Bisnis Analisis",
+            score=10.0, max_score=20.0,
+            rows=[RowScore(row=19, metric="Rata² Penjualan 6 bulan terakhir", value=120_0000_000, benchmark=">100M", verdict="✔️", message="", score=10.0)]
+        )
+        _generate_business_messages(cat, data)
+        h19_row = next(r for r in cat.rows if r.row == 19)
+        assert h19_row.message == "", f"Expected message to be strictly empty, got: {h19_row.message}"
+
+
 
 class TestScoreVisitors:
     def test_both_pass(self):
