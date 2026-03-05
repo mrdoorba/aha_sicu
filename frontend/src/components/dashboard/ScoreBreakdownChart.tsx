@@ -30,13 +30,7 @@ interface ScoreBreakdownChartProps {
 export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps) => {
   const { t } = useTranslation();
 
-  const EXCLUDED_CATEGORIES = ['Kompetisi TOP Produk'];
-
-  const filteredBreakdown = scoreBreakdown.filter(
-    (cat) => !EXCLUDED_CATEGORIES.includes(cat.category)
-  );
-
-  const radarData = filteredBreakdown.map((cat) => {
+  const radarData = scoreBreakdown.map((cat) => {
     const mapped = CATEGORY_MAP.find((m) => m.backend === cat.category);
     const label = mapped ? t(mapped.labelKey) : cat.category;
     const counts = computeCategoryVerdictCounts(cat.rows || []);
@@ -78,7 +72,7 @@ export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps
 
           {/* Right: Category Bars with ✔️/❌ counts */}
           <div className="space-y-4">
-            {filteredBreakdown.map((cat, idx) => {
+            {scoreBreakdown.map((cat, idx) => {
               const mapped = CATEGORY_MAP.find((m) => m.backend === cat.category);
               const label = mapped ? t(mapped.labelKey) : cat.category;
               const counts = computeCategoryVerdictCounts(cat.rows || []);
