@@ -4,7 +4,7 @@ import { FileUploadSlot, type FileSlotConfig } from './FileUploadSlot';
 import type { UploadInfo, UploadStatus } from '../../hooks/useUpload';
 
 const CONFIG: FileSlotConfig = {
-  label: 'Iklan Check Up V2A',
+  label: 'Iklan Check Up V2A (Keseluruhan Iklan)',
   fileType: 'cpc_ad_report',
   accept: '.csv',
   format: '.csv',
@@ -20,7 +20,7 @@ const SAMPLE_UPLOAD: UploadInfo = {
   uploaded_at: '2026-02-11T10:00:00Z',
 };
 
-const noop = () => {};
+const noop = () => { };
 
 function renderSlot(overrides: {
   config?: FileSlotConfig;
@@ -46,7 +46,7 @@ describe('FileUploadSlot', () => {
   it('renders empty state with upload button', () => {
     renderSlot();
 
-    expect(screen.getByText('Iklan Check Up V2A')).toBeInTheDocument();
+    expect(screen.getByText('Iklan Check Up V2A (Keseluruhan Iklan)')).toBeInTheDocument();
     expect(screen.getByText(/Format: .csv/)).toBeInTheDocument();
     expect(screen.getByText(/Dikirim ke: Calculator 1/)).toBeInTheDocument();
     expect(screen.getByText('Belum ada file diunggah')).toBeInTheDocument();
@@ -107,7 +107,7 @@ describe('FileUploadSlot', () => {
     };
     renderSlot({ config: configWithLink });
 
-    const link = screen.getByRole('link', { name: /Iklan Check Up V2A/i });
+    const link = screen.getByRole('link', { name: /Iklan Check Up V2A \(Keseluruhan Iklan\)/i });
     expect(link).toHaveAttribute('href', 'https://seller.shopee.co.id/portal/marketing/pas/assembly');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
@@ -116,8 +116,8 @@ describe('FileUploadSlot', () => {
   it('renders label as plain text when config.link is absent', () => {
     renderSlot();
 
-    expect(screen.getByText('Iklan Check Up V2A')).toBeInTheDocument();
-    expect(screen.queryByRole('link', { name: /Iklan Check Up V2A/i })).not.toBeInTheDocument();
+    expect(screen.getByText('Iklan Check Up V2A (Keseluruhan Iklan)')).toBeInTheDocument();
+    expect(screen.queryByRole('link', { name: /Iklan Check Up V2A \(Keseluruhan Iklan\)/i })).not.toBeInTheDocument();
   });
 
   it('has correct file input accept attribute', () => {
