@@ -269,6 +269,7 @@
   "rules.label.highThreshold": "Stok Tinggi",
   "rules.label.midThreshold": "Stok Sedang",
   "rules.label.lowPenalty": "Stok Rendah",
+  "rules.label.outOfStock": "Ketersediaan Stok",
   "rules.label.fakeDiscountFlag": "Diskon Palsu",
   "rules.label.floor": "Batas Bawah",
   "rules.label.floorFashion": "Batas Bawah (Fashion)",

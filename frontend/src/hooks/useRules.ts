@@ -12,6 +12,7 @@ export interface RuleThreshold {
   max?: number;
   points_no_flag?: number;
   points_flag?: number;
+  penalty?: number;
   mall?: number;
   star_plus?: number;
   star?: number;

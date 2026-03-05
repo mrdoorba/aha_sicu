@@ -54,6 +54,7 @@ const RULE_LABELS: Record<string, string> = {
   high_threshold: 'rules.label.highThreshold',
   mid_threshold: 'rules.label.midThreshold',
   low_penalty: 'rules.label.lowPenalty',
+  out_of_stock: 'rules.label.outOfStock',
   fake_discount_flag: 'rules.label.fakeDiscountFlag',
   floor: 'rules.label.floor',
   floor_fashion: 'rules.label.floorFashion',
@@ -143,6 +144,7 @@ function formatPoints(rule: RuleThreshold, t: (k: string) => string): string {
   if (rule.points !== undefined) return `${rule.points} ${t('rules.points.pts')}`;
   if (rule.opportunity_points !== undefined) return `${rule.opportunity_points} ${t('rules.points.oppPts')}`;
   if (rule.points_no_flag !== undefined) return `${rule.points_no_flag} / ${rule.points_flag} ${t('rules.points.pts')}`;
+  if (rule.penalty !== undefined) return `${rule.penalty} ${t('rules.points.pts')}`;
   // store_status_points
   if (rule.mall !== undefined) {
     return `${t('rules.storeType.mall')}: ${rule.mall}, ${t('rules.storeType.starPlus')}: ${rule.star_plus}, ${t('rules.storeType.star')}: ${rule.star}, ${t('rules.storeType.regular')}: ${rule.regular}`;
@@ -318,6 +320,15 @@ function renderEditablePoints(
         <EditableNumber value={rule.points_no_flag} onChange={(v) => onRuleChange(category, key, 'points_no_flag', v)} label={`${key} points no flag`} error={validationErrors?.[`${category}.${key}.points_no_flag`]} />
         <span className="text-sm">/</span>
         <EditableNumber value={rule.points_flag} onChange={(v) => onRuleChange(category, key, 'points_flag', v)} label={`${key} points flag`} error={validationErrors?.[`${category}.${key}.points_flag`]} />
+        <span className="text-sm">{t('rules.points.pts')}</span>
+      </span>
+    );
+  }
+
+  if (rule.penalty !== undefined) {
+    return (
+      <span className="flex items-center gap-1">
+        <EditableNumber value={rule.penalty} onChange={(v) => onRuleChange(category, key, 'penalty', v)} label={`${key} penalty`} error={validationErrors?.[`${category}.${key}.penalty`]} />
         <span className="text-sm">{t('rules.points.pts')}</span>
       </span>
     );
