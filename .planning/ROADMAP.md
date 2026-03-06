@@ -45,11 +45,11 @@ Plans:
   3. User sees a loading indicator while the email is being sent
   4. User sees a success confirmation showing the recipient after the email sends
   5. User sees a clear error message if sending fails (e.g., invalid email, SMTP error)
-**Plans**: TBD
+**Plans:** 2 plans
 
 Plans:
-- [ ] 02-01: TBD
-- [ ] 02-02: TBD
+- [ ] 02-01-PLAN.md — API client types, useSendEmail hook, SendEmailDialog component, ScoreBreakdownChart forwardRef
+- [ ] 02-02-PLAN.md — Wire send button into DashboardHeader, orchestrate flow in PresentationDashboard
 
 ### Phase 3: Enhanced Send Options
 **Goal**: Users have full control over email recipients and content before sending, including preview
@@ -73,5 +73,5 @@ Phases execute in numeric order: 1 → 2 → 3
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Backend Email Engine | 2/3 | In Progress|  |
-| 2. Core Send Flow | 0/? | Not started | - |
+| 2. Core Send Flow | 0/2 | Planned | - |
 | 3. Enhanced Send Options | 0/? | Not started | - |
