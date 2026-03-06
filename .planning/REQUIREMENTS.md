@@ -9,7 +9,7 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Email Sending
 
-- [ ] **SEND-01**: User can click "Send Email" button in the DashboardHeader
+- [x] **SEND-01**: User can click "Send Email" button in the DashboardHeader
 - [x] **SEND-02**: User enters recipient email address(es) in a dialog
 - [ ] **SEND-03**: User can send to multiple recipients (comma-separated or multi-input)
 - [ ] **SEND-04**: User can add CC and BCC recipients
@@ -62,7 +62,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| SEND-01 | Phase 2 | Pending |
+| SEND-01 | Phase 2 | Complete |
 | SEND-02 | Phase 2 | Complete |
 | SEND-03 | Phase 3 | Pending |
 | SEND-04 | Phase 3 | Pending |
