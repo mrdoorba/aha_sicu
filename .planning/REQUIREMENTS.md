@@ -11,9 +11,9 @@ Requirements for initial release. Each maps to roadmap phases.
 
 - [x] **SEND-01**: User can click "Send Email" button in the DashboardHeader
 - [x] **SEND-02**: User enters recipient email address(es) in a dialog
-- [ ] **SEND-03**: User can send to multiple recipients (comma-separated or multi-input)
-- [ ] **SEND-04**: User can add CC and BCC recipients
-- [ ] **SEND-05**: User can add a custom note/message above the report body
+- [x] **SEND-03**: User can send to multiple recipients (comma-separated or multi-input)
+- [x] **SEND-04**: User can add CC and BCC recipients
+- [x] **SEND-05**: User can add a custom note/message above the report body
 - [x] **SEND-06**: User sees loading state while email is being sent
 - [x] **SEND-07**: User sees success confirmation with recipient list after sending
 - [x] **SEND-08**: User sees clear error message if sending fails
@@ -26,7 +26,7 @@ Requirements for initial release. Each maps to roadmap phases.
 - [x] **CONT-04**: Email includes data intelligence section (calculator results)
 - [x] **CONT-05**: Email renders correctly on mobile devices (responsive tables)
 - [x] **CONT-06**: Email subject auto-generated with brand name and period
-- [ ] **CONT-07**: User can preview the HTML email in-dialog before sending
+- [x] **CONT-07**: User can preview the HTML email in-dialog before sending
 
 ### Infrastructure
 
@@ -64,9 +64,9 @@ Which phases cover which requirements. Updated during roadmap creation.
 |-------------|-------|--------|
 | SEND-01 | Phase 2 | Complete |
 | SEND-02 | Phase 2 | Complete |
-| SEND-03 | Phase 3 | Pending |
-| SEND-04 | Phase 3 | Pending |
-| SEND-05 | Phase 3 | Pending |
+| SEND-03 | Phase 3 | Complete |
+| SEND-04 | Phase 3 | Complete |
+| SEND-05 | Phase 3 | Complete |
 | SEND-06 | Phase 2 | Complete |
 | SEND-07 | Phase 2 | Complete |
 | SEND-08 | Phase 2 | Complete |
@@ -76,7 +76,7 @@ Which phases cover which requirements. Updated during roadmap creation.
 | CONT-04 | Phase 1 | Complete |
 | CONT-05 | Phase 1 | Complete |
 | CONT-06 | Phase 1 | Complete |
-| CONT-07 | Phase 3 | Pending |
+| CONT-07 | Phase 3 | Complete |
 | INFRA-01 | Phase 1 | Complete |
 | INFRA-02 | Phase 1 | Complete |
 | INFRA-03 | Phase 1 | Complete |

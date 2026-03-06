@@ -60,7 +60,7 @@ Plans:
   2. User can add CC and BCC recipients in the send dialog
   3. User can write a custom note/message that appears above the report body in the email
   4. User can preview the HTML email content in the dialog before clicking send
-**Plans:** 2 plans
+**Plans:** 1/2 plans executed
 
 Plans:
 - [ ] 03-01-PLAN.md — Backend schema, service, template, and router updates for multi-recipient, CC/BCC, note, and preview data URIs
@@ -75,4 +75,4 @@ Phases execute in numeric order: 1 → 2 → 3
 |-------|----------------|--------|-----------|
 | 1. Backend Email Engine | 2/3 | In Progress|  |
 | 2. Core Send Flow | 0/2 | Planned | - |
-| 3. Enhanced Send Options | 0/2 | Not started | - |
+| 3. Enhanced Send Options | 1/2 | In Progress|  |
