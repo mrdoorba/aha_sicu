@@ -18,6 +18,7 @@ from app.modules.brands.router import router as brands_router
 from app.modules.evaluations.router import router as evaluations_router
 from app.modules.sync.router import router as sync_router
 from app.modules.rules.router import router as rules_router
+from app.modules.email.router import router as email_router
 from app.modules.upload.router import router as upload_router
 
 logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(name)s: %(message)s")
@@ -61,6 +62,7 @@ app.add_exception_handler(AppException, app_exception_handler)
 app.include_router(accounts_router)
 app.include_router(auth_router)
 app.include_router(brands_router)
+app.include_router(email_router)
 app.include_router(evaluations_router)
 app.include_router(rules_router)
 app.include_router(sync_router)
