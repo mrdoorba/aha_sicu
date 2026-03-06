@@ -10,13 +10,13 @@ Requirements for initial release. Each maps to roadmap phases.
 ### Email Sending
 
 - [ ] **SEND-01**: User can click "Send Email" button in the DashboardHeader
-- [ ] **SEND-02**: User enters recipient email address(es) in a dialog
+- [x] **SEND-02**: User enters recipient email address(es) in a dialog
 - [ ] **SEND-03**: User can send to multiple recipients (comma-separated or multi-input)
 - [ ] **SEND-04**: User can add CC and BCC recipients
 - [ ] **SEND-05**: User can add a custom note/message above the report body
-- [ ] **SEND-06**: User sees loading state while email is being sent
-- [ ] **SEND-07**: User sees success confirmation with recipient list after sending
-- [ ] **SEND-08**: User sees clear error message if sending fails
+- [x] **SEND-06**: User sees loading state while email is being sent
+- [x] **SEND-07**: User sees success confirmation with recipient list after sending
+- [x] **SEND-08**: User sees clear error message if sending fails
 
 ### Email Content
 
@@ -63,13 +63,13 @@ Which phases cover which requirements. Updated during roadmap creation.
 | Requirement | Phase | Status |
 |-------------|-------|--------|
 | SEND-01 | Phase 2 | Pending |
-| SEND-02 | Phase 2 | Pending |
+| SEND-02 | Phase 2 | Complete |
 | SEND-03 | Phase 3 | Pending |
 | SEND-04 | Phase 3 | Pending |
 | SEND-05 | Phase 3 | Pending |
-| SEND-06 | Phase 2 | Pending |
-| SEND-07 | Phase 2 | Pending |
-| SEND-08 | Phase 2 | Pending |
+| SEND-06 | Phase 2 | Complete |
+| SEND-07 | Phase 2 | Complete |
+| SEND-08 | Phase 2 | Complete |
 | CONT-01 | Phase 1 | Complete |
 | CONT-02 | Phase 1 | Complete |
 | CONT-03 | Phase 1 | Complete |
