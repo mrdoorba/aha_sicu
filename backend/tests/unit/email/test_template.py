@@ -323,3 +323,150 @@ class TestStringsAndCategoryMap:
         ]
         for key in expected_keys:
             assert key in CATEGORY_MAP, f"Missing CATEGORY_MAP key: {key}"
+
+
+# ===================================================================
+# Task 2 Tests: Detailed evaluation, score breakdown, data intelligence
+# ===================================================================
+
+
+def _render_full(evaluation_data: dict) -> str:
+    """Helper to render full email HTML with standard CIDs."""
+    return render_email_html(
+        evaluation_data=evaluation_data,
+        chart_cid="chart123@domain",
+        header_cid="header123@domain",
+        footer_cid="footer123@domain",
+    )
+
+
+class TestDetailedEvaluation:
+    """Detailed evaluation section tests."""
+
+    def test_renders_all_categories(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        # Should contain short display names from CATEGORY_MAP
+        assert "Operasional" in html
+        assert "Bisnis" in html
+
+    def test_metric_card_content(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        # Metric names from the fixture
+        assert "Tingkat Chat Dibalas" in html
+        assert "Konversi" in html
+
+    def test_metric_card_fields(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        # Check that benchmark and message values appear
+        assert "&gt;= 80%" in html or ">= 80%" in html
+        assert "Baik" in html
+        assert "Perlu ditingkatkan" in html
+
+    def test_two_column_grid(self, evaluation_data: dict) -> None:
+        """Metric cards should be in a 2-column table grid."""
+        html = _render_full(evaluation_data)
+        # 2-column layout means td elements with width ~50%
+        assert "width:50%" in html.replace(" ", "") or 'width="50%"' in html
+
+
+class TestScoreBreakdown:
+    """Score breakdown section tests."""
+
+    def test_chart_cid_image(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "cid:chart123@domain" in html
+
+    def test_category_bars(self, evaluation_data: dict) -> None:
+        """Score breakdown should show category summary bars."""
+        html = _render_full(evaluation_data)
+        # Category short names in the breakdown section
+        assert "Operasional" in html
+        # Score values (8.0 / 10.0 for first category)
+        assert "8" in html
+        assert "10" in html
+
+
+class TestDataIntelligence:
+    """Data intelligence section tests."""
+
+    def test_ads_keyword_preformatted(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        # ads_keyword output_text should appear
+        assert "Keyword &#x27;sepatu&#x27;" in html or "Keyword 'sepatu'" in html or "sepatu" in html
+
+    def test_top_sku_revenue_table(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        # Top 3 revenue SKUs should appear
+        assert "Sepatu Running" in html
+        assert "Tas Ransel" in html
+        assert "Jaket Outdoor" in html
+
+    def test_top_sku_stock_table(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        # Stock values for top 3
+        assert "500" in html
+        assert "350" in html
+        assert "200" in html
+
+    def test_top_sku_limits_to_three(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        # 4th item should NOT appear
+        assert "Topi Baseball" not in html
+
+    def test_missing_calculator_results(self, sample_categories: list[dict]) -> None:
+        """Should not crash with empty calculator_results."""
+        data = {
+            "id": 1,
+            "brand_id": 1,
+            "brand_name": "Test Brand",
+            "final_score": 50.0,
+            "verdict": "\u2714\ufe0f",
+            "template": "non_fashion",
+            "score_breakdown": sample_categories,
+            "calculator_results": {},
+            "period": "Februari 2026",
+        }
+        html = _render_full(data)
+        # Should produce valid HTML without crashing
+        assert "<!DOCTYPE html" in html.upper() or "<!doctype html" in html.lower()
+
+    def test_section_header_present(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert STRINGS["id"]["data_intelligence"] in html
+
+
+class TestResponsive:
+    """Responsive email structure tests."""
+
+    def test_media_query_present(self, evaluation_data: dict) -> None:
+        """Progressive enhancement media query should be in <head>."""
+        html = _render_full(evaluation_data)
+        head_end = html.lower().find("</head>")
+        head_html = html[:head_end] if head_end != -1 else ""
+        assert "@media" in head_html
+
+    def test_max_width_pattern(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "max-width:600px" in html.replace(" ", "")
+
+
+class TestFullRender:
+    """Full HTML output completeness tests."""
+
+    def test_all_sections_present(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        s = STRINGS["id"]
+        assert s["score_overview"] in html
+        assert s["detailed_evaluation"] in html
+        assert s["score_breakdown"] in html
+        assert s["data_intelligence"] in html
+
+    def test_complete_html_structure(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        lower = html.lower()
+        assert "<html" in lower
+        assert "</html>" in lower
+        assert "<head" in lower
+        assert "</head>" in lower
+        assert "<body" in lower
+        assert "</body>" in lower

@@ -230,25 +230,333 @@ def _render_footer(footer_cid: str) -> str:
 
 
 # ---------------------------------------------------------------------------
-# Stub sections (Task 2 fills these in)
+# Detailed evaluation, score breakdown, data intelligence sections
 # ---------------------------------------------------------------------------
 
 
+def _render_metric_card(row: dict[str, Any]) -> str:
+    """Render a single metric card as a table cell content block."""
+    verdict_color = GREEN if row.get("verdict") == "\u2714\ufe0f" else ORANGE
+    return f"""\
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="background-color:{CARD_BG};border-radius:4px;margin-bottom:8px;">
+  <tr>
+    <td style="padding:10px 12px;font-family:Arial,Helvetica,sans-serif;">
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <tr>
+          <td style="font-size:13px;font-weight:bold;color:{TEXT_DARK};padding-bottom:4px;">
+            {_esc(row.get('metric', ''))}
+          </td>
+        </tr>
+        <tr>
+          <td style="font-size:12px;color:{TEXT_SECONDARY};padding-bottom:2px;">
+            {S['value']}: {_esc(row.get('value', ''))} | {S['benchmark']}: {_esc(row.get('benchmark', ''))}
+          </td>
+        </tr>
+        <tr>
+          <td style="font-size:12px;padding-bottom:2px;">
+            <span style="color:{verdict_color};font-weight:bold;">{row.get('verdict', '')}</span>
+            <span style="color:{TEXT_SECONDARY};"> | {S['score']}: {row.get('score', 0)}</span>
+          </td>
+        </tr>
+        <tr>
+          <td style="font-size:11px;color:{TEXT_SECONDARY};font-style:italic;">
+            {_esc(row.get('message', ''))}
+          </td>
+        </tr>
+      </table>
+    </td>
+  </tr>
+</table>"""
+
+
 def _render_detailed_evaluation(categories: list[dict[str, Any]]) -> str:
-    """Render detailed evaluation section. Stub -- implemented in Task 2."""
-    return ""
+    """Render detailed evaluation section with all categories and metric cards."""
+    if not categories:
+        return ""
+
+    sections: list[str] = []
+    for cat in categories:
+        cat_name = CATEGORY_MAP.get(cat.get("category", ""), cat.get("category", ""))
+        cat_score = cat.get("score", 0)
+        cat_max = cat.get("max_score", 0)
+        cat_pct = int((cat_score / cat_max) * 100) if cat_max > 0 else 0
+        cat_color = _score_color(cat_pct)
+
+        rows = cat.get("rows", [])
+        # Build 2-column grid of metric cards
+        grid_rows: list[str] = []
+        for i in range(0, len(rows), 2):
+            left = _render_metric_card(rows[i])
+            if i + 1 < len(rows):
+                right = _render_metric_card(rows[i + 1])
+            else:
+                right = "&nbsp;"
+            grid_rows.append(
+                f'<tr>\n'
+                f'  <td style="width:50%;padding:4px;vertical-align:top;">{left}</td>\n'
+                f'  <td style="width:50%;padding:4px;vertical-align:top;">{right}</td>\n'
+                f'</tr>'
+            )
+
+        grid_html = "\n".join(grid_rows)
+
+        sections.append(f"""\
+<!-- Category: {_esc(cat_name)} -->
+<tr>
+  <td style="padding:12px 30px 0 30px;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="font-size:15px;font-weight:bold;color:{TEXT_DARK};padding-bottom:6px;">
+          {_esc(cat_name)}
+          <span style="font-size:13px;color:{TEXT_SECONDARY};font-weight:normal;padding-left:8px;">
+            {cat_score} / {cat_max}
+          </span>
+        </td>
+      </tr>
+      <!-- Category progress bar -->
+      <tr>
+        <td style="padding-bottom:10px;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="background-color:#e0e0e0;border-radius:3px;height:8px;padding:0;">
+                <table role="presentation" width="{cat_pct}%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="background-color:{cat_color};border-radius:3px;height:8px;font-size:0;line-height:0;">
+                      &nbsp;
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+      <!-- Metric cards grid (2 columns) -->
+      <tr>
+        <td>
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+                 class="metric-grid">
+            {grid_html}
+          </table>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>""")
+
+    all_sections = "\n".join(sections)
+    return f"""\
+<!-- Detailed Evaluation -->
+<tr>
+  <td style="padding:16px 30px 8px 30px;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="font-size:18px;font-weight:bold;color:{TEXT_DARK};padding-bottom:16px;border-bottom:2px solid {PRIMARY_BLUE};">
+          {S['detailed_evaluation']}
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>
+{all_sections}"""
 
 
 def _render_score_breakdown(
     chart_cid: str, categories: list[dict[str, Any]],
 ) -> str:
-    """Render score breakdown section. Stub -- implemented in Task 2."""
-    return ""
+    """Render score breakdown section: chart image + category summary bars."""
+    cat_bars: list[str] = []
+    for cat in categories:
+        cat_name = CATEGORY_MAP.get(cat.get("category", ""), cat.get("category", ""))
+        cat_score = cat.get("score", 0)
+        cat_max = cat.get("max_score", 0)
+        cat_pct = int((cat_score / cat_max) * 100) if cat_max > 0 else 0
+        cat_color = _score_color(cat_pct)
+
+        # Per-category verdict counts
+        checks = sum(1 for r in cat.get("rows", []) if r.get("verdict") == "\u2714\ufe0f")
+        xs = sum(1 for r in cat.get("rows", []) if r.get("verdict") == "\u274c")
+
+        cat_bars.append(f"""\
+<tr>
+  <td style="padding:4px 0;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="font-size:12px;color:{TEXT_DARK};width:120px;padding-right:8px;">
+          {_esc(cat_name)}
+        </td>
+        <td style="padding:0;">
+          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td style="background-color:#e0e0e0;border-radius:3px;height:8px;padding:0;">
+                <table role="presentation" width="{cat_pct}%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td style="background-color:{cat_color};border-radius:3px;height:8px;font-size:0;line-height:0;">
+                      &nbsp;
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
+        </td>
+        <td style="font-size:11px;color:{TEXT_SECONDARY};width:80px;text-align:right;padding-left:8px;">
+          {cat_score}/{cat_max} | \u2714\ufe0f{checks} \u274c{xs}
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>""")
+
+    bars_html = "\n".join(cat_bars)
+    return f"""\
+<!-- Score Breakdown -->
+<tr>
+  <td style="padding:16px 30px 24px 30px;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="font-size:18px;font-weight:bold;color:{TEXT_DARK};padding-bottom:16px;border-bottom:2px solid {PRIMARY_BLUE};">
+          {S['score_breakdown']}
+        </td>
+      </tr>
+      <!-- Chart image -->
+      <tr>
+        <td style="padding-top:16px;padding-bottom:16px;">
+          <img src="cid:{chart_cid}" width="600"
+               style="display:block;width:100%;height:auto;border:0;"
+               alt="Score Breakdown Chart">
+        </td>
+      </tr>
+      <!-- Category summary bars -->
+      {bars_html}
+    </table>
+  </td>
+</tr>"""
+
+
+def _render_ranking_table(
+    title: str,
+    rows: list[dict[str, Any]],
+    value_key: str,
+    max_rows: int = 3,
+) -> str:
+    """Render a ranking table (revenue or stock) limited to max_rows."""
+    if not rows:
+        return ""
+
+    display_rows = rows[:max_rows]
+    row_html_parts: list[str] = []
+    for i, item in enumerate(display_rows):
+        bg = WHITE if i % 2 == 0 else CARD_BG
+        row_html_parts.append(
+            f'<tr style="background-color:{bg};">'
+            f'<td style="padding:6px 8px;font-size:12px;color:{TEXT_DARK};border:1px solid #e0e0e0;">{item.get("rank", i + 1)}</td>'
+            f'<td style="padding:6px 8px;font-size:12px;color:{TEXT_DARK};border:1px solid #e0e0e0;">{_esc(item.get("product_name", ""))}</td>'
+            f'<td style="padding:6px 8px;font-size:12px;color:{TEXT_DARK};border:1px solid #e0e0e0;text-align:right;">{item.get(value_key, "")}</td>'
+            f'</tr>'
+        )
+
+    rows_html = "\n".join(row_html_parts)
+    return f"""\
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+       style="margin-top:8px;margin-bottom:12px;">
+  <tr>
+    <td style="font-size:13px;font-weight:bold;color:{TEXT_DARK};padding-bottom:6px;">
+      {_esc(title)}
+    </td>
+  </tr>
+  <tr>
+    <td>
+      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
+             style="border-collapse:collapse;">
+        <tr style="background-color:{PRIMARY_BLUE};">
+          <td style="padding:6px 8px;font-size:11px;color:{WHITE};font-weight:bold;border:1px solid #e0e0e0;width:40px;">#</td>
+          <td style="padding:6px 8px;font-size:11px;color:{WHITE};font-weight:bold;border:1px solid #e0e0e0;">Produk</td>
+          <td style="padding:6px 8px;font-size:11px;color:{WHITE};font-weight:bold;border:1px solid #e0e0e0;text-align:right;width:100px;">{_esc(value_key.replace('_', ' ').title())}</td>
+        </tr>
+        {rows_html}
+      </table>
+    </td>
+  </tr>
+</table>"""
 
 
 def _render_data_intelligence(calculator_results: dict[str, Any]) -> str:
-    """Render data intelligence section. Stub -- implemented in Task 2."""
-    return ""
+    """Render data intelligence section: ads analysis + top SKU tables."""
+    if not calculator_results:
+        return ""
+
+    parts: list[str] = []
+
+    # Ads keyword analysis
+    ads = calculator_results.get("ads_keyword")
+    if ads:
+        output_text = ads.get("output_text", "")
+        parts.append(f"""\
+<tr>
+  <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="font-size:14px;font-weight:bold;color:{TEXT_DARK};padding-bottom:8px;">
+          {S['ads_analysis']}
+        </td>
+      </tr>
+      <tr>
+        <td style="background-color:{CARD_BG};border-radius:4px;padding:12px;font-family:monospace,'Courier New',Courier;font-size:12px;color:{TEXT_DARK};white-space:pre-wrap;line-height:1.5;">
+{_esc(output_text)}</td>
+      </tr>
+    </table>
+  </td>
+</tr>""")
+
+    # Top SKU tables
+    top_sku = calculator_results.get("top_sku")
+    if top_sku:
+        details = top_sku.get("details", {})
+        revenue = details.get("revenue_ranking", [])
+        stock = details.get("stock_ranking", [])
+
+        revenue_table = _render_ranking_table(S["revenue_ranking"], revenue, "revenue")
+        stock_table = _render_ranking_table(S["stock_ranking"], stock, "stock")
+
+        parts.append(f"""\
+<tr>
+  <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="font-size:14px;font-weight:bold;color:{TEXT_DARK};padding-bottom:8px;">
+          {S['top_sku']}
+        </td>
+      </tr>
+      <tr>
+        <td>
+          {revenue_table}
+          {stock_table}
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>""")
+
+    if not parts:
+        return ""
+
+    all_parts = "\n".join(parts)
+    return f"""\
+<!-- Data Intelligence -->
+<tr>
+  <td style="padding:16px 30px 24px 30px;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+      <tr>
+        <td style="font-size:18px;font-weight:bold;color:{TEXT_DARK};padding-bottom:16px;border-bottom:2px solid {PRIMARY_BLUE};">
+          {S['data_intelligence']}
+        </td>
+      </tr>
+      {all_parts}
+    </table>
+  </td>
+</tr>"""
 
 
 # ---------------------------------------------------------------------------
@@ -303,6 +611,11 @@ def render_email_html(
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>{_esc(brand_name)} - {S['brand_report']}</title>
+<style type="text/css">
+@media only screen and (max-width:620px) {{
+  .metric-grid td {{ display:block !important; width:100% !important; }}
+}}
+</style>
 </head>
 <body style="margin:0;padding:0;background-color:{BG_GRAY};font-family:Arial,Helvetica,sans-serif;">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
