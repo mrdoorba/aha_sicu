@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, fireEvent } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PresentationDashboard } from './PresentationDashboard';
@@ -83,5 +83,25 @@ describe('PresentationDashboard BDD', () => {
 
         // Verify that Rata² Penjualan is strictly NOT rendered anywhere
         expect(screen.queryByText('Rata² Penjualan 6 bulan terakhir')).not.toBeInTheDocument();
+    });
+
+    it('clicking "Kirim Email" button opens SendEmailDialog', () => {
+        // Arrange
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        render(
+            <QueryClientProvider client={queryClient}>
+                <MemoryRouter>
+                    <PresentationDashboard brandId={123} onBack={vi.fn()} />
+                </MemoryRouter>
+            </QueryClientProvider>
+        );
+
+        // Act - click the send email button (rendered with actual i18n translation)
+        const sendButton = screen.getByRole('button', { name: /Kirim Email/i });
+        fireEvent.click(sendButton);
+
+        // Assert - dialog should now be open with its title visible
+        // SendEmailDialog uses useTranslation so the title renders as the translated string
+        expect(screen.getByText('Kirim Laporan Email')).toBeInTheDocument();
     });
 });
