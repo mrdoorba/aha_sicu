@@ -1,4 +1,4 @@
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import React from 'react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -8,7 +8,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 const mockMutate = vi.fn();
 const mockReset = vi.fn();
 
-vi.mock('../../../hooks/useSendEmail', () => ({
+vi.mock('../../hooks/useSendEmail', () => ({
   useSendEmail: () => mockMutationReturn,
 }));
 
@@ -149,7 +149,8 @@ describe('SendEmailDialog', () => {
   it('shows "sendEmail.sending" text and disables input and buttons when loading', () => {
     mockMutationReturn = { ...mockMutationReturn, isPending: true };
     renderDialog();
-    expect(screen.getByText('sendEmail.sending')).toBeInTheDocument();
+    // The sending text is inside a button alongside an icon, use flexible match
+    expect(screen.getByRole('button', { name: /sendEmail\.sending/i })).toBeInTheDocument();
     const input = screen.getByPlaceholderText('sendEmail.recipientPlaceholder') as HTMLInputElement;
     expect(input).toBeDisabled();
     const cancelBtn = screen.getByRole('button', { name: /sendEmail\.cancel/i });
@@ -178,14 +179,21 @@ describe('SendEmailDialog', () => {
 
   it('calls onSuccess callback on successful send', async () => {
     mockToPng.mockResolvedValue('data:image/png;base64,abc123');
-    mockMutate.mockImplementation((_params: unknown, opts: { onSuccess?: () => void }) => {
-      opts.onSuccess?.();
-    });
+    mockMutate.mockImplementation(
+      (_params: Record<string, unknown>, opts?: { onSuccess?: () => void }) => {
+        opts?.onSuccess?.();
+      },
+    );
 
     const { props } = renderDialog();
 
     const sendBtn = screen.getByRole('button', { name: /sendEmail\.send/i });
-    fireEvent.click(sendBtn);
+
+    await act(async () => {
+      fireEvent.click(sendBtn);
+      // Allow toPng promise to resolve
+      await Promise.resolve();
+    });
 
     await waitFor(() => {
       expect(mockMutate).toHaveBeenCalled();
