@@ -299,6 +299,13 @@ interface paths {
               evaluator_email: string;
               created_at: string;
               rule_version: number;
+              period: string;
+              brand_raw_data: {
+                email: string | null;
+                pic_name: string | null;
+                store_link: string | null;
+                kategori: string | null;
+              };
             };
           };
         };

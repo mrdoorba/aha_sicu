@@ -26,7 +26,7 @@ function createWrapper() {
 
 const PARAMS = {
   evaluationId: 42,
-  recipient: 'test@example.com',
+  recipients: ['test@example.com'],
   chartImage: 'iVBORw0KGgoAAAANSUhEUg==',
 };
 
@@ -61,7 +61,7 @@ describe('useSendEmail', () => {
     expect(mockClientPOST).toHaveBeenCalledWith('/api/v1/email/send', {
       body: {
         evaluation_id: 42,
-        recipient: 'test@example.com',
+        recipients: ['test@example.com'],
         chart_image: 'iVBORw0KGgoAAAANSUhEUg==',
       },
     });
