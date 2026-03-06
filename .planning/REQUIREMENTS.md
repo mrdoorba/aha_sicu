@@ -20,22 +20,22 @@ Requirements for initial release. Each maps to roadmap phases.
 
 ### Email Content
 
-- [ ] **CONT-01**: Email includes score overview (brand score, verdict, template)
-- [ ] **CONT-02**: Email includes detailed evaluation breakdown by category
-- [ ] **CONT-03**: Email includes ScoreBreakdownChart rendered as static PNG image
-- [ ] **CONT-04**: Email includes data intelligence section (calculator results)
-- [ ] **CONT-05**: Email renders correctly on mobile devices (responsive tables)
-- [ ] **CONT-06**: Email subject auto-generated with brand name and period
+- [x] **CONT-01**: Email includes score overview (brand score, verdict, template)
+- [x] **CONT-02**: Email includes detailed evaluation breakdown by category
+- [x] **CONT-03**: Email includes ScoreBreakdownChart rendered as static PNG image
+- [x] **CONT-04**: Email includes data intelligence section (calculator results)
+- [x] **CONT-05**: Email renders correctly on mobile devices (responsive tables)
+- [x] **CONT-06**: Email subject auto-generated with brand name and period
 - [ ] **CONT-07**: User can preview the HTML email in-dialog before sending
 
 ### Infrastructure
 
-- [ ] **INFRA-01**: Backend API endpoint accepts evaluation data + chart image and sends HTML email
-- [ ] **INFRA-02**: SMTP credentials configured via environment variables (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD)
-- [ ] **INFRA-03**: Email sent via Gmail SMTP (personal or Workspace account)
-- [ ] **INFRA-04**: HTML email template uses table-based layout with inline CSS for cross-client compatibility
-- [ ] **INFRA-05**: Chart PNG embedded as CID inline image (not data URI)
-- [ ] **INFRA-06**: Configurable sender display name via env var (SMTP_FROM_NAME)
+- [x] **INFRA-01**: Backend API endpoint accepts evaluation data + chart image and sends HTML email
+- [x] **INFRA-02**: SMTP credentials configured via environment variables (SMTP_HOST, SMTP_PORT, SMTP_USER, SMTP_PASSWORD)
+- [x] **INFRA-03**: Email sent via Gmail SMTP (personal or Workspace account)
+- [x] **INFRA-04**: HTML email template uses table-based layout with inline CSS for cross-client compatibility
+- [x] **INFRA-05**: Chart PNG embedded as CID inline image (not data URI)
+- [x] **INFRA-06**: Configurable sender display name via env var (SMTP_FROM_NAME)
 
 ## v2 Requirements
 
@@ -70,19 +70,19 @@ Which phases cover which requirements. Updated during roadmap creation.
 | SEND-06 | Phase 2 | Pending |
 | SEND-07 | Phase 2 | Pending |
 | SEND-08 | Phase 2 | Pending |
-| CONT-01 | Phase 1 | Pending |
-| CONT-02 | Phase 1 | Pending |
-| CONT-03 | Phase 1 | Pending |
-| CONT-04 | Phase 1 | Pending |
-| CONT-05 | Phase 1 | Pending |
-| CONT-06 | Phase 1 | Pending |
+| CONT-01 | Phase 1 | Complete |
+| CONT-02 | Phase 1 | Complete |
+| CONT-03 | Phase 1 | Complete |
+| CONT-04 | Phase 1 | Complete |
+| CONT-05 | Phase 1 | Complete |
+| CONT-06 | Phase 1 | Complete |
 | CONT-07 | Phase 3 | Pending |
-| INFRA-01 | Phase 1 | Pending |
-| INFRA-02 | Phase 1 | Pending |
-| INFRA-03 | Phase 1 | Pending |
-| INFRA-04 | Phase 1 | Pending |
-| INFRA-05 | Phase 1 | Pending |
-| INFRA-06 | Phase 1 | Pending |
+| INFRA-01 | Phase 1 | Complete |
+| INFRA-02 | Phase 1 | Complete |
+| INFRA-03 | Phase 1 | Complete |
+| INFRA-04 | Phase 1 | Complete |
+| INFRA-05 | Phase 1 | Complete |
+| INFRA-06 | Phase 1 | Complete |
 
 **Coverage:**
 - v1 requirements: 21 total
