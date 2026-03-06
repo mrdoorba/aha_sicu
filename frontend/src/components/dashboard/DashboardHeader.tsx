@@ -1,4 +1,4 @@
-import { ArrowLeft, Edit3, Calendar, TrendingUp } from 'lucide-react';
+import { ArrowLeft, Edit3, Calendar, TrendingUp, Mail } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { useTranslation } from 'react-i18next';
@@ -11,9 +11,10 @@ interface DashboardHeaderProps {
   template: string;
   period?: string;
   onBack: () => void;
+  onSendEmail?: () => void;
 }
 
-export const DashboardHeader = ({ brandName, brandId, template, period, onBack }: DashboardHeaderProps) => {
+export const DashboardHeader = ({ brandName, brandId, template, period, onBack, onSendEmail }: DashboardHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -43,13 +44,25 @@ export const DashboardHeader = ({ brandName, brandId, template, period, onBack }
           {template === 'fashion' ? t('evaluationSections.fashion') : t('evaluationSections.nonFashion')}
         </Badge>
       </div>
-      <Button
-        onClick={() => navigate(`/evaluation/${brandId}`)}
-        className="rounded-xl h-10 px-5 font-bold shadow-lg shadow-primary/10 transition-all hover:scale-[1.03] active:scale-[0.97]"
-      >
-        <Edit3 className="mr-2 size-4" />
-        {t('presentation.editEvaluation')}
-      </Button>
+      <div className="flex items-center gap-3">
+        {onSendEmail && (
+          <Button
+            variant="outline"
+            onClick={onSendEmail}
+            className="rounded-xl h-10 px-5 font-bold"
+          >
+            <Mail className="mr-2 size-4" />
+            {t('sendEmail.sendButton')}
+          </Button>
+        )}
+        <Button
+          onClick={() => navigate(`/evaluation/${brandId}`)}
+          className="rounded-xl h-10 px-5 font-bold shadow-lg shadow-primary/10 transition-all hover:scale-[1.03] active:scale-[0.97]"
+        >
+          <Edit3 className="mr-2 size-4" />
+          {t('presentation.editEvaluation')}
+        </Button>
+      </div>
     </div>
   );
 };

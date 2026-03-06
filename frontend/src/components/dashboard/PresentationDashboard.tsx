@@ -1,3 +1,4 @@
+import { useRef, useState } from 'react';
 import { useEvaluationDetail } from '../../hooks/useEvaluationDetail';
 import { useBrandEvaluations } from '../../hooks/useBrandEvaluations';
 import { useBrandDetail } from '../../hooks/useBrandDetail';
@@ -11,6 +12,7 @@ import { ScoreBreakdownChart } from './ScoreBreakdownChart';
 import { DetailedEvaluation } from './DetailedEvaluation';
 import { DataIntelligence } from './DataIntelligence';
 import { DashboardFooter } from './DashboardFooter';
+import { SendEmailDialog } from './SendEmailDialog';
 
 interface PresentationDashboardProps {
   brandId: number;
@@ -20,6 +22,8 @@ interface PresentationDashboardProps {
 export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboardProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const chartRef = useRef<HTMLDivElement>(null);
+  const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const { data: brand, isLoading: brandLoading } = useBrandDetail(brandId);
   const { evaluations, isLoading: evLoading } = useBrandEvaluations(brandId, 1, undefined, undefined, true);
   const latestEvaluationId = evaluations?.[0]?.id;
@@ -90,6 +94,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
         template={evaluation.template}
         period={evaluation.period}
         onBack={onBack}
+        onSendEmail={() => setSendDialogOpen(true)}
       />
 
       <ScoreOverview
@@ -101,13 +106,24 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
 
       <DetailedEvaluation scoreBreakdown={scoreBreakdown} />
 
-      <ScoreBreakdownChart scoreBreakdown={scoreBreakdown} />
+      <ScoreBreakdownChart ref={chartRef} scoreBreakdown={scoreBreakdown} />
 
       <DataIntelligence calculatorResults={evaluation.calculator_results} />
 
       <DashboardFooter
         evaluatorEmail={evaluation.evaluator_email}
         createdAt={evaluation.created_at}
+      />
+
+      <SendEmailDialog
+        open={sendDialogOpen}
+        onOpenChange={setSendDialogOpen}
+        evaluationId={evaluation.id}
+        brandName={brand?.brand_name || evaluation.brand_name}
+        period={evaluation.period}
+        score={Math.round(evaluation.final_score)}
+        brandRawData={evaluation.brand_raw_data}
+        chartRef={chartRef}
       />
     </div>
   );

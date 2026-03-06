@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { PresentationDashboard } from './PresentationDashboard';
 import { MemoryRouter } from 'react-router-dom';
 
@@ -55,7 +56,8 @@ vi.mock('../../hooks/useEvaluationDetail', () => ({
                     ]
                 }
             ],
-            calculator_results: {}
+            calculator_results: {},
+            brand_raw_data: { email: null, pic_name: null, store_link: null, kategori: null }
         },
         isLoading: false
     }),
@@ -64,10 +66,13 @@ vi.mock('../../hooks/useEvaluationDetail', () => ({
 describe('PresentationDashboard BDD', () => {
     it('excludes Rata² Penjualan 6 bulan terakhir from rendering', () => {
         // Arrange
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         render(
-            <MemoryRouter>
-                <PresentationDashboard brandId={123} onBack={vi.fn()} />
-            </MemoryRouter>
+            <QueryClientProvider client={queryClient}>
+                <MemoryRouter>
+                    <PresentationDashboard brandId={123} onBack={vi.fn()} />
+                </MemoryRouter>
+            </QueryClientProvider>
         );
 
         // Act (implicit render)
