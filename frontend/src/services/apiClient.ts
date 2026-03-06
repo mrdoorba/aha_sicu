@@ -790,9 +790,12 @@ interface paths {
         content: {
           'application/json': {
             evaluation_id: number;
-            recipient: string;
+            recipients: string[];
             chart_image: string;
             subject?: string | null;
+            cc?: string[];
+            bcc?: string[];
+            note?: string | null;
           };
         };
       };
@@ -802,7 +805,7 @@ interface paths {
             'application/json': {
               success: boolean;
               message_id: string;
-              recipient: string;
+              recipients: string[];
             };
           };
         };
