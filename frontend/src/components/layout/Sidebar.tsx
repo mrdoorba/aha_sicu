@@ -145,8 +145,8 @@ export const Sidebar = ({ className }: SidebarProps) => {
                 />
                 <span
                   className={cn(
-                    "transition-opacity duration-300",
-                    isCollapsed ? "opacity-0" : "opacity-100"
+                    "overflow-hidden transition-all duration-300",
+                    isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
                   )}
                 >
                   {item.title}
@@ -183,8 +183,8 @@ export const Sidebar = ({ className }: SidebarProps) => {
             <LogOut className={cn("h-5 w-5 shrink-0 transition-[margin] duration-300", isCollapsed ? "mr-0" : "mr-3")} />
             <span
               className={cn(
-                "transition-opacity duration-300",
-                isCollapsed ? "opacity-0" : "opacity-100"
+                "overflow-hidden transition-all duration-300",
+                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
               )}
             >
               {t('header.logout')}
