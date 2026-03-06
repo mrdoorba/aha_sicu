@@ -85,37 +85,39 @@ export const Sidebar = ({ className }: SidebarProps) => {
     <>
       <aside
         className={cn(
-          "relative flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-all duration-300 ease-in-out",
+          "relative flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300 ease-in-out overflow-hidden",
           isCollapsed ? "w-16" : "w-64",
           className
         )}
       >
-        <div className={cn("flex h-16 items-center", isCollapsed ? "justify-center px-0" : "justify-between px-4")}>
-          {!isCollapsed ? (
-            <>
-              <div className="flex items-center gap-2">
-                <img src="/images/02%20AHA-LogoIcon-Flat.png" alt="Store ICU Logo" className="size-7 object-contain" />
-                <span className="text-xl font-bold tracking-tight text-sidebar-primary">Store ICU</span>
-              </div>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-8 w-8 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
-                onClick={() => setIsCollapsed(true)}
-              >
-                <ChevronLeft className="h-4 w-4" />
-              </Button>
-            </>
-          ) : (
-            <Button
-              variant="ghost"
-              size="icon"
-              className="h-10 w-10 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground rounded-lg"
-              onClick={() => setIsCollapsed(false)}
+        <div className="flex h-16 items-center justify-between px-2">
+          <div className="flex items-center gap-2 min-w-0">
+            <button
+              className="shrink-0 flex items-center justify-center h-10 w-10 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+              onClick={() => setIsCollapsed(!isCollapsed)}
             >
               <img src="/images/02%20AHA-LogoIcon-Flat.png" alt="Store ICU Logo" className="size-7 object-contain" />
-            </Button>
-          )}
+            </button>
+            <span
+              className={cn(
+                "text-xl font-bold tracking-tight text-sidebar-primary whitespace-nowrap transition-opacity duration-300",
+                isCollapsed ? "opacity-0" : "opacity-100"
+              )}
+            >
+              Store ICU
+            </span>
+          </div>
+          <Button
+            variant="ghost"
+            size="icon"
+            className={cn(
+              "h-8 w-8 shrink-0 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300",
+              isCollapsed ? "opacity-0 pointer-events-none w-0" : "opacity-100"
+            )}
+            onClick={() => setIsCollapsed(true)}
+          >
+            <ChevronLeft className="h-4 w-4" />
+          </Button>
         </div>
 
         <nav className="flex-1 space-y-1 px-2 py-4 overflow-y-auto scrollbar-hide">
@@ -126,7 +128,7 @@ export const Sidebar = ({ className }: SidebarProps) => {
                 key={item.href}
                 to={item.href}
                 className={cn(
-                  "group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors",
+                  "group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap",
                   isActive
                     ? "bg-sidebar-primary text-sidebar-primary-foreground"
                     : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
@@ -136,40 +138,57 @@ export const Sidebar = ({ className }: SidebarProps) => {
               >
                 <item.icon
                   className={cn(
-                    "h-5 w-5 shrink-0",
-                    !isCollapsed && "mr-3",
+                    "h-5 w-5 shrink-0 transition-[margin] duration-300",
+                    isCollapsed ? "mr-0" : "mr-3",
                     isActive ? "text-sidebar-primary-foreground" : "text-sidebar-foreground group-hover:text-sidebar-accent-foreground"
                   )}
                 />
-                {!isCollapsed && <span>{item.title}</span>}
+                <span
+                  className={cn(
+                    "transition-opacity duration-300",
+                    isCollapsed ? "opacity-0" : "opacity-100"
+                  )}
+                >
+                  {item.title}
+                </span>
               </Link>
             );
           })}
         </nav>
 
         <div className="border-t border-sidebar-border p-4">
-          {!isCollapsed && (
-            <div className="mb-4 flex flex-col">
-              <span className="truncate text-xs font-medium text-sidebar-foreground/60">
-                {user?.email}
-              </span>
-              <span className="text-[10px] uppercase text-sidebar-primary font-bold">
-                {profile?.role || 'User'}
-              </span>
-            </div>
-          )}
+          <div
+            className={cn(
+              "mb-4 flex flex-col overflow-hidden transition-all duration-300",
+              isCollapsed ? "h-0 opacity-0 mb-0" : "h-8 opacity-100"
+            )}
+          >
+            <span className="truncate text-xs font-medium text-sidebar-foreground/60">
+              {user?.email}
+            </span>
+            <span className="text-[10px] uppercase text-sidebar-primary font-bold">
+              {profile?.role || 'User'}
+            </span>
+          </div>
           {isAdmin && <ThemeToggle isCollapsed={isCollapsed} className="mb-2" />}
           <Button
             variant="ghost"
             className={cn(
-              "w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
+              "w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground whitespace-nowrap",
               isCollapsed ? "justify-center p-2" : "justify-start"
             )}
             onClick={() => setShowLogoutConfirm(true)}
             title={isCollapsed ? t('header.logout') : undefined}
           >
-            <LogOut className={cn("h-5 w-5 shrink-0", !isCollapsed && "mr-3")} />
-            {!isCollapsed && <span>{t('header.logout')}</span>}
+            <LogOut className={cn("h-5 w-5 shrink-0 transition-[margin] duration-300", isCollapsed ? "mr-0" : "mr-3")} />
+            <span
+              className={cn(
+                "transition-opacity duration-300",
+                isCollapsed ? "opacity-0" : "opacity-100"
+              )}
+            >
+              {t('header.logout')}
+            </span>
           </Button>
         </div>
       </aside>
