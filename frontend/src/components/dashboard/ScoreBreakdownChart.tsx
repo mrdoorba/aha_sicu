@@ -1,3 +1,4 @@
+import { forwardRef } from 'react';
 import {
   RadarChart,
   Radar,
@@ -27,7 +28,7 @@ interface ScoreBreakdownChartProps {
   scoreBreakdown: CategoryBreakdown[];
 }
 
-export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps) => {
+export const ScoreBreakdownChart = forwardRef<HTMLDivElement, ScoreBreakdownChartProps>(({ scoreBreakdown }, ref) => {
   const { t } = useTranslation();
 
   const radarData = scoreBreakdown.map((cat) => {
@@ -48,7 +49,7 @@ export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps
 
         <div className="grid gap-8 lg:grid-cols-2 items-center">
           {/* Left: Radar Chart */}
-          <div className="w-full h-96">
+          <div ref={ref} className="w-full h-96" style={{ backgroundColor: '#ffffff' }}>
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData} outerRadius="70%">
                 <PolarGrid gridType="polygon" stroke="var(--chart-grid)" />
@@ -109,4 +110,6 @@ export const ScoreBreakdownChart = ({ scoreBreakdown }: ScoreBreakdownChartProps
       </CardContent>
     </Card>
   );
-};
+});
+
+ScoreBreakdownChart.displayName = 'ScoreBreakdownChart';
