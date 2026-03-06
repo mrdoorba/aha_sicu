@@ -1,78 +1,26 @@
 # Roadmap: Dashboard Email Report
 
-## Overview
+## Milestones
 
-This roadmap delivers the ability to send the AHA SICU evaluation dashboard as a formatted HTML email. The work flows from backend-first (SMTP + HTML template + API endpoint, all testable without UI) to frontend integration (core send flow) to enhanced send options (CC/BCC, preview, custom notes). Three phases, each delivering a verifiable capability.
+- ✅ **v1.0 Dashboard Email Report** — Phases 1-3 (shipped 2026-03-06)
 
 ## Phases
 
-**Phase Numbering:**
-- Integer phases (1, 2, 3): Planned milestone work
-- Decimal phases (2.1, 2.2): Urgent insertions (marked with INSERTED)
+<details>
+<summary>✅ v1.0 Dashboard Email Report (Phases 1-3) — SHIPPED 2026-03-06</summary>
 
-Decimal phases appear between their surrounding integers in numeric order.
+- [x] Phase 1: Backend Email Engine (3/3 plans) — completed 2026-03-06
+- [x] Phase 2: Core Send Flow (2/2 plans) — completed 2026-03-06
+- [x] Phase 3: Enhanced Send Options (2/2 plans) — completed 2026-03-06
 
-- [ ] **Phase 1: Backend Email Engine** - SMTP client, HTML email template, and API endpoint that can send a complete dashboard report
-- [ ] **Phase 2: Core Send Flow** - Send button, recipient dialog, chart capture, loading/success/error states
-- [x] **Phase 3: Enhanced Send Options** - Multiple recipients, CC/BCC, custom note, and in-dialog email preview (completed 2026-03-06)
+See: `.planning/milestones/v1.0-ROADMAP.md` for full details.
 
-## Phase Details
-
-### Phase 1: Backend Email Engine
-**Goal**: A working backend that can accept evaluation data and send a complete, cross-client-compatible HTML email with embedded chart image
-**Depends on**: Nothing (first phase)
-**Requirements**: INFRA-01, INFRA-02, INFRA-03, INFRA-04, INFRA-05, INFRA-06, CONT-01, CONT-02, CONT-03, CONT-04, CONT-05, CONT-06
-**Success Criteria** (what must be TRUE):
-  1. A POST request to the email endpoint with evaluation ID, recipient, and chart image results in a complete HTML email arriving in the recipient's inbox
-  2. The received email displays score overview, detailed evaluation breakdown, chart image, and data intelligence sections
-  3. The received email renders correctly in Gmail (web), Outlook (web), and Apple Mail -- no broken layout, no missing images
-  4. The chart appears as an inline image in the email body (not as a downloadable attachment)
-  5. SMTP credentials are read from environment variables and the sender display name is configurable
-**Plans:** 2/3 plans executed
-
-Plans:
-- [ ] 01-01-PLAN.md — SMTP config, schemas, email service with CID images
-- [ ] 01-02-PLAN.md — HTML email template with all content sections
-- [ ] 01-03-PLAN.md — Router endpoints and main.py wiring
-
-### Phase 2: Core Send Flow
-**Goal**: Users can send a dashboard email report through a complete UI flow with clear feedback at every step
-**Depends on**: Phase 1
-**Requirements**: SEND-01, SEND-02, SEND-06, SEND-07, SEND-08
-**Success Criteria** (what must be TRUE):
-  1. User can click a "Send Email" button in the DashboardHeader and a send dialog opens
-  2. User can enter a recipient email address in the dialog and trigger sending
-  3. User sees a loading indicator while the email is being sent
-  4. User sees a success confirmation showing the recipient after the email sends
-  5. User sees a clear error message if sending fails (e.g., invalid email, SMTP error)
-**Plans:** 2 plans
-
-Plans:
-- [ ] 02-01-PLAN.md — API client types, useSendEmail hook, SendEmailDialog component, ScoreBreakdownChart forwardRef
-- [ ] 02-02-PLAN.md — Wire send button into DashboardHeader, orchestrate flow in PresentationDashboard
-
-### Phase 3: Enhanced Send Options
-**Goal**: Users have full control over email recipients and content before sending, including preview
-**Depends on**: Phase 2
-**Requirements**: SEND-03, SEND-04, SEND-05, CONT-07
-**Success Criteria** (what must be TRUE):
-  1. User can send to multiple recipients (comma-separated or multi-input)
-  2. User can add CC and BCC recipients in the send dialog
-  3. User can write a custom note/message that appears above the report body in the email
-  4. User can preview the HTML email content in the dialog before clicking send
-**Plans:** 2/2 plans complete
-
-Plans:
-- [ ] 03-01-PLAN.md — Backend schema, service, template, and router updates for multi-recipient, CC/BCC, note, and preview data URIs
-- [x] 03-02-PLAN.md — EmailChipInput component, SendEmailDialog refactor with CC/BCC, note, preview, and i18n (completed 2026-03-06)
+</details>
 
 ## Progress
 
-**Execution Order:**
-Phases execute in numeric order: 1 → 2 → 3
-
-| Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Backend Email Engine | 2/3 | In Progress|  |
-| 2. Core Send Flow | 0/2 | Planned | - |
-| 3. Enhanced Send Options | 2/2 | Complete   | 2026-03-06 |
+| Phase | Milestone | Plans Complete | Status | Completed |
+|-------|-----------|----------------|--------|-----------|
+| 1. Backend Email Engine | v1.0 | 3/3 | Complete | 2026-03-06 |
+| 2. Core Send Flow | v1.0 | 2/2 | Complete | 2026-03-06 |
+| 3. Enhanced Send Options | v1.0 | 2/2 | Complete | 2026-03-06 |
