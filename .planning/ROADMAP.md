@@ -64,7 +64,7 @@ Plans:
 
 Plans:
 - [ ] 03-01-PLAN.md — Backend schema, service, template, and router updates for multi-recipient, CC/BCC, note, and preview data URIs
-- [ ] 03-02-PLAN.md — EmailChipInput component, SendEmailDialog refactor with CC/BCC, note, preview, and i18n
+- [x] 03-02-PLAN.md — EmailChipInput component, SendEmailDialog refactor with CC/BCC, note, preview, and i18n (completed 2026-03-06)
 
 ## Progress
 
