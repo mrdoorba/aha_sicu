@@ -784,6 +784,31 @@ interface paths {
       };
     };
   };
+  '/api/v1/email/send': {
+    post: {
+      requestBody: {
+        content: {
+          'application/json': {
+            evaluation_id: number;
+            recipient: string;
+            chart_image: string;
+            subject?: string | null;
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              success: boolean;
+              message_id: string;
+              recipient: string;
+            };
+          };
+        };
+      };
+    };
+  };
 }
 
 const authMiddleware: Middleware = {

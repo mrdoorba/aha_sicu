@@ -383,5 +383,17 @@
   "sendMail.subject": "Subjek",
   "sendMail.body": "Isi Email",
   "sendMail.send": "Kirim Email",
-  "sendMail.cancel": "Batal"
+  "sendMail.cancel": "Batal",
+  "sendEmail.title": "Kirim Laporan Email",
+  "sendEmail.brandSummary": "Ringkasan Brand",
+  "sendEmail.recipient": "Penerima",
+  "sendEmail.recipientPlaceholder": "email@contoh.com",
+  "sendEmail.send": "Kirim",
+  "sendEmail.sending": "Mengirim...",
+  "sendEmail.retry": "Coba Lagi",
+  "sendEmail.cancel": "Batal",
+  "sendEmail.sendButton": "Kirim Email",
+  "sendEmail.success": "Email terkirim ke {{recipient}}",
+  "sendEmail.error": "Gagal mengirim email. Coba lagi.",
+  "sendEmail.captureError": "Gagal menangkap grafik. Coba lagi."
 }
