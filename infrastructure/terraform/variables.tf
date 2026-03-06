@@ -92,6 +92,22 @@ variable "gsheets_meeting_spreadsheet_id" {
 }
 
 # =============================================================================
+# Email / SMTP Variables
+# =============================================================================
+
+variable "smtp_user" {
+  description = "Gmail address for SMTP sending"
+  type        = string
+  default     = ""
+}
+
+variable "smtp_from_name" {
+  description = "Display name for sent emails"
+  type        = string
+  default     = "AHA Commerce"
+}
+
+# =============================================================================
 # Cloud SQL Variables
 # =============================================================================
 

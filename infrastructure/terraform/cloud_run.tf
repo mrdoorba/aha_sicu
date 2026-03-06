@@ -67,6 +67,46 @@ resource "google_cloud_run_v2_service" "api" {
       }
 
       env {
+        name  = "SMTP_HOST"
+        value = "smtp.gmail.com"
+      }
+
+      env {
+        name  = "SMTP_PORT"
+        value = "587"
+      }
+
+      env {
+        name  = "SMTP_USER"
+        value = var.smtp_user
+      }
+
+      env {
+        name = "SMTP_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.smtp_password.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      env {
+        name  = "SMTP_FROM_NAME"
+        value = var.smtp_from_name
+      }
+
+      env {
+        name  = "SMTP_FROM_EMAIL"
+        value = var.smtp_user
+      }
+
+      env {
+        name  = "EMAIL_ENABLED"
+        value = "true"
+      }
+
+      env {
         name  = "GSHEETS_VP_SPREADSHEET_ID"
         value = var.gsheets_vp_spreadsheet_id
       }
@@ -117,6 +157,7 @@ resource "google_cloud_run_v2_service" "api" {
     google_secret_manager_secret_iam_member.api_sa_db_password,
     google_secret_manager_secret_iam_member.api_sa_gsheets,
     google_secret_manager_secret_iam_member.api_sa_firebase,
+    google_secret_manager_secret_iam_member.api_sa_smtp_password,
   ]
 }
 

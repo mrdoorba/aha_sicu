@@ -59,6 +59,24 @@ resource "google_secret_manager_secret_iam_member" "api_sa_gsheets" {
   project   = var.project_id
 }
 
+resource "google_secret_manager_secret" "smtp_password" {
+  secret_id = "aha_sicu_${var.environment}_smtp_password"
+  project   = var.project_id
+
+  replication {
+    auto {}
+  }
+
+  depends_on = [google_project_service.secret_manager_api]
+}
+
+resource "google_secret_manager_secret_iam_member" "api_sa_smtp_password" {
+  secret_id = google_secret_manager_secret.smtp_password.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run.email}"
+  project   = var.project_id
+}
+
 resource "google_secret_manager_secret_iam_member" "api_sa_firebase" {
   secret_id = google_secret_manager_secret.firebase_admin.secret_id
   role      = "roles/secretmanager.secretAccessor"
