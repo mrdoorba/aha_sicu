@@ -49,6 +49,15 @@ class Settings(BaseSettings):
     # GCS Upload Bucket (empty = local dev fallback)
     gcs_upload_bucket: str = ""
 
+    # Email / SMTP
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_name: str = "AHA Commerce"
+    smtp_from_email: str = ""
+    email_enabled: bool = False
+
     # Google Sheets API - Credentials
     gsheets_credentials_path: str | None = None
     gsheets_credentials_json: str | None = None
