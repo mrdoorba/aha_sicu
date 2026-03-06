@@ -1,9 +1,9 @@
 ---
 phase: 2
 slug: core-send-flow
-status: draft
-nyquist_compliant: false
-wave_0_complete: false
+status: complete
+nyquist_compliant: true
+wave_0_complete: true
 created: 2026-03-06
 ---
 
@@ -38,11 +38,12 @@ created: 2026-03-06
 
 | Task ID | Plan | Wave | Requirement | Test Type | Automated Command | File Exists | Status |
 |---------|------|------|-------------|-----------|-------------------|-------------|--------|
-| 02-01-01 | 01 | 1 | SEND-01 | unit | `cd frontend && npx vitest run src/components/dashboard/DashboardHeader.test.tsx -x` | No — W0 | pending |
-| 02-01-02 | 01 | 1 | SEND-02 | unit | `cd frontend && npx vitest run src/components/dashboard/SendEmailDialog.test.tsx -x` | No — W0 | pending |
-| 02-01-03 | 01 | 1 | SEND-06 | unit | `cd frontend && npx vitest run src/components/dashboard/SendEmailDialog.test.tsx -x` | No — W0 | pending |
-| 02-01-04 | 01 | 1 | SEND-07 | unit | `cd frontend && npx vitest run src/components/dashboard/SendEmailDialog.test.tsx -x` | No — W0 | pending |
-| 02-01-05 | 01 | 1 | SEND-08 | unit | `cd frontend && npx vitest run src/components/dashboard/SendEmailDialog.test.tsx -x` | No — W0 | pending |
+| 02-01-01 | 01 | 1 | SEND-01 | unit | `cd frontend && npx vitest run src/components/dashboard/DashboardHeader.test.tsx -x` | Yes | green |
+| 02-02-01 | 02 | 2 | SEND-01 | unit | `cd frontend && npx vitest run src/components/dashboard/PresentationDashboard.test.tsx -x` | Yes | green |
+| 02-01-02 | 01 | 1 | SEND-02 | unit | `cd frontend && npx vitest run src/components/dashboard/SendEmailDialog.test.tsx -x` | Yes | green |
+| 02-01-03 | 01 | 1 | SEND-06 | unit | `cd frontend && npx vitest run src/components/dashboard/SendEmailDialog.test.tsx -x` | Yes | green |
+| 02-01-04 | 01 | 1 | SEND-07 | unit | `cd frontend && npx vitest run src/components/dashboard/SendEmailDialog.test.tsx -x` | Yes | green |
+| 02-01-05 | 01 | 1 | SEND-08 | unit | `cd frontend && npx vitest run src/components/dashboard/SendEmailDialog.test.tsx -x` | Yes | green |
 
 *Status: pending · green · red · flaky*
 
@@ -50,10 +51,11 @@ created: 2026-03-06
 
 ## Wave 0 Requirements
 
-- [ ] `frontend/src/components/dashboard/SendEmailDialog.test.tsx` — stubs for SEND-02, SEND-06, SEND-07, SEND-08
-- [ ] `frontend/src/components/dashboard/DashboardHeader.test.tsx` — stubs for SEND-01 (button render and click)
-- [ ] `frontend/src/hooks/useSendEmail.test.ts` — mutation hook behavior
-- [ ] html-to-image mock setup in test environment (toPng returns fake base64)
+- [x] `frontend/src/components/dashboard/SendEmailDialog.test.tsx` — stubs for SEND-02, SEND-06, SEND-07, SEND-08
+- [x] `frontend/src/components/dashboard/DashboardHeader.test.tsx` — tests for SEND-01 (button render, conditional render, click callback)
+- [x] `frontend/src/hooks/useSendEmail.test.ts` — mutation hook behavior
+- [x] html-to-image mock setup in test environment (toPng returns fake base64)
+- [x] `frontend/src/components/dashboard/PresentationDashboard.test.tsx` — send button opens dialog (SEND-01)
 
 ---
 
@@ -68,11 +70,26 @@ created: 2026-03-06
 
 ## Validation Sign-Off
 
-- [ ] All tasks have `<automated>` verify or Wave 0 dependencies
-- [ ] Sampling continuity: no 3 consecutive tasks without automated verify
-- [ ] Wave 0 covers all MISSING references
-- [ ] No watch-mode flags
-- [ ] Feedback latency < 15s
-- [ ] `nyquist_compliant: true` set in frontmatter
+- [x] All tasks have `<automated>` verify or Wave 0 dependencies
+- [x] Sampling continuity: no 3 consecutive tasks without automated verify
+- [x] Wave 0 covers all MISSING references
+- [x] No watch-mode flags
+- [x] Feedback latency < 15s
+- [x] `nyquist_compliant: true` set in frontmatter
 
-**Approval:** pending
+**Approval:** approved
+
+---
+
+## Validation Audit 2026-03-06
+
+| Metric | Count |
+|--------|-------|
+| Gaps found | 2 |
+| Resolved | 2 |
+| Escalated | 0 |
+
+**Details:**
+- Gap 1: Created `DashboardHeader.test.tsx` (3 tests: button renders, button hidden without prop, click fires callback)
+- Gap 2: Added send-dialog integration test to `PresentationDashboard.test.tsx`
+- Full suite: 458 tests passing across 55 files, no regressions
