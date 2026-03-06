@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SendMailDialog } from './SendMailDialog';
-import { buildSubject, buildBody, formatPeriod } from './sendMailUtils';
+import { buildSubject, buildBody } from './sendMailUtils';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -25,7 +25,7 @@ const defaultProps = {
   open: true,
   onOpenChange: vi.fn(),
   brandName: 'Nike Indonesia',
-  createdAt: '2026-01-15T10:30:00Z',
+  period: 'Jan 2026',
   emailOutput: 'Skor akhir: 78.5\nKesimpulan: Layak.',
   brandRawData: {
     email: 'pic@nike.com',
@@ -157,15 +157,15 @@ describe('SendMailDialog', () => {
 });
 
 describe('buildSubject', () => {
-  it('formats subject with brand name and Indonesian month', () => {
-    expect(buildSubject('Salt', '2026-01-15T10:00:00Z')).toBe(
+  it('formats subject with brand name and period', () => {
+    expect(buildSubject('Salt', 'Jan 2026')).toBe(
       '\u{1F3E5} AHA Store Internal Check Up (Store ICU) - Salt Jan 2026',
     );
   });
 
-  it('handles different months correctly', () => {
-    expect(buildSubject('Brand', '2026-05-01T00:00:00Z')).toContain('Mei 2026');
-    expect(buildSubject('Brand', '2026-12-01T00:00:00Z')).toContain('Des 2026');
+  it('handles different periods correctly', () => {
+    expect(buildSubject('Brand', 'Mei 2026')).toContain('Mei 2026');
+    expect(buildSubject('Brand', 'Des 2026')).toContain('Des 2026');
   });
 });
 
@@ -194,9 +194,3 @@ describe('buildBody', () => {
   });
 });
 
-describe('formatPeriod', () => {
-  it('formats date as Indonesian month abbreviation + year', () => {
-    expect(formatPeriod('2026-01-15T00:00:00Z')).toBe('Jan 2026');
-    expect(formatPeriod('2026-08-01T00:00:00Z')).toBe('Agu 2026');
-  });
-});

@@ -623,7 +623,7 @@ export function EvaluationDetailPage() {
                   open={sendMailDialogOpen}
                   onOpenChange={setSendMailDialogOpen}
                   brandName={evaluation.brand_name}
-                  createdAt={evaluation.created_at}
+                  period={evaluation.period}
                   emailOutput={evaluation.email_output}
                   brandRawData={evaluation.brand_raw_data}
                 />

@@ -18,7 +18,7 @@ interface SendMailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   brandName: string;
-  createdAt: string;
+  period: string;
   emailOutput: string;
   brandRawData: BrandRawData;
 }
@@ -27,7 +27,7 @@ export function SendMailDialog({
   open,
   onOpenChange,
   brandName,
-  createdAt,
+  period,
   emailOutput,
   brandRawData,
 }: SendMailDialogProps) {
@@ -35,7 +35,7 @@ export function SendMailDialog({
   const [to, setTo] = useState('bot@ahacommerce.net');
   const [picEmail, setPicEmail] = useState(brandRawData.email ?? '');
 
-  const subject = useMemo(() => buildSubject(brandName, createdAt), [brandName, createdAt]);
+  const subject = useMemo(() => buildSubject(brandName, period), [brandName, period]);
 
   const body = useMemo(
     () =>
@@ -69,12 +69,12 @@ export function SendMailDialog({
 
   return (
     <Dialog open={open} onOpenChange={handleOpenChange}>
-      <DialogContent className="sm:max-w-5xl">
+      <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle>{t('sendMail.title')}</DialogTitle>
         </DialogHeader>
 
-        <div className="space-y-4">
+        <div className="min-w-0 space-y-4">
           <div className="space-y-1.5">
             <Label htmlFor="send-mail-to">{t('sendMail.to')}</Label>
             <Input
