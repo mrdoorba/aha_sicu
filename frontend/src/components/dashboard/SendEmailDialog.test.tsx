@@ -31,14 +31,25 @@ vi.mock('html-to-image', () => ({
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, opts?: Record<string, string>) =>
-      opts?.recipient ? `${key} ${opts.recipient}` : key,
+    t: (key: string, opts?: Record<string, unknown>) => {
+      if (opts?.count !== undefined) return `${key} ${opts.count}`;
+      if (opts?.recipient) return `${key} ${opts.recipient}`;
+      return key;
+    },
   }),
 }));
 
 const mockToastSuccess = vi.fn();
 vi.mock('sonner', () => ({
   toast: { success: (...args: unknown[]) => mockToastSuccess(...args) },
+}));
+
+vi.mock('../../firebase/auth', () => ({
+  getCurrentUserToken: vi.fn().mockResolvedValue('mock-token'),
+}));
+
+vi.mock('../../config', () => ({
+  API_BASE_URL: 'http://localhost:8000',
 }));
 
 import { SendEmailDialog } from './SendEmailDialog';
@@ -108,21 +119,22 @@ describe('SendEmailDialog', () => {
     expect(screen.getByText('86')).toBeInTheDocument(); // rounded
   });
 
-  it('pre-fills recipient input with PIC email when brandRawData.email exists', () => {
+  it('pre-fills PIC email as first chip in To field', () => {
     renderDialog();
-    const input = screen.getByPlaceholderText('sendEmail.recipientPlaceholder') as HTMLInputElement;
-    expect(input.value).toBe('pic@example.com');
+    expect(screen.getByText('pic@example.com')).toBeInTheDocument();
   });
 
-  it('leaves recipient input empty when brandRawData.email is null', () => {
+  it('shows empty To field when brandRawData.email is null', () => {
     renderDialog({
       brandRawData: { email: null, pic_name: null, store_link: null, kategori: null },
     });
-    const input = screen.getByPlaceholderText('sendEmail.recipientPlaceholder') as HTMLInputElement;
-    expect(input.value).toBe('');
+    // Placeholder should be visible when no chips exist
+    expect(screen.getByPlaceholderText('sendEmail.recipientPlaceholder')).toBeInTheDocument();
+    // The chip for pic email should NOT be there
+    expect(screen.queryByText('pic@example.com')).not.toBeInTheDocument();
   });
 
-  it('disables send button when email input is empty', () => {
+  it('disables send button when no To recipients', () => {
     renderDialog({
       brandRawData: { email: null, pic_name: null, store_link: null, kategori: null },
     });
@@ -130,29 +142,36 @@ describe('SendEmailDialog', () => {
     expect(sendBtn).toBeDisabled();
   });
 
-  it('disables send button when email input has invalid format', () => {
-    renderDialog({
-      brandRawData: { email: null, pic_name: null, store_link: null, kategori: null },
-    });
-    const input = screen.getByPlaceholderText('sendEmail.recipientPlaceholder');
-    fireEvent.change(input, { target: { value: 'not-an-email' } });
-    const sendBtn = screen.getByRole('button', { name: /sendEmail\.send/i });
-    expect(sendBtn).toBeDisabled();
-  });
-
-  it('enables send button when email input has valid format', () => {
+  it('enables send button when To recipients exist', () => {
     renderDialog();
     const sendBtn = screen.getByRole('button', { name: /sendEmail\.send/i });
     expect(sendBtn).toBeEnabled();
   });
 
-  it('shows "sendEmail.sending" text and disables input and buttons when loading', () => {
+  it('shows CC link and clicking it reveals CC field', () => {
+    renderDialog();
+    const ccLink = screen.getByRole('button', { name: 'CC' });
+    expect(ccLink).toBeInTheDocument();
+    fireEvent.click(ccLink);
+    // CC label should appear
+    expect(screen.getByText('sendEmail.cc')).toBeInTheDocument();
+    // CC link should disappear
+    expect(screen.queryByRole('button', { name: 'CC' })).not.toBeInTheDocument();
+  });
+
+  it('shows BCC link and clicking it reveals BCC field', () => {
+    renderDialog();
+    const bccLink = screen.getByRole('button', { name: 'BCC' });
+    expect(bccLink).toBeInTheDocument();
+    fireEvent.click(bccLink);
+    expect(screen.getByText('sendEmail.bcc')).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'BCC' })).not.toBeInTheDocument();
+  });
+
+  it('shows "sendEmail.sending" text and disables buttons when loading', () => {
     mockMutationReturn = { ...mockMutationReturn, isPending: true };
     renderDialog();
-    // The sending text is inside a button alongside an icon, use flexible match
     expect(screen.getByRole('button', { name: /sendEmail\.sending/i })).toBeInTheDocument();
-    const input = screen.getByPlaceholderText('sendEmail.recipientPlaceholder') as HTMLInputElement;
-    expect(input).toBeDisabled();
     const cancelBtn = screen.getByRole('button', { name: /sendEmail\.cancel/i });
     expect(cancelBtn).toBeDisabled();
   });
@@ -177,6 +196,71 @@ describe('SendEmailDialog', () => {
     expect(mockMutate).not.toHaveBeenCalled();
   });
 
+  it('renders note textarea with character count', () => {
+    renderDialog();
+    const textarea = screen.getByPlaceholderText('sendEmail.notePlaceholder');
+    expect(textarea).toBeInTheDocument();
+    expect(screen.getByText('0/500')).toBeInTheDocument();
+  });
+
+  it('updates character count as note is typed', () => {
+    renderDialog();
+    const textarea = screen.getByPlaceholderText('sendEmail.notePlaceholder');
+    fireEvent.change(textarea, { target: { value: 'Hello' } });
+    expect(screen.getByText('5/500')).toBeInTheDocument();
+  });
+
+  it('note textarea respects 500-char maxLength', () => {
+    renderDialog();
+    const textarea = screen.getByPlaceholderText('sendEmail.notePlaceholder') as HTMLTextAreaElement;
+    expect(textarea.maxLength).toBe(500);
+  });
+
+  it('preview toggle shows preview section', () => {
+    // Mock the fetch for preview
+    global.fetch = vi.fn().mockResolvedValue({
+      text: () => Promise.resolve('<html><body>Preview</body></html>'),
+    });
+
+    renderDialog();
+    const toggleBtn = screen.getByRole('button', { name: /sendEmail\.previewToggle/i });
+    expect(toggleBtn).toBeInTheDocument();
+    fireEvent.click(toggleBtn);
+
+    // Should show loading or preview container
+    expect(screen.getByText('sendEmail.previewLoading')).toBeInTheDocument();
+  });
+
+  it('sends correct payload shape with recipients array, cc, bcc, note', async () => {
+    mockToPng.mockResolvedValue('data:image/png;base64,abc123');
+    mockMutate.mockImplementation(
+      (_params: Record<string, unknown>, opts?: { onSuccess?: () => void }) => {
+        opts?.onSuccess?.();
+      },
+    );
+
+    renderDialog();
+
+    // Add a note
+    const textarea = screen.getByPlaceholderText('sendEmail.notePlaceholder');
+    fireEvent.change(textarea, { target: { value: 'Test note' } });
+
+    const sendBtn = screen.getByRole('button', { name: /sendEmail\.send/i });
+
+    await act(async () => {
+      fireEvent.click(sendBtn);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalled();
+      const [params] = mockMutate.mock.calls[0];
+      expect(params.recipients).toEqual(['pic@example.com']);
+      expect(params.chartImage).toBe('abc123');
+      expect(params.note).toBe('Test note');
+    });
+  });
+
   it('calls onSuccess callback on successful send', async () => {
     mockToPng.mockResolvedValue('data:image/png;base64,abc123');
     mockMutate.mockImplementation(
@@ -191,7 +275,6 @@ describe('SendEmailDialog', () => {
 
     await act(async () => {
       fireEvent.click(sendBtn);
-      // Allow toPng promise to resolve
       await Promise.resolve();
     });
 
@@ -202,13 +285,7 @@ describe('SendEmailDialog', () => {
   });
 
   it('calls mutation.reset() when dialog closes', () => {
-    const { props } = renderDialog();
-    // Simulate closing
-    (props.onOpenChange as ReturnType<typeof vi.fn>)(false);
-    // The component's onOpenChange wrapper calls reset
-    // We need to trigger the Dialog's onOpenChange
-    // Since we mocked onOpenChange, we verify through the component behavior
-    // Let's click cancel instead which triggers onOpenChange(false)
+    renderDialog();
     const cancelBtn = screen.getByRole('button', { name: /sendEmail\.cancel/i });
     fireEvent.click(cancelBtn);
     expect(mockReset).toHaveBeenCalled();

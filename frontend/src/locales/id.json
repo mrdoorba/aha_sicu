@@ -393,7 +393,18 @@
   "sendEmail.retry": "Coba Lagi",
   "sendEmail.cancel": "Batal",
   "sendEmail.sendButton": "Kirim Email",
-  "sendEmail.success": "Email terkirim ke {{recipient}}",
+  "sendEmail.success": "Email terkirim ke {{count}} penerima",
   "sendEmail.error": "Gagal mengirim email. Coba lagi.",
-  "sendEmail.captureError": "Gagal menangkap grafik. Coba lagi."
+  "sendEmail.captureError": "Gagal menangkap grafik. Coba lagi.",
+  "sendEmail.noteLabel": "Catatan (opsional)",
+  "sendEmail.notePlaceholder": "Tambahkan catatan untuk penerima...",
+  "sendEmail.previewToggle": "Pratinjau Email",
+  "sendEmail.previewRefresh": "Muat Ulang",
+  "sendEmail.previewLoading": "Memuat pratinjau...",
+  "sendEmail.invalidEmail": "Format email tidak valid",
+  "sendEmail.duplicateEmail": "Email sudah ditambahkan",
+  "sendEmail.maxRecipients": "Maksimal 10 penerima",
+  "sendEmail.successMultiple": "Email terkirim ke {{count}} penerima",
+  "sendEmail.cc": "CC",
+  "sendEmail.bcc": "BCC"
 }
