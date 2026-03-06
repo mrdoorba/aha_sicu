@@ -28,11 +28,12 @@ Decimal phases appear between their surrounding integers in numeric order.
   3. The received email renders correctly in Gmail (web), Outlook (web), and Apple Mail -- no broken layout, no missing images
   4. The chart appears as an inline image in the email body (not as a downloadable attachment)
   5. SMTP credentials are read from environment variables and the sender display name is configurable
-**Plans**: TBD
+**Plans:** 3 plans
 
 Plans:
-- [ ] 01-01: TBD
-- [ ] 01-02: TBD
+- [ ] 01-01-PLAN.md — SMTP config, schemas, email service with CID images
+- [ ] 01-02-PLAN.md — HTML email template with all content sections
+- [ ] 01-03-PLAN.md — Router endpoints and main.py wiring
 
 ### Phase 2: Core Send Flow
 **Goal**: Users can send a dashboard email report through a complete UI flow with clear feedback at every step
@@ -71,6 +72,6 @@ Phases execute in numeric order: 1 → 2 → 3
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Backend Email Engine | 0/? | Not started | - |
+| 1. Backend Email Engine | 0/3 | Planning complete | - |
 | 2. Core Send Flow | 0/? | Not started | - |
 | 3. Enhanced Send Options | 0/? | Not started | - |
