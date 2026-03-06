@@ -1,7 +1,7 @@
 """HTML email template renderer for brand evaluation reports.
 
 Produces cross-client-compatible HTML using table-based layout with inline CSS.
-All images referenced via CID (Content-ID) for inline embedding.
+All images referenced via full src URI (cid: for send, data: for preview).
 """
 
 from __future__ import annotations
@@ -103,7 +103,7 @@ def _esc(text: Any) -> str:
 
 
 def _render_header(
-    header_cid: str,
+    header_src: str,
     brand_name: str,
     period: str,
     verdict: str,
@@ -114,7 +114,7 @@ def _render_header(
 <!-- Header Image -->
 <tr>
   <td style="padding:0;margin:0;">
-    <img src="cid:{header_cid}" width="600"
+    <img src="{header_src}" width="600"
          style="display:block;width:100%;height:auto;border:0;"
          alt="AHA Commerce">
   </td>
@@ -139,6 +139,29 @@ def _render_header(
           <span style="font-size:13px;color:{TEXT_SECONDARY};padding-left:12px;">
             {S['template_type']}: {_esc(template)}
           </span>
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>"""
+
+
+def _render_note(note: str) -> str:
+    """Render custom note as a styled card.
+
+    HTML-escapes the note text and converts newlines to <br> for
+    line break preservation in the email.
+    """
+    escaped = _esc(note).replace("\n", "<br>")
+    return f"""\
+<!-- Custom Note -->
+<tr>
+  <td style="padding:8px 30px 16px 30px;font-family:Arial,Helvetica,sans-serif;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="background-color:{CARD_BG};border-radius:6px;border-left:3px solid {PRIMARY_BLUE};">
+      <tr>
+        <td style="padding:14px 16px;font-size:13px;color:{TEXT_DARK};line-height:1.6;">
+          {escaped}
         </td>
       </tr>
     </table>
@@ -216,13 +239,13 @@ def _render_score_overview(
 </tr>"""
 
 
-def _render_footer(footer_cid: str) -> str:
+def _render_footer(footer_src: str) -> str:
     """Render footer section: branded image."""
     return f"""\
 <!-- Footer Image -->
 <tr>
   <td style="padding:0;margin:0;">
-    <img src="cid:{footer_cid}" width="600"
+    <img src="{footer_src}" width="600"
          style="display:block;width:100%;height:auto;border:0;"
          alt="AHA Commerce Footer">
   </td>
@@ -363,7 +386,7 @@ def _render_detailed_evaluation(categories: list[dict[str, Any]]) -> str:
 
 
 def _render_score_breakdown(
-    chart_cid: str, categories: list[dict[str, Any]],
+    chart_src: str, categories: list[dict[str, Any]],
 ) -> str:
     """Render score breakdown section: chart image + category summary bars."""
     cat_bars: list[str] = []
@@ -423,7 +446,7 @@ def _render_score_breakdown(
       <!-- Chart image -->
       <tr>
         <td style="padding-top:16px;padding-bottom:16px;">
-          <img src="cid:{chart_cid}" width="600"
+          <img src="{chart_src}" width="600"
                style="display:block;width:100%;height:auto;border:0;"
                alt="Score Breakdown Chart">
         </td>
@@ -567,22 +590,25 @@ def _render_data_intelligence(calculator_results: dict[str, Any]) -> str:
 def render_email_html(
     *,
     evaluation_data: dict[str, Any],
-    chart_cid: str,
-    header_cid: str,
-    footer_cid: str,
+    chart_src: str,
+    header_src: str,
+    footer_src: str,
+    note: str | None = None,
 ) -> str:
-    """Render complete HTML email from evaluation data and CID references.
+    """Render complete HTML email from evaluation data and image source URIs.
 
     Parameters
     ----------
     evaluation_data:
         Dict matching EvaluationDetailResponse shape.
-    chart_cid:
-        Content-ID for the radar chart image (without angle brackets).
-    header_cid:
-        Content-ID for the header branded image.
-    footer_cid:
-        Content-ID for the footer branded image.
+    chart_src:
+        Full src URI for the radar chart image (e.g. "cid:xxx" or "data:...").
+    header_src:
+        Full src URI for the header branded image.
+    footer_src:
+        Full src URI for the footer branded image.
+    note:
+        Optional custom note to render between header and score overview.
 
     Returns
     -------
@@ -597,12 +623,13 @@ def render_email_html(
     categories: list[dict[str, Any]] = evaluation_data.get("score_breakdown", [])
     calculator_results: dict[str, Any] = evaluation_data.get("calculator_results", {})
 
-    header = _render_header(header_cid, brand_name, period, verdict, template)
+    header = _render_header(header_src, brand_name, period, verdict, template)
+    note_section = _render_note(note) if note else ""
     score_overview = _render_score_overview(final_score, verdict, template, categories)
     detailed = _render_detailed_evaluation(categories)
-    breakdown = _render_score_breakdown(chart_cid, categories)
+    breakdown = _render_score_breakdown(chart_src, categories)
     intelligence = _render_data_intelligence(calculator_results)
-    footer = _render_footer(footer_cid)
+    footer = _render_footer(footer_src)
 
     return f"""\
 <!DOCTYPE html>
@@ -626,6 +653,7 @@ def render_email_html(
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"
              style="width:100%;max-width:600px;background-color:{WHITE};border-radius:8px;">
         {header}
+        {note_section}
         {score_overview}
         {detailed}
         {breakdown}

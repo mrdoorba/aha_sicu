@@ -144,18 +144,18 @@ class TestHTMLStructure:
     def test_returns_doctype_html(self, evaluation_data: dict) -> None:
         html = render_email_html(
             evaluation_data=evaluation_data,
-            chart_cid="chart123@domain",
-            header_cid="header123@domain",
-            footer_cid="footer123@domain",
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
         )
         assert "<!DOCTYPE html" in html.upper() or "<!doctype html" in html.lower()
 
     def test_no_style_blocks(self, evaluation_data: dict) -> None:
         html = render_email_html(
             evaluation_data=evaluation_data,
-            chart_cid="chart123@domain",
-            header_cid="header123@domain",
-            footer_cid="footer123@domain",
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
         )
         # No <style> blocks in the <body>. A single <style> in <head> for
         # progressive-enhancement media queries is acceptable (Task 2 adds it).
@@ -166,9 +166,9 @@ class TestHTMLStructure:
     def test_table_layout(self, evaluation_data: dict) -> None:
         html = render_email_html(
             evaluation_data=evaluation_data,
-            chart_cid="chart123@domain",
-            header_cid="header123@domain",
-            footer_cid="footer123@domain",
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
         )
         assert 'role="presentation"' in html
         assert "<table" in html.lower()
@@ -180,27 +180,27 @@ class TestHeaderFooter:
     def test_header_cid_image(self, evaluation_data: dict) -> None:
         html = render_email_html(
             evaluation_data=evaluation_data,
-            chart_cid="chart123@domain",
-            header_cid="header123@domain",
-            footer_cid="footer123@domain",
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
         )
         assert "cid:header123@domain" in html
 
     def test_footer_cid_image(self, evaluation_data: dict) -> None:
         html = render_email_html(
             evaluation_data=evaluation_data,
-            chart_cid="chart123@domain",
-            header_cid="header123@domain",
-            footer_cid="footer123@domain",
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
         )
         assert "cid:footer123@domain" in html
 
     def test_brand_name_and_period(self, evaluation_data: dict) -> None:
         html = render_email_html(
             evaluation_data=evaluation_data,
-            chart_cid="chart123@domain",
-            header_cid="header123@domain",
-            footer_cid="footer123@domain",
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
         )
         assert "Toko Sejahtera" in html
         assert "Januari 2026" in html
@@ -212,9 +212,9 @@ class TestScoreOverview:
     def test_final_score_displayed(self, evaluation_data: dict) -> None:
         html = render_email_html(
             evaluation_data=evaluation_data,
-            chart_cid="chart123@domain",
-            header_cid="header123@domain",
-            footer_cid="footer123@domain",
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
         )
         assert "72.5" in html
 
@@ -234,9 +234,9 @@ class TestScoreOverview:
         """Score overview should contain a progress bar (nested table pattern)."""
         html = render_email_html(
             evaluation_data=evaluation_data,
-            chart_cid="chart123@domain",
-            header_cid="header123@domain",
-            footer_cid="footer123@domain",
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
         )
         # Progress bar uses background-color for the filled portion
         assert "background-color:" in html
@@ -247,9 +247,9 @@ class TestScoreOverview:
         counts = _compute_verdict_counts(sample_categories)
         html = render_email_html(
             evaluation_data=evaluation_data,
-            chart_cid="chart123@domain",
-            header_cid="header123@domain",
-            footer_cid="footer123@domain",
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
         )
         assert str(counts["checks"]) in html
         assert str(counts["xs"]) in html
@@ -257,18 +257,18 @@ class TestScoreOverview:
     def test_template_type_displayed(self, evaluation_data: dict) -> None:
         html = render_email_html(
             evaluation_data=evaluation_data,
-            chart_cid="chart123@domain",
-            header_cid="header123@domain",
-            footer_cid="footer123@domain",
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
         )
         assert "fashion" in html.lower()
 
     def test_verdict_text_displayed(self, evaluation_data: dict) -> None:
         html = render_email_html(
             evaluation_data=evaluation_data,
-            chart_cid="chart123@domain",
-            header_cid="header123@domain",
-            footer_cid="footer123@domain",
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
         )
         assert "\u2714\ufe0f" in html
 
@@ -334,9 +334,9 @@ def _render_full(evaluation_data: dict) -> str:
     """Helper to render full email HTML with standard CIDs."""
     return render_email_html(
         evaluation_data=evaluation_data,
-        chart_cid="chart123@domain",
-        header_cid="header123@domain",
-        footer_cid="footer123@domain",
+        chart_src="cid:chart123@domain",
+        header_src="cid:header123@domain",
+        footer_src="cid:footer123@domain",
     )
 
 
@@ -470,3 +470,77 @@ class TestFullRender:
         assert "</head>" in lower
         assert "<body" in lower
         assert "</body>" in lower
+
+
+# ===================================================================
+# Phase 3 Tests: Custom Note
+# ===================================================================
+
+
+class TestCustomNote:
+    """Custom note rendering tests."""
+
+    def test_note_rendered_when_provided(self, evaluation_data: dict) -> None:
+        html = render_email_html(
+            evaluation_data=evaluation_data,
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
+            note="Catatan penting untuk brand ini",
+        )
+        assert "Catatan penting untuk brand ini" in html
+
+    def test_note_preserves_line_breaks(self, evaluation_data: dict) -> None:
+        html = render_email_html(
+            evaluation_data=evaluation_data,
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
+            note="Baris pertama\nBaris kedua",
+        )
+        assert "<br>" in html
+        assert "Baris pertama" in html
+        assert "Baris kedua" in html
+
+    def test_note_html_escaped(self, evaluation_data: dict) -> None:
+        html = render_email_html(
+            evaluation_data=evaluation_data,
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
+            note="<script>alert('xss')</script>",
+        )
+        assert "<script>" not in html
+        assert "&lt;script&gt;" in html
+
+    def test_no_note_section_when_none(self, evaluation_data: dict) -> None:
+        html = render_email_html(
+            evaluation_data=evaluation_data,
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
+            note=None,
+        )
+        assert "Custom Note" not in html
+
+    def test_no_note_section_when_empty_string(self, evaluation_data: dict) -> None:
+        html = render_email_html(
+            evaluation_data=evaluation_data,
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
+            note="",
+        )
+        assert "Custom Note" not in html
+
+    def test_note_positioned_before_score_overview(self, evaluation_data: dict) -> None:
+        html = render_email_html(
+            evaluation_data=evaluation_data,
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
+            note="Test note positioning",
+        )
+        note_pos = html.find("Test note positioning")
+        score_pos = html.find(STRINGS["id"]["score_overview"])
+        assert note_pos < score_pos, "Note should appear before Score Overview"

@@ -84,19 +84,19 @@ class TestSmtpConfigEnvOverrides:
 class TestSendEmailRequestSchema:
     """Test SendEmailRequest validation."""
 
-    def test_validates_recipient_as_email(self) -> None:
+    def test_validates_recipients_as_email(self) -> None:
         req = SendEmailRequest(
             evaluation_id=1,
-            recipient="test@example.com",
+            recipients=["test@example.com"],
             chart_image="abc123",
         )
-        assert req.recipient == "test@example.com"
+        assert req.recipients == ["test@example.com"]
 
     def test_rejects_invalid_email(self) -> None:
-        with pytest.raises(ValidationError, match="recipient"):
+        with pytest.raises(ValidationError, match="recipients"):
             SendEmailRequest(
                 evaluation_id=1,
-                recipient="not-an-email",
+                recipients=["not-an-email"],
                 chart_image="abc123",
             )
 
@@ -104,13 +104,13 @@ class TestSendEmailRequestSchema:
         with pytest.raises(ValidationError, match="chart_image"):
             SendEmailRequest(
                 evaluation_id=1,
-                recipient="test@example.com",
+                recipients=["test@example.com"],
             )
 
     def test_subject_optional(self) -> None:
         req = SendEmailRequest(
             evaluation_id=1,
-            recipient="test@example.com",
+            recipients=["test@example.com"],
             chart_image="abc123",
         )
         assert req.subject is None
@@ -119,7 +119,7 @@ class TestSendEmailRequestSchema:
         with pytest.raises(ValidationError, match="subject"):
             SendEmailRequest(
                 evaluation_id=1,
-                recipient="test@example.com",
+                recipients=["test@example.com"],
                 chart_image="abc123",
                 subject="x" * 201,
             )
@@ -127,11 +127,38 @@ class TestSendEmailRequestSchema:
     def test_subject_within_max_length(self) -> None:
         req = SendEmailRequest(
             evaluation_id=1,
-            recipient="test@example.com",
+            recipients=["test@example.com"],
             chart_image="abc123",
             subject="x" * 200,
         )
         assert len(req.subject) == 200
+
+    def test_cc_bcc_default_empty(self) -> None:
+        req = SendEmailRequest(
+            evaluation_id=1,
+            recipients=["test@example.com"],
+            chart_image="abc123",
+        )
+        assert req.cc == []
+        assert req.bcc == []
+
+    def test_note_optional(self) -> None:
+        req = SendEmailRequest(
+            evaluation_id=1,
+            recipients=["test@example.com"],
+            chart_image="abc123",
+        )
+        assert req.note is None
+
+    def test_total_recipients_validation(self) -> None:
+        with pytest.raises(ValidationError, match="Total recipients"):
+            SendEmailRequest(
+                evaluation_id=1,
+                recipients=[f"r{i}@example.com" for i in range(6)],
+                cc=[f"cc{i}@example.com" for i in range(3)],
+                bcc=[f"bcc{i}@example.com" for i in range(2)],
+                chart_image="abc123",
+            )
 
 
 class TestSendEmailResponseSchema:
@@ -141,8 +168,8 @@ class TestSendEmailResponseSchema:
         resp = SendEmailResponse(
             success=True,
             message_id="<msg123@example.com>",
-            recipient="test@example.com",
+            recipients=["test@example.com"],
         )
         assert resp.success is True
         assert resp.message_id == "<msg123@example.com>"
-        assert resp.recipient == "test@example.com"
+        assert resp.recipients == ["test@example.com"]

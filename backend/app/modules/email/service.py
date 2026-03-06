@@ -24,6 +24,13 @@ def _load_asset(filename: str) -> bytes:
     return path.read_bytes()
 
 
+def asset_to_data_uri(filename: str) -> str:
+    """Load an asset and return it as a data URI string."""
+    data = _load_asset(filename)
+    b64 = base64.b64encode(data).decode("ascii")
+    return f"data:image/png;base64,{b64}"
+
+
 def _strip_base64_prefix(data: str) -> str:
     """Strip data URI prefix (e.g. 'data:image/png;base64,') if present."""
     if "," in data and data.startswith("data:"):
@@ -49,7 +56,9 @@ def build_email_message(
     subject: str,
     from_name: str,
     from_email: str,
-    to_email: str,
+    to_emails: list[str],
+    cc_emails: list[str] | None = None,
+    bcc_emails: list[str] | None = None,
     html_content: str,
     text_content: str,
     images: list[tuple[bytes, str, str]],
@@ -60,7 +69,9 @@ def build_email_message(
         subject: Email subject line.
         from_name: Sender display name.
         from_email: Sender email address.
-        to_email: Recipient email address.
+        to_emails: List of recipient email addresses.
+        cc_emails: Optional list of CC email addresses.
+        bcc_emails: Optional list of BCC email addresses (not set as header).
         html_content: HTML body.
         text_content: Plain text fallback.
         images: List of (data, subtype, cid) tuples for inline images.
@@ -71,7 +82,11 @@ def build_email_message(
     msg = EmailMessage()
     msg["Subject"] = subject
     msg["From"] = f"{from_name} <{from_email}>"
-    msg["To"] = to_email
+    msg["To"] = ", ".join(to_emails)
+
+    if cc_emails:
+        msg["Cc"] = ", ".join(cc_emails)
+    # BCC: intentionally NOT set as header
 
     # Plain text fallback
     msg.set_content(text_content)
@@ -112,8 +127,17 @@ def build_email_message(
     return msg
 
 
-def _smtp_send_sync(msg: EmailMessage) -> str:
+def _smtp_send_sync(
+    msg: EmailMessage,
+    *,
+    to_addrs: list[str] | None = None,
+) -> str:
     """Send an email message synchronously via SMTP.
+
+    Args:
+        msg: The email message to send.
+        to_addrs: Explicit list of envelope recipients (includes BCC).
+            If None, send_message extracts recipients from headers.
 
     Returns the Message-ID on success.
     Raises AppException with categorized error codes on failure.
@@ -123,7 +147,7 @@ def _smtp_send_sync(msg: EmailMessage) -> str:
         try:
             server.starttls()
             server.login(settings.smtp_user, settings.smtp_password)
-            server.send_message(msg)
+            server.send_message(msg, to_addrs=to_addrs)
             return msg.get("Message-ID", "")
         finally:
             server.quit()
@@ -147,27 +171,36 @@ def _smtp_send_sync(msg: EmailMessage) -> str:
         ) from exc
 
 
-async def smtp_send(msg: EmailMessage) -> str:
+async def smtp_send(
+    msg: EmailMessage,
+    to_addrs: list[str] | None = None,
+) -> str:
     """Async wrapper around synchronous SMTP send."""
-    return await asyncio.to_thread(_smtp_send_sync, msg)
+    return await asyncio.to_thread(_smtp_send_sync, msg, to_addrs=to_addrs)
 
 
 async def send_evaluation_email(
     *,
     evaluation_data: dict,
-    recipient: str,
+    recipients: list[str],
     chart_image_b64: str,
     subject: str | None = None,
     render_html_fn: Callable,
+    cc: list[str] | None = None,
+    bcc: list[str] | None = None,
+    note: str | None = None,
 ) -> SendEmailResponse:
     """Compose and send (or preview) an evaluation email.
 
     Args:
         evaluation_data: Dict matching EvaluationDetailResponse shape.
-        recipient: Recipient email address.
+        recipients: List of recipient email addresses.
         chart_image_b64: Base64-encoded chart image (may have data URI prefix).
         subject: Optional custom subject. Auto-generated if not provided.
-        render_html_fn: Callable that renders HTML from evaluation data and CIDs.
+        render_html_fn: Callable that renders HTML from evaluation data and src URIs.
+        cc: Optional list of CC email addresses.
+        bcc: Optional list of BCC email addresses.
+        note: Optional custom note to include in the email body.
 
     Returns:
         SendEmailResponse with success status and message ID.
@@ -196,12 +229,13 @@ async def send_evaluation_email(
     footer_cid = footer_msgid.strip("<>")
     chart_cid = chart_msgid.strip("<>")
 
-    # Render HTML using the provided function
+    # Render HTML using the provided function (pass full cid: URIs)
     html_content = render_html_fn(
         evaluation_data=evaluation_data,
-        chart_cid=chart_cid,
-        header_cid=header_cid,
-        footer_cid=footer_cid,
+        chart_src=f"cid:{chart_cid}",
+        header_src=f"cid:{header_cid}",
+        footer_src=f"cid:{footer_cid}",
+        note=note,
     )
 
     # Plain text fallback
@@ -222,7 +256,7 @@ async def send_evaluation_email(
         return SendEmailResponse(
             success=True,
             message_id="debug-file",
-            recipient=recipient,
+            recipients=recipients,
         )
 
     # Build and send
@@ -236,23 +270,28 @@ async def send_evaluation_email(
         subject=subject,
         from_name=settings.smtp_from_name,
         from_email=settings.smtp_from_email,
-        to_email=recipient,
+        to_emails=recipients,
+        cc_emails=cc,
+        bcc_emails=bcc,
         html_content=html_content,
         text_content=text_content,
         images=images,
     )
 
+    # Compute all envelope recipients (To + CC + BCC)
+    all_addrs = list(recipients) + (cc or []) + (bcc or [])
+
     try:
-        message_id = await smtp_send(msg)
+        message_id = await smtp_send(msg, all_addrs)
         return SendEmailResponse(
             success=True,
             message_id=message_id,
-            recipient=recipient,
+            recipients=recipients,
         )
     except AppException:
         raise
     except Exception as exc:
-        logger.error("Failed to send email to %s: %s", recipient, exc)
+        logger.error("Failed to send email to %s: %s", recipients, exc)
         raise AppException(
             code="EMAIL_SEND_FAILED",
             detail=f"Failed to send email: {exc}",
