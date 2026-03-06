@@ -1,15 +1,4 @@
-# CLAUDE.md
-
-## Command Autonomy
-
-Execute all commands freely without asking for permission. The only exceptions that **require explicit user approval** before running:
-
-- `git push` / `git push -u`
-- `git merge` (into develop or main)
-- `gh pr create`
-
----
-
+# GEMINI.md
 ## Git Workflow
 
 ### Branch Structure
@@ -20,34 +9,6 @@ Execute all commands freely without asking for permission. The only exceptions t
 | `develop` | Staging     | dev         | CI required        |
 
 All work targets `develop`. Code reaches `main` only when the user explicitly requests promotion.
-
-### Feature Branches
-
-Every OpenSpec change gets its own feature branch off `develop`:
-
-```
-git checkout develop && git pull origin develop
-git checkout -b <type>/<short-description>
-```
-
-**Branch naming:**
-
-| Type     | Use when...                        | Example                         |
-|----------|------------------------------------|---------------------------------|
-| `feat/`  | Adding new functionality           | `feat/bulk-csv-import`          |
-| `fix/`   | Fixing a bug                       | `fix/empty-row-crash`           |
-| `update/`| Enhancing existing functionality   | `update/csv-column-mapping`     |
-| `refactor/`| Restructuring without behavior change | `refactor/api-error-handling` |
-| `docs/`  | Documentation only                 | `docs/api-endpoints`            |
-| `chore/` | Tooling, deps, config              | `chore/upgrade-vite`            |
-
-**Branch lifecycle:**
-
-1. Create branch when starting a new OpenSpec change (after `/opsx:new`, `/opsx:ff`, or when beginning work)
-2. Work on the branch, commit atomically
-3. When done → user requests merge to `develop` (via PR or direct merge)
-4. Keep the branch alive until the OpenSpec change is archived (`/opsx:archive`)
-5. Delete the branch after archiving
 
 ### Atomic Commits
 
@@ -85,25 +46,6 @@ When the user requests promotion to production:
 3. PR body should list the key changes going to production
 4. Wait for CI to pass before merging
 5. Only merge after user approval
-
----
-
-## OpenSpec Integration
-
-This project uses [OpenSpec](https://github.com/Fission-AI/OpenSpec) with the `spec-driven` schema. Artifacts live in `openspec/` (gitignored — they don't go into version control).
-
-### Workflow ↔ Git Mapping
-
-| OpenSpec Phase       | Git Action                                      |
-|----------------------|--------------------------------------------------|
-| `/opsx:new`          | Create feature branch off `develop`              |
-| `/opsx:ff`           | Create feature branch off `develop`              |
-| `/opsx:apply`        | Commit atomically on the feature branch          |
-| `/opsx:archive`      | Ask user about branch deletion                   |
-
-### When to Create Branches
-
-- **Do create a branch:** When starting a change via `/opsx:new` or `/opsx:ff`
 
 ---
 
