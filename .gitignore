@@ -64,6 +64,8 @@ override.tf.json
 .cursor/
 .gemini/
 _bmad/
+.github/prompts/
+.github/skills/
 
 # Custom/Personal
 my*/
