@@ -43,7 +43,6 @@ gsheets-service-account.json
 *.tfstate.*
 *.tfvars
 !*.tfvars.example
-crash.log
 override.tf
 override.tf.json
 *_override.tf
@@ -68,7 +67,9 @@ _bmad/
 .github/skills/
 
 # Custom/Personal
-my*/
+my-designs/
+my-documents/
+my-local-resources/
 
 # OpenSpec
 openspec/
