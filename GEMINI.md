@@ -1,15 +1,5 @@
-# GEMINI.md
+# CLAUDE.md
 ## Git Workflow
-
-### Branch Structure
-
-| Branch    | Role        | Deploys to  | Protection        |
-|-----------|-------------|-------------|--------------------|
-| `main`    | Production  | prod        | PR-only, CI required |
-| `develop` | Staging     | dev         | CI required        |
-
-All work targets `develop`. Code reaches `main` only when the user explicitly requests promotion.
-
 ### Atomic Commits
 
 Each commit is **one logical, self-contained unit of work** — does exactly one thing, leaves the codebase working, and is independently understandable from its message and diff.
@@ -36,42 +26,6 @@ Adds POST /api/v1/products/import with chunked processing.
 
 Author: Mr. Door
 ```
-
-### Promotion: develop → main
-
-When the user requests promotion to production:
-
-1. Create a PR from `develop` → `main` using `gh pr create`
-2. PR title should summarize what's being promoted
-3. PR body should list the key changes going to production
-4. Wait for CI to pass before merging
-5. Only merge after user approval
-
----
-
-## CI/CD
-
-### Continuous Integration (`.github/workflows/ci.yml`)
-
-Runs on every PR to `develop` or `main`:
-
-- **Backend:** `ruff check .` → `pytest -v`
-- **Frontend:** `npm run lint` → `tsc --noEmit` → `vitest run` → `npm run build`
-
-Both checks must pass before merging.
-
-### Running Tests Locally
-
-```bash
-# Backend (from backend/)
-uv run pytest -v
-uv run ruff check .
-
-# Frontend (from frontend/)
-npx vitest run
-npm run lint
-```
-
 ---
 
 ## Code Style & Conventions
