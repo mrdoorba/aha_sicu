@@ -36,7 +36,7 @@ aha_sicu/
 
 ## Getting Started
 
-See the [Development Guide](docs/development-guide.md) for full setup instructions.
+See the [Development Guide](docs/engineer/development-guide.md) for full setup instructions.
 
 **Quick start:**
 
@@ -64,21 +64,29 @@ Deployment triggers on push:
 - `develop` → auto-deploy to dev environment
 - `main` → deploy to production (manual approval)
 
-See the [Deployment Guide](docs/deployment-guide.md) for details.
+See the [Deployment Guide](docs/engineer/deployment-guide.md) for details.
 
 ## Documentation
 
+### For Engineers
+
 | Document | Description |
 |----------|------------|
-| [Project Overview](docs/project-overview.md) | Executive summary, workflow, tech stack |
-| [Architecture - Backend](docs/architecture-backend.md) | FastAPI modules, scoring engine, auth |
-| [Architecture - Frontend](docs/architecture-frontend.md) | React SPA, state management, components |
-| [Architecture - Infrastructure](docs/architecture-infrastructure.md) | Terraform resources, CI/CD pipelines |
-| [API Contracts](docs/api-contracts.md) | All REST endpoints with schemas |
-| [Data Models](docs/data-models.md) | Database schema, 9 tables, migrations |
-| [Component Inventory](docs/component-inventory.md) | React components, hooks, UI primitives |
-| [Integration Architecture](docs/integration-architecture.md) | System communication, data flow diagrams |
-| [Development Guide](docs/development-guide.md) | Setup, commands, workflows |
-| [Deployment Guide](docs/deployment-guide.md) | GCP deployment instructions |
-| [Onboarding Guide](docs/onboarding-guide.md) | BD team walkthrough |
-| [Calculator Logic Reference](docs/calculator-logic-reference.md) | 75-row scoring system guide |
+| [Project Overview](docs/engineer/project-overview.md) | Domain, workflow, tech stack, environments |
+| [Architecture - Backend](docs/engineer/architecture-backend.md) | FastAPI modules, patterns, auth, DB |
+| [Architecture - Frontend](docs/engineer/architecture-frontend.md) | React SPA, components, state, API client |
+| [Architecture - Infrastructure](docs/engineer/architecture-infrastructure.md) | GCP resources, Terraform, CI/CD |
+| [API Reference](docs/engineer/api-reference.md) | All REST endpoints with schemas |
+| [Data Models](docs/engineer/data-models.md) | Database tables, relationships, migrations |
+| [Scoring Engine](docs/engineer/scoring-engine.md) | Calculators, rules, verdict logic |
+| [Development Guide](docs/engineer/development-guide.md) | Setup, testing, commands |
+| [Deployment Guide](docs/engineer/deployment-guide.md) | CI/CD, environments, secrets |
+| [Onboarding Guide](docs/engineer/onboarding-guide.md) | BD team walkthrough |
+
+### For AI Agents
+
+| Document | Description |
+|----------|------------|
+| [Codebase Map](docs/agent/CODEBASE.md) | File map, entry points, module boundaries |
+| [Conventions](docs/agent/CONVENTIONS.md) | Naming, patterns, style guidelines |
+| [Change Patterns](docs/agent/PATTERNS.md) | Step-by-step recipes for common changes |
