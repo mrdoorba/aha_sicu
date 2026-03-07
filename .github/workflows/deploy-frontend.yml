@@ -1,16 +1,6 @@
 # Store ICU - Frontend Deploy Workflow
-# Builds Vite app and deploys to Firebase Hosting.
-# Dev: auto-deploys on push to develop.  Prod: requires manual approval.
-#
-# Required GitHub Actions variables (set per environment):
-#   GCP_PROJECT_ID            – GCP project ID
-#   WORKLOAD_IDENTITY_PROVIDER – Full WIF provider path from terraform output
-#   DEPLOY_SERVICE_ACCOUNT    – Deploy SA email from terraform output
-#   FIREBASE_HOSTING_SITE     – Firebase Hosting site ID (aha-sicu-dev / aha-sicu-prod)
-#   VITE_FIREBASE_API_KEY     – Firebase Web API key
-#   VITE_FIREBASE_AUTH_DOMAIN – Firebase Auth domain
-#   VITE_FIREBASE_PROJECT_ID  – Firebase project ID
-#   VITE_API_BASE_URL         – Backend API URL (Cloud Run)
+# Runs CI first, then calls the reusable deploy workflow.
+# Dev: auto-deploys on push to develop.  Prod: requires environment protection approval.
 
 name: Deploy Frontend
 
@@ -23,113 +13,14 @@ on:
 
 concurrency:
   group: deploy-frontend-${{ github.ref_name }}
-  cancel-in-progress: false
+  cancel-in-progress: ${{ github.ref_name == 'develop' }}
 
 jobs:
-  deploy-dev:
-    if: github.ref == 'refs/heads/develop'
-    name: Deploy to Dev
-    runs-on: ubuntu-latest
-    environment: dev
-    permissions:
-      contents: read
-      id-token: write
+  ci:
+    uses: ./.github/workflows/ci.yml
 
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-        working-directory: frontend
-
-      - name: Build
-        run: npm run build
-        working-directory: frontend
-        env:
-          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
-
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v3
-        with:
-          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
-
-      - name: Configure Firebase deploy target
-        run: npx firebase-tools target:apply hosting ${{ vars.FIREBASE_HOSTING_SITE }} ${{ vars.FIREBASE_HOSTING_SITE }} --project ${{ vars.GCP_PROJECT_ID }}
-
-      - name: Deploy to Firebase Hosting
-        run: npx firebase-tools deploy --only hosting:${{ vars.FIREBASE_HOSTING_SITE }} --project ${{ vars.GCP_PROJECT_ID }}
-
-      - name: Verify deployment
-        run: |
-          URL="https://${{ vars.FIREBASE_HOSTING_SITE }}.web.app"
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" --max-time 30 || true)
-          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-            echo "Health check passed (HTTP $STATUS) at $URL"
-          else
-            echo "::warning::Health check returned HTTP $STATUS at $URL"
-          fi
-
-  deploy-prod:
-    if: github.ref == 'refs/heads/main'
-    name: Deploy to Production
-    runs-on: ubuntu-latest
-    environment: production
-    permissions:
-      contents: read
-      id-token: write
-
-    steps:
-      - uses: actions/checkout@v4
-
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
-
-      - name: Install dependencies
-        run: npm ci
-        working-directory: frontend
-
-      - name: Build
-        run: npm run build
-        working-directory: frontend
-        env:
-          VITE_FIREBASE_API_KEY: ${{ vars.VITE_FIREBASE_API_KEY }}
-          VITE_FIREBASE_AUTH_DOMAIN: ${{ vars.VITE_FIREBASE_AUTH_DOMAIN }}
-          VITE_FIREBASE_PROJECT_ID: ${{ vars.VITE_FIREBASE_PROJECT_ID }}
-          VITE_API_BASE_URL: ${{ vars.VITE_API_BASE_URL }}
-
-      - name: Authenticate to GCP
-        uses: google-github-actions/auth@v3
-        with:
-          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
-          service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
-
-      - name: Configure Firebase deploy target
-        run: npx firebase-tools target:apply hosting ${{ vars.FIREBASE_HOSTING_SITE }} ${{ vars.FIREBASE_HOSTING_SITE }} --project ${{ vars.GCP_PROJECT_ID }}
-
-      - name: Deploy to Firebase Hosting
-        run: npx firebase-tools deploy --only hosting:${{ vars.FIREBASE_HOSTING_SITE }} --project ${{ vars.GCP_PROJECT_ID }}
-
-      - name: Verify deployment
-        run: |
-          URL="https://${{ vars.FIREBASE_HOSTING_SITE }}.web.app"
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL" --max-time 30 || true)
-          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-            echo "Health check passed (HTTP $STATUS) at $URL"
-          else
-            echo "::warning::Health check returned HTTP $STATUS at $URL"
-          fi
+  deploy:
+    needs: ci
+    uses: ./.github/workflows/_deploy-frontend.yml
+    with:
+      environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}

@@ -89,3 +89,10 @@ resource "google_project_iam_member" "deploy_cloudsql_client" {
   role    = "roles/cloudsql.client"
   member  = "serviceAccount:${google_service_account.deploy.email}"
 }
+
+# Deploy SA can start Cloud SQL instance if stopped (for off-hours deployments)
+resource "google_project_iam_member" "deploy_cloudsql_editor" {
+  project = var.project_id
+  role    = "roles/cloudsql.editor"
+  member  = "serviceAccount:${google_service_account.deploy.email}"
+}
