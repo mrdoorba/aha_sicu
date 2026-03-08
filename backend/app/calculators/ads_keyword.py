@@ -214,8 +214,6 @@ def calculate_sheet1(
     # else: suppressed
 
     # Remaining flags check ALL rows (including ended)
-    all_penempatan = [_safe_str(r.get("Penempatan Iklan")) for r in rows]
-    all_bidding = [_safe_str(r.get("Mode Bidding")) for r in rows]
     all_jenis = [_safe_str(r.get("Jenis Iklan")) for r in rows]
 
     # Iklan Toko flag (both languages — flag 3)
