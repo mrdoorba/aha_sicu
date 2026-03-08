@@ -38,7 +38,8 @@ export const Sidebar = ({ className }: SidebarProps) => {
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
-  const canAccessRules = profile?.role === 'leader' || profile?.role === 'admin';
+  const canAccessHistory = profile?.role === 'leader' || profile?.role === 'admin';
+  const canAccessRules = canAccessHistory;
   const isAdmin = profile?.role === 'admin';
 
   const navItems = [
@@ -52,11 +53,11 @@ export const Sidebar = ({ className }: SidebarProps) => {
       href: '/brands',
       icon: Briefcase,
     },
-    {
+    ...(canAccessHistory ? [{
       title: t('header.history'),
       href: '/history',
       icon: History,
-    },
+    }] : []),
     ...(canAccessRules ? [{
       title: t('header.rules'),
       href: '/rules',

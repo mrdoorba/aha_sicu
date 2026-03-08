@@ -113,14 +113,6 @@ describe('Header', () => {
     expect(mockLogout).not.toHaveBeenCalled();
   });
 
-  it('displays Riwayat navigation link', () => {
-    renderHeader();
-
-    const historyLink = screen.getByRole('link', { name: /riwayat/i });
-    expect(historyLink).toBeInTheDocument();
-    expect(historyLink).toHaveAttribute('href', '/history');
-  });
-
   it('dialog has accessible title and description', async () => {
     const user = userEvent.setup();
     renderHeader();
@@ -173,5 +165,27 @@ describe('Header', () => {
     mockProfile.role = 'member';
     renderHeader();
     expect(screen.queryByRole('link', { name: /^aturan$/i })).not.toBeInTheDocument();
+  });
+
+  it('shows Riwayat link for leader role', () => {
+    mockProfile.role = 'leader';
+    renderHeader();
+    const historyLink = screen.getByRole('link', { name: /riwayat/i });
+    expect(historyLink).toBeInTheDocument();
+    expect(historyLink).toHaveAttribute('href', '/history');
+  });
+
+  it('shows Riwayat link for admin role', () => {
+    mockProfile.role = 'admin';
+    renderHeader();
+    const historyLink = screen.getByRole('link', { name: /riwayat/i });
+    expect(historyLink).toBeInTheDocument();
+    expect(historyLink).toHaveAttribute('href', '/history');
+  });
+
+  it('does not show Riwayat link for member role', () => {
+    mockProfile.role = 'member';
+    renderHeader();
+    expect(screen.queryByRole('link', { name: /riwayat/i })).not.toBeInTheDocument();
   });
 });

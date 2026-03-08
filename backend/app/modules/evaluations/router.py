@@ -59,11 +59,12 @@ async def list_evaluations_endpoint(
     search: str | None = Query(default=None, max_length=200),
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("leader", "admin")),
 ) -> EvaluationListResponse:
     """List all evaluations with pagination and sorting.
 
     Returns paginated evaluation history with brand names and evaluator emails.
+    Only accessible by leaders and admins.
     Supports filtering by search (brand name) and date range (date_from, date_to).
     """
     return await list_evaluations(
@@ -142,9 +143,12 @@ async def delete_evaluation_endpoint(
 @router.get("/{evaluation_id}", response_model=EvaluationDetailResponse)
 async def get_evaluation_detail_endpoint(
     evaluation_id: int,
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("leader", "admin")),
 ) -> EvaluationDetailResponse:
-    """Get full details of a single evaluation by ID."""
+    """Get full details of a single evaluation by ID.
+
+    Only accessible by leaders and admins.
+    """
     return await get_evaluation_detail(evaluation_id=evaluation_id)
 
 

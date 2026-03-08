@@ -10,6 +10,15 @@ MOCK_USER = {
     "id": 1,
     "firebase_uid": "test-uid",
     "email": "test@example.com",
+    "role": "leader",
+    "created_at": datetime(2026, 2, 5, tzinfo=timezone.utc),
+    "last_login": datetime(2026, 2, 5, tzinfo=timezone.utc),
+}
+
+MOCK_MEMBER = {
+    "id": 3,
+    "firebase_uid": "member-uid",
+    "email": "member@example.com",
     "role": "member",
     "created_at": datetime(2026, 2, 5, tzinfo=timezone.utc),
     "last_login": datetime(2026, 2, 5, tzinfo=timezone.utc),
@@ -291,3 +300,34 @@ def test_get_evaluation_detail_brand_raw_data_null(client):
         assert raw["pic_name"] is None
         assert raw["store_link"] is None
         assert raw["kategori"] is None
+
+
+# --- Role access control tests ---
+
+
+def _setup_auth_mocks_for_user(mock_verify, mock_db, mock_user_queries, mock_user):
+    """Auth mock setup with a specific user."""
+    mock_verify.return_value = {"uid": mock_user["firebase_uid"], "email": mock_user["email"]}
+    mock_conn = AsyncMock()
+    mock_db.connection.return_value.__aenter__.return_value = mock_conn
+    mock_user_queries.get_user_by_firebase_uid = AsyncMock(return_value=mock_user)
+    mock_user_queries.update_last_login = AsyncMock()
+
+
+def test_get_evaluation_detail_forbidden_member(client):
+    """Test member cannot access evaluation detail — returns 403."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        _setup_auth_mocks_for_user(mock_verify, mock_db, mock_user_queries, MOCK_MEMBER)
+
+        response = client.get(
+            "/api/v1/evaluations/42",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 403
+        data = response.json()
+        assert data["code"] == "RULE_ACCESS_DENIED"

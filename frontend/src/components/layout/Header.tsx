@@ -20,7 +20,8 @@ export const Header = () => {
   const { profile } = useCurrentUser();
   const navigate = useNavigate();
   const location = useLocation();
-  const canAccessRules = profile?.role === 'leader' || profile?.role === 'admin';
+  const canAccessHistory = profile?.role === 'leader' || profile?.role === 'admin';
+  const canAccessRules = canAccessHistory;
   const isAdmin = profile?.role === 'admin';
   const [showConfirm, setShowConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
@@ -70,16 +71,18 @@ export const Header = () => {
                 >
                   Brand
                 </Link>
-                <Link
-                  to="/history"
-                  className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
-                    location.pathname === '/history'
-                      ? 'bg-white/20 text-white'
-                      : 'text-gray-300 hover:bg-white/10 hover:text-white'
-                  }`}
-                >
-                  {t('header.history')}
-                </Link>
+                {canAccessHistory && (
+                  <Link
+                    to="/history"
+                    className={`px-3 py-1.5 text-sm rounded-md transition-colors ${
+                      location.pathname === '/history'
+                        ? 'bg-white/20 text-white'
+                        : 'text-gray-300 hover:bg-white/10 hover:text-white'
+                    }`}
+                  >
+                    {t('header.history')}
+                  </Link>
+                )}
                 {canAccessRules && (
                   <Link
                     to="/rules"

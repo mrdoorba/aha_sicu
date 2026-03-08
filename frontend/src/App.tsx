@@ -55,8 +55,22 @@ function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/brands" element={<BrandsPage />} />
               <Route path="/evaluation/:brandId" element={<EvaluationPage />} />
-              <Route path="/history/:id" element={<EvaluationDetailPage />} />
-              <Route path="/history" element={<HistoryPage />} />
+              <Route
+                path="/history/:id"
+                element={
+                  <RoleProtectedRoute allowedRoles={['leader', 'admin']}>
+                    <EvaluationDetailPage />
+                  </RoleProtectedRoute>
+                }
+              />
+              <Route
+                path="/history"
+                element={
+                  <RoleProtectedRoute allowedRoles={['leader', 'admin']}>
+                    <HistoryPage />
+                  </RoleProtectedRoute>
+                }
+              />
               
               <Route
                 path="/rules"
