@@ -22,5 +22,8 @@ jobs:
   deploy:
     needs: ci
     uses: ./.github/workflows/_deploy-backend.yml
+    permissions:
+      contents: read
+      id-token: write
     with:
       environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}

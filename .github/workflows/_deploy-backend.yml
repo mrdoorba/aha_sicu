@@ -24,9 +24,6 @@ on:
         required: true
         type: string
 
-env:
-  CLOUD_SQL_PROXY_VERSION: "2.14.3"
-
 jobs:
   deploy:
     name: Deploy to ${{ inputs.environment }}
@@ -35,6 +32,8 @@ jobs:
     permissions:
       contents: read
       id-token: write
+    env:
+      CLOUD_SQL_PROXY_VERSION: "2.14.3"
 
     steps:
       - uses: actions/checkout@v4
