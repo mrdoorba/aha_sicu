@@ -5,13 +5,12 @@ import { PresentationDashboard } from './PresentationDashboard';
 import { MemoryRouter } from 'react-router-dom';
 
 /*
-Feature: Partner Dashboard Score Exclusion
+Feature: Partner Dashboard Rata² Penjualan Card
 
-  Scenario: Rata² Penjualan is excluded from all counts
+  Scenario: Rata² Penjualan is displayed as an informational card
     Given the backend provides a score breakdown containing "Rata² Penjualan 6 bulan terakhir"
     When viewing the presentation dashboard
-    Then the "Rata² Penjualan 6 bulan terakhir" metric should not be rendered in the Detailed Evaluation
-    And its checkmark should not be counted in the Score Overview or Breakdown Chart
+    Then the "Rata² Penjualan 6 bulan terakhir" metric should be rendered in the Detailed Evaluation
 */
 
 vi.mock('../../hooks/useBrandDetail', () => ({
@@ -64,7 +63,7 @@ vi.mock('../../hooks/useEvaluationDetail', () => ({
 }));
 
 describe('PresentationDashboard BDD', () => {
-    it('excludes Rata² Penjualan 6 bulan terakhir from rendering', () => {
+    it('renders Rata² Penjualan 6 bulan terakhir as an informational card', () => {
         // Arrange
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         render(
@@ -78,11 +77,8 @@ describe('PresentationDashboard BDD', () => {
         // Act (implicit render)
 
         // Assert
-        // Verify that the other metric IS rendered (sanity check)
         expect(screen.getByText('Penjualan Bulan Jan 2026')).toBeInTheDocument();
-
-        // Verify that Rata² Penjualan is strictly NOT rendered anywhere
-        expect(screen.queryByText('Rata² Penjualan 6 bulan terakhir')).not.toBeInTheDocument();
+        expect(screen.getByText('Rata² Penjualan 6 bulan terakhir')).toBeInTheDocument();
     });
 
     it('clicking "Kirim Email" button opens SendEmailDialog', () => {
