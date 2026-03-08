@@ -52,4 +52,61 @@ describe('DetailedEvaluation', () => {
     const { container } = render(<DetailedEvaluation scoreBreakdown={[]} />);
     expect(container.innerHTML).toBe('');
   });
+
+  it('should render separator after Rata² Penjualan in Bisnis tab', () => {
+    const bisnis = [
+      {
+        category: 'Bisnis',
+        score: 20,
+        max_score: 30,
+        rows: [
+          makeRow('Rata² Penjualan 6 bulan terakhir'),
+          makeRow('Tingkat Konversi'),
+        ],
+      },
+    ];
+    const { container } = render(<DetailedEvaluation scoreBreakdown={bisnis} />);
+    const separators = container.querySelectorAll('.border-primary\\/30');
+    expect(separators.length).toBe(1);
+  });
+
+  it('should render separator after Program Afiliasi in Alat Promo tab', () => {
+    const alatPromo = [
+      {
+        category: 'Alat Promo',
+        score: 15,
+        max_score: 20,
+        rows: [
+          makeRow('Program Afiliasi'),
+          makeRow('% Penggunaan alat promosi'),
+        ],
+      },
+    ];
+    const { container } = render(<DetailedEvaluation scoreBreakdown={alatPromo} />);
+    const separators = container.querySelectorAll('.border-primary\\/30');
+    expect(separators.length).toBe(1);
+  });
+
+  it('should render separator after ROI in Iklan tab and pair percentage metrics on same row', () => {
+    const iklan = [
+      {
+        category: 'Data Iklan',
+        score: 30,
+        max_score: 40,
+        rows: [
+          makeRow('Penjualan'),
+          makeRow('Biaya'),
+          makeRow('ROI'),
+          makeRow('% GMV Iklan / GMV Toko'),
+          makeRow('% Biaya Iklan / GMV Toko'),
+        ],
+      },
+    ];
+    const { container } = render(<DetailedEvaluation scoreBreakdown={iklan} />);
+    const separators = container.querySelectorAll('.border-primary\\/30');
+    expect(separators.length).toBe(1);
+    // The two percentage metrics should exist after the separator (no spacer between them)
+    expect(screen.getByText('% GMV Iklan / GMV Toko')).toBeInTheDocument();
+    expect(screen.getByText('% Biaya Iklan / GMV Toko')).toBeInTheDocument();
+  });
 });

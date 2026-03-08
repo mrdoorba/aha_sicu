@@ -75,8 +75,12 @@ export const DetailedEvaluation = ({ scoreBreakdown }: DetailedEvaluationProps) 
                             />
                           </div>
                         );
-                        if (row.metric.startsWith('Rata² Penjualan') || row.metric === 'Program Afiliasi') {
-                          return [card, <div key={`spacer-${idx}`} className="hidden sm:block" />];
+                        if (row.metric.startsWith('Rata² Penjualan') || row.metric === 'Program Afiliasi' || row.metric === 'ROI') {
+                          return [
+                            card,
+                            <div key={`spacer-${idx}`} className="hidden sm:block" />,
+                            <div key={`separator-${idx}`} className="col-span-2 border-t border-primary/30" />,
+                          ];
                         }
                         return [card];
                       })}
