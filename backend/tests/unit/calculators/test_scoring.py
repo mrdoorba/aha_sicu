@@ -2325,7 +2325,7 @@ class TestMessageTemplatesG75:
         assert "TestStore" in msg
 
     def test_g75_rules_missing_closing(self):
-        rules = {"interpretation": {"ranges": []}}
+        rules = {"interpretation": {}}
         msg = _compute_g75("✔️", "TestStore", rules=rules)
         assert "potensi" in msg.lower()  # Falls back to hardcoded
         assert "TestStore" in msg

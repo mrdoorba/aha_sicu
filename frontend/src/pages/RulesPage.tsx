@@ -4,10 +4,8 @@ import { toast } from 'sonner';
 import { useRules, type ScoringRule } from '../hooks/useRules';
 import { useUpdateRule } from '../hooks/useUpdateRule';
 import { useCurrentUser } from '../hooks/useCurrentUser';
-import { Badge } from '../components/ui/badge';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 import { Input } from '../components/ui/input';
 import { RulesCategoryCard } from '../components/rules/RulesCategoryCard';
 import { PasswordConfirmDialog } from '../components/rules/PasswordConfirmDialog';
@@ -113,16 +111,6 @@ export const RulesPage = () => {
   };
 
   const hasValidationErrors = Object.keys(validationErrors).length > 0;
-
-  const handleInterpretationChange = (_tmpl: string, rangeIdx: number, field: 'min' | 'max', value: number | null) => {
-    setEditedRules((prev) => {
-      const updated = JSON.parse(JSON.stringify(prev));
-      if (updated[template]?.interpretation?.ranges?.[rangeIdx]) {
-        updated[template].interpretation.ranges[rangeIdx][field] = value;
-      }
-      return updated;
-    });
-  };
 
   const handleSaveConfirm = async () => {
     if (!activeRule) return;
@@ -262,83 +250,6 @@ export const RulesPage = () => {
                     )}
                   </div>
                 ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {/* Score Interpretation */}
-          {rulesData.interpretation?.ranges && (
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-base">{t('rules.page.scoreInterpretation')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <Table>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead>{t('rules.page.scoreRange')}</TableHead>
-                      <TableHead>{t('rules.page.label')}</TableHead>
-                      <TableHead>{t('rules.page.verdict')}</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {rulesData.interpretation.ranges.map((range, idx) => (
-                      <TableRow key={idx}>
-                        <TableCell>
-                          {isEditing ? (
-                            <span className="flex items-center gap-1">
-                              <Input
-                                type="number"
-                                value={range.min ?? ''}
-                                onChange={(e) => {
-                                  const val = e.target.value === '' ? null : parseFloat(e.target.value);
-                                  if (e.target.value !== '' && isNaN(val as number)) return;
-                                  handleInterpretationChange(template, idx, 'min', val);
-                                }}
-                                className="w-16 h-7 text-sm"
-                                aria-label={`Range ${idx + 1} min`}
-                              />
-                              <span>-</span>
-                              <Input
-                                type="number"
-                                value={range.max ?? ''}
-                                onChange={(e) => {
-                                  const val = e.target.value === '' ? null : parseFloat(e.target.value);
-                                  if (e.target.value !== '' && isNaN(val as number)) return;
-                                  handleInterpretationChange(template, idx, 'max', val);
-                                }}
-                                className="w-16 h-7 text-sm"
-                                aria-label={`Range ${idx + 1} max`}
-                              />
-                            </span>
-                          ) : (
-                            <code className="text-sm bg-muted px-1.5 py-0.5 rounded">
-                              {range.min ?? 0} - {range.max ?? '100+'}
-                            </code>
-                          )}
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant={
-                              range.label === 'Good Candidate'
-                                ? 'default'
-                                : range.label === 'Needs Review'
-                                  ? 'secondary'
-                                  : 'destructive'
-                            }
-                          >
-                            {range.label === 'Good Candidate'
-                              ? t('rules.page.goodCandidate')
-                              : range.label === 'Needs Review'
-                                ? t('rules.page.needsReview')
-                                : range.label}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="text-lg">{range.verdict}</TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
               </CardContent>
             </Card>
           )}

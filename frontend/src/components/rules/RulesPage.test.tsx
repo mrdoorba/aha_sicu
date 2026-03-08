@@ -101,13 +101,7 @@ const FASHION_RULES = {
     display_max: { value: 0.25 },
     display_min: { value: 0.10 },
   },
-  interpretation: {
-    ranges: [
-      { min: 71, max: null, label: 'Good Candidate', verdict: '\u2714\ufe0f' },
-      { min: 41, max: 70, label: 'Needs Review', verdict: '\u2b55\ufe0f' },
-      { min: null, max: 40, label: 'Not Recommended', verdict: '\u274c' },
-    ],
-  },
+  interpretation: {},
 };
 
 const NON_FASHION_RULES = {
@@ -248,7 +242,6 @@ describe('RulesPage', () => {
     expect(screen.getByText('Campaign')).toBeInTheDocument();
     expect(screen.getByText('Stok')).toBeInTheDocument();
     expect(screen.getByText('Diskon')).toBeInTheDocument();
-    expect(screen.getByText('Interpretasi Skor')).toBeInTheDocument();
   });
 
   it('shows version and updated timestamp', () => {
@@ -752,7 +745,6 @@ const RULES_WITH_MESSAGES: ScoringRule[] = [
         message_fail: '❌tidak kompetitif (harga kisaran pasaran: IDR {market_price})',
       },
       interpretation: {
-        ...FASHION_RULES.interpretation,
         closing_messages: {
           '✔️': 'Closing pass message',
           '❌': 'Closing fail message',
@@ -774,7 +766,6 @@ const RULES_WITH_MESSAGES: ScoringRule[] = [
         message_fail: '❌tidak kompetitif',
       },
       interpretation: {
-        ...NON_FASHION_RULES.interpretation,
         closing_messages: {
           '✔️': 'Closing pass message NF',
           '❌': 'Closing fail message NF',

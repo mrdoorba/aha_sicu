@@ -359,11 +359,6 @@ DEFAULT_RULES: dict = {
         "message_fail": "{name} (IDR {selling_price}) = ❌[tidak kompetitif (harga kisaran pasaran: IDR {market_price})]",
     },
     "interpretation": {
-        "ranges": [
-            {"min": 71, "max": None, "label": "Good Candidate", "verdict": "✔️"},
-            {"min": 41, "max": 70, "label": "Needs Review", "verdict": "❌"},
-            {"min": None, "max": 40, "label": "Not Recommended", "verdict": "❌"},
-        ],
         "closing_messages": {
             "✔️": (
                 "Kami melihat bahwa potensi dari Toko {store_name} masih belum maksimal. "
