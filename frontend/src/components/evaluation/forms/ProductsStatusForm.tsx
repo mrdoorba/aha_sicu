@@ -5,15 +5,18 @@ import { SelectField } from './SelectField';
 import { ExternalLink } from 'lucide-react';
 import type { ProductsData } from './formConfig';
 import { PRODUCTS_FIELDS, STORE_STATUS_OPTIONS } from './formConfig';
+import type { ScoringRules } from '../../../hooks/useRules';
+import { getBenchmarkFromRules, FORM_TO_RULES_MAP } from './benchmarkUtils';
 
 interface ProductsStatusFormProps {
   data: ProductsData;
   storeLink: string | null;
+  rules?: ScoringRules;
   onChange: (category: 'products', key: string, value: number | string | null) => void;
   onBlur: () => void;
 }
 
-export function ProductsStatusForm({ data, storeLink, onChange, onBlur }: ProductsStatusFormProps) {
+export function ProductsStatusForm({ data, storeLink, rules, onChange, onBlur }: ProductsStatusFormProps) {
   const { t } = useTranslation();
 
   return (
@@ -29,6 +32,11 @@ export function ProductsStatusForm({ data, storeLink, onChange, onBlur }: Produc
         </p>
         <div className="grid gap-4 sm:grid-cols-2">
           {PRODUCTS_FIELDS.map((field) => {
+            const mapping = FORM_TO_RULES_MAP[field.key];
+            const benchmark = mapping
+              ? getBenchmarkFromRules(rules, mapping.category, mapping.key, field.unit, field.benchmark)
+              : field.benchmark;
+
             if (field.inputType === 'select') {
               return (
                 <SelectField
@@ -36,7 +44,7 @@ export function ProductsStatusForm({ data, storeLink, onChange, onBlur }: Produc
                   name={`products.${field.key}`}
                   label={field.label}
                   options={STORE_STATUS_OPTIONS}
-                  benchmark={field.benchmark}
+                  benchmark={benchmark}
                   value={data.storeStatus}
                   onChange={(v) => {
                     onChange('products', field.key, v);
@@ -52,7 +60,7 @@ export function ProductsStatusForm({ data, storeLink, onChange, onBlur }: Produc
                 name={`products.${field.key}`}
                 label={field.label}
                 unit={field.unit}
-                benchmark={field.benchmark}
+                benchmark={benchmark}
                 value={data[field.key as keyof ProductsData] as number | null}
                 onChange={(v) => onChange('products', field.key, v)}
                 onBlur={onBlur}

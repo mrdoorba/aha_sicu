@@ -6,10 +6,12 @@ import { NumberField } from './NumberField';
 import { ExternalLink } from 'lucide-react';
 import type { BusinessData } from './formConfig';
 import { BUSINESS_FIELDS, SECTION_LINKS, generateMonthLabels } from './formConfig';
+import type { ScoringRules } from '../../../hooks/useRules';
+import { getBenchmarkFromRules, FORM_TO_RULES_MAP } from './benchmarkUtils';
 
 interface BusinessFormProps {
   data: BusinessData;
-  categoryType: string | null;
+  rules?: ScoringRules;
   onChange: (category: 'business', key: string, value: number | string | null) => void;
   onBlur: () => void;
 }
@@ -18,7 +20,7 @@ function formatCurrencyDisplay(value: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 }
 
-export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessFormProps) {
+export function BusinessForm({ data, rules, onChange, onBlur }: BusinessFormProps) {
   const { t } = useTranslation();
   const monthLabels = useMemo(() => generateMonthLabels(data.salesStartMonth), [data.salesStartMonth]);
 
@@ -50,9 +52,6 @@ export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessF
   const salesMonths = [data.salesMonth0, data.salesMonth1, data.salesMonth2, data.salesMonth3, data.salesMonth4, data.salesMonth5];
   const allNull = salesMonths.every((v) => v == null);
   const average = allNull ? null : salesMonths.reduce<number>((sum, v) => sum + (v ?? 0), 0) / 6;
-
-  // Conversion rate benchmark depends on category type
-  const conversionBenchmark = categoryType === 'fashion' ? '>2%' : '>3%';
 
   return (
     <Card className="mb-4">
@@ -88,7 +87,10 @@ export function BusinessForm({ data, categoryType, onChange, onBlur }: BusinessF
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {BUSINESS_FIELDS.map((field, index) => {
             const label = getFieldLabel(field, index);
-            const benchmark = field.key === 'conversionRate' ? conversionBenchmark : field.benchmark;
+            const mapping = FORM_TO_RULES_MAP[field.key];
+            const benchmark = mapping
+              ? getBenchmarkFromRules(rules, mapping.category, mapping.key, field.unit, field.benchmark)
+              : field.benchmark;
 
             if (field.inputType === 'currency') {
               return (

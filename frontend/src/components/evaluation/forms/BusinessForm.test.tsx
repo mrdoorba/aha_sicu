@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { BusinessForm } from './BusinessForm';
 import type { BusinessData } from './formConfig';
+import type { ScoringRules } from '../../../hooks/useRules';
 
 const emptyData: BusinessData = {
   salesStartMonth: null,
@@ -15,10 +16,29 @@ const emptyData: BusinessData = {
   conversionRate: null,
 };
 
+function makeRules(overrides: Partial<ScoringRules> = {}): ScoringRules {
+  return {
+    operational: {},
+    business: {
+      conversion_rate: { threshold: 3.0, comparison: 'gte' },
+    },
+    visitors: {},
+    promo_tools: {},
+    products_status: {},
+    ads: {},
+    campaign: {},
+    stock: {},
+    discount: {},
+    marketing: {},
+    interpretation: { ranges: [] },
+    ...overrides,
+  };
+}
+
 describe('BusinessForm', () => {
   it('renders all 7 business fields', () => {
     render(
-      <BusinessForm data={emptyData} categoryType={null} onChange={vi.fn()} onBlur={vi.fn()} />,
+      <BusinessForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
 
     // 6 sales month currency fields + 1 conversion rate
@@ -27,31 +47,35 @@ describe('BusinessForm', () => {
     expect(screen.getByLabelText(/Tingkat Konversi/)).toBeInTheDocument();
   });
 
-  it('shows Non-Fashion benchmark by default', () => {
+  it('shows benchmark from rules when rules are provided', () => {
+    const rules = makeRules({
+      business: {
+        conversion_rate: { threshold: 5.0, comparison: 'gte' },
+      },
+    });
     render(
-      <BusinessForm data={emptyData} categoryType="non_fashion" onChange={vi.fn()} onBlur={vi.fn()} />,
+      <BusinessForm data={emptyData} rules={rules} onChange={vi.fn()} onBlur={vi.fn()} />,
+    );
+    expect(screen.getByText('Benchmark: >5%')).toBeInTheDocument();
+  });
+
+  it('shows static fallback benchmark when rules are not provided', () => {
+    render(
+      <BusinessForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
     expect(screen.getByText('Benchmark: >3%')).toBeInTheDocument();
   });
 
-  it('switches to Fashion benchmark when categoryType is fashion', () => {
-    render(
-      <BusinessForm data={emptyData} categoryType="fashion" onChange={vi.fn()} onBlur={vi.fn()} />,
-    );
-    expect(screen.getByText('Benchmark: >2%')).toBeInTheDocument();
-    expect(screen.queryByText('Benchmark: >3%')).not.toBeInTheDocument();
-  });
-
   it('renders section title with reference link', () => {
     render(
-      <BusinessForm data={emptyData} categoryType={null} onChange={vi.fn()} onBlur={vi.fn()} />,
+      <BusinessForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
     expect(screen.getByText('Bisnis Analisis')).toBeInTheDocument();
   });
 
   it('renders 6 currency fields for sales months', () => {
     render(
-      <BusinessForm data={emptyData} categoryType={null} onChange={vi.fn()} onBlur={vi.fn()} />,
+      <BusinessForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
     const idrLabels = screen.getAllByText('(IDR)');
     expect(idrLabels).toHaveLength(6);
@@ -59,7 +83,7 @@ describe('BusinessForm', () => {
 
   it('renders month selector dropdown', () => {
     render(
-      <BusinessForm data={emptyData} categoryType={null} onChange={vi.fn()} onBlur={vi.fn()} />,
+      <BusinessForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
     expect(screen.getByLabelText(/Bulan Awal Penjualan/)).toBeInTheDocument();
   });
@@ -70,14 +94,14 @@ describe('BusinessForm', () => {
       salesStartMonth: '2026-01',
     };
     render(
-      <BusinessForm data={dataWithMonth} categoryType={null} onChange={vi.fn()} onBlur={vi.fn()} />,
+      <BusinessForm data={dataWithMonth} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
     expect(screen.getByLabelText(/Penjualan Bulan Jan 2026/)).toBeInTheDocument();
   });
 
   it('uses generic fallback labels when salesStartMonth is null', () => {
     render(
-      <BusinessForm data={emptyData} categoryType={null} onChange={vi.fn()} onBlur={vi.fn()} />,
+      <BusinessForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
     expect(screen.getByLabelText(/Penjualan Bulan Bulan Ini/)).toBeInTheDocument();
   });
@@ -88,7 +112,7 @@ describe('BusinessForm', () => {
       salesStartMonth: 'abc',
     };
     render(
-      <BusinessForm data={dataInvalid} categoryType={null} onChange={vi.fn()} onBlur={vi.fn()} />,
+      <BusinessForm data={dataInvalid} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
     expect(screen.getByLabelText(/Penjualan Bulan Bulan Ini/)).toBeInTheDocument();
   });
@@ -104,7 +128,7 @@ describe('BusinessForm', () => {
       salesMonth5: 44000000,
     };
     render(
-      <BusinessForm data={dataWithSales} categoryType={null} onChange={vi.fn()} onBlur={vi.fn()} />,
+      <BusinessForm data={dataWithSales} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
     expect(screen.getByText('Rata-rata Penjualan 6 Bulan Terakhir')).toBeInTheDocument();
     // Average = 44833333.33... → should show formatted IDR
@@ -113,7 +137,7 @@ describe('BusinessForm', () => {
 
   it('shows dash when all sales months are null', () => {
     render(
-      <BusinessForm data={emptyData} categoryType={null} onChange={vi.fn()} onBlur={vi.fn()} />,
+      <BusinessForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
     expect(screen.getByText('Rata-rata Penjualan 6 Bulan Terakhir')).toBeInTheDocument();
     expect(screen.getByText('—')).toBeInTheDocument();
@@ -123,7 +147,7 @@ describe('BusinessForm', () => {
     const onChange = vi.fn();
     const user = userEvent.setup();
     render(
-      <BusinessForm data={emptyData} categoryType={null} onChange={onChange} onBlur={vi.fn()} />,
+      <BusinessForm data={emptyData} onChange={onChange} onBlur={vi.fn()} />,
     );
 
     const select = screen.getByLabelText(/Bulan Awal Penjualan/);

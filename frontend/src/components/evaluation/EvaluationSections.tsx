@@ -20,10 +20,12 @@ import { ScoringSection } from './scoring';
 import type { ManualData } from './forms/formConfig';
 import type { SaveStatus } from '../../hooks/useAutoSaveForm';
 import type { ScoringResult } from '../../hooks/useScoring';
+import type { ScoringRules } from '../../hooks/useRules';
 
 interface EvaluationSectionsProps {
   brandId: number;
   categoryType: string | null;
+  rules?: ScoringRules;
   onCategoryChange: (value: string) => void;
   onActiveSection: (sectionId: string) => void;
   manualData: ManualData;
@@ -50,12 +52,12 @@ interface EvaluationSectionsProps {
   isSaving: boolean;
   isSaved: boolean;
   saveError: Error | null;
-  onResetSave: () => void;
 }
 
 export const EvaluationSections = ({
   brandId,
   categoryType,
+  rules,
   onCategoryChange,
   onActiveSection,
   manualData,
@@ -76,7 +78,6 @@ export const EvaluationSections = ({
   isSaving,
   isSaved,
   saveError,
-  onResetSave: _onResetSave, // eslint-disable-line @typescript-eslint/no-unused-vars
 }: EvaluationSectionsProps) => {
   const { t } = useTranslation();
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
@@ -144,6 +145,7 @@ export const EvaluationSections = ({
 
         <OperationalForm
           data={manualData.operational}
+          rules={rules}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
@@ -156,13 +158,14 @@ export const EvaluationSections = ({
         </h3>
         <BusinessForm
           data={manualData.business}
-          categoryType={categoryType}
+          rules={rules}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
         <VisitorsForm
           data={manualData.visitors}
           storeLink={storeLink}
+          rules={rules}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
@@ -182,6 +185,7 @@ export const EvaluationSections = ({
         <ProductsStatusForm
           data={manualData.products}
           storeLink={storeLink}
+          rules={rules}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />

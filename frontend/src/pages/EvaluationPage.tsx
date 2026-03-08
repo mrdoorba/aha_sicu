@@ -14,6 +14,7 @@ import { useScoring } from '../hooks/useScoring';
 import { ScorePanel } from '../components/evaluation/scoring';
 import { useSaveEvaluation } from '../hooks/useSaveEvaluation';
 import { useCalculatorResults } from '../hooks/useCalculator';
+import { useRules } from '../hooks/useRules';
 import { toast } from 'sonner';
 
 export const EvaluationPage = () => {
@@ -61,6 +62,9 @@ export const EvaluationPage = () => {
   } = useScoring(safeBrandId);
 
   const { data: calculatorResultsData } = useCalculatorResults(safeBrandId);
+
+  const { rules: rulesData } = useRules();
+  const activeRules = rulesData.length > 0 ? rulesData[0].rules : undefined;
 
   const {
     saveEvaluation,
@@ -166,6 +170,7 @@ export const EvaluationPage = () => {
                 <EvaluationSections
                   brandId={safeBrandId}
                   categoryType={evaluationState?.category_type ?? null}
+                  rules={activeRules}
                   onCategoryChange={handleCategoryChange}
                   onActiveSection={setActiveSection}
                   manualData={manualData}
@@ -186,7 +191,6 @@ export const EvaluationPage = () => {
                   isSaving={isSaving}
                   isSaved={isSaved}
                   saveError={saveError}
-                  onResetSave={resetSave}
                 />
               </div>
 
