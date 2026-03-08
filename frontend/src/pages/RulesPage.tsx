@@ -6,7 +6,6 @@ import { useUpdateRule } from '../hooks/useUpdateRule';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Input } from '../components/ui/input';
 import { RulesCategoryCard } from '../components/rules/RulesCategoryCard';
 import { PasswordConfirmDialog } from '../components/rules/PasswordConfirmDialog';
 
