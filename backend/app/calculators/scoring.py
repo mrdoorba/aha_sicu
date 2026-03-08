@@ -820,7 +820,7 @@ def _score_ads(manual_data: dict, template: str, rules: dict | None = None) -> C
     ))
 
     # Row 50: ROI = D48/D49
-    d50 = d48 / d49 if d49 > 0 else 0.0
+    d50 = round(d48 / d49, 1) if d49 > 0 else 0.0
     roi_threshold = _get_rule_value(ads_rules, "roi_threshold", "threshold", 9.0)
     roi_opp_pts = float(_get_rule_value(ads_rules, "roi_threshold", "opportunity_points", 5.0))
     f50 = "✔️" if d50 >= roi_threshold else "❌"
