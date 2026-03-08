@@ -561,7 +561,7 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
         _safe_num(biz.get("salesMonth5")),
     ]
     current_month = sales_months[0]
-    avg_6mo = sum(sales_months) / 6 if any(s > 0 for s in sales_months) else 0.0
+    avg_6mo = round(sum(sales_months) / 6) if any(s > 0 for s in sales_months) else 0
     rows: list[RowScore] = []
 
     # Row 13: Current month sales
@@ -1118,7 +1118,7 @@ def _generate_business_messages(cat: CategoryScore, manual_data: dict, rules: di
     biz = _get_nested(manual_data, "business") or {}
     sales_months = [_safe_num(biz.get(f"salesMonth{i}")) for i in range(6)]
     current = sales_months[0]
-    avg_6mo = sum(sales_months) / 6 if any(s > 0 for s in sales_months) else 0.0
+    avg_6mo = round(sum(sales_months) / 6) if any(s > 0 for s in sales_months) else 0
 
     for row in cat.rows:
         if row.row == 13:
