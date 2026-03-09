@@ -156,6 +156,40 @@ describe('CategoryMetricCard', () => {
     expect(screen.getByText('15.3%')).toBeInTheDocument();
   });
 
+  it('should hide benchmark line when benchmark is dash', () => {
+    // Arrange
+    render(
+      <CategoryMetricCard
+        metric="Sesi dinominasikan"
+        value={4}
+        verdict="-"
+        score={0}
+        benchmark="-"
+        message=""
+      />,
+    );
+
+    // Assert
+    expect(screen.queryByText('Benchmark: -')).not.toBeInTheDocument();
+  });
+
+  it('should show benchmark line when benchmark has real value', () => {
+    // Arrange
+    render(
+      <CategoryMetricCard
+        metric="Rating Toko"
+        value={4.8}
+        verdict="✔️"
+        score={10}
+        benchmark=">= 4.7"
+        message=""
+      />,
+    );
+
+    // Assert
+    expect(screen.getByText('Benchmark: >= 4.7')).toBeInTheDocument();
+  });
+
   it('does not apply percentage formatting to non-% metric (ROI)', () => {
     // Arrange
     render(
