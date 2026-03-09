@@ -314,20 +314,26 @@ def _setup_auth_mocks_for_user(mock_verify, mock_db, mock_user_queries, mock_use
     mock_user_queries.update_last_login = AsyncMock()
 
 
-def test_get_evaluation_detail_forbidden_member(client):
-    """Test member cannot access evaluation detail — returns 403."""
+def test_get_evaluation_detail_allowed_member(client):
+    """Test member can access evaluation detail — returns 200."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.db") as mock_svc_db,
     ):
         _setup_auth_mocks_for_user(mock_verify, mock_db, mock_user_queries, MOCK_MEMBER)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(return_value=EVAL_DETAIL_ROW)
 
         response = client.get(
             "/api/v1/evaluations/42",
             headers=AUTH_HEADERS,
         )
 
-        assert response.status_code == 403
+        assert response.status_code == 200
         data = response.json()
-        assert data["code"] == "RULE_ACCESS_DENIED"
+        assert data["id"] == 42
+        assert data["brand_id"] == 10

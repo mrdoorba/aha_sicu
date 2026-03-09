@@ -143,12 +143,9 @@ async def delete_evaluation_endpoint(
 @router.get("/{evaluation_id}", response_model=EvaluationDetailResponse)
 async def get_evaluation_detail_endpoint(
     evaluation_id: int,
-    current_user: dict = Depends(require_role("leader", "admin")),
+    current_user: dict = Depends(get_current_user),
 ) -> EvaluationDetailResponse:
-    """Get full details of a single evaluation by ID.
-
-    Only accessible by leaders and admins.
-    """
+    """Get full details of a single evaluation by ID."""
     return await get_evaluation_detail(evaluation_id=evaluation_id)
 
 
