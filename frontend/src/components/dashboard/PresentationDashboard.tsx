@@ -11,6 +11,7 @@ import { ScoreOverview } from './ScoreOverview';
 import { ScoreBreakdownChart } from './ScoreBreakdownChart';
 import { DetailedEvaluation } from './DetailedEvaluation';
 import { DataIntelligence } from './DataIntelligence';
+import { KesimpulanSection } from './KesimpulanSection';
 import { DashboardFooter } from './DashboardFooter';
 import { SendEmailDialog } from './SendEmailDialog';
 
@@ -109,6 +110,8 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
       <ScoreBreakdownChart ref={chartRef} scoreBreakdown={scoreBreakdown} />
 
       <DataIntelligence calculatorResults={evaluation.calculator_results} />
+
+      <KesimpulanSection calculatorResults={evaluation.calculator_results} />
 
       <DashboardFooter
         evaluatorEmail={evaluation.evaluator_email}

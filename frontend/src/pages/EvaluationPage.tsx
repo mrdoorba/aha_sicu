@@ -97,6 +97,12 @@ export const EvaluationPage = () => {
       }
     }
 
+    calcResults['scoring_summary'] = {
+      conclusion: scoringResult.conclusion,
+      marketing_estimation: scoringResult.marketing_estimation,
+      marketing_budget: scoringResult.marketing_budget,
+    };
+
     saveEvaluation(
       {
         template: scoringResult.template as 'fashion' | 'non_fashion',

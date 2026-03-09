@@ -245,7 +245,60 @@ describe('EvaluationPage', () => {
     expect(payload.calculator_results).toEqual({
       ads_keyword: { details: { keyword: 'test' }, output_text: 'Ads output' },
       discount: { details: { flag: false }, output_text: 'Disc output' },
+      scoring_summary: {
+        conclusion: 'Approved',
+        marketing_estimation: '10%',
+        marketing_budget: 'IDR 1,000,000',
+      },
     });
     expect(payload.manual_inputs).toEqual(EMPTY_MANUAL_DATA);
+  });
+
+  it('should include scoring_summary in calculator_results when saving', async () => {
+    setupMocks();
+
+    const mockSaveEvaluation = vi.fn();
+    mockUseScoring.mockReturnValue({
+      generateScore: vi.fn(),
+      scoringResult: {
+        total_score: 60,
+        category_scores: [],
+        verdict: '❌',
+        template: 'non_fashion',
+        email_body: '',
+        conclusion: '- Finding A\n- Finding B',
+        marketing_estimation: '22.4% ~ 26.2%',
+        marketing_percentage: '24%',
+        marketing_budget: '',
+        closing_message: '',
+        email_subject: '',
+        rule_version: 1,
+      },
+      isStale: false,
+      markStale: vi.fn(),
+      isGenerating: false,
+      error: null,
+    });
+
+    mockUseSaveEvaluation.mockReturnValue({
+      saveEvaluation: mockSaveEvaluation,
+      isSaving: false,
+      isSaved: false,
+      error: null,
+      reset: vi.fn(),
+    });
+
+    const user = userEvent.setup();
+    renderEvaluationPage();
+
+    const saveBtn = screen.getByRole('button', { name: /simpan evaluasi/i });
+    await user.click(saveBtn);
+
+    const [payload] = mockSaveEvaluation.mock.calls[0];
+    expect(payload.calculator_results.scoring_summary).toEqual({
+      conclusion: '- Finding A\n- Finding B',
+      marketing_estimation: '22.4% ~ 26.2%',
+      marketing_budget: '',
+    });
   });
 });
