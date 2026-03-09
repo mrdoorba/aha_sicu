@@ -28,6 +28,21 @@ Author: Mr. Door
 ```
 ---
 
+## Test-Driven Development
+
+**Cycle:** Red → Green → Refactor
+
+**Three Rules of TDD:**
+1. No production code except to pass a failing test
+2. No more test code than sufficient to fail
+3. No more production code than sufficient to pass
+
+**Test structure — AAA:** Arrange (setup) → Act (execute) → Assert (verify). One assert per test.
+
+**Naming:** `test_<expected>_when_<condition>` (backend) / `should <expected> when <condition>` (frontend)
+
+---
+
 ## Code Style & Conventions
 
 ### General Principles
