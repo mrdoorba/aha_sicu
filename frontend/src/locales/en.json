@@ -104,6 +104,8 @@
   "sync.lastFailed": "Last sync failed: {{error}}",
   "sync.startSuccess": "Sync started successfully",
   "sync.syncNow": "Sync",
+  "sync.vpBrands": "VP: {{count}} brands",
+  "sync.m1Brands": "M1: {{count}} brands",
   "topSku.title": "Top SKU Calculator",
   "topSku.averageStock": "Average Stock",
   "topSku.revenueRanking": "Revenue Ranking",

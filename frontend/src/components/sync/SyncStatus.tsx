@@ -95,7 +95,7 @@ export const SyncStatus = () => {
             <div className="flex gap-4 text-xs text-muted-foreground">
               {syncStatus.sync_details.vp_sheet && (
                 <span>
-                  VP: {syncStatus.sync_details.vp_sheet.rows_synced} brands{' '}
+                  {t('sync.vpBrands', { count: syncStatus.sync_details.vp_sheet.rows_synced })}{' '}
                   {syncStatus.sync_details.vp_sheet.status === 'success'
                     ? '\u2713'
                     : '\u2717'}
@@ -103,8 +103,7 @@ export const SyncStatus = () => {
               )}
               {syncStatus.sync_details.meeting_sheet && (
                 <span>
-                  M1: {syncStatus.sync_details.meeting_sheet.rows_synced}{' '}
-                  brands{' '}
+                  {t('sync.m1Brands', { count: syncStatus.sync_details.meeting_sheet.rows_synced })}{' '}
                   {syncStatus.sync_details.meeting_sheet.status === 'success'
                     ? '\u2713'
                     : '\u2717'}

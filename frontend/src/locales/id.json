@@ -104,6 +104,8 @@
   "sync.lastFailed": "Sinkronisasi terakhir gagal: {{error}}",
   "sync.startSuccess": "Sinkronisasi berhasil dimulai",
   "sync.syncNow": "Sinkronisasi",
+  "sync.vpBrands": "VP: {{count}} brands",
+  "sync.m1Brands": "M1: {{count}} brands",
   "topSku.title": "Kalkulator Top SKU",
   "topSku.averageStock": "Rata-rata Stok",
   "topSku.revenueRanking": "Peringkat Omzet",

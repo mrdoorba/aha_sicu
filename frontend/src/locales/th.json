@@ -104,6 +104,8 @@
   "sync.lastFailed": "การซิงค์ล่าสุดล้มเหลว: {{error}}",
   "sync.startSuccess": "เริ่มซิงค์สำเร็จ",
   "sync.syncNow": "ซิงค์",
+  "sync.vpBrands": "VP: {{count}} แบรนด์",
+  "sync.m1Brands": "M1: {{count}} แบรนด์",
   "topSku.title": "เครื่องคิดเลข Top SKU",
   "topSku.averageStock": "สต็อกเฉลี่ย",
   "topSku.revenueRanking": "อันดับรายได้",
