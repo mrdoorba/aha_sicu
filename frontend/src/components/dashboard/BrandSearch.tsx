@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Search, Loader2 } from 'lucide-react';
 import { useBrands } from '../../hooks/useBrands';
 import { Input } from '../ui/input';
@@ -9,6 +10,7 @@ interface BrandSearchProps {
 }
 
 export const BrandSearch = ({ onSelect }: BrandSearchProps) => {
+  const { t } = useTranslation();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
@@ -25,10 +27,10 @@ export const BrandSearch = ({ onSelect }: BrandSearchProps) => {
     <div className="flex w-full flex-col items-center justify-center space-y-8 py-20">
       <div className="space-y-4 text-center">
         <h1 className="text-4xl font-bold tracking-tight text-foreground sm:text-6xl">
-          Search for Brand
+          {t('brandSearch.title')}
         </h1>
         <p className="text-lg text-muted-foreground">
-          Enter a brand name to start the presentation hub.
+          {t('brandSearch.subtitle')}
         </p>
       </div>
 
@@ -37,7 +39,7 @@ export const BrandSearch = ({ onSelect }: BrandSearchProps) => {
           <Search className="absolute left-4 top-1/2 size-5 -translate-y-1/2 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Type brand name..."
+            placeholder={t('brandSearch.placeholder')}
             className="h-14 pl-12 pr-4 text-lg shadow-lg transition-shadow focus-visible:ring-primary"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
@@ -73,7 +75,7 @@ export const BrandSearch = ({ onSelect }: BrandSearchProps) => {
                 </ul>
               ) : !isLoading ? (
                 <div className="px-4 py-8 text-center text-muted-foreground">
-                  No brands found matching "{debouncedSearch}"
+                  {t('brandSearch.noResults', { query: debouncedSearch })}
                 </div>
               ) : null}
             </CardContent>
