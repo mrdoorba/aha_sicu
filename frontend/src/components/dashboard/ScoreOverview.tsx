@@ -71,7 +71,7 @@ export const ScoreOverview = ({ score, scoreBreakdown }: ScoreOverviewProps) => 
               variant="outline"
             >
               <TrendingUp className="size-4" />
-              Performa dapat Ditingkatkan
+              {t('scoreOverview.verdict')}
             </Badge>
 
           </div>
@@ -101,7 +101,7 @@ export const ScoreOverview = ({ score, scoreBreakdown }: ScoreOverviewProps) => 
               </ResponsiveContainer>
               <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
                 <span className="text-5xl font-bold tabular-nums tracking-tight">{partnerScore}</span>
-                <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">Score</span>
+                <span className="text-xs font-semibold tracking-widest text-muted-foreground uppercase">{t('scoreOverview.scoreLabel')}</span>
               </div>
             </div>
           </div>

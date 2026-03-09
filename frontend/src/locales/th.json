@@ -132,6 +132,8 @@
   "evaluationSections.generateFirst": "คำนวณคะแนนก่อนเพื่อบันทึก",
   "evaluationSections.fashion": "Fashion",
   "evaluationSections.nonFashion": "Non-Fashion",
+  "scoreOverview.verdict": "สามารถปรับปรุงประสิทธิภาพได้",
+  "scoreOverview.scoreLabel": "คะแนน",
   "evaluationSections.saveFailed": "ไม่สามารถบันทึกการประเมิน กรุณาลองอีกครั้ง",
   "saveIndicator.saving": "กำลังบันทึก...",
   "saveIndicator.saveFailed": "บันทึกล้มเหลว",

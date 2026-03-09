@@ -38,7 +38,7 @@ export const DashboardHeader = ({ brandName, brandId, template, period, onBack, 
           variant="outline"
         >
           <TrendingUp className="size-3" />
-          Performa dapat Ditingkatkan
+          {t('scoreOverview.verdict')}
         </Badge>
         <Badge variant={template === 'fashion' ? 'default' : 'secondary'} className="px-3 py-0.5 text-xs font-bold uppercase tracking-widest hidden sm:flex">
           {template === 'fashion' ? t('evaluationSections.fashion') : t('evaluationSections.nonFashion')}

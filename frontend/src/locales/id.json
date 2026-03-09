@@ -132,6 +132,8 @@
   "evaluationSections.generateFirst": "Hitung skor terlebih dahulu untuk menyimpan",
   "evaluationSections.fashion": "Fashion",
   "evaluationSections.nonFashion": "Non-Fashion",
+  "scoreOverview.verdict": "Performa dapat Ditingkatkan",
+  "scoreOverview.scoreLabel": "Score",
   "evaluationSections.saveFailed": "Gagal menyimpan evaluasi. Silakan coba lagi.",
   "saveIndicator.saving": "Menyimpan...",
   "saveIndicator.saveFailed": "Gagal menyimpan.",

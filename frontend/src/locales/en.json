@@ -132,6 +132,8 @@
   "evaluationSections.generateFirst": "Calculate score first to save",
   "evaluationSections.fashion": "Fashion",
   "evaluationSections.nonFashion": "Non-Fashion",
+  "scoreOverview.verdict": "Performance can be Improved",
+  "scoreOverview.scoreLabel": "Score",
   "evaluationSections.saveFailed": "Failed to save evaluation. Please try again.",
   "saveIndicator.saving": "Saving...",
   "saveIndicator.saveFailed": "Save failed.",
