@@ -61,6 +61,8 @@
   "evaluationDetail.emailCopied": "Email output copied to clipboard",
   "evaluationDetail.copyFailed": "Failed to copy to clipboard",
   "history.title": "Evaluation History",
+  "header.dashboard": "Dashboard",
+  "header.brand": "Brand",
   "header.history": "History",
   "header.rules": "Rules",
   "header.accounts": "Accounts",

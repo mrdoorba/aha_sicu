@@ -45,12 +45,12 @@ export const Sidebar = ({ className }: SidebarProps) => {
 
   const navItems = [
     {
-      title: 'Dashboard',
+      title: t('header.dashboard'),
       href: '/dashboard',
       icon: LayoutDashboard,
     },
     {
-      title: 'Brand',
+      title: t('header.brand'),
       href: '/brands',
       icon: Briefcase,
     },

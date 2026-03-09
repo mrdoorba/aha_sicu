@@ -61,6 +61,8 @@
   "evaluationDetail.emailCopied": "Email output disalin ke clipboard",
   "evaluationDetail.copyFailed": "Gagal menyalin ke clipboard",
   "history.title": "Riwayat Evaluasi",
+  "header.dashboard": "Dasbor",
+  "header.brand": "Merek",
   "header.history": "Riwayat",
   "header.rules": "Aturan",
   "header.accounts": "Akun",

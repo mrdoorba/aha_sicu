@@ -61,6 +61,8 @@
   "evaluationDetail.emailCopied": "คัดลอกเอาต์พุตอีเมลแล้ว",
   "evaluationDetail.copyFailed": "ไม่สามารถคัดลอก",
   "history.title": "ประวัติการประเมิน",
+  "header.dashboard": "แดชบอร์ด",
+  "header.brand": "แบรนด์",
   "header.history": "ประวัติ",
   "header.rules": "กฎ",
   "header.accounts": "บัญชี",
