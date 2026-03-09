@@ -23,8 +23,6 @@ export const KesimpulanSection = ({ calculatorResults }: KesimpulanSectionProps)
   const { t } = useTranslation();
   const summary = calculatorResults.scoring_summary as ScoringSummary | undefined;
 
-  console.log('[KesimpulanSection] scoring_summary:', JSON.stringify(summary));
-
   return (
     <Card className="border-none shadow-xl bg-card overflow-hidden">
       <CardContent className="p-8">
