@@ -12,6 +12,7 @@ class UserListResponse(BaseModel):
     id: int
     email: str
     role: str
+    language: str = "id"
     created_at: datetime
     last_login: datetime | None = None
 
