@@ -74,9 +74,6 @@ export const ScoreOverview = ({ score, template, scoreBreakdown }: ScoreOverview
               Performa dapat Ditingkatkan
             </Badge>
 
-            <div className="text-xs text-muted-foreground/60">
-              <span>{template === 'fashion' ? t('evaluationSections.fashion') : t('evaluationSections.nonFashion')}</span>
-            </div>
           </div>
 
           {/* Right: Radial Ring Chart */}
