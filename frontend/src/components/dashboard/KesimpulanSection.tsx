@@ -5,6 +5,13 @@ interface KesimpulanSectionProps {
   calculatorResults: Record<string, unknown>;
 }
 
+interface ScoringSummary {
+  conclusion?: string;
+  marketing_estimation?: string;
+  marketing_budget?: string;
+  closing_message?: string;
+}
+
 function parseBulletPoints(text: string): string[] {
   return text
     .split('\n')
@@ -14,9 +21,7 @@ function parseBulletPoints(text: string): string[] {
 
 export const KesimpulanSection = ({ calculatorResults }: KesimpulanSectionProps) => {
   const { t } = useTranslation();
-  const summary = calculatorResults.scoring_summary as
-    | { conclusion?: string; marketing_estimation?: string; marketing_budget?: string }
-    | undefined;
+  const summary = calculatorResults.scoring_summary as ScoringSummary | undefined;
 
   return (
     <Card className="border-none shadow-xl bg-card overflow-hidden">
@@ -43,25 +48,22 @@ export const KesimpulanSection = ({ calculatorResults }: KesimpulanSectionProps)
               </ul>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              {summary.marketing_estimation && (
-                <div className="rounded-xl border border-border/50 bg-muted/30 p-5">
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
-                    {t('presentation.kesimpulan.marketingEstimation')}
-                  </p>
-                  <p className="text-lg font-bold text-primary">{summary.marketing_estimation}</p>
-                </div>
-              )}
+            {summary.marketing_budget && (
+              <div className="rounded-xl border border-border/50 bg-muted/30 p-5">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
+                  {t('presentation.kesimpulan.marketingBudget')}
+                </p>
+                <p className="text-lg font-bold text-primary">{summary.marketing_budget}</p>
+              </div>
+            )}
 
-              {summary.marketing_budget && (
-                <div className="rounded-xl border border-border/50 bg-muted/30 p-5">
-                  <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
-                    {t('presentation.kesimpulan.marketingBudget')}
-                  </p>
-                  <p className="text-lg font-bold text-primary">{summary.marketing_budget}</p>
-                </div>
-              )}
-            </div>
+            {summary.closing_message && (
+              <div className="rounded-xl border-l-4 border-primary/30 bg-primary/5 p-5">
+                <p className="text-sm text-foreground leading-relaxed whitespace-pre-line">
+                  {summary.closing_message}
+                </p>
+              </div>
+            )}
           </div>
         )}
       </CardContent>

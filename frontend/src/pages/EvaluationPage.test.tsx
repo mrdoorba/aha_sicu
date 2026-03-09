@@ -249,6 +249,7 @@ describe('EvaluationPage', () => {
         conclusion: 'Approved',
         marketing_estimation: '10%',
         marketing_budget: 'IDR 1,000,000',
+        closing_message: 'Thank you',
       },
     });
     expect(payload.manual_inputs).toEqual(EMPTY_MANUAL_DATA);
@@ -299,6 +300,7 @@ describe('EvaluationPage', () => {
       conclusion: '- Finding A\n- Finding B',
       marketing_estimation: '22.4% ~ 26.2%',
       marketing_budget: '',
+      closing_message: '',
     });
   });
 });

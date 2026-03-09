@@ -101,6 +101,7 @@ export const EvaluationPage = () => {
       conclusion: scoringResult.conclusion,
       marketing_estimation: scoringResult.marketing_estimation,
       marketing_budget: scoringResult.marketing_budget,
+      closing_message: scoringResult.closing_message,
     };
 
     saveEvaluation(
