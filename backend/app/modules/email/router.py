@@ -6,12 +6,10 @@ from fastapi.responses import HTMLResponse
 from app.core.dependencies import get_current_user
 from app.modules.email.schemas import SendEmailRequest, SendEmailResponse
 from app.modules.email.service import asset_to_data_uri, send_evaluation_email
-from app.modules.email.template import render_email_html
+from app.modules.email.template import _get_strings, render_email_html
 from app.modules.evaluations.service import get_evaluation_detail
 
 router = APIRouter(prefix="/api/v1/email", tags=["email"])
-
-from app.modules.email.template import _get_strings
 
 
 def _chart_placeholder_svg(language: str = "id") -> str:
