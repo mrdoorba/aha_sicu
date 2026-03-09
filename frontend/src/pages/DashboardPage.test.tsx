@@ -27,6 +27,6 @@ describe('DashboardPage', () => {
   it('renders search for brand heading initially', () => {
     renderDashboardPage();
 
-    expect(screen.getByText(/search for brand/i)).toBeInTheDocument();
+    expect(screen.getByText(/cari merek/i)).toBeInTheDocument();
   });
 });
