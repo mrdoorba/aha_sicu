@@ -43,23 +43,113 @@ STRINGS: dict[str, dict[str, str]] = {
         "check_count": "Lolos",
         "cross_count": "Tidak Lolos",
         "brand_report": "Laporan Evaluasi Brand",
+        "subject": "Laporan Evaluasi Brand: {brand_name} - {period}",
+        "plain_score": "Skor Akhir",
+        "plain_period": "Periode",
+        "chart_placeholder": "Chart akan ditampilkan di email",
+    },
+    "en": {
+        "score_overview": "Score Overview",
+        "detailed_evaluation": "Detailed Evaluation",
+        "score_breakdown": "Score Breakdown",
+        "data_intelligence": "Data Intelligence",
+        "ads_analysis": "Ads Analysis",
+        "top_sku": "Top SKU",
+        "revenue_ranking": "Revenue Ranking",
+        "stock_ranking": "Stock Ranking",
+        "metric": "Metric",
+        "value": "Value",
+        "benchmark": "Benchmark",
+        "verdict": "Verdict",
+        "score": "Score",
+        "message": "Message",
+        "approved": "Approved",
+        "rejected": "Rejected",
+        "template_type": "Template Type",
+        "check_count": "Pass",
+        "cross_count": "Fail",
+        "brand_report": "Brand Evaluation Report",
+        "subject": "Brand Evaluation Report: {brand_name} - {period}",
+        "plain_score": "Final Score",
+        "plain_period": "Period",
+        "chart_placeholder": "Chart will be displayed in email",
+    },
+    "th": {
+        "score_overview": "\u0e20\u0e32\u0e1e\u0e23\u0e27\u0e21\u0e04\u0e30\u0e41\u0e19\u0e19",
+        "detailed_evaluation": "\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e40\u0e21\u0e34\u0e19\u0e42\u0e14\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14",
+        "score_breakdown": "\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e04\u0e30\u0e41\u0e19\u0e19",
+        "data_intelligence": "\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e0a\u0e34\u0e07\u0e25\u0e36\u0e01",
+        "ads_analysis": "\u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c\u0e42\u0e06\u0e29\u0e13\u0e32",
+        "top_sku": "Top SKU",
+        "revenue_ranking": "\u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49",
+        "stock_ranking": "\u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a\u0e2a\u0e15\u0e47\u0e2d\u0e01",
+        "metric": "\u0e15\u0e31\u0e27\u0e0a\u0e35\u0e49\u0e27\u0e31\u0e14",
+        "value": "\u0e04\u0e48\u0e32",
+        "benchmark": "\u0e40\u0e01\u0e13\u0e11\u0e4c\u0e21\u0e32\u0e15\u0e23\u0e10\u0e32\u0e19",
+        "verdict": "\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e15\u0e31\u0e14\u0e2a\u0e34\u0e19",
+        "score": "\u0e04\u0e30\u0e41\u0e19\u0e19",
+        "message": "\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21",
+        "approved": "\u0e1c\u0e48\u0e32\u0e19",
+        "rejected": "\u0e44\u0e21\u0e48\u0e1c\u0e48\u0e32\u0e19",
+        "template_type": "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e40\u0e17\u0e21\u0e40\u0e1e\u0e25\u0e15",
+        "check_count": "\u0e1c\u0e48\u0e32\u0e19",
+        "cross_count": "\u0e44\u0e21\u0e48\u0e1c\u0e48\u0e32\u0e19",
+        "brand_report": "\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1b\u0e23\u0e30\u0e40\u0e21\u0e34\u0e19\u0e41\u0e1a\u0e23\u0e19\u0e14\u0e4c",
+        "subject": "\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1b\u0e23\u0e30\u0e40\u0e21\u0e34\u0e19\u0e41\u0e1a\u0e23\u0e19\u0e14\u0e4c: {brand_name} - {period}",
+        "plain_score": "\u0e04\u0e30\u0e41\u0e19\u0e19\u0e2a\u0e38\u0e14\u0e17\u0e49\u0e32\u0e22",
+        "plain_period": "\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32",
+        "chart_placeholder": "\u0e41\u0e1c\u0e19\u0e20\u0e39\u0e21\u0e34\u0e08\u0e30\u0e41\u0e2a\u0e14\u0e07\u0e43\u0e19\u0e2d\u0e35\u0e40\u0e21\u0e25",
     },
 }
 
-CATEGORY_MAP: dict[str, str] = {
-    "Kesehatan Operasional Toko": "Operasional",
-    "Bisnis Analisis": "Bisnis",
-    "Tinjauan Pengunjung": "Pengunjung",
-    "Promo Toko": "Alat Promo",
-    "Jumlah Produk & Status Toko": "Produk & Status",
-    "Data Iklan": "Iklan",
-    "Partisipasi Campaign": "Campaign",
-    "Kompetisi TOP Produk": "Kompetisi",
-    "Stok": "Stok",
-    "Discount": "Diskon",
+CATEGORY_MAP: dict[str, dict[str, str]] = {
+    "id": {
+        "Kesehatan Operasional Toko": "Operasional",
+        "Bisnis Analisis": "Bisnis",
+        "Tinjauan Pengunjung": "Pengunjung",
+        "Promo Toko": "Alat Promo",
+        "Jumlah Produk & Status Toko": "Produk & Status",
+        "Data Iklan": "Iklan",
+        "Partisipasi Campaign": "Campaign",
+        "Kompetisi TOP Produk": "Kompetisi",
+        "Stok": "Stok",
+        "Discount": "Diskon",
+    },
+    "en": {
+        "Kesehatan Operasional Toko": "Operations",
+        "Bisnis Analisis": "Business",
+        "Tinjauan Pengunjung": "Visitors",
+        "Promo Toko": "Promo Tools",
+        "Jumlah Produk & Status Toko": "Products & Status",
+        "Data Iklan": "Ads",
+        "Partisipasi Campaign": "Campaign",
+        "Kompetisi TOP Produk": "Competition",
+        "Stok": "Stock",
+        "Discount": "Discount",
+    },
+    "th": {
+        "Kesehatan Operasional Toko": "\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e07\u0e32\u0e19",
+        "Bisnis Analisis": "\u0e18\u0e38\u0e23\u0e01\u0e34\u0e08",
+        "Tinjauan Pengunjung": "\u0e1c\u0e39\u0e49\u0e40\u0e22\u0e35\u0e48\u0e22\u0e21\u0e0a\u0e21",
+        "Promo Toko": "\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e21\u0e37\u0e2d\u0e42\u0e1b\u0e23\u0e42\u0e21\u0e15",
+        "Jumlah Produk & Status Toko": "\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e41\u0e25\u0e30\u0e2a\u0e16\u0e32\u0e19\u0e30",
+        "Data Iklan": "\u0e42\u0e06\u0e29\u0e13\u0e32",
+        "Partisipasi Campaign": "\u0e41\u0e04\u0e21\u0e40\u0e1b\u0e0d",
+        "Kompetisi TOP Produk": "\u0e01\u0e32\u0e23\u0e41\u0e02\u0e48\u0e07\u0e02\u0e31\u0e19",
+        "Stok": "\u0e2a\u0e15\u0e47\u0e2d\u0e01",
+        "Discount": "\u0e2a\u0e48\u0e27\u0e19\u0e25\u0e14",
+    },
 }
 
-S = STRINGS["id"]
+
+def _get_strings(language: str = "id") -> dict[str, str]:
+    """Get string translations for the given language, falling back to Indonesian."""
+    return STRINGS.get(language, STRINGS["id"])
+
+
+def _get_category_map(language: str = "id") -> dict[str, str]:
+    """Get category label map for the given language, falling back to Indonesian."""
+    return CATEGORY_MAP.get(language, CATEGORY_MAP["id"])
 
 
 # ---------------------------------------------------------------------------
@@ -108,6 +198,7 @@ def _render_header(
     period: str,
     verdict: str,
     template: str,
+    S: dict[str, str],
 ) -> str:
     """Render header section: branded image + brand info."""
     return f"""\
@@ -174,6 +265,7 @@ def _render_score_overview(
     verdict: str,
     template: str,
     categories: list[dict[str, Any]],
+    S: dict[str, str],
 ) -> str:
     """Render score overview section: large score, progress bar, verdict counts."""
     color = _score_color(final_score)
@@ -257,7 +349,7 @@ def _render_footer(footer_src: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _render_metric_card(row: dict[str, Any]) -> str:
+def _render_metric_card(row: dict[str, Any], S: dict[str, str]) -> str:
     """Render a single metric card as a table cell content block."""
     verdict_color = GREEN if row.get("verdict") == "\u2714\ufe0f" else ORANGE
     return f"""\
@@ -293,14 +385,18 @@ def _render_metric_card(row: dict[str, Any]) -> str:
 </table>"""
 
 
-def _render_detailed_evaluation(categories: list[dict[str, Any]]) -> str:
+def _render_detailed_evaluation(
+    categories: list[dict[str, Any]],
+    S: dict[str, str],
+    cat_map: dict[str, str],
+) -> str:
     """Render detailed evaluation section with all categories and metric cards."""
     if not categories:
         return ""
 
     sections: list[str] = []
     for cat in categories:
-        cat_name = CATEGORY_MAP.get(cat.get("category", ""), cat.get("category", ""))
+        cat_name = cat_map.get(cat.get("category", ""), cat.get("category", ""))
         cat_score = cat.get("score", 0)
         cat_max = cat.get("max_score", 0)
         cat_pct = int((cat_score / cat_max) * 100) if cat_max > 0 else 0
@@ -310,9 +406,9 @@ def _render_detailed_evaluation(categories: list[dict[str, Any]]) -> str:
         # Build 2-column grid of metric cards
         grid_rows: list[str] = []
         for i in range(0, len(rows), 2):
-            left = _render_metric_card(rows[i])
+            left = _render_metric_card(rows[i], S)
             if i + 1 < len(rows):
-                right = _render_metric_card(rows[i + 1])
+                right = _render_metric_card(rows[i + 1], S)
             else:
                 right = "&nbsp;"
             grid_rows.append(
@@ -386,12 +482,15 @@ def _render_detailed_evaluation(categories: list[dict[str, Any]]) -> str:
 
 
 def _render_score_breakdown(
-    chart_src: str, categories: list[dict[str, Any]],
+    chart_src: str,
+    categories: list[dict[str, Any]],
+    S: dict[str, str],
+    cat_map: dict[str, str],
 ) -> str:
     """Render score breakdown section: chart image + category summary bars."""
     cat_bars: list[str] = []
     for cat in categories:
-        cat_name = CATEGORY_MAP.get(cat.get("category", ""), cat.get("category", ""))
+        cat_name = cat_map.get(cat.get("category", ""), cat.get("category", ""))
         cat_score = cat.get("score", 0)
         cat_max = cat.get("max_score", 0)
         cat_pct = int((cat_score / cat_max) * 100) if cat_max > 0 else 0
@@ -505,7 +604,7 @@ def _render_ranking_table(
 </table>"""
 
 
-def _render_data_intelligence(calculator_results: dict[str, Any]) -> str:
+def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, str]) -> str:
     """Render data intelligence section: ads analysis + top SKU tables."""
     if not calculator_results:
         return ""
@@ -594,6 +693,7 @@ def render_email_html(
     header_src: str,
     footer_src: str,
     note: str | None = None,
+    language: str = "id",
 ) -> str:
     """Render complete HTML email from evaluation data and image source URIs.
 
@@ -609,12 +709,17 @@ def render_email_html(
         Full src URI for the footer branded image.
     note:
         Optional custom note to render between header and score overview.
+    language:
+        Language code for translations ('id', 'en', 'th'). Defaults to 'id'.
 
     Returns
     -------
     str
         Complete HTML document string for the email body.
     """
+    S = _get_strings(language)
+    cat_map = _get_category_map(language)
+
     brand_name: str = evaluation_data["brand_name"]
     period: str = evaluation_data["period"]
     final_score: float = evaluation_data["final_score"]
@@ -623,17 +728,18 @@ def render_email_html(
     categories: list[dict[str, Any]] = evaluation_data.get("score_breakdown", [])
     calculator_results: dict[str, Any] = evaluation_data.get("calculator_results", {})
 
-    header = _render_header(header_src, brand_name, period, verdict, template)
+    header = _render_header(header_src, brand_name, period, verdict, template, S)
     note_section = _render_note(note) if note else ""
-    score_overview = _render_score_overview(final_score, verdict, template, categories)
-    detailed = _render_detailed_evaluation(categories)
-    breakdown = _render_score_breakdown(chart_src, categories)
-    intelligence = _render_data_intelligence(calculator_results)
+    score_overview = _render_score_overview(final_score, verdict, template, categories, S)
+    detailed = _render_detailed_evaluation(categories, S, cat_map)
+    breakdown = _render_score_breakdown(chart_src, categories, S, cat_map)
+    intelligence = _render_data_intelligence(calculator_results, S)
     footer = _render_footer(footer_src)
 
+    lang_code = language if language in ("id", "en", "th") else "id"
     return f"""\
 <!DOCTYPE html>
-<html lang="id">
+<html lang="{lang_code}">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">

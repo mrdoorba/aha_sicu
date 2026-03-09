@@ -11,15 +11,21 @@ from app.modules.evaluations.service import get_evaluation_detail
 
 router = APIRouter(prefix="/api/v1/email", tags=["email"])
 
-# Chart placeholder SVG for preview (chart is captured at send time)
-_CHART_PLACEHOLDER_SVG = (
-    "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
-    "width='600' height='300' viewBox='0 0 600 300'%3E"
-    "%3Crect width='600' height='300' fill='%23f0f0f0'/%3E"
-    "%3Ctext x='300' y='150' text-anchor='middle' fill='%23999' "
-    "font-family='Arial' font-size='14'%3E"
-    "Chart akan ditampilkan di email%3C/text%3E%3C/svg%3E"
-)
+from app.modules.email.template import _get_strings
+
+
+def _chart_placeholder_svg(language: str = "id") -> str:
+    """Generate chart placeholder SVG with localized text."""
+    S = _get_strings(language)
+    text = S["chart_placeholder"]
+    return (
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
+        "width='600' height='300' viewBox='0 0 600 300'%3E"
+        "%3Crect width='600' height='300' fill='%23f0f0f0'/%3E"
+        "%3Ctext x='300' y='150' text-anchor='middle' fill='%23999' "
+        "font-family='Arial' font-size='14'%3E"
+        f"{text}%3C/text%3E%3C/svg%3E"
+    )
 
 
 @router.post("/send", response_model=SendEmailResponse)
@@ -44,6 +50,7 @@ async def send_email_endpoint(
         cc=[str(c) for c in body.cc] if body.cc else None,
         bcc=[str(b) for b in body.bcc] if body.bcc else None,
         note=body.note,
+        language=current_user.get("language", "id"),
     )
 
 
@@ -65,12 +72,14 @@ async def preview_email_endpoint(
     header_src = asset_to_data_uri("aha-e-mail-header-2026.png")
     footer_src = asset_to_data_uri("aha-e-mail-footer-2026.png")
 
+    language = current_user.get("language", "id")
     html = render_email_html(
         evaluation_data=eval_dict,
-        chart_src=_CHART_PLACEHOLDER_SVG,
+        chart_src=_chart_placeholder_svg(language),
         header_src=header_src,
         footer_src=footer_src,
         note=note,
+        language=language,
     )
 
     return HTMLResponse(content=html)

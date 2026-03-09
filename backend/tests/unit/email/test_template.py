@@ -322,7 +322,7 @@ class TestStringsAndCategoryMap:
             "Discount",
         ]
         for key in expected_keys:
-            assert key in CATEGORY_MAP, f"Missing CATEGORY_MAP key: {key}"
+            assert key in CATEGORY_MAP["id"], f"Missing CATEGORY_MAP key: {key}"
 
 
 # ===================================================================

@@ -12,6 +12,7 @@ from pathlib import Path
 from app.config import settings
 from app.core.exceptions import AppException
 from app.modules.email.schemas import SendEmailResponse
+from app.modules.email.template import _get_strings
 
 logger = logging.getLogger(__name__)
 
@@ -189,6 +190,7 @@ async def send_evaluation_email(
     cc: list[str] | None = None,
     bcc: list[str] | None = None,
     note: str | None = None,
+    language: str = "id",
 ) -> SendEmailResponse:
     """Compose and send (or preview) an evaluation email.
 
@@ -210,8 +212,9 @@ async def send_evaluation_email(
     evaluation_id = evaluation_data.get("id", 0)
 
     # Auto-generate subject if not provided
+    S = _get_strings(language)
     if not subject:
-        subject = f"Laporan Evaluasi Brand: {brand_name} - {period}"
+        subject = S["subject"].format(brand_name=brand_name, period=period)
 
     # Decode chart image
     chart_bytes = _decode_chart_image(chart_image_b64)
@@ -236,16 +239,17 @@ async def send_evaluation_email(
         header_src=f"cid:{header_cid}",
         footer_src=f"cid:{footer_cid}",
         note=note,
+        language=language,
     )
 
     # Plain text fallback
     final_score = evaluation_data.get("final_score", "N/A")
     verdict = evaluation_data.get("verdict", "N/A")
     text_content = (
-        f"Laporan Evaluasi Brand: {brand_name}\n"
-        f"Periode: {period}\n"
-        f"Skor Akhir: {final_score}\n"
-        f"Verdict: {verdict}\n"
+        f"{S['brand_report']}: {brand_name}\n"
+        f"{S['plain_period']}: {period}\n"
+        f"{S['plain_score']}: {final_score}\n"
+        f"{S['verdict']}: {verdict}\n"
     )
 
     # Debug mode: write to file instead of sending
