@@ -23,7 +23,7 @@ interface ScoreOverviewProps {
   scoreBreakdown?: CategoryBreakdown[];
 }
 
-export const ScoreOverview = ({ score, template, scoreBreakdown }: ScoreOverviewProps) => {
+export const ScoreOverview = ({ score, scoreBreakdown }: ScoreOverviewProps) => {
   const { t } = useTranslation();
 
   // Compute partner score from ✔️/❌ verdicts
