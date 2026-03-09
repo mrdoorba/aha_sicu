@@ -15,6 +15,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
 import { Button } from '../ui/button';
 import { ThemeToggle } from './ThemeToggle';
+import { LanguageToggle } from './LanguageToggle';
 import {
   Dialog,
   DialogClose,
@@ -171,6 +172,7 @@ export const Sidebar = ({ className }: SidebarProps) => {
               {profile?.role || 'User'}
             </span>
           </div>
+          <LanguageToggle isCollapsed={isCollapsed} className="mb-2" />
           {isAdmin && <ThemeToggle isCollapsed={isCollapsed} className="mb-2" />}
           <Button
             variant="ghost"
