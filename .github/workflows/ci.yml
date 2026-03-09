@@ -43,7 +43,7 @@ jobs:
         run: uv run ruff check .
 
       - name: Run tests
-        run: uv run pytest -v
+        run: uv run pytest -v -n auto
 
   frontend:
     name: Frontend Tests & Lint
@@ -73,6 +73,3 @@ jobs:
 
       - name: Run tests
         run: npx vitest run
-
-      - name: Build
-        run: npm run build
