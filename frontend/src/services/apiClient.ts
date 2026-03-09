@@ -16,6 +16,32 @@ interface paths {
               id: string;
               email: string;
               role: string;
+              language: string;
+              created_at: string;
+              last_login: string;
+            };
+          };
+        };
+      };
+    };
+  };
+  '/api/v1/me/language': {
+    patch: {
+      requestBody: {
+        content: {
+          'application/json': {
+            language: 'id' | 'en' | 'th';
+          };
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              id: string;
+              email: string;
+              role: string;
+              language: string;
               created_at: string;
               last_login: string;
             };
@@ -849,6 +875,16 @@ export default client;
 // Convenience function to test auth with /api/v1/me endpoint
 export const getCurrentUser = async () => {
   const { data, error } = await client.GET('/api/v1/me');
+  if (error) {
+    throw error;
+  }
+  return data;
+};
+
+export const updateLanguage = async (language: 'id' | 'en' | 'th') => {
+  const { data, error } = await client.PATCH('/api/v1/me/language', {
+    body: { language },
+  });
   if (error) {
     throw error;
   }
