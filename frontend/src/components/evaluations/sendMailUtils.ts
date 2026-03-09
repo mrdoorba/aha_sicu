@@ -1,5 +1,7 @@
+import i18n from '../../i18n';
+
 export function buildSubject(brandName: string, period: string): string {
-  return `\u{1F3E5} AHA Store Internal Check Up (Store ICU) - ${brandName} ${period}`;
+  return i18n.t('sendMailUtils.subject', { brandName, period });
 }
 
 export function buildBody(
@@ -10,11 +12,14 @@ export function buildBody(
   kategori: string,
   emailOutput: string,
 ): string {
+  const salutation = i18n.t('sendMailUtils.salutation', { brandName, picName });
+  const intro = i18n.t('sendMailUtils.intro', { brandName, storeLink, kategori });
+
   return `[EMAIL TO: ${picEmail}]
 
-Kepada Pimpinan ${brandName} (Bapak/Ibu ${picName}) yang terhormat,
+${salutation}
 
-Berikut adalah *hasil AHA Store-Health Check-Up ${brandName} di Marketplace* [${storeLink}] dengan kategori ${kategori}
+${intro}
 
 ${emailOutput}`;
 }
