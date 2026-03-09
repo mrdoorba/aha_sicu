@@ -587,11 +587,10 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
     # Row 19: Average (computed)
     avg_threshold = _get_rule_value(biz_rules, "six_month_avg_threshold", "threshold", 100_000_000)
     avg_points = float(_get_rule_value(biz_rules, "six_month_avg_threshold", "points", 10.0))
-    f19 = "✔️" if avg_6mo > avg_threshold else "❌"
     h19 = avg_points if avg_6mo > avg_threshold else 0.0
     rows.append(RowScore(
         row=19, metric="Rata² Penjualan 6 bulan terakhir",
-        value=avg_6mo, benchmark="-", verdict=f19, message="", score=h19,
+        value=avg_6mo, benchmark="-", verdict="-", message="", score=h19,
     ))
 
     # Row 20: Conversion rate (no score) — benchmark depends on template

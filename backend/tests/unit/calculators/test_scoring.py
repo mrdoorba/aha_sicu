@@ -291,7 +291,7 @@ class TestScoreBusiness:
         cat = CategoryScore(
             category="Bisnis Analisis",
             score=10.0, max_score=20.0,
-            rows=[RowScore(row=19, metric="Rata² Penjualan 6 bulan terakhir", value=120_000_000, benchmark="-", verdict="✔️", message="", score=10.0)]
+            rows=[RowScore(row=19, metric="Rata² Penjualan 6 bulan terakhir", value=120_000_000, benchmark="-", verdict="-", message="", score=10.0)]
         )
         _generate_business_messages(cat, data)
         h19_row = next(r for r in cat.rows if r.row == 19)
