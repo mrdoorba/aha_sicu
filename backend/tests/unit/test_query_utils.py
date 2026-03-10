@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from app.db.queries.utils import escape_like, fetch_one, fetch_all, paginate, FilterBuilder
+from app.db.queries.utils import fetch_one, fetch_all, paginate, FilterBuilder
 
 
 class TestFetchOne:
