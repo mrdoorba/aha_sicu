@@ -116,3 +116,32 @@ def test_download_returns_404_when_no_storage_path(client):
         )
 
     assert resp.status_code == 404
+
+
+def test_local_download_serves_file(client):
+    """Local download endpoint serves file bytes in dev mode."""
+    from app.modules.upload.gcs_client import LocalStorageClient, make_object_name
+
+    storage = LocalStorageClient()
+    object_name = make_object_name("test-dl-id", "report.csv")
+    file_path = storage._base_dir / object_name
+    file_path.parent.mkdir(parents=True, exist_ok=True)
+    file_path.write_bytes(b"col1,col2\nval1,val2\n")
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        resp = client.get(
+            "/api/v1/upload/local/test-dl-id/report.csv",
+            headers=AUTH_HEADERS,
+        )
+
+    assert resp.status_code == 200
+    assert resp.content == b"col1,col2\nval1,val2\n"
+
+    # Cleanup
+    file_path.unlink(missing_ok=True)

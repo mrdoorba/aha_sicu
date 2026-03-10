@@ -1,7 +1,7 @@
 """Upload API endpoints."""
 
 from fastapi import APIRouter, Depends, Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from app.config import settings
 from app.core.dependencies import get_current_user
@@ -68,6 +68,42 @@ async def download_file(
 ) -> DownloadResponse:
     """Generate a signed download URL for a previously uploaded file."""
     return await get_download_url(brand_id=brand_id, file_type=file_type)
+
+
+@router.get("/local/{upload_id}/{filename:path}")
+async def local_download(
+    upload_id: str,
+    filename: str,
+    current_user: dict = Depends(get_current_user),
+) -> Response:
+    """Local dev endpoint: serve file bytes for download."""
+    if settings.gcs_upload_bucket:
+        return JSONResponse(
+            status_code=404, content={"detail": "Local download not available in production"}
+        )
+
+    import mimetypes
+    import os
+
+    safe_filename = os.path.basename(filename)
+    if not safe_filename or safe_filename in (".", ".."):
+        return JSONResponse(status_code=400, content={"detail": "Invalid filename"})
+
+    from app.modules.upload.gcs_client import LocalStorageClient, make_object_name
+
+    storage = LocalStorageClient()
+    object_name = make_object_name(upload_id, safe_filename)
+    file_path = storage._base_dir / object_name
+
+    if not file_path.exists():
+        return JSONResponse(status_code=404, content={"detail": "File not found"})
+
+    content_type = mimetypes.guess_type(safe_filename)[0] or "application/octet-stream"
+    return Response(
+        content=file_path.read_bytes(),
+        media_type=content_type,
+        headers={"Content-Disposition": f'attachment; filename="{safe_filename}"'},
+    )
 
 
 @router.put("/local/{upload_id}/{filename:path}")
