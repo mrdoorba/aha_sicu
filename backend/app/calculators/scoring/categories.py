@@ -519,7 +519,7 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
 
     if not has_data:
         row = RowScore(
-            row=70, metric="Rata² Stok",
+            row=70, metric="Rata² Stok TOP 20% SKU",
             value="N/A", benchmark=f">={high_threshold:g}", verdict="-",
             message="Calculator 2 (Top SKU) belum dijalankan", score=0.0,
         )
@@ -544,12 +544,12 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
         f70, h70 = "❌", low_points
 
     if avg_stock_int >= high_threshold:
-        msg70 = f"✔️ Rata² Stok = {avg_stock_int} [Sudah Baik]"
+        msg70 = f"✔️ Rata² Stok TOP 20% SKU = {avg_stock_int} [Sudah Baik]"
     else:
-        msg70 = f"❌ Rata² Stok = {avg_stock_int} [Kurang Baik, nilai disarankan: >={high_threshold:g}]"
+        msg70 = f"❌ Rata² Stok TOP 20% SKU = {avg_stock_int} [Kurang Baik, nilai disarankan: >={high_threshold:g}]"
 
     row70 = RowScore(
-        row=70, metric="Rata² Stok",
+        row=70, metric="Rata² Stok TOP 20% SKU",
         value=avg_stock_int, benchmark=f">={high_threshold:g}", verdict=f70,
         message=msg70, score=h70,
     )
