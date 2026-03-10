@@ -5,6 +5,7 @@ import { RadioGroup, RadioGroupItem } from '../ui/radio-group';
 import { Label } from '../ui/label';
 import { Button } from '../ui/button';
 import { Save, Check, Loader2 } from 'lucide-react';
+import { FileDownloadSection } from './FileDownloadSection';
 import { FileUploadSection } from './FileUploadSection';
 import { OperationalForm } from './forms/OperationalForm';
 import { BusinessForm } from './forms/BusinessForm';
@@ -21,6 +22,7 @@ import type { ManualData } from './forms/formConfig';
 import type { SaveStatus } from '../../hooks/useAutoSaveForm';
 import type { ScoringResult } from '../../hooks/useScoring';
 import type { ScoringRules } from '../../hooks/useRules';
+import { useBrandUploads } from '../../hooks/useUpload';
 
 interface FormProps {
   brandId: number;
@@ -91,6 +93,7 @@ export const EvaluationSections = ({
   saveError,
 }: EvaluationSectionsProps) => {
   const { t } = useTranslation();
+  const { data: brandUploadsData } = useBrandUploads(brandId);
   const sectionRefs = useRef<Map<string, HTMLElement>>(new Map());
 
   useEffect(() => {
@@ -208,6 +211,12 @@ export const EvaluationSections = ({
           {t('evaluationSections.step4')}
         </h3>
         <FileUploadSection brandId={brandId} />
+
+        {/* Section 4b: File Downloads */}
+        <FileDownloadSection
+          brandId={brandId}
+          uploads={brandUploadsData?.uploads ?? []}
+        />
       </section>
 
       {/* Section 5: Data Iklan, Campaign, Kompetisi & Review */}
