@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import math
-from typing import Any
 
 from app.calculators.scoring.helpers import (
     _fmt_idr,

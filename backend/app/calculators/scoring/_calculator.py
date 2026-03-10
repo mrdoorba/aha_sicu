@@ -45,7 +45,7 @@ from app.calculators.scoring.messages import (
     _generate_products_messages,
     _generate_visitors_messages,
 )
-from app.calculators.scoring.models import CategoryScore, RowScore, ScoringResult
+from app.calculators.scoring.models import ScoringResult
 
 def calculate_score(
     manual_data: dict,
