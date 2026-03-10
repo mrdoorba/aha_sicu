@@ -6,8 +6,7 @@ from unittest.mock import AsyncMock, patch
 import pytest
 
 from app.calculators.engine import (
-    CALCULATOR_REQUIRED_FILES,
-    CALCULATOR_REQUIRED_MANUAL,
+    CALCULATOR_REGISTRY,
     FILE_TO_CALCULATORS,
     _build_skip_reason,
     _has_total_products,
@@ -50,8 +49,8 @@ class TestDependencyMaps:
     def test_file_to_calculator_mapping_completeness(self):
         """Every file type in required_files appears in FILE_TO_CALCULATORS."""
         all_file_types = set()
-        for files in CALCULATOR_REQUIRED_FILES.values():
-            all_file_types.update(files)
+        for config in CALCULATOR_REGISTRY.values():
+            all_file_types.update(config.required_files)
 
         for file_type in all_file_types:
             assert file_type in FILE_TO_CALCULATORS, (
@@ -60,30 +59,31 @@ class TestDependencyMaps:
             )
 
     def test_calculator_to_files_mapping_completeness(self):
-        """Every calculator in FILE_TO_CALCULATORS appears in CALCULATOR_REQUIRED_FILES."""
+        """Every calculator in FILE_TO_CALCULATORS appears in CALCULATOR_REGISTRY."""
         all_calculators = set()
         for calcs in FILE_TO_CALCULATORS.values():
             all_calculators.update(calcs)
 
         for calc in all_calculators:
-            assert calc in CALCULATOR_REQUIRED_FILES, (
+            assert calc in CALCULATOR_REGISTRY, (
                 f"Calculator '{calc}' in FILE_TO_CALCULATORS "
-                f"but missing from CALCULATOR_REQUIRED_FILES"
+                f"but missing from CALCULATOR_REGISTRY"
             )
 
     def test_ads_keyword_requires_two_files_and_manual(self):
-        assert CALCULATOR_REQUIRED_FILES["ads_keyword"] == [
-            "cpc_ad_report", "keyword_report"
-        ]
-        assert "total_products" in CALCULATOR_REQUIRED_MANUAL.get("ads_keyword", [])
+        config = CALCULATOR_REGISTRY["ads_keyword"]
+        assert config.required_files == ["cpc_ad_report", "keyword_report"]
+        assert "total_products" in config.required_manual
 
     def test_discount_requires_order_export_only(self):
-        assert CALCULATOR_REQUIRED_FILES["discount"] == ["order_export"]
-        assert "discount" not in CALCULATOR_REQUIRED_MANUAL
+        config = CALCULATOR_REGISTRY["discount"]
+        assert config.required_files == ["order_export"]
+        assert config.required_manual == []
 
     def test_top_sku_requires_two_files(self):
-        assert CALCULATOR_REQUIRED_FILES["top_sku"] == ["order_export", "mass_update"]
-        assert "top_sku" not in CALCULATOR_REQUIRED_MANUAL
+        config = CALCULATOR_REGISTRY["top_sku"]
+        assert config.required_files == ["order_export", "mass_update"]
+        assert config.required_manual == []
 
     def test_order_export_triggers_discount_and_top_sku(self):
         assert set(FILE_TO_CALCULATORS["order_export"]) == {"discount", "top_sku"}
@@ -333,7 +333,7 @@ class TestRunReadyCalculators:
 
         with (
             patch("app.calculators.engine.check_calculator_readiness") as mock_check,
-            patch("app.calculators.engine._CALCULATOR_RUNNERS") as mock_runners,
+            patch("app.calculators.engine.CALCULATOR_REGISTRY") as mock_registry,
         ):
             mock_check.return_value = {
                 "discount": {
@@ -369,7 +369,9 @@ class TestRunReadyCalculators:
             }
 
             runner = AsyncMock(return_value=_FakeResult("discount"))
-            mock_runners.__getitem__ = lambda self, key: runner
+            mock_config = AsyncMock()
+            mock_config.runner = runner
+            mock_registry.__getitem__ = lambda self, key: mock_config
 
             results = await run_ready_calculators(1, mock_conn)
 
@@ -414,7 +416,7 @@ class TestRunReadyCalculators:
 
         with (
             patch("app.calculators.engine.check_calculator_readiness") as mock_check,
-            patch("app.calculators.engine._CALCULATOR_RUNNERS") as mock_runners,
+            patch("app.calculators.engine.CALCULATOR_REGISTRY") as mock_registry,
         ):
             mock_check.return_value = {
                 "discount": {
@@ -442,12 +444,17 @@ class TestRunReadyCalculators:
             failing_runner = AsyncMock(side_effect=Exception("Calculator broke"))
             success_runner = AsyncMock(return_value=_FakeResult("top_sku"))
 
-            def get_runner(self, key):
-                if key == "discount":
-                    return failing_runner
-                return success_runner
+            failing_config = AsyncMock()
+            failing_config.runner = failing_runner
+            success_config = AsyncMock()
+            success_config.runner = success_runner
 
-            mock_runners.__getitem__ = get_runner
+            def get_config(self, key):
+                if key == "discount":
+                    return failing_config
+                return success_config
+
+            mock_registry.__getitem__ = get_config
 
             results = await run_ready_calculators(1, mock_conn)
 
@@ -469,7 +476,7 @@ class TestRunCalculatorsForUpload:
 
         with (
             patch("app.calculators.engine.check_calculator_readiness") as mock_check,
-            patch("app.calculators.engine._CALCULATOR_RUNNERS") as mock_runners,
+            patch("app.calculators.engine.CALCULATOR_REGISTRY") as mock_registry,
         ):
             mock_check.return_value = {
                 "discount": {
@@ -495,7 +502,9 @@ class TestRunCalculatorsForUpload:
             }
 
             runner = AsyncMock(return_value=_FakeResult("discount"))
-            mock_runners.__getitem__ = lambda self, key: runner
+            mock_config = AsyncMock()
+            mock_config.runner = runner
+            mock_registry.__getitem__ = lambda self, key: mock_config
 
             results = await run_calculators_for_upload(1, "order_export", mock_conn)
 
@@ -514,7 +523,7 @@ class TestRunCalculatorsForUpload:
 
         with (
             patch("app.calculators.engine.check_calculator_readiness") as mock_check,
-            patch("app.calculators.engine._CALCULATOR_RUNNERS") as mock_runners,
+            patch("app.calculators.engine.CALCULATOR_REGISTRY") as mock_registry,
         ):
             mock_check.return_value = {
                 "top_sku": {
@@ -530,7 +539,9 @@ class TestRunCalculatorsForUpload:
             }
 
             runner = AsyncMock(return_value=_FakeResult("top_sku"))
-            mock_runners.__getitem__ = lambda self, key: runner
+            mock_config = AsyncMock()
+            mock_config.runner = runner
+            mock_registry.__getitem__ = lambda self, key: mock_config
 
             results = await run_calculators_for_upload(1, "mass_update", mock_conn)
 

@@ -1,7 +1,8 @@
 """Calculator orchestration engine — decides when to run calculators."""
 
 import logging
-from typing import Any
+from dataclasses import dataclass, field
+from typing import Any, Callable
 
 from asyncpg import Connection
 
@@ -17,35 +18,39 @@ from app.modules.evaluations.calculator_service import (
 logger = logging.getLogger(__name__)
 
 # ---------------------------------------------------------------------------
-# Dependency maps
+# Calculator registry — single source of truth for all calculator config
 # ---------------------------------------------------------------------------
 
-# Which files each calculator requires
-CALCULATOR_REQUIRED_FILES: dict[str, list[str]] = {
-    "ads_keyword": ["cpc_ad_report", "keyword_report"],
-    "discount": ["order_export"],
-    "top_sku": ["order_export", "mass_update"],
+
+@dataclass(frozen=True)
+class CalculatorConfig:
+    """Configuration for a single calculator type."""
+    required_files: list[str]
+    required_manual: list[str] = field(default_factory=list)
+    runner: Callable = None  # type: ignore[assignment]
+
+
+CALCULATOR_REGISTRY: dict[str, CalculatorConfig] = {
+    "ads_keyword": CalculatorConfig(
+        required_files=["cpc_ad_report", "keyword_report"],
+        required_manual=["total_products"],
+        runner=run_ads_keyword_calculator,
+    ),
+    "discount": CalculatorConfig(
+        required_files=["order_export"],
+        runner=run_discount_calculator,
+    ),
+    "top_sku": CalculatorConfig(
+        required_files=["order_export", "mass_update"],
+        runner=run_top_sku_calculator,
+    ),
 }
 
-# Which manual inputs each calculator requires
-CALCULATOR_REQUIRED_MANUAL: dict[str, list[str]] = {
-    "ads_keyword": ["total_products"],
-}
-
-# Which calculators are affected by each uploaded file type
-FILE_TO_CALCULATORS: dict[str, list[str]] = {
-    "cpc_ad_report": ["ads_keyword"],
-    "keyword_report": ["ads_keyword"],
-    "order_export": ["discount", "top_sku"],
-    "mass_update": ["top_sku"],
-}
-
-# Map calculator type → runner function
-_CALCULATOR_RUNNERS = {
-    "ads_keyword": run_ads_keyword_calculator,
-    "discount": run_discount_calculator,
-    "top_sku": run_top_sku_calculator,
-}
+# Derived lookup — computed once from registry, not manually maintained
+FILE_TO_CALCULATORS: dict[str, list[str]] = {}
+for _calc_name, _config in CALCULATOR_REGISTRY.items():
+    for _file_type in _config.required_files:
+        FILE_TO_CALCULATORS.setdefault(_file_type, []).append(_calc_name)
 
 
 # ---------------------------------------------------------------------------
@@ -118,11 +123,12 @@ async def check_calculator_readiness(
     result_map = {r["calculator_type"]: r for r in existing_results}
 
     statuses: dict[str, dict] = {}
-    for calc_type, required_files in CALCULATOR_REQUIRED_FILES.items():
+    for calc_type, config in CALCULATOR_REGISTRY.items():
+        required_files = config.required_files
         available = [f for f in required_files if f in available_file_types]
         missing = [f for f in required_files if f not in available_file_types]
 
-        required_manual = CALCULATOR_REQUIRED_MANUAL.get(calc_type, [])
+        required_manual = config.required_manual
         missing_manual: list[str] = []
         if "total_products" in required_manual and not has_manual_total_products:
             missing_manual.append("total_products")
@@ -170,7 +176,7 @@ async def run_ready_calculators(
             continue
 
         try:
-            runner = _CALCULATOR_RUNNERS[calc_type]
+            runner = CALCULATOR_REGISTRY[calc_type].runner
             result = await runner(brand_id)
             results.append({
                 "calculator_type": calc_type,
@@ -221,7 +227,7 @@ async def run_calculators_for_upload(
             continue
 
         try:
-            runner = _CALCULATOR_RUNNERS[calc_type]
+            runner = CALCULATOR_REGISTRY[calc_type].runner
             result = await runner(brand_id)
             results.append({
                 "calculator_type": calc_type,
