@@ -9,10 +9,29 @@ Spec: logic/scoring-system-template-sicu.md
 
 from __future__ import annotations
 
-import math
-import re
-from typing import Any
-
+from app.calculators.scoring.categories import (  # noqa: F401
+    _promo_verdict,
+    _score_ads,
+    _score_business,
+    _score_campaign,
+    _score_competition,
+    _score_discount_row,
+    _score_operational,
+    _score_products,
+    _score_promo_tools,
+    _score_stock,
+    _score_visitors,
+)
+from app.calculators.scoring.computations import (  # noqa: F401
+    _assemble_email_body,
+    _compute_g66,
+    _compute_g68,
+    _compute_g72,
+    _compute_g73,
+    _compute_g75,
+    _parse_d73_percentages,
+    _parse_g68_left,
+)
 from app.calculators.scoring.helpers import (  # noqa: F401
     INDO_MONTHS,
     _SafeDict,
@@ -31,33 +50,6 @@ from app.calculators.scoring.helpers import (  # noqa: F401
     _safe_num,
     _safe_str,
 )
-from app.calculators.scoring.models import CategoryScore, RowScore, ScoringResult
-from app.calculators.scoring.rules import DEFAULT_RULES, PROMO_START_ROW, PROMO_TOOLS
-
-
-# ---------------------------------------------------------------------------
-# Per-category scoring functions
-# ---------------------------------------------------------------------------
-
-
-from app.calculators.scoring.categories import (  # noqa: F401
-    _promo_verdict,
-    _score_ads,
-    _score_business,
-    _score_campaign,
-    _score_competition,
-    _score_discount_row,
-    _score_operational,
-    _score_products,
-    _score_promo_tools,
-    _score_stock,
-    _score_visitors,
-)
-
-# ---------------------------------------------------------------------------
-# G-column message generation
-# ---------------------------------------------------------------------------
-
 from app.calculators.scoring.messages import (  # noqa: F401
     _generate_ads_messages,
     _generate_business_messages,
@@ -68,23 +60,8 @@ from app.calculators.scoring.messages import (  # noqa: F401
     _generate_products_messages,
     _generate_visitors_messages,
 )
-
-from app.calculators.scoring.computations import (  # noqa: F401
-    _assemble_email_body,
-    _compute_g66,
-    _compute_g68,
-    _compute_g72,
-    _compute_g73,
-    _compute_g75,
-    _parse_d73_percentages,
-    _parse_g68_left,
-)
-
-
-
-# ---------------------------------------------------------------------------
-# Main entry point
-# ---------------------------------------------------------------------------
+from app.calculators.scoring.models import CategoryScore, RowScore, ScoringResult
+from app.calculators.scoring.rules import DEFAULT_RULES, PROMO_START_ROW, PROMO_TOOLS
 
 def calculate_score(
     manual_data: dict,
