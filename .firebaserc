@@ -6,8 +6,8 @@
   "targets": {
     "YOUR_GCP_PROJECT_ID": {
       "hosting": {
-        "aha-sicu-dev": ["aha-sicu-dev"],
-        "aha-sicu-prod": ["aha-sicu-prod"]
+        "aha-coms-sicu-dev": ["aha-coms-sicu-dev"],
+        "aha-coms-sicu-prod": ["aha-coms-sicu-prod"]
       }
     }
   }

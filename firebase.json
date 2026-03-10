@@ -1,7 +1,7 @@
 {
   "hosting": [
     {
-      "target": "aha-sicu-dev",
+      "target": "aha-coms-sicu-dev",
       "public": "frontend/dist",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "rewrites": [
@@ -12,7 +12,7 @@
       ]
     },
     {
-      "target": "aha-sicu-prod",
+      "target": "aha-coms-sicu-prod",
       "public": "frontend/dist",
       "ignore": ["firebase.json", "**/.*", "**/node_modules/**"],
       "rewrites": [
