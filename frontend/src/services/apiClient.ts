@@ -238,6 +238,26 @@ interface paths {
       };
     };
   };
+  '/api/v1/upload/brands/{brand_id}/download/{file_type}': {
+    get: {
+      parameters: {
+        path: {
+          brand_id: number;
+          file_type: string;
+        };
+      };
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              download_url: string;
+              filename: string;
+            };
+          };
+        };
+      };
+    };
+  };
   '/api/v1/evaluations/grouped': {
     get: {
       parameters: {
