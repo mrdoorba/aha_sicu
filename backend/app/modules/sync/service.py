@@ -74,6 +74,71 @@ async def _sync_sheet_to_table(
     )
 
 
+async def _sync_vp_sheet(
+    sheets_client: GoogleSheetsClient,
+) -> SheetSyncResult | None:
+    """Fetch and sync VP sheet data.
+
+    Returns None if VP spreadsheet is not configured.
+    Raises on unrecoverable fetch errors.
+    """
+    if not settings.gsheets_vp_spreadsheet_id:
+        logger.info("VP spreadsheet not configured, skipping")
+        return None
+
+    try:
+        logger.info("Fetching VP data...")
+        vp_rows = await sheets_client.fetch_vp_data()
+        logger.info(f"Fetched {len(vp_rows)} rows from VP sheet")
+
+        result = await _sync_sheet_to_table(
+            rows=vp_rows,
+            table="brand_vp_data",
+            brand_column=settings.gsheets_vp_brand_column,
+            sheet_type="vp",
+        )
+        logger.info(
+            f"VP sync: {result.rows_synced} synced, {len(result.errors)} errors"
+        )
+        return result
+    except Exception as e:
+        logger.error(f"VP sync failed: {e}")
+        raise
+
+
+async def _sync_meeting_sheet(
+    sheets_client: GoogleSheetsClient,
+) -> SheetSyncResult | None:
+    """Fetch and sync Meeting sheet data.
+
+    Returns None if Meeting spreadsheet is not configured.
+    Raises on unrecoverable fetch errors.
+    """
+    if not settings.gsheets_meeting_spreadsheet_id:
+        logger.info("Meeting spreadsheet not configured, skipping")
+        return None
+
+    try:
+        logger.info("Fetching Meeting data...")
+        meeting_rows = await sheets_client.fetch_meeting_data()
+        logger.info(f"Fetched {len(meeting_rows)} rows from Meeting sheet")
+
+        result = await _sync_sheet_to_table(
+            rows=meeting_rows,
+            table="brand_meeting_data",
+            brand_column=settings.gsheets_meeting_brand_column,
+            sheet_type="meeting",
+        )
+        logger.info(
+            f"Meeting sync: {result.rows_synced} synced, "
+            f"{len(result.errors)} errors"
+        )
+        return result
+    except Exception as e:
+        logger.error(f"Meeting sync failed: {e}")
+        raise
+
+
 async def run_sync(sync_id: int | None = None) -> SyncResult:
     """Execute full brand sync from both Google Sheets.
 
@@ -108,55 +173,22 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
 
     try:
         # Sync VP sheet
-        if settings.gsheets_vp_spreadsheet_id:
-            try:
-                logger.info("Fetching VP data...")
-                vp_rows = await sheets_client.fetch_vp_data()
-                logger.info(f"Fetched {len(vp_rows)} rows from VP sheet")
-
-                vp_result = await _sync_sheet_to_table(
-                    rows=vp_rows,
-                    table="brand_vp_data",
-                    brand_column=settings.gsheets_vp_brand_column,
-                    sheet_type="vp",
-                )
-                logger.info(
-                    f"VP sync: {vp_result.rows_synced} synced, {len(vp_result.errors)} errors"
-                )
-            except Exception as e:
-                logger.error(f"VP sync failed: {e}")
-                all_errors.append(f"VP: {e}")
-                vp_result = SheetSyncResult(
-                    sheet_type="vp", rows_synced=0, errors=[], success=False
-                )
-        else:
-            logger.info("VP spreadsheet not configured, skipping")
+        try:
+            vp_result = await _sync_vp_sheet(sheets_client)
+        except Exception as e:
+            all_errors.append(f"VP: {e}")
+            vp_result = SheetSyncResult(
+                sheet_type="vp", rows_synced=0, errors=[], success=False
+            )
 
         # Sync Meeting sheet
-        if settings.gsheets_meeting_spreadsheet_id:
-            try:
-                logger.info("Fetching Meeting data...")
-                meeting_rows = await sheets_client.fetch_meeting_data()
-                logger.info(f"Fetched {len(meeting_rows)} rows from Meeting sheet")
-
-                meeting_result = await _sync_sheet_to_table(
-                    rows=meeting_rows,
-                    table="brand_meeting_data",
-                    brand_column=settings.gsheets_meeting_brand_column,
-                    sheet_type="meeting",
-                )
-                logger.info(
-                    f"Meeting sync: {meeting_result.rows_synced} synced, "
-                    f"{len(meeting_result.errors)} errors"
-                )
-            except Exception as e:
-                logger.error(f"Meeting sync failed: {e}")
-                all_errors.append(f"Meeting: {e}")
-                meeting_result = SheetSyncResult(
-                    sheet_type="meeting", rows_synced=0, errors=[], success=False
-                )
-        else:
-            logger.info("Meeting spreadsheet not configured, skipping")
+        try:
+            meeting_result = await _sync_meeting_sheet(sheets_client)
+        except Exception as e:
+            all_errors.append(f"Meeting: {e}")
+            meeting_result = SheetSyncResult(
+                sheet_type="meeting", rows_synced=0, errors=[], success=False
+            )
 
         # Calculate totals
         total_synced = (vp_result.rows_synced if vp_result else 0) + (
