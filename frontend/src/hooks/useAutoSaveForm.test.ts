@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { buildManualData, mergeWithOverrides } from './useAutoSaveForm';
+import { buildManualData, mergeWithOverrides } from './manualDataUtils';
 import { EMPTY_MANUAL_DATA } from '../components/evaluation/forms/formConfig';
 import type { ManualData } from '../components/evaluation/forms/formConfig';
 
