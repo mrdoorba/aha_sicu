@@ -1,10 +1,28 @@
 """Brand data database queries using parameterized SQL."""
 
-from typing import Any, Literal
+from datetime import datetime
+from typing import Any, Literal, TypedDict
 
 from asyncpg import Connection
 
 from app.db.queries.utils import escape_like
+
+
+class BrandRow(TypedDict):
+    id: int
+    brand_name: str
+    raw_data: dict[str, Any]
+    created_at: datetime
+    updated_at: datetime
+
+
+class BrandWithMeetingRow(TypedDict):
+    id: int
+    brand_name: str
+    raw_data: dict[str, Any]
+    updated_at: datetime
+    meeting_raw_data: dict[str, Any] | None
+
 
 TableName = Literal["brand_vp_data", "brand_meeting_data"]
 
@@ -23,7 +41,7 @@ async def upsert_brand_data(
     table: TableName,
     brand_name: str,
     raw_data: dict[str, Any],
-) -> dict:
+) -> BrandRow:
     """Upsert brand data by brand_name.
 
     Uses ON CONFLICT DO UPDATE to handle both insert and update cases.
@@ -50,7 +68,7 @@ async def get_brand_data(
     table: TableName,
     limit: int = 50,
     offset: int = 0,
-) -> list[dict]:
+) -> list[BrandRow]:
     """Get brand data with pagination."""
     table = _validate_table(table)
 
@@ -71,7 +89,7 @@ async def get_brand_by_name(
     conn: Connection,
     table: TableName,
     brand_name: str,
-) -> dict | None:
+) -> BrandRow | None:
     """Get brand data by brand name."""
     table = _validate_table(table)
 
@@ -99,7 +117,7 @@ async def get_brands_with_meeting(
     limit: int = 20,
     offset: int = 0,
     search: str | None = None,
-) -> list[dict]:
+) -> list[BrandWithMeetingRow]:
     """Get VP brands with LEFT JOIN to meeting data, with optional search."""
     search_escaped = escape_like(search) if search else None
     rows = await conn.fetch(
@@ -120,7 +138,7 @@ async def get_brands_with_meeting(
     return [dict(row) for row in rows]
 
 
-async def get_brand_by_id(conn: Connection, brand_id: int) -> dict | None:
+async def get_brand_by_id(conn: Connection, brand_id: int) -> BrandWithMeetingRow | None:
     """Get a single brand by ID with LEFT JOIN to meeting data."""
     row = await conn.fetchrow(
         """

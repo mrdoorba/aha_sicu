@@ -1,9 +1,23 @@
 """Sync status database queries using parameterized SQL."""
 
 from datetime import datetime
-from typing import Any
+from typing import Any, TypedDict
 
 from asyncpg import Connection
+
+
+class SyncStatusRow(TypedDict):
+    id: int
+    started_at: datetime
+    completed_at: datetime | None
+    success: bool | None
+    brands_synced: int | None
+    error_message: str | None
+    sync_details: dict[str, Any] | None
+
+
+class SyncStatusLatestRow(SyncStatusRow):
+    timed_out: bool
 
 
 async def create_sync_status(conn: Connection, started_at: datetime) -> int:
@@ -48,7 +62,7 @@ async def update_sync_status(
     )
 
 
-async def get_latest_sync_status(conn: Connection) -> dict | None:
+async def get_latest_sync_status(conn: Connection) -> SyncStatusLatestRow | None:
     """Get the most recent sync status record.
 
     Returns a `timed_out` flag for records that have been in progress
@@ -86,7 +100,7 @@ async def is_sync_in_progress(conn: Connection) -> bool:
     return row is not None
 
 
-async def get_sync_status_by_id(conn: Connection, sync_id: int) -> dict | None:
+async def get_sync_status_by_id(conn: Connection, sync_id: int) -> SyncStatusRow | None:
     """Get sync status by ID."""
     row = await conn.fetchrow(
         """

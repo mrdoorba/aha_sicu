@@ -1,17 +1,85 @@
 """Evaluation inputs database queries using parameterized SQL."""
 
-from datetime import date
-from typing import Any, Literal
+from datetime import date, datetime
+from typing import Any, Literal, TypedDict
 
 from asyncpg import Connection
 
 from app.db.queries.utils import escape_like
 
 
+class EvaluationInputsRow(TypedDict):
+    id: int
+    brand_id: int
+    last_edited_by: int
+    category_type: str | None
+    manual_data: dict[str, Any] | None
+    created_at: datetime
+    updated_at: datetime
+
+
+class EvaluationListRow(TypedDict):
+    id: int
+    brand_name: str
+    final_score: float
+    verdict: str
+    template: str
+    evaluator_email: str
+    created_at: datetime
+    period: str
+
+
+class GroupedEvaluationRow(TypedDict):
+    brand_id: int
+    brand_name: str
+    evaluation_count: int
+    top_score: float
+    top_verdict: str
+    latest_date: datetime
+
+
+class BrandEvaluationRow(TypedDict):
+    id: int
+    final_score: float
+    verdict: str
+    template: str
+    evaluator_email: str
+    created_at: datetime
+    period: str
+
+
+class EvaluationDetailRow(TypedDict):
+    id: int
+    brand_id: int
+    brand_name: str
+    raw_data: dict[str, Any]
+    final_score: float
+    verdict: str
+    template: str
+    score_breakdown: list[dict[str, Any]]
+    calculator_results: dict[str, Any]
+    manual_inputs: dict[str, Any]
+    email_output: str | None
+    rule_version: int
+    created_at: datetime
+    period: str
+    evaluator_email: str
+
+
+class InsertedEvaluationRow(TypedDict):
+    id: int
+    brand_id: int
+    final_score: float
+    verdict: str
+    template: str
+    created_at: datetime
+    period: str
+
+
 async def get_evaluation_inputs(
     conn: Connection,
     brand_id: int,
-) -> dict | None:
+) -> EvaluationInputsRow | None:
     """Get evaluation inputs for a brand (shared — one row per brand)."""
     row = await conn.fetchrow(
         """
@@ -31,7 +99,7 @@ async def upsert_evaluation_inputs(
     last_edited_by: int,
     category_type: str | None,
     manual_data: dict[str, Any] | None,
-) -> dict:
+) -> EvaluationInputsRow:
     """Insert or update evaluation inputs for a brand (shared).
 
     Uses COALESCE to preserve existing values when new values are None.
@@ -69,7 +137,7 @@ async def insert_evaluation(
     rule_version: int = 1,
     email_output: str | None = None,
     period: str = "",
-) -> dict:
+) -> InsertedEvaluationRow:
     """Insert a new evaluation record (immutable snapshot).
 
     Always creates a new record — never upserts.
@@ -143,7 +211,7 @@ async def list_evaluations(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
-) -> list[dict]:
+) -> list[EvaluationListRow]:
     """List evaluations with JOIN on brand_vp_data and users.
 
     Returns lightweight rows (no heavy JSONB columns).
@@ -193,7 +261,7 @@ async def count_evaluations(
 async def get_evaluation_by_id(
     conn: Connection,
     evaluation_id: int,
-) -> dict | None:
+) -> EvaluationDetailRow | None:
     """Get full evaluation details by ID, with brand name and evaluator email joins."""
     row = await conn.fetchrow(
         """
@@ -221,7 +289,7 @@ async def list_grouped_evaluations(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
-) -> list[dict]:
+) -> list[GroupedEvaluationRow]:
     """List evaluations grouped by brand with aggregate data.
 
     Returns one row per brand with evaluation count, top score/verdict,
@@ -278,7 +346,7 @@ async def list_evaluations_by_brand(
     limit: int | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
-) -> tuple[list[dict], int]:
+) -> tuple[list[BrandEvaluationRow], int]:
     """Fetch individual evaluations for a specific brand.
 
     Returns (rows, total) where total is the count before limit is applied.

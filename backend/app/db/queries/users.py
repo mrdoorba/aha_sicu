@@ -1,9 +1,22 @@
 """User database queries using parameterized SQL."""
 
+from datetime import datetime
+from typing import TypedDict
+
 from asyncpg import Connection
 
 
-async def get_user_by_firebase_uid(conn: Connection, firebase_uid: str) -> dict | None:
+class UserRow(TypedDict):
+    id: int
+    firebase_uid: str
+    email: str
+    role: str
+    language: str | None
+    created_at: datetime
+    last_login: datetime | None
+
+
+async def get_user_by_firebase_uid(conn: Connection, firebase_uid: str) -> UserRow | None:
     """Get user by Firebase UID."""
     row = await conn.fetchrow(
         "SELECT id, firebase_uid, email, role, language, created_at, last_login FROM users WHERE firebase_uid = $1",
@@ -12,7 +25,7 @@ async def get_user_by_firebase_uid(conn: Connection, firebase_uid: str) -> dict 
     return dict(row) if row else None
 
 
-async def create_user(conn: Connection, firebase_uid: str, email: str) -> dict:
+async def create_user(conn: Connection, firebase_uid: str, email: str) -> UserRow:
     """Create new user with default role."""
     row = await conn.fetchrow(
         """
@@ -26,7 +39,7 @@ async def create_user(conn: Connection, firebase_uid: str, email: str) -> dict:
     return dict(row)
 
 
-async def update_language(conn: Connection, user_id: int, language: str) -> dict | None:
+async def update_language(conn: Connection, user_id: int, language: str) -> UserRow | None:
     """Update user's language preference."""
     row = await conn.fetchrow(
         "UPDATE users SET language = $1 WHERE id = $2 RETURNING id, firebase_uid, email, role, language, created_at, last_login",

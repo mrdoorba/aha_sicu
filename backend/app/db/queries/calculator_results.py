@@ -1,11 +1,21 @@
 """Calculator results database queries using parameterized SQL."""
 
-from typing import Any
+from datetime import datetime
+from typing import Any, TypedDict
 
 from asyncpg import Connection
 
 
-async def get_results_by_brand(conn: Connection, brand_id: int) -> list[dict]:
+class CalculatorResultRow(TypedDict):
+    id: int
+    brand_id: int
+    calculator_type: str
+    details: dict[str, Any]
+    output_text: str
+    calculated_at: datetime
+
+
+async def get_results_by_brand(conn: Connection, brand_id: int) -> list[CalculatorResultRow]:
     """Return all calculator results for a brand."""
     rows = await conn.fetch(
         """
@@ -21,7 +31,7 @@ async def get_results_by_brand(conn: Connection, brand_id: int) -> list[dict]:
 
 async def get_result_by_type(
     conn: Connection, brand_id: int, calculator_type: str
-) -> dict | None:
+) -> CalculatorResultRow | None:
     """Return a single calculator result for a brand+type, or None."""
     row = await conn.fetchrow(
         """
@@ -57,7 +67,7 @@ async def upsert_result(
     calculator_type: str,
     details: dict[str, Any],
     output_text: str,
-) -> dict:
+) -> CalculatorResultRow:
     """Insert or update a calculator result for a brand+type pair."""
     row = await conn.fetchrow(
         """

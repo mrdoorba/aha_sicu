@@ -1,9 +1,29 @@
 """Account management database queries."""
 
+from datetime import datetime
+from typing import TypedDict
+
 from asyncpg import Connection
 
 
-async def get_all_users(conn: Connection) -> list[dict]:
+class AccountUserRow(TypedDict):
+    id: int
+    email: str
+    role: str
+    created_at: datetime
+    last_login: datetime | None
+
+
+class AccountUserDetailRow(TypedDict):
+    id: int
+    firebase_uid: str
+    email: str
+    role: str
+    created_at: datetime
+    last_login: datetime | None
+
+
+async def get_all_users(conn: Connection) -> list[AccountUserRow]:
     """Get all users ordered by creation date."""
     rows = await conn.fetch(
         "SELECT id, email, role, created_at, last_login FROM users ORDER BY created_at"
@@ -13,7 +33,7 @@ async def get_all_users(conn: Connection) -> list[dict]:
 
 async def create_user(
     conn: Connection, firebase_uid: str, email: str, role: str
-) -> dict:
+) -> AccountUserRow:
     """Create a new user with specified role."""
     row = await conn.fetchrow(
         """
@@ -28,7 +48,7 @@ async def create_user(
     return dict(row)
 
 
-async def update_user_role(conn: Connection, user_id: int, role: str) -> dict | None:
+async def update_user_role(conn: Connection, user_id: int, role: str) -> AccountUserRow | None:
     """Update a user's role. Returns updated user or None if not found."""
     row = await conn.fetchrow(
         """
@@ -42,7 +62,7 @@ async def update_user_role(conn: Connection, user_id: int, role: str) -> dict | 
     return dict(row) if row else None
 
 
-async def get_user_by_id(conn: Connection, user_id: int) -> dict | None:
+async def get_user_by_id(conn: Connection, user_id: int) -> AccountUserDetailRow | None:
     """Get a user by ID."""
     row = await conn.fetchrow(
         "SELECT id, firebase_uid, email, role, created_at, last_login FROM users WHERE id = $1",

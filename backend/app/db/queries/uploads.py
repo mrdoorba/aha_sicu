@@ -1,11 +1,27 @@
 """Brand uploads database queries using parameterized SQL."""
 
-from typing import Any
+from datetime import datetime
+from typing import Any, TypedDict
 
 from asyncpg import Connection
 
 
-async def get_uploads_by_brand(conn: Connection, brand_id: int) -> list[dict]:
+class UploadRow(TypedDict):
+    id: int
+    brand_id: int
+    file_type: str
+    calculator_target: str
+    filename: str
+    file_size: int
+    row_count: int
+    uploaded_at: datetime
+
+
+class UploadWithDataRow(UploadRow):
+    parsed_data: dict[str, Any]
+
+
+async def get_uploads_by_brand(conn: Connection, brand_id: int) -> list[UploadRow]:
     """Return all uploads for a brand."""
     rows = await conn.fetch(
         """
@@ -22,7 +38,7 @@ async def get_uploads_by_brand(conn: Connection, brand_id: int) -> list[dict]:
 
 async def get_upload_by_type(
     conn: Connection, brand_id: int, file_type: str
-) -> dict | None:
+) -> UploadWithDataRow | None:
     """Return a single upload for a brand+file_type, or None."""
     row = await conn.fetchrow(
         """
@@ -47,7 +63,7 @@ async def upsert_upload(
     row_count: int,
     parsed_data: dict[str, Any],
     uploaded_by: int,
-) -> dict:
+) -> UploadRow:
     """Insert or update an upload for a brand+file_type pair."""
     row = await conn.fetchrow(
         """

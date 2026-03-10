@@ -1,9 +1,21 @@
 """Scoring rules database queries using parameterized SQL."""
 
+from datetime import datetime
+from typing import Any, TypedDict
+
 from asyncpg import Connection
 
 
-async def get_all_rules(conn: Connection) -> list[dict]:
+class RuleRow(TypedDict):
+    id: int
+    template: str
+    rules: dict[str, Any]
+    version: int
+    updated_by: int | None
+    updated_at: datetime
+
+
+async def get_all_rules(conn: Connection) -> list[RuleRow]:
     """Get all scoring rules ordered by template."""
     rows = await conn.fetch(
         """
@@ -15,7 +27,7 @@ async def get_all_rules(conn: Connection) -> list[dict]:
     return [dict(row) for row in rows]
 
 
-async def get_rules_by_template(conn: Connection, template: str) -> dict | None:
+async def get_rules_by_template(conn: Connection, template: str) -> RuleRow | None:
     """Get scoring rules for a specific template."""
     row = await conn.fetchrow(
         """
@@ -28,7 +40,7 @@ async def get_rules_by_template(conn: Connection, template: str) -> dict | None:
     return dict(row) if row else None
 
 
-async def update_rules(conn: Connection, template: str, rules: dict, user_id: int) -> dict | None:
+async def update_rules(conn: Connection, template: str, rules: dict, user_id: int) -> RuleRow | None:
     """Update scoring rules for a template, incrementing version."""
     row = await conn.fetchrow(
         """
