@@ -13,6 +13,10 @@ vi.mock('../../hooks/useUpload', () => ({
     error: null,
     reset: vi.fn(),
   })),
+  useDownloadFile: vi.fn(() => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  })),
 }));
 
 // Mock sonner toast
