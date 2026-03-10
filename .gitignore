@@ -66,6 +66,9 @@ _bmad/
 .github/prompts/
 .github/skills/
 
+# Worktrees
+.worktrees/
+
 # Custom/Personal
 my-designs/
 my-documents/
