@@ -5,7 +5,7 @@ from typing import Any, Literal, TypedDict
 
 from asyncpg import Connection
 
-from app.db.queries.utils import escape_like, fetch_all, fetch_one
+from app.db.queries.utils import FilterBuilder, escape_like, fetch_all, fetch_one
 
 
 class EvaluationInputsRow(TypedDict):
@@ -173,32 +173,15 @@ def _build_filter_clauses(
     date_from: date | None = None,
     date_to: date | None = None,
 ) -> tuple[str, list[Any], int]:
-    """Build conditional WHERE clauses for evaluation list/count queries.
-
-    Returns (where_clause, params, next_param_idx) with dynamic $N numbering.
-    """
-    conditions: list[str] = []
-    params: list[Any] = []
-    param_idx = 1
-
+    """Build conditional WHERE clauses for evaluation list/count queries."""
+    fb = FilterBuilder()
     if search:
-        escaped = escape_like(search)
-        conditions.append(f"b.brand_name ILIKE '%' || ${param_idx} || '%' ESCAPE '\\'")
-        params.append(escaped)
-        param_idx += 1
-
+        fb.add("b.brand_name ILIKE '%' || {p} || '%' ESCAPE '\\'", escape_like(search))
     if date_from:
-        conditions.append(f"e.created_at >= ${param_idx}")
-        params.append(date_from)
-        param_idx += 1
-
+        fb.add("e.created_at >= {p}", date_from)
     if date_to:
-        conditions.append(f"e.created_at < (${param_idx} + interval '1 day')")
-        params.append(date_to)
-        param_idx += 1
-
-    where_clause = "WHERE " + " AND ".join(conditions) if conditions else ""
-    return where_clause, params, param_idx
+        fb.add("e.created_at < ({p} + interval '1 day')", date_to)
+    return fb.where_clause, fb.params, fb.next_idx
 
 
 async def list_evaluations(
