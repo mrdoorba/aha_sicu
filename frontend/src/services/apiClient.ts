@@ -817,6 +817,19 @@ interface paths {
       };
     };
   };
+  '/api/v1/config/features': {
+    get: {
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              email_enabled: boolean;
+            };
+          };
+        };
+      };
+    };
+  };
   '/api/v1/email/send': {
     post: {
       requestBody: {
