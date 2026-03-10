@@ -17,6 +17,7 @@ class UploadRow(TypedDict):
     file_size: int
     row_count: int
     uploaded_at: datetime
+    storage_path: str | None
 
 
 class UploadWithDataRow(UploadRow):
@@ -29,7 +30,7 @@ async def get_uploads_by_brand(conn: Connection, brand_id: int) -> list[UploadRo
         conn,
         """
         SELECT id, brand_id, file_type, calculator_target, filename,
-               file_size, row_count, uploaded_at
+               file_size, row_count, uploaded_at, storage_path
         FROM brand_uploads
         WHERE brand_id = $1
         ORDER BY uploaded_at DESC
@@ -46,7 +47,7 @@ async def get_upload_by_type(
         conn,
         """
         SELECT id, brand_id, file_type, calculator_target, filename,
-               file_size, row_count, parsed_data, uploaded_at
+               file_size, row_count, parsed_data, uploaded_at, storage_path
         FROM brand_uploads
         WHERE brand_id = $1 AND file_type = $2
         """,
@@ -65,6 +66,7 @@ async def upsert_upload(
     row_count: int,
     parsed_data: dict[str, Any],
     uploaded_by: int,
+    storage_path: str | None = None,
 ) -> UploadRow:
     """Insert or update an upload for a brand+file_type pair."""
     return await fetch_one(
@@ -72,8 +74,8 @@ async def upsert_upload(
         """
         INSERT INTO brand_uploads
             (brand_id, file_type, calculator_target, filename, file_size,
-             row_count, parsed_data, uploaded_by, uploaded_at)
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+             row_count, parsed_data, uploaded_by, uploaded_at, storage_path)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW(), $9)
         ON CONFLICT (brand_id, file_type) DO UPDATE SET
             calculator_target = EXCLUDED.calculator_target,
             filename = EXCLUDED.filename,
@@ -81,9 +83,10 @@ async def upsert_upload(
             row_count = EXCLUDED.row_count,
             parsed_data = EXCLUDED.parsed_data,
             uploaded_by = EXCLUDED.uploaded_by,
-            uploaded_at = NOW()
+            uploaded_at = NOW(),
+            storage_path = EXCLUDED.storage_path
         RETURNING id, brand_id, file_type, calculator_target, filename,
-                  file_size, row_count, uploaded_at
+                  file_size, row_count, uploaded_at, storage_path
         """,
         brand_id,
         file_type,
@@ -93,6 +96,7 @@ async def upsert_upload(
         row_count,
         parsed_data,
         uploaded_by,
+        storage_path,
     )
 
 
