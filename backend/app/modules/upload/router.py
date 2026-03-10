@@ -7,6 +7,7 @@ from app.config import settings
 from app.core.dependencies import get_current_user
 from app.modules.upload.schemas import (
     BrandUploadsResponse,
+    DownloadResponse,
     ProcessRequest,
     ProcessUploadResponse,
     SignedUrlRequest,
@@ -14,6 +15,7 @@ from app.modules.upload.schemas import (
 )
 from app.modules.upload.service import (
     get_brand_uploads,
+    get_download_url,
     process_upload,
     request_signed_url,
 )
@@ -56,6 +58,16 @@ async def get_uploads(
 ) -> BrandUploadsResponse:
     """Return all uploaded files for a brand."""
     return await get_brand_uploads(brand_id=brand_id)
+
+
+@router.get("/brands/{brand_id}/download/{file_type}", response_model=DownloadResponse)
+async def download_file(
+    brand_id: int,
+    file_type: str,
+    current_user: dict = Depends(get_current_user),
+) -> DownloadResponse:
+    """Generate a signed download URL for a previously uploaded file."""
+    return await get_download_url(brand_id=brand_id, file_type=file_type)
 
 
 @router.put("/local/{upload_id}/{filename:path}")

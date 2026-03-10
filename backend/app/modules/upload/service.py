@@ -21,6 +21,7 @@ from app.modules.upload.parser import (
 from app.modules.upload.schemas import (
     AutoCalculatedItem,
     BrandUploadsResponse,
+    DownloadResponse,
     ProcessUploadResponse,
     SignedUrlResponse,
     UploadResponse,
@@ -356,3 +357,28 @@ async def get_brand_uploads(brand_id: int) -> BrandUploadsResponse:
     ]
 
     return BrandUploadsResponse(brand_id=brand_id, uploads=uploads)
+
+
+async def get_download_url(brand_id: int, file_type: str) -> DownloadResponse:
+    """Generate a signed download URL for a previously uploaded file."""
+    _validate_file_type(file_type)
+
+    async with db.connection() as conn:
+        upload = await upload_queries.get_upload_by_type(conn, brand_id, file_type)
+
+    if not upload or not upload.get("storage_path"):
+        raise AppException(
+            code="UPLOAD_NOT_FOUND",
+            detail=f"No downloadable file for brand {brand_id}, type {file_type}",
+            status_code=404,
+        )
+
+    storage = get_storage_client()
+    download_url = await asyncio.to_thread(
+        storage.generate_signed_download_url, upload["storage_path"]
+    )
+
+    return DownloadResponse(
+        download_url=download_url,
+        filename=upload["filename"],
+    )

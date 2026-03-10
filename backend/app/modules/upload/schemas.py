@@ -60,3 +60,8 @@ class ProcessUploadResponse(BaseModel):
 class BrandUploadsResponse(BaseModel):
     brand_id: int
     uploads: list[UploadResponse]
+
+
+class DownloadResponse(BaseModel):
+    download_url: str
+    filename: str
