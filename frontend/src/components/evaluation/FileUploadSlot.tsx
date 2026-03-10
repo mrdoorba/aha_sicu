@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Upload, FileText, X, Check, Loader2, ExternalLink } from 'lucide-react';
+import { Upload, FileText, X, Check, Loader2, ExternalLink, Download } from 'lucide-react';
 import { Card, CardContent } from '../ui/card';
 import { Button } from '../ui/button';
 import { Progress } from '../ui/progress';
@@ -23,6 +23,8 @@ interface FileUploadSlotProps {
   uploadError: string | null;
   onFileSelect: (file: File) => void;
   onReset: () => void;
+  onDownload?: () => void;
+  isDownloading?: boolean;
 }
 
 export function FileUploadSlot({
@@ -33,6 +35,8 @@ export function FileUploadSlot({
   uploadError,
   onFileSelect,
   onReset,
+  onDownload,
+  isDownloading,
 }: FileUploadSlotProps) {
   const { t } = useTranslation();
   const inputRef = useRef<HTMLInputElement>(null);
@@ -160,18 +164,32 @@ export function FileUploadSlot({
                 {uploadInfo.row_count.toLocaleString()} {t('fileUpload.rows')} &middot;{' '}
                 {new Date(uploadInfo.uploaded_at).toLocaleString()}
               </p>
-              <Button
-                variant="ghost"
-                size="sm"
-                className="mt-1 h-7 px-2 text-xs"
-                onClick={() => {
-                  onReset();
-                  inputRef.current?.click();
-                }}
-              >
-                <Upload className="mr-1 size-3" aria-hidden="true" />
-                {t('fileUpload.button.reupload')}
-              </Button>
+              <div className="mt-1 flex gap-1">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  className="h-7 px-2 text-xs"
+                  onClick={() => {
+                    onReset();
+                    inputRef.current?.click();
+                  }}
+                >
+                  <Upload className="mr-1 size-3" aria-hidden="true" />
+                  {t('fileUpload.button.reupload')}
+                </Button>
+                {onDownload && (
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className="h-7 px-2 text-xs text-green-600 hover:text-green-700"
+                    onClick={onDownload}
+                    disabled={isDownloading}
+                  >
+                    <Download className="mr-1 size-3" aria-hidden="true" />
+                    {t('fileUpload.button.download')}
+                  </Button>
+                )}
+              </div>
             </div>
           )}
         </div>

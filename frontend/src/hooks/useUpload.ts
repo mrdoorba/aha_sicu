@@ -294,3 +294,22 @@ export function useUploadFile(brandId: number) {
 
   return { upload, progress, status, error, reset };
 }
+
+export function useDownloadFile() {
+  return useMutation({
+    mutationFn: async ({
+      brandId,
+      fileType,
+    }: {
+      brandId: number;
+      fileType: string;
+    }) => {
+      const { data, error } = await client.GET(
+        '/api/v1/upload/brands/{brand_id}/download/{file_type}',
+        { params: { path: { brand_id: brandId, file_type: fileType } } },
+      );
+      if (error) throw new Error('Failed to get download URL');
+      return data as { download_url: string; filename: string };
+    },
+  });
+}

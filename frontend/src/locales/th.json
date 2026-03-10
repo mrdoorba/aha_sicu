@@ -362,6 +362,8 @@
   "fileUpload.routesTo": "ส่งไปยัง",
   "fileUpload.rows": "แถว",
   "fileUpload.aria.upload": "อัปโหลด {{label}}",
+  "fileUpload.button.download": "ดาวน์โหลดไฟล์",
+  "fileUpload.downloadError": "ดาวน์โหลดไฟล์ไม่สำเร็จ",
   "scoreBreakdown.header.category": "หมวดหมู่",
   "scoreBreakdown.header.score": "คะแนน",
   "scoreBreakdown.header.max": "สูงสุด",

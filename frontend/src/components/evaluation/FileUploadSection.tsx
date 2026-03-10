@@ -1,5 +1,6 @@
+import { useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
-import { useBrandUploads, useUploadFile, type UploadInfo } from '../../hooks/useUpload';
+import { useBrandUploads, useDownloadFile, useUploadFile, type UploadInfo } from '../../hooks/useUpload';
 import { FileUploadSlot, type FileSlotConfig } from './FileUploadSlot';
 import { toast } from 'sonner';
 
@@ -72,6 +73,19 @@ function SlotWrapper({
 }) {
   const { t } = useTranslation();
   const { upload, progress, status, error, reset } = useUploadFile(brandId);
+  const downloadMutation = useDownloadFile();
+
+  const handleDownload = useCallback(async () => {
+    try {
+      const result = await downloadMutation.mutateAsync({
+        brandId,
+        fileType: config.fileType,
+      });
+      window.open(result.download_url, '_blank');
+    } catch {
+      toast.error(t('fileUpload.downloadError'));
+    }
+  }, [brandId, config.fileType, downloadMutation, t]);
 
   const handleFileSelect = async (file: File) => {
     try {
@@ -91,6 +105,8 @@ function SlotWrapper({
       uploadError={error}
       onFileSelect={handleFileSelect}
       onReset={reset}
+      onDownload={uploadInfo ? handleDownload : undefined}
+      isDownloading={downloadMutation.isPending}
     />
   );
 }

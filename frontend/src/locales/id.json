@@ -362,6 +362,8 @@
   "fileUpload.routesTo": "Dikirim ke",
   "fileUpload.rows": "baris",
   "fileUpload.aria.upload": "Unggah {{label}}",
+  "fileUpload.button.download": "Unduh File",
+  "fileUpload.downloadError": "Gagal mengunduh file",
   "scoreBreakdown.header.category": "Kategori",
   "scoreBreakdown.header.score": "Skor",
   "scoreBreakdown.header.max": "Maks",

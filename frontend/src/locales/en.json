@@ -362,6 +362,8 @@
   "fileUpload.routesTo": "Routes to",
   "fileUpload.rows": "rows",
   "fileUpload.aria.upload": "Upload {{label}}",
+  "fileUpload.button.download": "Download File",
+  "fileUpload.downloadError": "Failed to download file",
   "scoreBreakdown.header.category": "Category",
   "scoreBreakdown.header.score": "Score",
   "scoreBreakdown.header.max": "Max",
