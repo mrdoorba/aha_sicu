@@ -235,6 +235,7 @@ async def _download_and_parse(
 async def _store_and_auto_execute(
     brand_id: int, file_type: str, pending: PendingUpload,
     parsed_data: list[dict], file_size: int, row_count: int, user_id: int,
+    storage_path: str | None = None,
 ) -> tuple[dict, list[dict]]:
     """Store parsed data in DB and auto-execute dependent calculators."""
     calculator_target = _CALCULATOR_TARGETS[file_type]
@@ -251,6 +252,7 @@ async def _store_and_auto_execute(
                 row_count=row_count,
                 parsed_data=parsed_data,
                 uploaded_by=user_id,
+                storage_path=storage_path,
             )
 
         try:
@@ -290,16 +292,20 @@ async def process_upload(
 
     parsed_data, file_size, row_count = await _download_and_parse(pending, file_type)
 
+    # Delete old file from storage if replacing
+    async with db.connection() as conn:
+        existing = await upload_queries.get_upload_by_type(conn, brand_id, file_type)
+    if existing and existing.get("storage_path"):
+        storage = get_storage_client()
+        try:
+            await asyncio.to_thread(storage.delete_file, existing["storage_path"])
+        except Exception as e:
+            logger.warning("Failed to delete old file from storage: %s", e)
+
     row, auto_calc_raw = await _store_and_auto_execute(
         brand_id, file_type, pending, parsed_data, file_size, row_count, user_id,
+        storage_path=pending.object_name,
     )
-
-    # Delete from storage (best-effort cleanup)
-    storage = get_storage_client()
-    try:
-        await asyncio.to_thread(storage.delete_file, pending.object_name)
-    except Exception as e:
-        logger.warning("Failed to delete file from storage: %s", e)
 
     _pending_uploads.pop(upload_id, None)
 

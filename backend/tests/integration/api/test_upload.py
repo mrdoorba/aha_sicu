@@ -216,8 +216,8 @@ def test_process_valid_csv(client):
         mock_storage.delete_file.return_value = None
         mock_storage_fn.return_value = mock_storage
 
-        # DB mock for upsert
-        mock_svc_conn = _make_transactional_conn(fetchrow_side_effect=[SAMPLE_UPLOAD])
+        # DB mock: first fetchrow for get_upload_by_type (existing check), second for upsert
+        mock_svc_conn = _make_transactional_conn(fetchrow_side_effect=[None, SAMPLE_UPLOAD])
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
 
         # Engine mocks
@@ -243,6 +243,12 @@ def test_process_valid_csv(client):
         # Verify filename was prefixed with brand name before upsert
         upsert_call_args = mock_svc_conn.fetchrow.call_args_list[-1]
         assert "TestBrand_report.csv" in upsert_call_args.args
+
+        # File should NOT be deleted after processing (kept for download)
+        mock_storage.delete_file.assert_not_called()
+
+        # storage_path should be passed to upsert
+        assert f"uploads/{upload_id}/report.csv" in upsert_call_args.args
 
     # Clean up
     _pending_uploads.pop(upload_id, None)
