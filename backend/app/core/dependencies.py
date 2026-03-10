@@ -84,6 +84,16 @@ async def get_current_user(
     return user
 
 
+async def get_db_connection():
+    """Yield a database connection from the pool.
+
+    Usage in routers:
+        conn: Connection = Depends(get_db_connection)
+    """
+    async with db.connection() as conn:
+        yield conn
+
+
 def require_role(*allowed_roles: str):
     """Dependency factory that enforces role-based access control.
 
