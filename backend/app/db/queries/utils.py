@@ -17,6 +17,11 @@ async def fetch_all(conn: Connection, query: str, *args: Any) -> list[dict]:
     return [dict(row) for row in rows]
 
 
+def paginate(page: int, limit: int) -> tuple[int, int]:
+    """Return (limit, offset) for SQL pagination."""
+    return limit, (page - 1) * limit
+
+
 def escape_like(term: str) -> str:
     """Escape special LIKE/ILIKE pattern characters in search terms.
 

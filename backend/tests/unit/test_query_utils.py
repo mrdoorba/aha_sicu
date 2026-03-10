@@ -3,7 +3,7 @@
 import pytest
 from unittest.mock import AsyncMock, MagicMock
 
-from app.db.queries.utils import escape_like, fetch_one, fetch_all
+from app.db.queries.utils import escape_like, fetch_one, fetch_all, paginate
 
 
 class TestFetchOne:
@@ -51,3 +51,20 @@ class TestFetchAll:
         conn.fetch.return_value = []
         result = await fetch_all(conn, "SELECT * FROM t")
         assert result == []
+
+
+class TestPaginate:
+    def test_first_page(self):
+        limit, offset = paginate(page=1, limit=20)
+        assert limit == 20
+        assert offset == 0
+
+    def test_second_page(self):
+        limit, offset = paginate(page=2, limit=20)
+        assert limit == 20
+        assert offset == 20
+
+    def test_custom_limit(self):
+        limit, offset = paginate(page=3, limit=10)
+        assert limit == 10
+        assert offset == 20
