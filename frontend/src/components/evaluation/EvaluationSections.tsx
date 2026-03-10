@@ -22,7 +22,7 @@ import type { SaveStatus } from '../../hooks/useAutoSaveForm';
 import type { ScoringResult } from '../../hooks/useScoring';
 import type { ScoringRules } from '../../hooks/useRules';
 
-interface EvaluationSectionsProps {
+interface FormProps {
   brandId: number;
   categoryType: string | null;
   rules?: ScoringRules;
@@ -32,9 +32,9 @@ interface EvaluationSectionsProps {
   onFieldChange: (category: string, key: string, value: number | string | null) => void;
   onFieldBlur: () => void;
   storeLink: string | null;
-  saveStatus: SaveStatus;
-  lastSaved: Date | null;
-  onRetrySave: () => void;
+}
+
+interface ScoringProps {
   storeName: string;
   brandName: string;
   onGenerateScore: (request: {
@@ -48,11 +48,22 @@ interface EvaluationSectionsProps {
   isGenerating: boolean;
   isStale: boolean;
   scoringError: Error | null;
+}
+
+interface SaveProps {
   onSaveEvaluation: () => void;
   isSaving: boolean;
   isSaved: boolean;
   saveError: Error | null;
 }
+
+interface StatusProps {
+  saveStatus: SaveStatus;
+  lastSaved: Date | null;
+  onRetrySave: () => void;
+}
+
+interface EvaluationSectionsProps extends FormProps, ScoringProps, SaveProps, StatusProps {}
 
 export const EvaluationSections = ({
   brandId,
