@@ -9,8 +9,7 @@ Spec: logic/scoring-system-template-sicu.md
 
 from __future__ import annotations
 
-from app.calculators.scoring.categories import (  # noqa: F401
-    _promo_verdict,
+from app.calculators.scoring.categories import (
     _score_ads,
     _score_business,
     _score_campaign,
@@ -22,35 +21,21 @@ from app.calculators.scoring.categories import (  # noqa: F401
     _score_stock,
     _score_visitors,
 )
-from app.calculators.scoring.computations import (  # noqa: F401
+from app.calculators.scoring.computations import (
     _assemble_email_body,
     _compute_g66,
     _compute_g68,
     _compute_g72,
     _compute_g73,
     _compute_g75,
-    _parse_d73_percentages,
-    _parse_g68_left,
 )
-from app.calculators.scoring.helpers import (  # noqa: F401
-    INDO_MONTHS,
-    _SafeDict,
-    _extract_pct,
-    _fmt_idr,
-    _fmt_num_1dp,
-    _fmt_num_2dp,
-    _fmt_pct_0dp,
-    _fmt_pct_1dp,
-    _format_message_template,
-    _generate_month_labels,
+from app.calculators.scoring.helpers import (
     _get_nested,
     _get_rule_category,
     _get_rule_value,
-    _rounddown,
     _safe_num,
-    _safe_str,
 )
-from app.calculators.scoring.messages import (  # noqa: F401
+from app.calculators.scoring.messages import (
     _generate_ads_messages,
     _generate_business_messages,
     _generate_campaign_messages,
@@ -61,7 +46,6 @@ from app.calculators.scoring.messages import (  # noqa: F401
     _generate_visitors_messages,
 )
 from app.calculators.scoring.models import CategoryScore, RowScore, ScoringResult
-from app.calculators.scoring.rules import DEFAULT_RULES, PROMO_START_ROW, PROMO_TOOLS
 
 def calculate_score(
     manual_data: dict,

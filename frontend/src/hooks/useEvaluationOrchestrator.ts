@@ -176,6 +176,6 @@ export function useEvaluationOrchestrator(brandId: number) {
 
     // Derived brand fields
     storeName: brand?.brand_name ?? '',
-    brandName: brand?.name ?? '',
+    brandName: brand?.brand_name ?? '',
   };
 }

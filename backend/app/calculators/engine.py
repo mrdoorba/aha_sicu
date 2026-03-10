@@ -25,23 +25,23 @@ logger = logging.getLogger(__name__)
 @dataclass(frozen=True)
 class CalculatorConfig:
     """Configuration for a single calculator type."""
-    required_files: list[str]
-    required_manual: list[str] = field(default_factory=list)
-    runner: Callable = None  # type: ignore[assignment]
+    required_files: tuple[str, ...]
+    required_manual: tuple[str, ...] = ()
+    runner: Callable | None = None
 
 
 CALCULATOR_REGISTRY: dict[str, CalculatorConfig] = {
     "ads_keyword": CalculatorConfig(
-        required_files=["cpc_ad_report", "keyword_report"],
-        required_manual=["total_products"],
+        required_files=("cpc_ad_report", "keyword_report"),
+        required_manual=("total_products",),
         runner=run_ads_keyword_calculator,
     ),
     "discount": CalculatorConfig(
-        required_files=["order_export"],
+        required_files=("order_export",),
         runner=run_discount_calculator,
     ),
     "top_sku": CalculatorConfig(
-        required_files=["order_export", "mass_update"],
+        required_files=("order_export", "mass_update"),
         runner=run_top_sku_calculator,
     ),
 }

@@ -72,18 +72,18 @@ class TestDependencyMaps:
 
     def test_ads_keyword_requires_two_files_and_manual(self):
         config = CALCULATOR_REGISTRY["ads_keyword"]
-        assert config.required_files == ["cpc_ad_report", "keyword_report"]
+        assert config.required_files == ("cpc_ad_report", "keyword_report")
         assert "total_products" in config.required_manual
 
     def test_discount_requires_order_export_only(self):
         config = CALCULATOR_REGISTRY["discount"]
-        assert config.required_files == ["order_export"]
-        assert config.required_manual == []
+        assert config.required_files == ("order_export",)
+        assert config.required_manual == ()
 
     def test_top_sku_requires_two_files(self):
         config = CALCULATOR_REGISTRY["top_sku"]
-        assert config.required_files == ["order_export", "mass_update"]
-        assert config.required_manual == []
+        assert config.required_files == ("order_export", "mass_update")
+        assert config.required_manual == ()
 
     def test_order_export_triggers_discount_and_top_sku(self):
         assert set(FILE_TO_CALCULATORS["order_export"]) == {"discount", "top_sku"}

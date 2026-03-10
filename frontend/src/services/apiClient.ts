@@ -1,4 +1,5 @@
 import createClient, { type Middleware } from 'openapi-fetch';
+import type { AuthService } from './authService';
 import { firebaseAuthService } from './firebaseAuthService';
 import { API_BASE_URL } from '../config';
 
@@ -860,9 +861,15 @@ interface paths {
   };
 }
 
+let _authService: AuthService = firebaseAuthService;
+
+export function setAuthService(service: AuthService): void {
+  _authService = service;
+}
+
 const authMiddleware: Middleware = {
   async onRequest({ request }) {
-    const token = await firebaseAuthService.getToken();
+    const token = await _authService.getToken();
     if (token) {
       request.headers.set('Authorization', `Bearer ${token}`);
     }
