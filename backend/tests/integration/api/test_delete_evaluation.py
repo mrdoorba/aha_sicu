@@ -48,13 +48,10 @@ def test_delete_evaluation_success_leader(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries, MOCK_LEADER)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.execute = AsyncMock(return_value="DELETE 1")
+        mock_eq.delete_evaluation = AsyncMock(return_value=True)
 
         response = client.delete(
             "/api/v1/evaluations/42",
@@ -70,13 +67,10 @@ def test_delete_evaluation_success_admin(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.execute = AsyncMock(return_value="DELETE 1")
+        mock_eq.delete_evaluation = AsyncMock(return_value=True)
 
         response = client.delete(
             "/api/v1/evaluations/42",
@@ -111,13 +105,10 @@ def test_delete_evaluation_not_found(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries, MOCK_LEADER)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.execute = AsyncMock(return_value="DELETE 0")
+        mock_eq.delete_evaluation = AsyncMock(return_value=False)
 
         response = client.delete(
             "/api/v1/evaluations/99999",

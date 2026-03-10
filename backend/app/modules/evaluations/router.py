@@ -3,11 +3,11 @@
 from datetime import date
 from typing import Literal
 
+from asyncpg import Connection
 from fastapi import APIRouter, Depends, Query
-
 from fastapi.responses import Response
 
-from app.core.dependencies import get_current_user, require_role
+from app.core.dependencies import get_current_user, get_db_connection, require_role
 from app.modules.evaluations.calculator_service import (
     run_ads_keyword_calculator as _run_ads_keyword,
     run_discount_calculator as _run_discount,
@@ -57,6 +57,7 @@ async def list_evaluations_endpoint(
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
     current_user: dict = Depends(require_role("leader", "admin")),
+    conn: Connection = Depends(get_db_connection),
 ) -> EvaluationListResponse:
     """List all evaluations with pagination and sorting.
 
@@ -65,6 +66,7 @@ async def list_evaluations_endpoint(
     Supports filtering by search (brand name) and date range (date_from, date_to).
     """
     return await list_evaluations(
+        conn=conn,
         page=page,
         limit=limit,
         sort_by=sort_by,
@@ -83,6 +85,7 @@ async def list_grouped_evaluations_endpoint(
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
     current_user: dict = Depends(get_current_user),
+    conn: Connection = Depends(get_db_connection),
 ) -> GroupedEvaluationListResponse:
     """List evaluations grouped by brand with pagination.
 
@@ -90,6 +93,7 @@ async def list_grouped_evaluations_endpoint(
     Supports search by brand name and date range filter.
     """
     return await list_grouped_evaluations(
+        conn=conn,
         page=page,
         limit=limit,
         search=search,
@@ -105,6 +109,7 @@ async def list_brand_evaluations_endpoint(
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
     current_user: dict = Depends(get_current_user),
+    conn: Connection = Depends(get_db_connection),
 ) -> BrandEvaluationListResponse:
     """List individual evaluations for a specific brand.
 
@@ -113,6 +118,7 @@ async def list_brand_evaluations_endpoint(
     """
     return await list_evaluations_by_brand(
         brand_id,
+        conn=conn,
         limit=limit,
         date_from=date_from,
         date_to=date_to,
@@ -127,13 +133,14 @@ async def list_brand_evaluations_endpoint(
 async def delete_evaluation_endpoint(
     evaluation_id: int,
     current_user: dict = Depends(require_role("leader", "admin")),
+    conn: Connection = Depends(get_db_connection),
 ) -> Response:
     """Delete an evaluation permanently.
 
     Only accessible by leaders and admins.
     Returns 204 on success, 404 if not found.
     """
-    await delete_evaluation(evaluation_id)
+    await delete_evaluation(conn, evaluation_id)
     return Response(status_code=204)
 
 
@@ -141,22 +148,24 @@ async def delete_evaluation_endpoint(
 async def get_evaluation_detail_endpoint(
     evaluation_id: int,
     current_user: dict = Depends(get_current_user),
+    conn: Connection = Depends(get_db_connection),
 ) -> EvaluationDetailResponse:
     """Get full details of a single evaluation by ID."""
-    return await get_evaluation_detail(evaluation_id=evaluation_id)
+    return await get_evaluation_detail(conn, evaluation_id=evaluation_id)
 
 
 @router.get("/brands/{brand_id}", response_model=EvaluationStateResponse)
 async def get_evaluation(
     brand_id: int,
     current_user: dict = Depends(get_current_user),
+    conn: Connection = Depends(get_db_connection),
 ) -> EvaluationStateResponse:
     """Get evaluation state for a brand.
 
     Returns the shared evaluation inputs for this brand.
     If no inputs exist, returns the same shape with null values.
     """
-    return await get_evaluation_state(brand_id=brand_id)
+    return await get_evaluation_state(conn, brand_id=brand_id)
 
 
 @router.put("/brands/{brand_id}", response_model=EvaluationStateResponse)
@@ -164,6 +173,7 @@ async def update_evaluation(
     brand_id: int,
     body: EvaluationInputsUpdate,
     current_user: dict = Depends(get_current_user),
+    conn: Connection = Depends(get_db_connection),
 ) -> EvaluationStateResponse:
     """Save evaluation inputs for a brand.
 
@@ -172,6 +182,7 @@ async def update_evaluation(
     Returns 404 if brand doesn't exist.
     """
     return await save_evaluation_inputs(
+        conn,
         brand_id=brand_id,
         last_edited_by=current_user["id"],
         category_type=body.category_type,
@@ -186,6 +197,7 @@ async def update_evaluation(
 async def get_calculator_results(
     brand_id: int,
     current_user: dict = Depends(get_current_user),
+    conn: Connection = Depends(get_db_connection),
 ) -> CalculatorResultsListResponse:
     """Return all stored calculator results for a brand.
 
@@ -193,7 +205,7 @@ async def get_calculator_results(
     This is intentional for read-only list endpoints (vs POST endpoints
     which validate brand existence and return 400).
     """
-    return await _get_calculator_results(brand_id=brand_id)
+    return await _get_calculator_results(conn, brand_id=brand_id)
 
 
 @router.post(
@@ -251,12 +263,13 @@ async def run_top_sku_calculator(
 async def run_all_calculators(
     brand_id: int,
     current_user: dict = Depends(get_current_user),
+    conn: Connection = Depends(get_db_connection),
 ) -> RunAllResponse:
     """Run all calculators whose required files are available for a brand.
 
     Returns per-calculator results (success, skipped, or error).
     """
-    return await run_all_calculators_service(brand_id=brand_id)
+    return await run_all_calculators_service(conn, brand_id=brand_id)
 
 
 @router.get(
@@ -266,9 +279,10 @@ async def run_all_calculators(
 async def get_calculator_status(
     brand_id: int,
     current_user: dict = Depends(get_current_user),
+    conn: Connection = Depends(get_db_connection),
 ) -> CalculatorStatusResponse:
     """Return the readiness status of each calculator for a brand."""
-    return await _get_calculator_status(brand_id=brand_id)
+    return await _get_calculator_status(conn, brand_id=brand_id)
 
 
 @router.post(
@@ -279,6 +293,7 @@ async def score_evaluation(
     brand_id: int,
     body: ScoringRequest,
     current_user: dict = Depends(get_current_user),
+    conn: Connection = Depends(get_db_connection),
 ) -> ScoringResponse:
     """Generate the final score for a brand evaluation.
 
@@ -287,6 +302,7 @@ async def score_evaluation(
     Returns 400 if required data is missing.
     """
     return await generate_score(
+        conn,
         brand_id=brand_id,
         user_id=current_user["id"],
         template=body.template,
@@ -306,6 +322,7 @@ async def save_evaluation_endpoint(
     brand_id: int,
     body: SaveEvaluationRequest,
     current_user: dict = Depends(get_current_user),
+    conn: Connection = Depends(get_db_connection),
 ) -> SaveEvaluationResponse:
     """Save a completed evaluation as a permanent record.
 
@@ -314,6 +331,7 @@ async def save_evaluation_endpoint(
     Returns 404 if brand doesn't exist, 422 if required fields are missing.
     """
     return await save_evaluation(
+        conn,
         brand_id=brand_id,
         user_id=current_user["id"],
         template=body.template,

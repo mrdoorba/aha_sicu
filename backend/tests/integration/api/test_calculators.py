@@ -854,13 +854,9 @@ def test_run_all_returns_ready_calculator_results(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_router_db,
         patch("app.modules.evaluations.service.run_ready_calculators") as mock_run,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_conn = AsyncMock()
-        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
 
         mock_run.return_value = [
             {
@@ -904,13 +900,9 @@ def test_run_all_skips_calculators_missing_files(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_router_db,
         patch("app.modules.evaluations.service.run_ready_calculators") as mock_run,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_conn = AsyncMock()
-        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
 
         mock_run.return_value = [
             {"calculator_type": "ads_keyword", "status": "skipped", "reason": "Missing required files: cpc_ad_report, keyword_report"},
@@ -934,13 +926,9 @@ def test_run_all_isolates_failures(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_router_db,
         patch("app.modules.evaluations.service.run_ready_calculators") as mock_run,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_conn = AsyncMock()
-        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
 
         mock_run.return_value = [
             {"calculator_type": "discount", "status": "error", "reason": "Calculator execution failed"},
@@ -985,13 +973,9 @@ def test_calculator_status_correct_readiness(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_router_db,
         patch("app.modules.evaluations.service.check_calculator_readiness") as mock_check,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_conn = AsyncMock()
-        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
 
         mock_check.return_value = {
             "ads_keyword": {
@@ -1057,13 +1041,9 @@ def test_calculator_status_reflects_existing_results(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_router_db,
         patch("app.modules.evaluations.service.check_calculator_readiness") as mock_check,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_conn = AsyncMock()
-        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
 
         mock_check.return_value = {
             "discount": {
@@ -1111,13 +1091,9 @@ def test_get_calculator_results_returns_all_results(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_router_db,
         patch("app.modules.evaluations.service.calc_queries.get_results_by_brand") as mock_get_results,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_conn = AsyncMock()
-        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
 
         mock_get_results.return_value = [
             {
@@ -1163,13 +1139,9 @@ def test_get_calculator_results_empty_when_none(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_router_db,
         patch("app.modules.evaluations.service.calc_queries.get_results_by_brand") as mock_get_results,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_conn = AsyncMock()
-        mock_router_db.connection.return_value.__aenter__.return_value = mock_conn
 
         mock_get_results.return_value = []
 

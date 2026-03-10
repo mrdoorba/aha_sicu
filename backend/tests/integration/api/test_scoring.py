@@ -129,6 +129,16 @@ def _setup_auth_mocks(mock_verify, mock_db, mock_user_queries):
     mock_user_queries.update_last_login = AsyncMock()
 
 
+def _setup_scoring_mocks(mock_bq, mock_eq, mock_cq, mock_rq,
+                          brand=None, eval_inputs=None,
+                          calc_results=None, rules_row=None):
+    """Set up query module mocks for the scoring flow."""
+    mock_bq.get_brand_by_id = AsyncMock(return_value=brand if brand is not None else SAMPLE_BRAND)
+    mock_eq.get_evaluation_inputs = AsyncMock(return_value=eval_inputs if eval_inputs is not None else SAMPLE_EVAL_INPUTS)
+    mock_cq.get_results_by_brand = AsyncMock(return_value=calc_results if calc_results is not None else SAMPLE_CALC_RESULTS)
+    mock_rq.get_rules_by_template = AsyncMock(return_value=rules_row if rules_row is not None else SAMPLE_RULES_ROW)
+
+
 def test_score_without_token(client):
     """Test POST /score returns 401 without auth token."""
     response = client.post(
@@ -144,18 +154,13 @@ def test_score_with_full_data(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
+        patch("app.modules.evaluations.service.calc_queries") as mock_cq,
+        patch("app.modules.evaluations.service.rules_queries") as mock_rq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
-            SAMPLE_BRAND,        # get_brand_by_id
-            SAMPLE_EVAL_INPUTS,  # get_evaluation_inputs
-            SAMPLE_RULES_ROW,    # get_rules_by_template
-        ])
-        mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
+        _setup_scoring_mocks(mock_bq, mock_eq, mock_cq, mock_rq)
 
         response = client.post(
             "/api/v1/evaluations/brands/1/score",
@@ -184,18 +189,13 @@ def test_score_with_missing_calculator_results(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
+        patch("app.modules.evaluations.service.calc_queries") as mock_cq,
+        patch("app.modules.evaluations.service.rules_queries") as mock_rq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
-            SAMPLE_BRAND,
-            SAMPLE_EVAL_INPUTS,
-            SAMPLE_RULES_ROW,    # get_rules_by_template
-        ])
-        mock_svc_conn.fetch = AsyncMock(return_value=[])  # No calculator results
+        _setup_scoring_mocks(mock_bq, mock_eq, mock_cq, mock_rq, calc_results=[])
 
         response = client.post(
             "/api/v1/evaluations/brands/1/score",
@@ -226,13 +226,10 @@ def test_score_brand_not_found(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(return_value=None)  # Brand not found
+        mock_bq.get_brand_by_id = AsyncMock(return_value=None)
 
         response = client.post(
             "/api/v1/evaluations/brands/999/score",
@@ -251,17 +248,13 @@ def test_score_missing_manual_data(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_bq.get_brand_by_id = AsyncMock(return_value=SAMPLE_BRAND)
         eval_no_data = {**SAMPLE_EVAL_INPUTS, "manual_data": None}
-        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
-            SAMPLE_BRAND,
-            eval_no_data,
-        ])
+        mock_eq.get_evaluation_inputs = AsyncMock(return_value=eval_no_data)
 
         response = client.post(
             "/api/v1/evaluations/brands/1/score",
@@ -318,18 +311,13 @@ def test_score_available_field_in_response(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
+        patch("app.modules.evaluations.service.calc_queries") as mock_cq,
+        patch("app.modules.evaluations.service.rules_queries") as mock_rq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
-            SAMPLE_BRAND,
-            SAMPLE_EVAL_INPUTS,
-            SAMPLE_RULES_ROW,    # get_rules_by_template
-        ])
-        mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
+        _setup_scoring_mocks(mock_bq, mock_eq, mock_cq, mock_rq)
 
         response = client.post(
             "/api/v1/evaluations/brands/1/score",
@@ -356,18 +344,13 @@ def test_score_endpoint_returns_rule_version(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
+        patch("app.modules.evaluations.service.calc_queries") as mock_cq,
+        patch("app.modules.evaluations.service.rules_queries") as mock_rq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
-            SAMPLE_BRAND,
-            SAMPLE_EVAL_INPUTS,
-            rules_v3,            # get_rules_by_template with version=3
-        ])
-        mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
+        _setup_scoring_mocks(mock_bq, mock_eq, mock_cq, mock_rq, rules_row=rules_v3)
 
         response = client.post(
             "/api/v1/evaluations/brands/1/score",
@@ -399,19 +382,15 @@ def test_score_uses_db_rules(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
+        patch("app.modules.evaluations.service.calc_queries") as mock_cq,
+        patch("app.modules.evaluations.service.rules_queries") as mock_rq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
         # First call: default rules
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
-            SAMPLE_BRAND,
-            SAMPLE_EVAL_INPUTS,
-            SAMPLE_RULES_ROW,  # default rules (version=1)
-        ])
-        mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
+        _setup_scoring_mocks(mock_bq, mock_eq, mock_cq, mock_rq)
 
         resp_default = client.post(
             "/api/v1/evaluations/brands/1/score",
@@ -420,12 +399,7 @@ def test_score_uses_db_rules(client):
         )
 
         # Second call: custom rules
-        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
-            SAMPLE_BRAND,
-            SAMPLE_EVAL_INPUTS,
-            custom_rules_row,  # custom rules (version=2)
-        ])
-        mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
+        _setup_scoring_mocks(mock_bq, mock_eq, mock_cq, mock_rq, rules_row=custom_rules_row)
 
         resp_custom = client.post(
             "/api/v1/evaluations/brands/1/score",
@@ -459,18 +433,13 @@ def test_score_with_custom_message_templates(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
+        patch("app.modules.evaluations.service.calc_queries") as mock_cq,
+        patch("app.modules.evaluations.service.rules_queries") as mock_rq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
-            SAMPLE_BRAND,
-            SAMPLE_EVAL_INPUTS,
-            custom_rules_row,
-        ])
-        mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
+        _setup_scoring_mocks(mock_bq, mock_eq, mock_cq, mock_rq, rules_row=custom_rules_row)
 
         response = client.post(
             "/api/v1/evaluations/brands/1/score",
@@ -500,18 +469,15 @@ def test_score_rules_not_found_falls_back(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
+        patch("app.modules.evaluations.service.calc_queries") as mock_cq,
+        patch("app.modules.evaluations.service.rules_queries") as mock_rq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
-            SAMPLE_BRAND,
-            SAMPLE_EVAL_INPUTS,
-            None,                # get_rules_by_template returns None
-        ])
-        mock_svc_conn.fetch = AsyncMock(return_value=SAMPLE_CALC_RESULTS)
+        _setup_scoring_mocks(mock_bq, mock_eq, mock_cq, mock_rq, rules_row=None)
+        # Override rules to return None (not found)
+        mock_rq.get_rules_by_template = AsyncMock(return_value=None)
 
         response = client.post(
             "/api/v1/evaluations/brands/1/score",

@@ -5,10 +5,11 @@ import math
 from datetime import date
 from typing import Any, Literal
 
+from asyncpg import Connection
+
 from app.calculators.scoring import calculate_score
 from app.core.exceptions import AppException, CalculatorException
 from app.core.utils import ensure_dict
-from app.db.connection import db
 from app.db.queries.utils import paginate
 from app.calculators.engine import check_calculator_readiness, run_ready_calculators
 from app.db.queries import brands as brand_queries
@@ -41,6 +42,7 @@ logger = logging.getLogger(__name__)
 
 async def list_evaluations(
     *,
+    conn: Connection,
     page: int,
     limit: int,
     sort_by: Literal["created_at", "final_score"],
@@ -63,20 +65,19 @@ async def list_evaluations(
 
     limit, offset = paginate(page, limit)
 
-    async with db.connection() as conn:
-        rows = await eval_queries.list_evaluations(
-            conn,
-            limit=limit,
-            offset=offset,
-            sort_by=sort_by,
-            sort_order=sort_order,
-            search=search,
-            date_from=date_from,
-            date_to=date_to,
-        )
-        total = await eval_queries.count_evaluations(
-            conn, search=search, date_from=date_from, date_to=date_to,
-        )
+    rows = await eval_queries.list_evaluations(
+        conn,
+        limit=limit,
+        offset=offset,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        search=search,
+        date_from=date_from,
+        date_to=date_to,
+    )
+    total = await eval_queries.count_evaluations(
+        conn, search=search, date_from=date_from, date_to=date_to,
+    )
 
     pages = math.ceil(total / limit) if total > 0 else 0
 
@@ -101,6 +102,7 @@ async def list_evaluations(
 
 async def list_grouped_evaluations(
     *,
+    conn: Connection,
     page: int,
     limit: int,
     search: str | None = None,
@@ -117,18 +119,17 @@ async def list_grouped_evaluations(
 
     limit, offset = paginate(page, limit)
 
-    async with db.connection() as conn:
-        rows = await eval_queries.list_grouped_evaluations(
-            conn,
-            limit=limit,
-            offset=offset,
-            search=search,
-            date_from=date_from,
-            date_to=date_to,
-        )
-        total = await eval_queries.count_grouped_evaluations(
-            conn, search=search, date_from=date_from, date_to=date_to,
-        )
+    rows = await eval_queries.list_grouped_evaluations(
+        conn,
+        limit=limit,
+        offset=offset,
+        search=search,
+        date_from=date_from,
+        date_to=date_to,
+    )
+    total = await eval_queries.count_grouped_evaluations(
+        conn, search=search, date_from=date_from, date_to=date_to,
+    )
 
     pages = math.ceil(total / limit) if total > 0 else 0
 
@@ -152,19 +153,19 @@ async def list_grouped_evaluations(
 async def list_evaluations_by_brand(
     brand_id: int,
     *,
+    conn: Connection,
     limit: int | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
 ) -> BrandEvaluationListResponse:
     """Return evaluations for a specific brand with optional limit."""
-    async with db.connection() as conn:
-        rows, total = await eval_queries.list_evaluations_by_brand(
-            conn,
-            brand_id,
-            limit=limit,
-            date_from=date_from,
-            date_to=date_to,
-        )
+    rows, total = await eval_queries.list_evaluations_by_brand(
+        conn,
+        brand_id,
+        limit=limit,
+        date_from=date_from,
+        date_to=date_to,
+    )
 
     items = [
         BrandEvaluationItem(
@@ -182,10 +183,9 @@ async def list_evaluations_by_brand(
     return BrandEvaluationListResponse(items=items, total=total)
 
 
-async def delete_evaluation(evaluation_id: int) -> bool:
+async def delete_evaluation(conn: Connection, evaluation_id: int) -> bool:
     """Delete an evaluation by ID. Returns True if deleted, raises 404 if not found."""
-    async with db.connection() as conn:
-        deleted = await eval_queries.delete_evaluation(conn, evaluation_id)
+    deleted = await eval_queries.delete_evaluation(conn, evaluation_id)
 
     if not deleted:
         raise AppException(
@@ -196,14 +196,13 @@ async def delete_evaluation(evaluation_id: int) -> bool:
     return True
 
 
-async def get_evaluation_detail(evaluation_id: int) -> EvaluationDetailResponse:
+async def get_evaluation_detail(conn: Connection, evaluation_id: int) -> EvaluationDetailResponse:
     """Get full details of a single evaluation by ID.
 
     Raises:
         AppException: If evaluation not found (404).
     """
-    async with db.connection() as conn:
-        row = await eval_queries.get_evaluation_by_id(conn, evaluation_id)
+    row = await eval_queries.get_evaluation_by_id(conn, evaluation_id)
 
     if not row:
         raise AppException(
@@ -241,14 +240,14 @@ async def get_evaluation_detail(evaluation_id: int) -> EvaluationDetailResponse:
 
 
 async def get_evaluation_state(
+    conn: Connection,
     brand_id: int,
 ) -> EvaluationStateResponse:
     """Get the current evaluation state for a brand (shared).
 
     Returns null values if no evaluation inputs exist yet.
     """
-    async with db.connection() as conn:
-        row = await eval_queries.get_evaluation_inputs(conn, brand_id)
+    row = await eval_queries.get_evaluation_inputs(conn, brand_id)
 
     if not row:
         return EvaluationStateResponse(brand_id=brand_id)
@@ -262,6 +261,7 @@ async def get_evaluation_state(
 
 
 async def generate_score(
+    conn: Connection,
     brand_id: int,
     user_id: int,
     template: str,
@@ -280,31 +280,30 @@ async def generate_score(
         CalculatorException: BRAND_NOT_FOUND if brand doesn't exist.
         CalculatorException: CALC_MISSING_DATA if manual data not available.
     """
-    async with db.connection() as conn:
-        # Validate brand exists
-        brand = await brand_queries.get_brand_by_id(conn, brand_id)
-        if not brand:
-            raise CalculatorException(
-                code="BRAND_NOT_FOUND",
-                detail="Brand not found",
-                status_code=404,
-            )
+    # Validate brand exists
+    brand = await brand_queries.get_brand_by_id(conn, brand_id)
+    if not brand:
+        raise CalculatorException(
+            code="BRAND_NOT_FOUND",
+            detail="Brand not found",
+            status_code=404,
+        )
 
-        # Load manual data (shared — one row per brand)
-        eval_inputs = await eval_queries.get_evaluation_inputs(conn, brand_id)
-        manual_data = ensure_dict((eval_inputs or {}).get("manual_data"))
+    # Load manual data (shared — one row per brand)
+    eval_inputs = await eval_queries.get_evaluation_inputs(conn, brand_id)
+    manual_data = ensure_dict((eval_inputs or {}).get("manual_data"))
 
-        if not manual_data:
-            raise CalculatorException(
-                code="CALC_MISSING_DATA",
-                detail="No manual data available for scoring. Please fill in evaluation inputs first.",
-            )
+    if not manual_data:
+        raise CalculatorException(
+            code="CALC_MISSING_DATA",
+            detail="No manual data available for scoring. Please fill in evaluation inputs first.",
+        )
 
-        # Load calculator results
-        calc_rows = await calc_queries.get_results_by_brand(conn, brand_id)
+    # Load calculator results
+    calc_rows = await calc_queries.get_results_by_brand(conn, brand_id)
 
-        # Load scoring rules — always use the unified "default" template
-        rule_row = await rules_queries.get_rules_by_template(conn, "default")
+    # Load scoring rules — always use the unified "default" template
+    rule_row = await rules_queries.get_rules_by_template(conn, "default")
 
     rules_jsonb = rule_row["rules"] if rule_row else None
     rule_version = rule_row["version"] if rule_row else 1
@@ -377,6 +376,7 @@ async def generate_score(
 
 
 async def save_evaluation(
+    conn: Connection,
     brand_id: int,
     user_id: int,
     template: str,
@@ -397,28 +397,27 @@ async def save_evaluation(
     Raises:
         AppException: If brand not found (404).
     """
-    async with db.connection() as conn:
-        async with conn.transaction():
-            brand = await brand_queries.get_brand_by_id(conn, brand_id)
-            if not brand:
-                raise AppException(
-                    code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
-                )
-
-            row = await eval_queries.insert_evaluation(
-                conn,
-                brand_id=brand_id,
-                user_id=user_id,
-                template=template,
-                final_score=final_score,
-                verdict=verdict,
-                score_breakdown=score_breakdown,
-                calculator_results=calculator_results,
-                manual_inputs=manual_inputs,
-                rule_version=rule_version,
-                email_output=email_output,
-                period=period,
+    async with conn.transaction():
+        brand = await brand_queries.get_brand_by_id(conn, brand_id)
+        if not brand:
+            raise AppException(
+                code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
             )
+
+        row = await eval_queries.insert_evaluation(
+            conn,
+            brand_id=brand_id,
+            user_id=user_id,
+            template=template,
+            final_score=final_score,
+            verdict=verdict,
+            score_breakdown=score_breakdown,
+            calculator_results=calculator_results,
+            manual_inputs=manual_inputs,
+            rule_version=rule_version,
+            email_output=email_output,
+            period=period,
+        )
 
     return SaveEvaluationResponse(
         id=row["id"],
@@ -431,13 +430,12 @@ async def save_evaluation(
     )
 
 
-async def get_calculator_results(brand_id: int) -> CalculatorResultsListResponse:
+async def get_calculator_results(conn: Connection, brand_id: int) -> CalculatorResultsListResponse:
     """Return all stored calculator results for a brand.
 
     Returns an empty list if brand_id doesn't exist or has no results.
     """
-    async with db.connection() as conn:
-        rows = await calc_queries.get_results_by_brand(conn=conn, brand_id=brand_id)
+    rows = await calc_queries.get_results_by_brand(conn=conn, brand_id=brand_id)
 
     results = [
         CalculatorResultItem(
@@ -451,10 +449,9 @@ async def get_calculator_results(brand_id: int) -> CalculatorResultsListResponse
     return CalculatorResultsListResponse(brand_id=brand_id, results=results)
 
 
-async def get_calculator_status(brand_id: int) -> CalculatorStatusResponse:
+async def get_calculator_status(conn: Connection, brand_id: int) -> CalculatorStatusResponse:
     """Return the readiness status of each calculator for a brand."""
-    async with db.connection() as conn:
-        readiness = await check_calculator_readiness(brand_id=brand_id, conn=conn)
+    readiness = await check_calculator_readiness(brand_id=brand_id, conn=conn)
 
     calculators = {
         calc_type: SingleCalculatorStatus(**status_info)
@@ -463,13 +460,12 @@ async def get_calculator_status(brand_id: int) -> CalculatorStatusResponse:
     return CalculatorStatusResponse(brand_id=brand_id, calculators=calculators)
 
 
-async def run_all_calculators_service(brand_id: int) -> RunAllResponse:
+async def run_all_calculators_service(conn: Connection, brand_id: int) -> RunAllResponse:
     """Run all calculators whose required files are available for a brand.
 
     Returns per-calculator results (success, skipped, or error).
     """
-    async with db.connection() as conn:
-        raw_results = await run_ready_calculators(brand_id=brand_id, conn=conn)
+    raw_results = await run_ready_calculators(brand_id=brand_id, conn=conn)
 
     results = [
         RunCalculatorItem(
@@ -484,6 +480,7 @@ async def run_all_calculators_service(brand_id: int) -> RunAllResponse:
 
 
 async def save_evaluation_inputs(
+    conn: Connection,
     brand_id: int,
     last_edited_by: int,
     category_type: str | None,
@@ -496,21 +493,20 @@ async def save_evaluation_inputs(
     Raises:
         AppException: If brand not found (404).
     """
-    async with db.connection() as conn:
-        async with conn.transaction():
-            brand = await brand_queries.get_brand_by_id(conn, brand_id)
-            if not brand:
-                raise AppException(
-                    code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
-                )
-
-            row = await eval_queries.upsert_evaluation_inputs(
-                conn,
-                brand_id=brand_id,
-                last_edited_by=last_edited_by,
-                category_type=category_type,
-                manual_data=manual_data,
+    async with conn.transaction():
+        brand = await brand_queries.get_brand_by_id(conn, brand_id)
+        if not brand:
+            raise AppException(
+                code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
             )
+
+        row = await eval_queries.upsert_evaluation_inputs(
+            conn,
+            brand_id=brand_id,
+            last_edited_by=last_edited_by,
+            category_type=category_type,
+            manual_data=manual_data,
+        )
 
     return EvaluationStateResponse(
         brand_id=row["brand_id"],

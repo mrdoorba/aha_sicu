@@ -2,7 +2,7 @@
 
 from datetime import datetime, timezone
 from decimal import Decimal
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
 
@@ -69,17 +69,12 @@ def test_save_evaluation_success(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_conn.transaction = MagicMock(return_value=AsyncMock())
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
-            SAMPLE_BRAND,  # get_brand_by_id
-            SAVED_ROW,     # insert_evaluation
-        ])
+        mock_bq.get_brand_by_id = AsyncMock(return_value=SAMPLE_BRAND)
+        mock_eq.insert_evaluation = AsyncMock(return_value=SAVED_ROW)
 
         response = client.post(
             "/api/v1/evaluations/brands/1/save",
@@ -128,14 +123,10 @@ def test_save_evaluation_invalid_brand(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_conn.transaction = MagicMock(return_value=AsyncMock())
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(return_value=None)  # Brand not found
+        mock_bq.get_brand_by_id = AsyncMock(return_value=None)
 
         response = client.post(
             "/api/v1/evaluations/brands/999/save",
@@ -163,7 +154,8 @@ def test_save_creates_new_record_each_time(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
@@ -178,13 +170,10 @@ def test_save_creates_new_record_each_time(client):
             "created_at": datetime(2026, 2, 11, 12, 5, 0, tzinfo=timezone.utc),
         }
 
-        mock_svc_conn = AsyncMock()
-        mock_svc_conn.transaction = MagicMock(return_value=AsyncMock())
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
-            SAMPLE_BRAND, saved_row_1,  # First save
-            SAMPLE_BRAND, saved_row_2,  # Second save
-        ])
+        mock_bq.get_brand_by_id = AsyncMock(return_value=SAMPLE_BRAND)
+        mock_eq.insert_evaluation = AsyncMock(
+            side_effect=[saved_row_1, saved_row_2]
+        )
 
         response1 = client.post(
             "/api/v1/evaluations/brands/1/save",
@@ -211,7 +200,8 @@ def test_save_evaluation_negative_score(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
@@ -219,13 +209,8 @@ def test_save_evaluation_negative_score(client):
             **SAVED_ROW,
             "final_score": Decimal("-15.50"),
         }
-        mock_svc_conn = AsyncMock()
-        mock_svc_conn.transaction = MagicMock(return_value=AsyncMock())
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(side_effect=[
-            SAMPLE_BRAND,
-            negative_saved,
-        ])
+        mock_bq.get_brand_by_id = AsyncMock(return_value=SAMPLE_BRAND)
+        mock_eq.insert_evaluation = AsyncMock(return_value=negative_saved)
 
         negative_request = {**SAVE_REQUEST, "final_score": -15.5}
         response = client.post(
@@ -245,18 +230,12 @@ def test_save_preserves_jsonb_data(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
-        patch("app.db.queries.evaluations.insert_evaluation") as mock_insert,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_conn.transaction = MagicMock(return_value=AsyncMock())
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-
-        # get_brand_by_id returns brand; insert_evaluation is patched separately
-        mock_svc_conn.fetchrow = AsyncMock(return_value=SAMPLE_BRAND)
-        mock_insert.return_value = SAVED_ROW
+        mock_bq.get_brand_by_id = AsyncMock(return_value=SAMPLE_BRAND)
+        mock_eq.insert_evaluation = AsyncMock(return_value=SAVED_ROW)
 
         response = client.post(
             "/api/v1/evaluations/brands/1/save",
@@ -265,8 +244,8 @@ def test_save_preserves_jsonb_data(client):
         )
 
         assert response.status_code == 200
-        mock_insert.assert_called_once()
-        call_kwargs = mock_insert.call_args
+        mock_eq.insert_evaluation.assert_called_once()
+        call_kwargs = mock_eq.insert_evaluation.call_args
         # Verify JSONB fields were passed correctly
         assert call_kwargs.kwargs["score_breakdown"] == SAVE_REQUEST["score_breakdown"]
         assert call_kwargs.kwargs["calculator_results"] == SAVE_REQUEST["calculator_results"]

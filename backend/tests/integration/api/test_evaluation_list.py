@@ -1,6 +1,6 @@
 """Integration tests for the evaluation list endpoint."""
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from unittest.mock import AsyncMock, patch
 
@@ -64,20 +64,22 @@ def _setup_auth_mocks(mock_verify, mock_db, mock_user_queries):
     mock_user_queries.update_last_login = AsyncMock()
 
 
+def _setup_eval_query_mocks(mock_eq, list_return, count_return):
+    """Set up eval_queries mocks for list + count."""
+    mock_eq.list_evaluations = AsyncMock(return_value=list_return)
+    mock_eq.count_evaluations = AsyncMock(return_value=count_return)
+
+
 def test_list_evaluations_success(client):
     """Test GET /evaluations returns paginated list with correct fields."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetch = AsyncMock(return_value=[EVAL_ROW_1, EVAL_ROW_2])
-        mock_svc_conn.fetchval = AsyncMock(return_value=2)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_1, EVAL_ROW_2], 2)
 
         response = client.get(
             "/api/v1/evaluations",
@@ -108,17 +110,13 @@ def test_list_evaluations_pagination(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        # Page 1: returns first 2, Page 2: returns 3rd item
-        mock_svc_conn.fetch = AsyncMock(
+        mock_eq.list_evaluations = AsyncMock(
             side_effect=[[EVAL_ROW_1, EVAL_ROW_2], [EVAL_ROW_3]]
         )
-        mock_svc_conn.fetchval = AsyncMock(return_value=3)
+        mock_eq.count_evaluations = AsyncMock(return_value=3)
 
         # Page 1 with limit=2
         response1 = client.get(
@@ -150,15 +148,10 @@ def test_list_evaluations_sort_date_desc(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        # Return in desc order (newest first)
-        mock_svc_conn.fetch = AsyncMock(return_value=[EVAL_ROW_1, EVAL_ROW_2, EVAL_ROW_3])
-        mock_svc_conn.fetchval = AsyncMock(return_value=3)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_1, EVAL_ROW_2, EVAL_ROW_3], 3)
 
         response = client.get(
             "/api/v1/evaluations",
@@ -180,15 +173,10 @@ def test_list_evaluations_sort_date_asc(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        # Return in asc order (oldest first)
-        mock_svc_conn.fetch = AsyncMock(return_value=[EVAL_ROW_3, EVAL_ROW_2, EVAL_ROW_1])
-        mock_svc_conn.fetchval = AsyncMock(return_value=3)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_3, EVAL_ROW_2, EVAL_ROW_1], 3)
 
         response = client.get(
             "/api/v1/evaluations?sort_order=asc",
@@ -209,15 +197,10 @@ def test_list_evaluations_sort_score(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        # Return sorted by score desc
-        mock_svc_conn.fetch = AsyncMock(return_value=[EVAL_ROW_3, EVAL_ROW_1, EVAL_ROW_2])
-        mock_svc_conn.fetchval = AsyncMock(return_value=3)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_3, EVAL_ROW_1, EVAL_ROW_2], 3)
 
         response = client.get(
             "/api/v1/evaluations?sort_by=final_score&sort_order=desc",
@@ -256,14 +239,10 @@ def test_list_evaluations_empty(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetch = AsyncMock(return_value=[])
-        mock_svc_conn.fetchval = AsyncMock(return_value=0)
+        _setup_eval_query_mocks(mock_eq, [], 0)
 
         response = client.get(
             "/api/v1/evaluations",
@@ -288,28 +267,16 @@ def test_list_evaluations_auth_required(client):
 # --- Search tests (Story 4.2) ---
 
 
-def _setup_search_mocks(mock_verify, mock_db, mock_user_queries, mock_svc_db, fetch_return, fetchval_return):
-    """Shared setup for search tests."""
-    _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-    mock_svc_conn = AsyncMock()
-    mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-    mock_svc_conn.fetch = AsyncMock(return_value=fetch_return)
-    mock_svc_conn.fetchval = AsyncMock(return_value=fetchval_return)
-    return mock_svc_conn
-
-
 def test_search_evaluations_by_brand_name(client):
     """Test search=Nike returns only matching evaluations."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_1], fetchval_return=1,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_1], 1)
 
         response = client.get(
             "/api/v1/evaluations?search=Nike",
@@ -329,12 +296,10 @@ def test_search_partial_match(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_1], fetchval_return=1,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_1], 1)
 
         response = client.get(
             "/api/v1/evaluations?search=Nik",
@@ -353,12 +318,10 @@ def test_search_case_insensitive(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_1], fetchval_return=1,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_1], 1)
 
         response = client.get(
             "/api/v1/evaluations?search=nike",
@@ -377,12 +340,10 @@ def test_search_no_results(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[], fetchval_return=0,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [], 0)
 
         response = client.get(
             "/api/v1/evaluations?search=NonExistentBrand",
@@ -402,12 +363,10 @@ def test_search_with_pagination(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_1], fetchval_return=3,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_1], 3)
 
         response = client.get(
             "/api/v1/evaluations?search=Nike&limit=1&page=1",
@@ -428,12 +387,10 @@ def test_search_with_sorting(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_3, EVAL_ROW_1], fetchval_return=2,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_3, EVAL_ROW_1], 2)
 
         response = client.get(
             "/api/v1/evaluations?search=a&sort_by=final_score&sort_order=desc",
@@ -454,12 +411,10 @@ def test_search_special_characters_escaped(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[], fetchval_return=0,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [], 0)
 
         response = client.get(
             "/api/v1/evaluations?search=brand%25test",
@@ -478,12 +433,10 @@ def test_search_empty_returns_all(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_1, EVAL_ROW_2, EVAL_ROW_3], fetchval_return=3,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_1, EVAL_ROW_2, EVAL_ROW_3], 3)
 
         # Empty search string
         response = client.get(
@@ -501,17 +454,15 @@ def test_search_empty_returns_all(client):
 
 
 def test_search_query_passes_escaped_params(client):
-    """Verify that search with special chars calls DB with escaped value and correct param order."""
+    """Verify that search with special chars passes escaped value to query layer."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        mock_svc_conn = _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[], fetchval_return=0,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [], 0)
 
         response = client.get(
             "/api/v1/evaluations?search=brand%25_test",
@@ -520,34 +471,21 @@ def test_search_query_passes_escaped_params(client):
 
         assert response.status_code == 200
 
-        # Verify conn.fetch was called with escaped search as $1, limit as $2, offset as $3
-        fetch_call = mock_svc_conn.fetch.call_args
-        query_sql = fetch_call.args[0]
-        query_params = fetch_call.args[1:]
-
-        # SQL must contain ILIKE with ESCAPE clause
-        assert "ILIKE" in query_sql
-        assert "ESCAPE" in query_sql
-
-        # First param must be the escaped search term (% → \%, _ → \_)
-        assert query_params[0] == "brand\\%\\_test"
-        # Second param is limit, third is offset
-        assert query_params[1] == 20  # default limit
-        assert query_params[2] == 0   # page 1 → offset 0
+        # Verify list_evaluations was called with the search parameter
+        list_call = mock_eq.list_evaluations.call_args
+        assert list_call.kwargs["search"] == "brand%_test"
 
 
 def test_search_query_no_where_when_empty(client):
-    """Verify that empty search doesn't include WHERE clause — only limit/offset params."""
+    """Verify that empty search passes None to query layer."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        mock_svc_conn = _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_1], fetchval_return=1,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_1], 1)
 
         response = client.get(
             "/api/v1/evaluations",
@@ -556,13 +494,9 @@ def test_search_query_no_where_when_empty(client):
 
         assert response.status_code == 200
 
-        # Verify conn.fetch was called with only 2 params (limit, offset) — no search param
-        fetch_call = mock_svc_conn.fetch.call_args
-        query_sql = fetch_call.args[0]
-        query_params = fetch_call.args[1:]
-
-        assert "ILIKE" not in query_sql
-        assert len(query_params) == 2  # limit and offset only
+        # Verify list_evaluations was called without search
+        list_call = mock_eq.list_evaluations.call_args
+        assert list_call.kwargs["search"] is None
 
 
 # --- Date filter tests (Story 4.3) ---
@@ -605,12 +539,10 @@ def test_filter_by_date_range(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_FEB_EARLY], fetchval_return=1,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_FEB_EARLY], 1)
 
         response = client.get(
             "/api/v1/evaluations?date_from=2026-02-01&date_to=2026-02-15",
@@ -629,12 +561,10 @@ def test_filter_date_from_only(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_FEB_EARLY, EVAL_ROW_FEB_LATE], fetchval_return=2,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_FEB_EARLY, EVAL_ROW_FEB_LATE], 2)
 
         response = client.get(
             "/api/v1/evaluations?date_from=2026-02-01",
@@ -653,12 +583,10 @@ def test_filter_date_to_only(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_JAN], fetchval_return=1,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_JAN], 1)
 
         response = client.get(
             "/api/v1/evaluations?date_to=2026-01-31",
@@ -672,17 +600,15 @@ def test_filter_date_to_only(client):
 
 
 def test_filter_date_to_inclusive_end_of_day(client):
-    """Test date_to is inclusive of the entire day (23:59 on date_to day is included)."""
+    """Test date_to passes correct date to query layer for inclusive end-of-day."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        mock_svc_conn = _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_FEB_LATE], fetchval_return=1,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_FEB_LATE], 1)
 
         response = client.get(
             "/api/v1/evaluations?date_to=2026-02-28",
@@ -691,10 +617,9 @@ def test_filter_date_to_inclusive_end_of_day(client):
 
         assert response.status_code == 200
 
-        # Verify the SQL uses < (date + 1 day) pattern for inclusive end-of-day
-        fetch_call = mock_svc_conn.fetch.call_args
-        query_sql = fetch_call.args[0]
-        assert "interval '1 day'" in query_sql
+        # Verify query layer receives the date_to for end-of-day handling
+        list_call = mock_eq.list_evaluations.call_args
+        assert list_call.kwargs["date_to"] == date(2026, 2, 28)
 
 
 def test_filter_date_combined_with_search(client):
@@ -703,12 +628,10 @@ def test_filter_date_combined_with_search(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        mock_svc_conn = _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_FEB_LATE], fetchval_return=1,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_FEB_LATE], 1)
 
         response = client.get(
             "/api/v1/evaluations?search=Nike&date_from=2026-02-01&date_to=2026-02-28",
@@ -720,16 +643,11 @@ def test_filter_date_combined_with_search(client):
         assert data["total"] == 1
         assert data["items"][0]["brand_name"] == "Nike Indonesia"
 
-        # Verify SQL has both ILIKE and date conditions with correct param ordering
-        fetch_call = mock_svc_conn.fetch.call_args
-        query_sql = fetch_call.args[0]
-        query_params = fetch_call.args[1:]
-        assert "ILIKE" in query_sql
-        assert "created_at >=" in query_sql
-        assert "interval '1 day'" in query_sql
-        # Param order: $1=search, $2=date_from, $3=date_to, $4=limit, $5=offset
-        assert query_params[0] == "Nike"  # escaped search
-        assert len(query_params) == 5  # search + date_from + date_to + limit + offset
+        # Verify both search and date params were passed to query layer
+        list_call = mock_eq.list_evaluations.call_args
+        assert list_call.kwargs["search"] == "Nike"
+        assert list_call.kwargs["date_from"] == date(2026, 2, 1)
+        assert list_call.kwargs["date_to"] == date(2026, 2, 28)
 
 
 def test_filter_no_dates_returns_all(client):
@@ -738,12 +656,13 @@ def test_filter_no_dates_returns_all(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_JAN, EVAL_ROW_FEB_EARLY, EVAL_ROW_FEB_LATE],
-            fetchval_return=3,
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(
+            mock_eq,
+            [EVAL_ROW_JAN, EVAL_ROW_FEB_EARLY, EVAL_ROW_FEB_LATE],
+            3,
         )
 
         response = client.get(
@@ -797,11 +716,8 @@ def test_filter_date_from_after_date_to_returns_422(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
 
         response = client.get(
             "/api/v1/evaluations?date_from=2026-02-28&date_to=2026-01-01",
@@ -819,12 +735,10 @@ def test_filter_date_with_pagination(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
-        _setup_search_mocks(
-            mock_verify, mock_db, mock_user_queries, mock_svc_db,
-            fetch_return=[EVAL_ROW_FEB_EARLY], fetchval_return=5,
-        )
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        _setup_eval_query_mocks(mock_eq, [EVAL_ROW_FEB_EARLY], 5)
 
         response = client.get(
             "/api/v1/evaluations?date_from=2026-02-01&limit=2&page=1",

@@ -1,6 +1,5 @@
 """Integration tests for evaluations API endpoints."""
 
-from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
@@ -35,19 +34,6 @@ SAMPLE_EVAL_INPUTS = {
 }
 
 
-def _make_transactional_conn(fetchrow_side_effect):
-    """Create a mock connection that supports conn.transaction() context manager."""
-    mock_conn = AsyncMock()
-    mock_conn.fetchrow = AsyncMock(side_effect=fetchrow_side_effect)
-
-    @asynccontextmanager
-    async def mock_transaction():
-        yield
-
-    mock_conn.transaction = mock_transaction
-    return mock_conn
-
-
 def _setup_auth_mocks(mock_verify, mock_db, mock_user_queries):
     """Shared auth mock setup for all tests."""
     mock_verify.return_value = {"uid": "test-uid", "email": "test@example.com"}
@@ -69,13 +55,10 @@ def test_get_evaluation_new_state(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_eval_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_eval_conn = AsyncMock()
-        mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
-        mock_eval_conn.fetchrow = AsyncMock(return_value=None)
+        mock_eq.get_evaluation_inputs = AsyncMock(return_value=None)
 
         response = client.get("/api/v1/evaluations/brands/1", headers=AUTH_HEADERS)
 
@@ -93,13 +76,10 @@ def test_get_evaluation_existing_state(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_eval_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_eval_conn = AsyncMock()
-        mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
-        mock_eval_conn.fetchrow = AsyncMock(return_value=SAMPLE_EVAL_INPUTS)
+        mock_eq.get_evaluation_inputs = AsyncMock(return_value=SAMPLE_EVAL_INPUTS)
 
         response = client.get("/api/v1/evaluations/brands/1", headers=AUTH_HEADERS)
 
@@ -117,15 +97,12 @@ def test_put_evaluation_creates_new(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_eval_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_eval_conn = _make_transactional_conn([
-            SAMPLE_BRAND,  # get_brand_by_id
-            SAMPLE_EVAL_INPUTS,  # upsert_evaluation_inputs RETURNING
-        ])
-        mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
+        mock_bq.get_brand_by_id = AsyncMock(return_value=SAMPLE_BRAND)
+        mock_eq.upsert_evaluation_inputs = AsyncMock(return_value=SAMPLE_EVAL_INPUTS)
 
         response = client.put(
             "/api/v1/evaluations/brands/1",
@@ -150,15 +127,12 @@ def test_put_evaluation_updates_existing(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_eval_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_eval_conn = _make_transactional_conn([
-            SAMPLE_BRAND,  # get_brand_by_id
-            updated_inputs,  # upsert RETURNING
-        ])
-        mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
+        mock_bq.get_brand_by_id = AsyncMock(return_value=SAMPLE_BRAND)
+        mock_eq.upsert_evaluation_inputs = AsyncMock(return_value=updated_inputs)
 
         response = client.put(
             "/api/v1/evaluations/brands/1",
@@ -177,12 +151,10 @@ def test_put_evaluation_brand_not_found(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_eval_db,
+        patch("app.modules.evaluations.service.brand_queries") as mock_bq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_eval_conn = _make_transactional_conn([None])  # brand not found
-        mock_eval_db.connection.return_value.__aenter__.return_value = mock_eval_conn
+        mock_bq.get_brand_by_id = AsyncMock(return_value=None)
 
         response = client.put(
             "/api/v1/evaluations/brands/999",

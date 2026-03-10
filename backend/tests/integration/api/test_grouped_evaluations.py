@@ -90,16 +90,13 @@ def test_grouped_evaluations_success(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetch = AsyncMock(
+        mock_eq.list_grouped_evaluations = AsyncMock(
             return_value=[GROUPED_ROW_1, GROUPED_ROW_2, GROUPED_ROW_3]
         )
-        mock_svc_conn.fetchval = AsyncMock(return_value=3)
+        mock_eq.count_grouped_evaluations = AsyncMock(return_value=3)
 
         response = client.get(
             "/api/v1/evaluations/grouped",
@@ -129,16 +126,13 @@ def test_grouped_evaluations_pagination(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetch = AsyncMock(
+        mock_eq.list_grouped_evaluations = AsyncMock(
             side_effect=[[GROUPED_ROW_1, GROUPED_ROW_2], [GROUPED_ROW_3]]
         )
-        mock_svc_conn.fetchval = AsyncMock(return_value=3)
+        mock_eq.count_grouped_evaluations = AsyncMock(return_value=3)
 
         # Page 1
         r1 = client.get(
@@ -167,14 +161,11 @@ def test_grouped_evaluations_search(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetch = AsyncMock(return_value=[GROUPED_ROW_1])
-        mock_svc_conn.fetchval = AsyncMock(return_value=1)
+        mock_eq.list_grouped_evaluations = AsyncMock(return_value=[GROUPED_ROW_1])
+        mock_eq.count_grouped_evaluations = AsyncMock(return_value=1)
 
         response = client.get(
             "/api/v1/evaluations/grouped?search=Nike",
@@ -193,14 +184,11 @@ def test_grouped_evaluations_date_filter(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetch = AsyncMock(return_value=[GROUPED_ROW_1])
-        mock_svc_conn.fetchval = AsyncMock(return_value=1)
+        mock_eq.list_grouped_evaluations = AsyncMock(return_value=[GROUPED_ROW_1])
+        mock_eq.count_grouped_evaluations = AsyncMock(return_value=1)
 
         response = client.get(
             "/api/v1/evaluations/grouped?date_from=2026-02-14&date_to=2026-02-16",
@@ -218,14 +206,11 @@ def test_grouped_evaluations_empty(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetch = AsyncMock(return_value=[])
-        mock_svc_conn.fetchval = AsyncMock(return_value=0)
+        mock_eq.list_grouped_evaluations = AsyncMock(return_value=[])
+        mock_eq.count_grouped_evaluations = AsyncMock(return_value=0)
 
         response = client.get(
             "/api/v1/evaluations/grouped",
@@ -254,16 +239,11 @@ def test_brand_evaluations_with_limit(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        # fetchval returns total count, fetch returns limited rows
-        mock_svc_conn.fetchval = AsyncMock(return_value=8)
-        mock_svc_conn.fetch = AsyncMock(
-            return_value=[BRAND_EVAL_1, BRAND_EVAL_2, BRAND_EVAL_3]
+        mock_eq.list_evaluations_by_brand = AsyncMock(
+            return_value=([BRAND_EVAL_1, BRAND_EVAL_2, BRAND_EVAL_3], 8)
         )
 
         response = client.get(
@@ -290,15 +270,11 @@ def test_brand_evaluations_without_limit(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchval = AsyncMock(return_value=3)
-        mock_svc_conn.fetch = AsyncMock(
-            return_value=[BRAND_EVAL_1, BRAND_EVAL_2, BRAND_EVAL_3]
+        mock_eq.list_evaluations_by_brand = AsyncMock(
+            return_value=([BRAND_EVAL_1, BRAND_EVAL_2, BRAND_EVAL_3], 3)
         )
 
         response = client.get(
@@ -318,14 +294,12 @@ def test_brand_evaluations_date_filter(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchval = AsyncMock(return_value=1)
-        mock_svc_conn.fetch = AsyncMock(return_value=[BRAND_EVAL_1])
+        mock_eq.list_evaluations_by_brand = AsyncMock(
+            return_value=([BRAND_EVAL_1], 1)
+        )
 
         response = client.get(
             "/api/v1/evaluations/grouped/10?date_from=2026-02-14&date_to=2026-02-16",
@@ -344,14 +318,12 @@ def test_brand_evaluations_empty(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchval = AsyncMock(return_value=0)
-        mock_svc_conn.fetch = AsyncMock(return_value=[])
+        mock_eq.list_evaluations_by_brand = AsyncMock(
+            return_value=([], 0)
+        )
 
         response = client.get(
             "/api/v1/evaluations/grouped/999",

@@ -73,13 +73,10 @@ def test_get_evaluation_detail_success(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(return_value=EVAL_DETAIL_ROW)
+        mock_eq.get_evaluation_by_id = AsyncMock(return_value=EVAL_DETAIL_ROW)
 
         response = client.get(
             "/api/v1/evaluations/42",
@@ -103,13 +100,10 @@ def test_get_evaluation_detail_has_brand_name(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(return_value=EVAL_DETAIL_ROW)
+        mock_eq.get_evaluation_by_id = AsyncMock(return_value=EVAL_DETAIL_ROW)
 
         response = client.get(
             "/api/v1/evaluations/42",
@@ -127,13 +121,10 @@ def test_get_evaluation_detail_has_evaluator_email(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(return_value=EVAL_DETAIL_ROW)
+        mock_eq.get_evaluation_by_id = AsyncMock(return_value=EVAL_DETAIL_ROW)
 
         response = client.get(
             "/api/v1/evaluations/42",
@@ -151,13 +142,10 @@ def test_get_evaluation_detail_jsonb_fields(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(return_value=EVAL_DETAIL_ROW)
+        mock_eq.get_evaluation_by_id = AsyncMock(return_value=EVAL_DETAIL_ROW)
 
         response = client.get(
             "/api/v1/evaluations/42",
@@ -190,13 +178,10 @@ def test_get_evaluation_detail_not_found(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(return_value=None)
+        mock_eq.get_evaluation_by_id = AsyncMock(return_value=None)
 
         response = client.get(
             "/api/v1/evaluations/99999",
@@ -221,13 +206,10 @@ def test_get_evaluation_detail_has_brand_raw_data(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(return_value=EVAL_DETAIL_ROW)
+        mock_eq.get_evaluation_by_id = AsyncMock(return_value=EVAL_DETAIL_ROW)
 
         response = client.get(
             "/api/v1/evaluations/42",
@@ -253,13 +235,10 @@ def test_get_evaluation_detail_brand_raw_data_partial(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(return_value=partial_row)
+        mock_eq.get_evaluation_by_id = AsyncMock(return_value=partial_row)
 
         response = client.get(
             "/api/v1/evaluations/42",
@@ -281,13 +260,10 @@ def test_get_evaluation_detail_brand_raw_data_null(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(return_value=null_row)
+        mock_eq.get_evaluation_by_id = AsyncMock(return_value=null_row)
 
         response = client.get(
             "/api/v1/evaluations/42",
@@ -320,13 +296,10 @@ def test_get_evaluation_detail_allowed_member(client):
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
-        patch("app.modules.evaluations.service.db") as mock_svc_db,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks_for_user(mock_verify, mock_db, mock_user_queries, MOCK_MEMBER)
-
-        mock_svc_conn = AsyncMock()
-        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
-        mock_svc_conn.fetchrow = AsyncMock(return_value=EVAL_DETAIL_ROW)
+        mock_eq.get_evaluation_by_id = AsyncMock(return_value=EVAL_DETAIL_ROW)
 
         response = client.get(
             "/api/v1/evaluations/42",
