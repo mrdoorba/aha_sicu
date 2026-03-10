@@ -6,11 +6,8 @@ import {
   type ReactNode,
 } from 'react';
 import type { User } from 'firebase/auth';
-import {
-  subscribeToAuthChanges,
-  loginWithEmail,
-  logout as firebaseLogout,
-} from '../firebase/auth';
+import type { AuthService } from '../services/authService';
+import { firebaseAuthService } from '../services/firebaseAuthService';
 
 interface AuthContextType {
   user: User | null;
@@ -21,24 +18,32 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | null>(null);
 
-export const AuthProvider = ({ children }: { children: ReactNode }) => {
+interface AuthProviderProps {
+  children: ReactNode;
+  authService?: AuthService;
+}
+
+export const AuthProvider = ({
+  children,
+  authService = firebaseAuthService,
+}: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = subscribeToAuthChanges((user) => {
+    const unsubscribe = authService.subscribe((user) => {
       setUser(user);
       setLoading(false);
     });
     return unsubscribe;
-  }, []);
+  }, [authService]);
 
   const login = async (email: string, password: string) => {
-    await loginWithEmail(email, password);
+    await authService.login(email, password);
   };
 
   const logout = async () => {
-    await firebaseLogout();
+    await authService.logout();
   };
 
   return (

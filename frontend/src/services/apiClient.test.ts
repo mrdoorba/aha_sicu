@@ -1,12 +1,17 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { getCurrentUserToken } from '../firebase/auth';
+import { firebaseAuthService } from './firebaseAuthService';
 
-// Mock the firebase auth module
-vi.mock('../firebase/auth', () => ({
-  getCurrentUserToken: vi.fn(),
+// Mock the firebaseAuthService module
+vi.mock('./firebaseAuthService', () => ({
+  firebaseAuthService: {
+    getToken: vi.fn(),
+    subscribe: vi.fn(),
+    login: vi.fn(),
+    logout: vi.fn(),
+  },
 }));
 
-const mockedGetCurrentUserToken = vi.mocked(getCurrentUserToken);
+const mockedGetToken = vi.mocked(firebaseAuthService.getToken);
 
 describe('apiClient', () => {
   let originalFetch: typeof global.fetch;
@@ -45,7 +50,7 @@ describe('apiClient', () => {
         );
       });
 
-      mockedGetCurrentUserToken.mockResolvedValue('test-firebase-token');
+      mockedGetToken.mockResolvedValue('test-firebase-token');
 
       // Re-import to get fresh module with mocked fetch
       const { getCurrentUser } = await import('./apiClient');
@@ -79,7 +84,7 @@ describe('apiClient', () => {
         );
       });
 
-      mockedGetCurrentUserToken.mockResolvedValue(null);
+      mockedGetToken.mockResolvedValue(null);
 
       const { getCurrentUser } = await import('./apiClient');
       await getCurrentUser();
@@ -105,12 +110,12 @@ describe('apiClient', () => {
         )
       );
 
-      mockedGetCurrentUserToken.mockResolvedValue('token-1');
+      mockedGetToken.mockResolvedValue('token-1');
 
       const { getCurrentUser } = await import('./apiClient');
       await getCurrentUser();
 
-      expect(mockedGetCurrentUserToken).toHaveBeenCalledTimes(1);
+      expect(mockedGetToken).toHaveBeenCalledTimes(1);
     });
   });
 
@@ -126,7 +131,7 @@ describe('apiClient', () => {
         })
       );
 
-      mockedGetCurrentUserToken.mockResolvedValue('test-token');
+      mockedGetToken.mockResolvedValue('test-token');
 
       const { getCurrentUser } = await import('./apiClient');
       try { await getCurrentUser(); } catch { /* expected to throw */ }
@@ -146,7 +151,7 @@ describe('apiClient', () => {
         })
       );
 
-      mockedGetCurrentUserToken.mockResolvedValue('test-token');
+      mockedGetToken.mockResolvedValue('test-token');
 
       const { getCurrentUser } = await import('./apiClient');
       try { await getCurrentUser(); } catch { /* expected to throw */ }
@@ -166,7 +171,7 @@ describe('apiClient', () => {
         })
       );
 
-      mockedGetCurrentUserToken.mockResolvedValue('test-token');
+      mockedGetToken.mockResolvedValue('test-token');
 
       const { getCurrentUser } = await import('./apiClient');
       try { await getCurrentUser(); } catch { /* expected to throw */ }
@@ -199,7 +204,7 @@ describe('apiClient', () => {
         );
       });
 
-      mockedGetCurrentUserToken.mockResolvedValue('test-token');
+      mockedGetToken.mockResolvedValue('test-token');
 
       const { getCurrentUser } = await import('./apiClient');
       await getCurrentUser();
@@ -223,7 +228,7 @@ describe('apiClient', () => {
         })
       );
 
-      mockedGetCurrentUserToken.mockResolvedValue('test-token');
+      mockedGetToken.mockResolvedValue('test-token');
 
       const { getCurrentUser } = await import('./apiClient');
       const result = await getCurrentUser();
@@ -244,7 +249,7 @@ describe('apiClient', () => {
         })
       );
 
-      mockedGetCurrentUserToken.mockResolvedValue('invalid-token');
+      mockedGetToken.mockResolvedValue('invalid-token');
 
       const { getCurrentUser } = await import('./apiClient');
 
