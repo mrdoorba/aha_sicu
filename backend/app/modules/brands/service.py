@@ -4,6 +4,7 @@ import math
 
 from app.core.exceptions import AppException
 from app.db.connection import db
+from app.db.queries.utils import paginate
 from app.db.queries import brands as brand_queries
 from app.modules.brands.schemas import BrandDetailResponse, BrandListItem, BrandListResponse
 
@@ -25,7 +26,7 @@ async def get_brands_paginated(
     Returns:
         BrandListResponse with paginated results.
     """
-    offset = (page - 1) * limit
+    limit, offset = paginate(page, limit)
 
     async with db.connection() as conn:
         rows = await brand_queries.get_brands_with_meeting(

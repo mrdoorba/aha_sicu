@@ -9,6 +9,7 @@ from app.calculators.scoring import calculate_score
 from app.core.exceptions import AppException, CalculatorException
 from app.core.utils import ensure_dict
 from app.db.connection import db
+from app.db.queries.utils import paginate
 from app.db.queries import brands as brand_queries
 from app.db.queries import calculator_results as calc_queries
 from app.db.queries import evaluations as eval_queries
@@ -53,7 +54,7 @@ async def list_evaluations(
             status_code=422,
         )
 
-    offset = (page - 1) * limit
+    limit, offset = paginate(page, limit)
 
     async with db.connection() as conn:
         rows = await eval_queries.list_evaluations(
@@ -107,7 +108,7 @@ async def list_grouped_evaluations(
             status_code=422,
         )
 
-    offset = (page - 1) * limit
+    limit, offset = paginate(page, limit)
 
     async with db.connection() as conn:
         rows = await eval_queries.list_grouped_evaluations(
