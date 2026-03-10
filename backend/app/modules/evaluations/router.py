@@ -5,12 +5,9 @@ from typing import Literal
 
 from fastapi import APIRouter, Depends, Query
 
-from app.calculators.engine import check_calculator_readiness, run_ready_calculators
 from fastapi.responses import Response
 
 from app.core.dependencies import get_current_user, require_role
-from app.db.connection import db
-from app.db.queries.calculator_results import get_results_by_brand
 from app.modules.evaluations.calculator_service import (
     run_ads_keyword_calculator as _run_ads_keyword,
     run_discount_calculator as _run_discount,
@@ -18,7 +15,6 @@ from app.modules.evaluations.calculator_service import (
 )
 from app.modules.evaluations.schemas import (
     BrandEvaluationListResponse,
-    CalculatorResultItem,
     CalculatorResultResponse,
     CalculatorResultsListResponse,
     CalculatorStatusResponse,
@@ -28,21 +24,22 @@ from app.modules.evaluations.schemas import (
     EvaluationStateResponse,
     GroupedEvaluationListResponse,
     RunAllResponse,
-    RunCalculatorItem,
     SaveEvaluationRequest,
     SaveEvaluationResponse,
     ScoringRequest,
     ScoringResponse,
-    SingleCalculatorStatus,
 )
 from app.modules.evaluations.service import (
     delete_evaluation,
     generate_score,
+    get_calculator_results as _get_calculator_results,
+    get_calculator_status as _get_calculator_status,
     get_evaluation_detail,
     get_evaluation_state,
     list_evaluations,
     list_evaluations_by_brand,
     list_grouped_evaluations,
+    run_all_calculators_service,
     save_evaluation,
     save_evaluation_inputs,
 )
@@ -196,19 +193,7 @@ async def get_calculator_results(
     This is intentional for read-only list endpoints (vs POST endpoints
     which validate brand existence and return 400).
     """
-    async with db.connection() as conn:
-        rows = await get_results_by_brand(conn=conn, brand_id=brand_id)
-
-    results = [
-        CalculatorResultItem(
-            calculator_type=row["calculator_type"],
-            output_text=row["output_text"],
-            details=row["details"],
-            calculated_at=row["calculated_at"],
-        )
-        for row in rows
-    ]
-    return CalculatorResultsListResponse(brand_id=brand_id, results=results)
+    return await _get_calculator_results(brand_id=brand_id)
 
 
 @router.post(
@@ -271,21 +256,7 @@ async def run_all_calculators(
 
     Returns per-calculator results (success, skipped, or error).
     """
-    async with db.connection() as conn:
-        raw_results = await run_ready_calculators(
-            brand_id=brand_id, conn=conn
-        )
-
-    results = [
-        RunCalculatorItem(
-            calculator_type=item["calculator_type"],
-            status=item["status"],
-            result=item.get("result"),
-            reason=item.get("reason"),
-        )
-        for item in raw_results
-    ]
-    return RunAllResponse(results=results)
+    return await run_all_calculators_service(brand_id=brand_id)
 
 
 @router.get(
@@ -297,14 +268,7 @@ async def get_calculator_status(
     current_user: dict = Depends(get_current_user),
 ) -> CalculatorStatusResponse:
     """Return the readiness status of each calculator for a brand."""
-    async with db.connection() as conn:
-        readiness = await check_calculator_readiness(brand_id=brand_id, conn=conn)
-
-    calculators = {
-        calc_type: SingleCalculatorStatus(**status_info)
-        for calc_type, status_info in readiness.items()
-    }
-    return CalculatorStatusResponse(brand_id=brand_id, calculators=calculators)
+    return await _get_calculator_status(brand_id=brand_id)
 
 
 @router.post(

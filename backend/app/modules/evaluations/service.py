@@ -10,6 +10,7 @@ from app.core.exceptions import AppException, CalculatorException
 from app.core.utils import ensure_dict
 from app.db.connection import db
 from app.db.queries.utils import paginate
+from app.calculators.engine import check_calculator_readiness, run_ready_calculators
 from app.db.queries import brands as brand_queries
 from app.db.queries import calculator_results as calc_queries
 from app.db.queries import evaluations as eval_queries
@@ -18,6 +19,9 @@ from app.modules.evaluations.schemas import (
     BrandEvaluationItem,
     BrandEvaluationListResponse,
     BrandRawData,
+    CalculatorResultItem,
+    CalculatorResultsListResponse,
+    CalculatorStatusResponse,
     CategoryScoreItem,
     EvaluationDetailResponse,
     EvaluationListItem,
@@ -26,8 +30,11 @@ from app.modules.evaluations.schemas import (
     GroupedEvaluationItem,
     GroupedEvaluationListResponse,
     RowScoreItem,
+    RunAllResponse,
+    RunCalculatorItem,
     SaveEvaluationResponse,
     ScoringResponse,
+    SingleCalculatorStatus,
 )
 logger = logging.getLogger(__name__)
 
@@ -422,6 +429,58 @@ async def save_evaluation(
         created_at=row["created_at"],
         period=row.get("period", ""),
     )
+
+
+async def get_calculator_results(brand_id: int) -> CalculatorResultsListResponse:
+    """Return all stored calculator results for a brand.
+
+    Returns an empty list if brand_id doesn't exist or has no results.
+    """
+    async with db.connection() as conn:
+        rows = await calc_queries.get_results_by_brand(conn=conn, brand_id=brand_id)
+
+    results = [
+        CalculatorResultItem(
+            calculator_type=row["calculator_type"],
+            output_text=row["output_text"],
+            details=row["details"],
+            calculated_at=row["calculated_at"],
+        )
+        for row in rows
+    ]
+    return CalculatorResultsListResponse(brand_id=brand_id, results=results)
+
+
+async def get_calculator_status(brand_id: int) -> CalculatorStatusResponse:
+    """Return the readiness status of each calculator for a brand."""
+    async with db.connection() as conn:
+        readiness = await check_calculator_readiness(brand_id=brand_id, conn=conn)
+
+    calculators = {
+        calc_type: SingleCalculatorStatus(**status_info)
+        for calc_type, status_info in readiness.items()
+    }
+    return CalculatorStatusResponse(brand_id=brand_id, calculators=calculators)
+
+
+async def run_all_calculators_service(brand_id: int) -> RunAllResponse:
+    """Run all calculators whose required files are available for a brand.
+
+    Returns per-calculator results (success, skipped, or error).
+    """
+    async with db.connection() as conn:
+        raw_results = await run_ready_calculators(brand_id=brand_id, conn=conn)
+
+    results = [
+        RunCalculatorItem(
+            calculator_type=item["calculator_type"],
+            status=item["status"],
+            result=item.get("result"),
+            reason=item.get("reason"),
+        )
+        for item in raw_results
+    ]
+    return RunAllResponse(results=results)
 
 
 async def save_evaluation_inputs(
