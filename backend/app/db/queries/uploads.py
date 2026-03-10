@@ -5,6 +5,8 @@ from typing import Any, TypedDict
 
 from asyncpg import Connection
 
+from app.db.queries.utils import fetch_all, fetch_one
+
 
 class UploadRow(TypedDict):
     id: int
@@ -23,7 +25,8 @@ class UploadWithDataRow(UploadRow):
 
 async def get_uploads_by_brand(conn: Connection, brand_id: int) -> list[UploadRow]:
     """Return all uploads for a brand."""
-    rows = await conn.fetch(
+    return await fetch_all(
+        conn,
         """
         SELECT id, brand_id, file_type, calculator_target, filename,
                file_size, row_count, uploaded_at
@@ -33,14 +36,14 @@ async def get_uploads_by_brand(conn: Connection, brand_id: int) -> list[UploadRo
         """,
         brand_id,
     )
-    return [dict(row) for row in rows]
 
 
 async def get_upload_by_type(
     conn: Connection, brand_id: int, file_type: str
 ) -> UploadWithDataRow | None:
     """Return a single upload for a brand+file_type, or None."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         SELECT id, brand_id, file_type, calculator_target, filename,
                file_size, row_count, parsed_data, uploaded_at
@@ -50,7 +53,6 @@ async def get_upload_by_type(
         brand_id,
         file_type,
     )
-    return dict(row) if row else None
 
 
 async def upsert_upload(
@@ -65,7 +67,8 @@ async def upsert_upload(
     uploaded_by: int,
 ) -> UploadRow:
     """Insert or update an upload for a brand+file_type pair."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         INSERT INTO brand_uploads
             (brand_id, file_type, calculator_target, filename, file_size,
@@ -91,7 +94,6 @@ async def upsert_upload(
         parsed_data,
         uploaded_by,
     )
-    return dict(row)
 
 
 async def delete_upload(conn: Connection, brand_id: int, file_type: str) -> None:

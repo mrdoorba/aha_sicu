@@ -5,6 +5,8 @@ from typing import Any, TypedDict
 
 from asyncpg import Connection
 
+from app.db.queries.utils import fetch_one
+
 
 class SyncStatusRow(TypedDict):
     id: int
@@ -69,7 +71,8 @@ async def get_latest_sync_status(conn: Connection) -> SyncStatusLatestRow | None
     for more than 10 minutes, allowing the schema layer to map them
     to a failed status.
     """
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         SELECT id, started_at, completed_at, success, brands_synced,
                error_message, sync_details,
@@ -78,9 +81,8 @@ async def get_latest_sync_status(conn: Connection) -> SyncStatusLatestRow | None
         FROM sync_status
         ORDER BY started_at DESC
         LIMIT 1
-        """
+        """,
     )
-    return dict(row) if row else None
 
 
 async def is_sync_in_progress(conn: Connection) -> bool:
@@ -102,7 +104,8 @@ async def is_sync_in_progress(conn: Connection) -> bool:
 
 async def get_sync_status_by_id(conn: Connection, sync_id: int) -> SyncStatusRow | None:
     """Get sync status by ID."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         SELECT id, started_at, completed_at, success, brands_synced,
                error_message, sync_details
@@ -111,4 +114,3 @@ async def get_sync_status_by_id(conn: Connection, sync_id: int) -> SyncStatusRow
         """,
         sync_id,
     )
-    return dict(row) if row else None

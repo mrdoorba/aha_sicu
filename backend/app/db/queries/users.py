@@ -5,6 +5,8 @@ from typing import TypedDict
 
 from asyncpg import Connection
 
+from app.db.queries.utils import fetch_one
+
 
 class UserRow(TypedDict):
     id: int
@@ -18,16 +20,17 @@ class UserRow(TypedDict):
 
 async def get_user_by_firebase_uid(conn: Connection, firebase_uid: str) -> UserRow | None:
     """Get user by Firebase UID."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         "SELECT id, firebase_uid, email, role, language, created_at, last_login FROM users WHERE firebase_uid = $1",
         firebase_uid,
     )
-    return dict(row) if row else None
 
 
 async def create_user(conn: Connection, firebase_uid: str, email: str) -> UserRow:
     """Create new user with default role."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         INSERT INTO users (firebase_uid, email, role, language, last_login)
         VALUES ($1, $2, 'member', 'id', NOW())
@@ -36,17 +39,16 @@ async def create_user(conn: Connection, firebase_uid: str, email: str) -> UserRo
         firebase_uid,
         email,
     )
-    return dict(row)
 
 
 async def update_language(conn: Connection, user_id: int, language: str) -> UserRow | None:
     """Update user's language preference."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         "UPDATE users SET language = $1 WHERE id = $2 RETURNING id, firebase_uid, email, role, language, created_at, last_login",
         language,
         user_id,
     )
-    return dict(row) if row else None
 
 
 async def update_last_login(conn: Connection, user_id: int) -> None:

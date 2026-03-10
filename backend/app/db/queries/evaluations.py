@@ -5,7 +5,7 @@ from typing import Any, Literal, TypedDict
 
 from asyncpg import Connection
 
-from app.db.queries.utils import escape_like
+from app.db.queries.utils import escape_like, fetch_all, fetch_one
 
 
 class EvaluationInputsRow(TypedDict):
@@ -81,7 +81,8 @@ async def get_evaluation_inputs(
     brand_id: int,
 ) -> EvaluationInputsRow | None:
     """Get evaluation inputs for a brand (shared — one row per brand)."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         SELECT id, brand_id, last_edited_by, category_type, manual_data,
                created_at, updated_at
@@ -90,7 +91,6 @@ async def get_evaluation_inputs(
         """,
         brand_id,
     )
-    return dict(row) if row else None
 
 
 async def upsert_evaluation_inputs(
@@ -105,7 +105,8 @@ async def upsert_evaluation_inputs(
     Uses COALESCE to preserve existing values when new values are None.
     Conflict target is (brand_id) — one row per brand.
     """
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         INSERT INTO evaluation_inputs (brand_id, last_edited_by, category_type, manual_data, updated_at)
         VALUES ($1, $2, $3, $4, NOW())
@@ -121,7 +122,6 @@ async def upsert_evaluation_inputs(
         category_type,
         manual_data,
     )
-    return dict(row)
 
 
 async def insert_evaluation(
@@ -143,7 +143,8 @@ async def insert_evaluation(
     Always creates a new record — never upserts.
     Returns the new record's id, brand_id, final_score, verdict, template, created_at, period.
     """
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         INSERT INTO evaluations (
             brand_id, user_id, template, final_score, verdict,
@@ -165,7 +166,6 @@ async def insert_evaluation(
         email_output,
         period,
     )
-    return dict(row)
 
 
 def _build_filter_clauses(
@@ -234,8 +234,7 @@ async def list_evaluations(
         ORDER BY e.{sort_by} {sort_order}
         LIMIT {limit_param} OFFSET {offset_param}
     """
-    rows = await conn.fetch(query, *params)
-    return [dict(row) for row in rows]
+    return await fetch_all(conn, query, *params)
 
 
 async def count_evaluations(
@@ -263,7 +262,8 @@ async def get_evaluation_by_id(
     evaluation_id: int,
 ) -> EvaluationDetailRow | None:
     """Get full evaluation details by ID, with brand name and evaluator email joins."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         SELECT e.id, e.brand_id, b.brand_name, b.raw_data,
                e.final_score, e.verdict, e.template,
@@ -278,7 +278,6 @@ async def get_evaluation_by_id(
         """,
         evaluation_id,
     )
-    return dict(row) if row else None
 
 
 async def list_grouped_evaluations(
@@ -315,8 +314,7 @@ async def list_grouped_evaluations(
         ORDER BY MAX(e.created_at) DESC
         LIMIT {limit_param} OFFSET {offset_param}
     """
-    rows = await conn.fetch(query, *params)
-    return [dict(row) for row in rows]
+    return await fetch_all(conn, query, *params)
 
 
 async def count_grouped_evaluations(
@@ -392,8 +390,7 @@ async def list_evaluations_by_brand(
         ORDER BY e.created_at DESC
         {limit_clause}
     """
-    rows = await conn.fetch(query, *params)
-    return [dict(row) for row in rows], total
+    return await fetch_all(conn, query, *params), total
 
 
 async def delete_evaluation(

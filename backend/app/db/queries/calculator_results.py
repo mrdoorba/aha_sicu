@@ -5,6 +5,8 @@ from typing import Any, TypedDict
 
 from asyncpg import Connection
 
+from app.db.queries.utils import fetch_all, fetch_one
+
 
 class CalculatorResultRow(TypedDict):
     id: int
@@ -17,7 +19,8 @@ class CalculatorResultRow(TypedDict):
 
 async def get_results_by_brand(conn: Connection, brand_id: int) -> list[CalculatorResultRow]:
     """Return all calculator results for a brand."""
-    rows = await conn.fetch(
+    return await fetch_all(
+        conn,
         """
         SELECT id, brand_id, calculator_type, details, output_text, calculated_at
         FROM calculator_results
@@ -26,14 +29,14 @@ async def get_results_by_brand(conn: Connection, brand_id: int) -> list[Calculat
         """,
         brand_id,
     )
-    return [dict(row) for row in rows]
 
 
 async def get_result_by_type(
     conn: Connection, brand_id: int, calculator_type: str
 ) -> CalculatorResultRow | None:
     """Return a single calculator result for a brand+type, or None."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         SELECT id, brand_id, calculator_type, details, output_text, calculated_at
         FROM calculator_results
@@ -42,7 +45,6 @@ async def get_result_by_type(
         brand_id,
         calculator_type,
     )
-    return dict(row) if row else None
 
 
 async def delete_results_by_types(
@@ -69,7 +71,8 @@ async def upsert_result(
     output_text: str,
 ) -> CalculatorResultRow:
     """Insert or update a calculator result for a brand+type pair."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         INSERT INTO calculator_results
             (brand_id, calculator_type, details, output_text, calculated_at)
@@ -85,4 +88,3 @@ async def upsert_result(
         details,
         output_text,
     )
-    return dict(row)

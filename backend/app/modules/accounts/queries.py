@@ -5,6 +5,8 @@ from typing import TypedDict
 
 from asyncpg import Connection
 
+from app.db.queries.utils import fetch_all, fetch_one
+
 
 class AccountUserRow(TypedDict):
     id: int
@@ -25,17 +27,18 @@ class AccountUserDetailRow(TypedDict):
 
 async def get_all_users(conn: Connection) -> list[AccountUserRow]:
     """Get all users ordered by creation date."""
-    rows = await conn.fetch(
-        "SELECT id, email, role, created_at, last_login FROM users ORDER BY created_at"
+    return await fetch_all(
+        conn,
+        "SELECT id, email, role, created_at, last_login FROM users ORDER BY created_at",
     )
-    return [dict(row) for row in rows]
 
 
 async def create_user(
     conn: Connection, firebase_uid: str, email: str, role: str
 ) -> AccountUserRow:
     """Create a new user with specified role."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         INSERT INTO users (firebase_uid, email, role)
         VALUES ($1, $2, $3)
@@ -45,12 +48,12 @@ async def create_user(
         email,
         role,
     )
-    return dict(row)
 
 
 async def update_user_role(conn: Connection, user_id: int, role: str) -> AccountUserRow | None:
     """Update a user's role. Returns updated user or None if not found."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         UPDATE users SET role = $2
         WHERE id = $1
@@ -59,16 +62,15 @@ async def update_user_role(conn: Connection, user_id: int, role: str) -> Account
         user_id,
         role,
     )
-    return dict(row) if row else None
 
 
 async def get_user_by_id(conn: Connection, user_id: int) -> AccountUserDetailRow | None:
     """Get a user by ID."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         "SELECT id, firebase_uid, email, role, created_at, last_login FROM users WHERE id = $1",
         user_id,
     )
-    return dict(row) if row else None
 
 
 async def delete_user(conn: Connection, user_id: int) -> bool:

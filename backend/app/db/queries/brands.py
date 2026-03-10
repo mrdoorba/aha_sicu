@@ -5,7 +5,7 @@ from typing import Any, Literal, TypedDict
 
 from asyncpg import Connection
 
-from app.db.queries.utils import escape_like
+from app.db.queries.utils import escape_like, fetch_all, fetch_one
 
 
 class BrandRow(TypedDict):
@@ -48,7 +48,8 @@ async def upsert_brand_data(
     """
     table = _validate_table(table)
 
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         f"""
         INSERT INTO {table} (brand_name, raw_data, updated_at)
         VALUES ($1, $2, NOW())
@@ -60,7 +61,6 @@ async def upsert_brand_data(
         brand_name,
         raw_data,
     )
-    return dict(row)
 
 
 async def get_brand_data(
@@ -72,7 +72,8 @@ async def get_brand_data(
     """Get brand data with pagination."""
     table = _validate_table(table)
 
-    rows = await conn.fetch(
+    return await fetch_all(
+        conn,
         f"""
         SELECT id, brand_name, raw_data, created_at, updated_at
         FROM {table}
@@ -82,7 +83,6 @@ async def get_brand_data(
         limit,
         offset,
     )
-    return [dict(row) for row in rows]
 
 
 async def get_brand_by_name(
@@ -93,7 +93,8 @@ async def get_brand_by_name(
     """Get brand data by brand name."""
     table = _validate_table(table)
 
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         f"""
         SELECT id, brand_name, raw_data, created_at, updated_at
         FROM {table}
@@ -101,7 +102,6 @@ async def get_brand_by_name(
         """,
         brand_name,
     )
-    return dict(row) if row else None
 
 
 async def get_brand_count(conn: Connection, table: TableName) -> int:
@@ -120,7 +120,8 @@ async def get_brands_with_meeting(
 ) -> list[BrandWithMeetingRow]:
     """Get VP brands with LEFT JOIN to meeting data, with optional search."""
     search_escaped = escape_like(search) if search else None
-    rows = await conn.fetch(
+    return await fetch_all(
+        conn,
         """
         SELECT
             v.id, v.brand_name, v.raw_data, v.updated_at,
@@ -135,12 +136,12 @@ async def get_brands_with_meeting(
         limit,
         offset,
     )
-    return [dict(row) for row in rows]
 
 
 async def get_brand_by_id(conn: Connection, brand_id: int) -> BrandWithMeetingRow | None:
     """Get a single brand by ID with LEFT JOIN to meeting data."""
-    row = await conn.fetchrow(
+    return await fetch_one(
+        conn,
         """
         SELECT
             v.id, v.brand_name, v.raw_data, v.updated_at,
@@ -151,7 +152,6 @@ async def get_brand_by_id(conn: Connection, brand_id: int) -> BrandWithMeetingRo
         """,
         brand_id,
     )
-    return dict(row) if row else None
 
 
 async def get_brands_count_with_search(
