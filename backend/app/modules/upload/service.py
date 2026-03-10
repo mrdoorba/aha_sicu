@@ -29,6 +29,33 @@ from app.modules.upload.zip_handler import process_zip
 
 logger = logging.getLogger(__name__)
 
+
+def _parse_file(
+    file_bytes: bytes, filename_lower: str, file_type: str,
+) -> tuple:
+    """Parse file bytes into a DataFrame based on extension.
+
+    Returns (df, source_language). Delegates to the appropriate parser
+    based on file extension.
+    """
+    source_language = "id"
+
+    if filename_lower.endswith(".zip"):
+        df = process_zip(file_bytes, file_type)
+    elif filename_lower.endswith(".csv"):
+        df, source_language = parse_csv(file_bytes)
+    elif filename_lower.endswith((".xlsx", ".xls")):
+        header_row = 2 if file_type == "mass_update" else 0
+        df = parse_excel(file_bytes, header_row=header_row)
+    else:
+        raise UploadException(
+            code="UPLOAD_INVALID_FORMAT",
+            detail=f"Unsupported file extension: {filename_lower}",
+        )
+
+    return df, source_language
+
+
 _VALID_FILE_TYPES: frozenset[str] = frozenset(
     ["cpc_ad_report", "keyword_report", "order_export", "mass_update"]
 )
@@ -181,22 +208,11 @@ async def _download_and_parse(
         ) from e
 
     file_size = len(file_bytes)
-    filename_lower = pending.filename.lower()
 
-    source_language = "id"
     try:
-        if filename_lower.endswith(".zip"):
-            df = process_zip(file_bytes, file_type)
-        elif filename_lower.endswith(".csv"):
-            df, source_language = parse_csv(file_bytes)
-        elif filename_lower.endswith((".xlsx", ".xls")):
-            header_row = 2 if file_type == "mass_update" else 0
-            df = parse_excel(file_bytes, header_row=header_row)
-        else:
-            raise UploadException(
-                code="UPLOAD_INVALID_FORMAT",
-                detail=f"Unsupported file extension: {pending.filename}",
-            )
+        df, source_language = _parse_file(
+            file_bytes, pending.filename.lower(), file_type,
+        )
     except UploadException:
         raise
     except Exception as e:
