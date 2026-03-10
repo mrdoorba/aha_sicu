@@ -31,6 +31,14 @@ class StorageClient(ABC):
     def delete_file(self, object_name: str) -> None:
         """Delete a file from storage."""
 
+    @abstractmethod
+    def generate_signed_download_url(
+        self,
+        object_name: str,
+        expiry_minutes: int = 15,
+    ) -> str:
+        """Generate a signed URL for downloading a file."""
+
 
 class GCSClient(StorageClient):
     """Google Cloud Storage client for production."""
@@ -78,6 +86,27 @@ class GCSClient(StorageClient):
         blob.delete()
         logger.info("Deleted GCS object: %s", object_name)
 
+    def generate_signed_download_url(
+        self,
+        object_name: str,
+        expiry_minutes: int = 15,
+    ) -> str:
+        import google.auth.compute_engine.credentials
+
+        blob = self._bucket.blob(object_name)
+        kwargs: dict = {
+            "version": "v4",
+            "expiration": timedelta(minutes=expiry_minutes),
+            "method": "GET",
+        }
+        if isinstance(self._credentials, google.auth.compute_engine.credentials.Credentials):
+            from google.auth.transport import requests
+            if not self._credentials.token or self._credentials.expired:
+                self._credentials.refresh(requests.Request())
+            kwargs["service_account_email"] = self._credentials.service_account_email
+            kwargs["access_token"] = self._credentials.token
+        return blob.generate_signed_url(**kwargs)
+
 
 class LocalStorageClient(StorageClient):
     """Local filesystem fallback for development without GCS."""
@@ -110,6 +139,16 @@ class LocalStorageClient(StorageClient):
         if file_path.exists():
             file_path.unlink()
             logger.info("Deleted local file: %s", file_path)
+
+    def generate_signed_download_url(
+        self,
+        object_name: str,
+        expiry_minutes: int = 15,
+    ) -> str:
+        parts = object_name.split("/", 2)
+        upload_id = parts[1] if len(parts) > 1 else "unknown"
+        filename = parts[2] if len(parts) > 2 else "unknown"
+        return f"http://localhost:8000/api/v1/upload/local/{upload_id}/{filename}"
 
 
 def get_storage_client() -> StorageClient:
