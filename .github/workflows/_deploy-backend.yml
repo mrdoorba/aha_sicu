@@ -11,7 +11,7 @@
 #   ARTIFACT_REGISTRY_URL     – Docker push URL from terraform output
 #   DB_SECRET_NAME            – Secret Manager secret name for database password
 #   CLOUD_SQL_INSTANCE_CONNECTION – Cloud SQL instance connection name (project:region:instance)
-#   CLOUD_SQL_INSTANCE_NAME   – Cloud SQL instance name (for start/stop API)
+#   CLOUD_SQL_INSTANCE_NAME   – Cloud SQL instance name (for backups and start/stop API)
 #   DB_USER                   – Database username
 #   DB_NAME                   – Database name
 
@@ -72,6 +72,17 @@ jobs:
               exit 1
             fi
           fi
+
+      - name: Create pre-migration backup (prod only)
+        if: inputs.environment == 'production'
+        run: |
+          BACKUP_DESC="pre-deploy-$(date +%Y%m%d-%H%M%S)-${GITHUB_SHA::8}"
+          echo "Creating backup: $BACKUP_DESC"
+          gcloud sql backups create \
+            --instance=${{ vars.CLOUD_SQL_INSTANCE_NAME }} \
+            --description="$BACKUP_DESC" \
+            --project=${{ vars.GCP_PROJECT_ID }}
+          echo "Backup created successfully"
 
       - name: Install uv
         uses: astral-sh/setup-uv@v5
@@ -152,3 +163,25 @@ jobs:
               gcloud run revisions delete "$REV" --region=${{ vars.GCP_REGION }} --quiet || true
             fi
           done
+
+      - name: Cleanup old pre-deploy backups (prod only)
+        if: inputs.environment == 'production'
+        run: |
+          echo "Listing pre-deploy backups..."
+          BACKUPS=$(gcloud sql backups list \
+            --instance=${{ vars.CLOUD_SQL_INSTANCE_NAME }} \
+            --project=${{ vars.GCP_PROJECT_ID }} \
+            --filter="description~'^pre-deploy-'" \
+            --sort-by="~startTime" \
+            --format="value(id)")
+          COUNT=0
+          for BACKUP_ID in $BACKUPS; do
+            COUNT=$((COUNT + 1))
+            if [ $COUNT -gt 5 ]; then
+              echo "Deleting old backup: $BACKUP_ID"
+              gcloud sql backups delete "$BACKUP_ID" \
+                --instance=${{ vars.CLOUD_SQL_INSTANCE_NAME }} \
+                --project=${{ vars.GCP_PROJECT_ID }} --quiet || true
+            fi
+          done
+          echo "Kept $((COUNT < 5 ? COUNT : 5)) backups, deleted $((COUNT > 5 ? COUNT - 5 : 0))"
