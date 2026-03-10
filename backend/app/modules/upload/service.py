@@ -139,15 +139,10 @@ async def request_signed_url(
     )
 
 
-async def process_upload(
-    upload_id: str,
-    brand_id: int,
-    file_type: str,
-    user_id: int,
-) -> ProcessUploadResponse:
-    """Download file from storage, parse, validate, store parsed data, auto-execute calculators, cleanup."""
-    _validate_file_type(file_type)
-
+def _validate_pending_upload(
+    upload_id: str, brand_id: int, file_type: str,
+) -> PendingUpload:
+    """Validate that a pending upload exists, matches, and hasn't expired."""
     pending = _pending_uploads.get(upload_id)
     if not pending:
         raise UploadException(
@@ -168,18 +163,15 @@ async def process_upload(
             detail="Signed URL has expired (15 min window exceeded)",
         )
 
-    # Fetch brand to prefix filename
-    async with db.connection() as conn:
-        brand = await brand_queries.get_brand_by_id(conn, brand_id)
-    if not brand:
-        raise AppException(
-            code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
-        )
-    pending.filename = f"{brand['brand_name']}_{pending.filename}"
+    return pending
 
+
+async def _download_and_parse(
+    pending: PendingUpload, file_type: str,
+) -> tuple[list[dict], int, str]:
+    """Download file from storage, parse it, and return (parsed_data, file_size, source_language)."""
     storage = get_storage_client()
 
-    # Download from storage
     try:
         file_bytes = await asyncio.to_thread(storage.download_file, pending.object_name)
     except Exception as e:
@@ -191,7 +183,6 @@ async def process_upload(
     file_size = len(file_bytes)
     filename_lower = pending.filename.lower()
 
-    # Parse based on file extension
     source_language = "id"
     try:
         if filename_lower.endswith(".zip"):
@@ -214,19 +205,24 @@ async def process_upload(
             detail=f"Failed to parse file: {e}",
         ) from e
 
-    # Free raw file bytes — no longer needed after parsing
     del file_bytes
 
-    # Validate columns
     validate_columns(df, file_type)
 
-    # Convert to JSONB-ready format
     row_count = len(df)
     parsed_data = dataframe_to_json(df, source_language=source_language)
-    del df  # Free DataFrame — parsed_data holds the JSON-ready structure now
+    del df
+
+    return parsed_data, file_size, row_count
+
+
+async def _store_and_auto_execute(
+    brand_id: int, file_type: str, pending: PendingUpload,
+    parsed_data: list[dict], file_size: int, row_count: int, user_id: int,
+) -> tuple[dict, list[dict]]:
+    """Store parsed data in DB and auto-execute dependent calculators."""
     calculator_target = _CALCULATOR_TARGETS[file_type]
 
-    # Store in database (upsert) + clear dependent results + auto-execute calculators
     async with db.connection() as conn:
         async with conn.transaction():
             row = await upload_queries.upsert_upload(
@@ -241,8 +237,6 @@ async def process_upload(
                 uploaded_by=user_id,
             )
 
-        # Clear dependent calculator results + auto-execute (outside transaction — already committed)
-        # Wrapped in try/except so upload success is preserved even if auto-execute fails
         try:
             await clear_dependent_results(brand_id, file_type, conn)
             auto_calc_raw = await run_calculators_for_upload(
@@ -255,13 +249,42 @@ async def process_upload(
             )
             auto_calc_raw = []
 
+    return row, auto_calc_raw
+
+
+async def process_upload(
+    upload_id: str,
+    brand_id: int,
+    file_type: str,
+    user_id: int,
+) -> ProcessUploadResponse:
+    """Download file from storage, parse, validate, store parsed data, auto-execute calculators, cleanup."""
+    _validate_file_type(file_type)
+
+    pending = _validate_pending_upload(upload_id, brand_id, file_type)
+
+    # Fetch brand to prefix filename
+    async with db.connection() as conn:
+        brand = await brand_queries.get_brand_by_id(conn, brand_id)
+    if not brand:
+        raise AppException(
+            code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
+        )
+    pending.filename = f"{brand['brand_name']}_{pending.filename}"
+
+    parsed_data, file_size, row_count = await _download_and_parse(pending, file_type)
+
+    row, auto_calc_raw = await _store_and_auto_execute(
+        brand_id, file_type, pending, parsed_data, file_size, row_count, user_id,
+    )
+
     # Delete from storage (best-effort cleanup)
+    storage = get_storage_client()
     try:
         await asyncio.to_thread(storage.delete_file, pending.object_name)
     except Exception as e:
         logger.warning("Failed to delete file from storage: %s", e)
 
-    # Remove from pending
     _pending_uploads.pop(upload_id, None)
 
     upload_resp = UploadResponse(
