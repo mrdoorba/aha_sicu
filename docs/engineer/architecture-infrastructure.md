@@ -8,51 +8,57 @@ This document describes the GCP infrastructure for AHA SICU, managed via Terrafo
 
 | Resource | Service | Name Pattern | Notes |
 |---|---|---|---|
-| Cloud Run v2 | Compute | `aha-sicu-{env}-api` | Backend API, 1 CPU / 1Gi, 0-2 instances, deletion protection in prod |
-| Cloud SQL | Database | `aha-sicu-db` (single instance) | PostgreSQL 18, db-f1-micro, hosts `aha_sicu_dev` + `aha_sicu_prod` databases |
-| Artifact Registry | Container Registry | `aha-sicu-{env}-registry` | Docker format, keeps latest 2 images, deletes versions older than 1 day |
-| Secret Manager | Secrets | `aha_sicu_{env}_*` | 4 secrets: `db_password`, `gsheets_credentials`, `firebase_admin`, `smtp_password` |
-| Cloud Storage | Object Storage | `{project_id}-aha-sicu-{env}-uploads` | Temporary uploads, 24h auto-delete lifecycle, uniform bucket-level access |
-| Firebase Hosting | Frontend | `aha-sicu-{env}` | SPA hosting, deployed via Firebase CLI |
-| Cloud Scheduler | Cron | `aha-sicu-{env}-daily-sync` | Daily brand sync at 02:00 UTC (09:00 WIB) |
-| Cloud Scheduler | Cron | `aha-sicu-cloud-sql-start` | Start Cloud SQL at 01:30 UTC (08:30 WIB) |
-| Cloud Scheduler | Cron | `aha-sicu-cloud-sql-stop` | Stop Cloud SQL at 11:30 UTC (18:30 WIB) |
-| Workload Identity | Auth | `aha-sicu-{env}-github-pool` | Keyless GitHub Actions OIDC federation |
+| Cloud Run v2 | Compute | `aha-coms-sicu-{env}-api` | Backend API, 1 CPU / 1Gi, 0-2 instances, deletion protection in prod |
+| Cloud SQL | Database | `aha-sicu-db` (single instance) | PostgreSQL 18, db-f1-micro, hosts `aha_coms_sicu_dev` + `aha_coms_sicu_prod` databases |
+| Artifact Registry | Container Registry | `aha-coms-sicu-{env}-registry` | Docker format, keeps latest 2 images, deletes versions older than 1 day |
+| Secret Manager | Secrets | `aha_coms_sicu_{env}_*` | 4 secrets: `db_password`, `gsheets_credentials`, `firebase_admin`, `smtp_password` |
+| Cloud Storage | Object Storage | `{project_id}-aha-coms-sicu-{env}-uploads` | Temporary uploads, 24h auto-delete lifecycle, uniform bucket-level access |
+| Firebase Hosting | Frontend | `aha-coms-sicu-{env}` | SPA hosting, deployed via Firebase CLI |
+| Cloud Scheduler | Cron | `aha-coms-sicu-{env}-daily-sync` | Daily brand sync at 08:30 WIB weekdays |
+| Cloud Scheduler | Cron | `aha-coms-sicu-sql-start` | Start Cloud SQL at 08:00 WIB weekdays |
+| Cloud Scheduler | Cron | `aha-coms-sicu-sql-stop` | Stop Cloud SQL at 18:30 WIB weekdays |
+| Workload Identity | Auth | `aha-coms-sicu-{env}-github-pool` | Keyless GitHub Actions OIDC federation |
 
 Region: `asia-southeast2` (Jakarta) for all resources.
 
 ---
 
-## Terraform Module Breakdown
+## Terraform Module Structure
+
+Infrastructure uses a modular design with shared resources at root and per-environment resources in a reusable module.
+
+### Root Module
 
 | File | Purpose |
 |---|---|
-| `main.tf` | Provider config, required API enablement (8 APIs), Google Sheets SA |
-| `variables.tf` | All input variables with defaults and validation |
-| `outputs.tf` | Downstream values: Cloud Run URL, Artifact Registry URL, WI provider path, SA emails, SQL connection name |
-| `iam.tf` | 3 service accounts (cloud_run, deploy, scheduler) + IAM bindings |
-| `cloud_run.tf` | Cloud Run v2 service, env vars, secret mounts, Cloud SQL connector, public access IAM |
-| `cloud_sql.tf` | SQL instance, dual databases, app user, sql_scheduler SA, start/stop scheduler jobs |
-| `artifact_registry.tf` | Docker repository with cleanup policies |
-| `secrets.tf` | 4 Secret Manager secrets + IAM accessor bindings for Cloud Run and Deploy SAs |
-| `storage.tf` | GCS upload bucket with lifecycle, CORS, and bucket-level IAM |
-| `firebase.tf` | Firebase Hosting site resource (deployment via CLI) |
-| `workload_identity.tf` | WI pool, OIDC provider, attribute mapping and condition, SA impersonation binding |
-| `scheduler.tf` | Daily sync Cloud Scheduler job targeting `POST /api/v1/sync` |
+| `main.tf` | Provider config, API enablement (9 APIs), module calls for dev + prod |
+| `variables.tf` | Shared input variables (project_id, region, github_repo, Cloud SQL config, etc.) |
+| `outputs.tf` | Per-environment outputs prefixed with `dev_` or `prod_` + shared Cloud SQL outputs |
+| `cloud_sql.tf` | Shared Cloud SQL instance, app user, SQL scheduler SA, start/stop jobs |
+
+### Environment Module (`modules/environment/`)
+
+| File | Purpose |
+|---|---|
+| `main.tf` | All per-environment resources: SAs, IAM, secrets, Cloud Run, Firebase, GCS, Artifact Registry, WIF, Scheduler |
+| `variables.tf` | Module input variables passed from root |
+| `outputs.tf` | Cloud Run URL, Artifact Registry URL, SA emails, WIF provider path, GCS bucket, Firebase site |
+
+A single `terraform apply` provisions both environments. Each module call passes environment-specific values (CORS origins, etc.).
 
 ---
 
 ## Service Accounts
 
-Four service accounts follow the naming convention `aha-sicu-{env}-{purpose}-sa`.
+Five service accounts follow the naming convention `aha-coms-sicu-{env}-{purpose}-sa`.
 
 | Service Account | ID Pattern | Purpose | Key Roles |
 |---|---|---|---|
-| Cloud Run API | `aha-sicu-{env}-api-sa` | Runtime identity for the backend | `secretmanager.secretAccessor` (4 secrets), `storage.objectAdmin` (upload bucket), `cloudsql.client`, `firebaseauth.admin`, `iam.serviceAccountTokenCreator` (self, for signed URLs) |
-| Deploy | `aha-sicu-{env}-deploy-sa` | GitHub Actions CI/CD | `run.admin`, `artifactregistry.writer`, `firebasehosting.admin`, `iam.serviceAccountUser` (on Cloud Run SA), `cloudsql.client`, `secretmanager.secretAccessor` (db_password) |
-| Scheduler | `aha-sicu-{env}-scheduler-sa` | Cloud Scheduler daily sync | `run.invoker` (on Cloud Run v2 service) |
-| SQL Scheduler | `aha-sicu-sql-scheduler-sa` | Cloud SQL start/stop | `cloudsql.admin` |
-| Google Sheets | `aha-sicu-{env}-sheets-sa` | Sheets API access for brand sync | (Share target Sheet with this SA email) |
+| Cloud Run API | `aha-coms-sicu-{env}-api-sa` | Runtime identity for the backend | `secretmanager.secretAccessor` (4 secrets), `storage.objectAdmin` (upload bucket), `cloudsql.client`, `firebaseauth.admin`, `iam.serviceAccountTokenCreator` (self, for signed URLs) |
+| Deploy | `aha-coms-sicu-{env}-deploy-sa` | GitHub Actions CI/CD | `run.admin`, `artifactregistry.writer`, `firebasehosting.admin`, `iam.serviceAccountUser` (on Cloud Run SA), `cloudsql.client`, `cloudsql.editor`, `secretmanager.secretAccessor` (db_password) |
+| Scheduler | `aha-coms-sicu-{env}-sched-sa` | Cloud Scheduler daily sync | `run.invoker` (on Cloud Run v2 service) |
+| SQL Scheduler | `aha-coms-sicu-sql-sched-sa` | Cloud SQL start/stop (shared) | `cloudsql.admin` |
+| Google Sheets | `aha-coms-sicu-{env}-sheets-sa` | Sheets API access for brand sync | (Share target Sheet with this SA email) |
 
 Note: No SA keys are generated. The Deploy SA authenticates via Workload Identity Federation. The Scheduler and SQL Scheduler SAs use OAuth tokens injected by Cloud Scheduler. The Sheets SA credentials are stored as a secret.
 
@@ -66,7 +72,7 @@ GitHub Actions authenticates to GCP without service account keys using OIDC.
 
 **Configuration:**
 
-- **Pool:** `aha-sicu-{env}-github-pool`
+- **Pool:** `aha-coms-sicu-{env}-github-pool`
 - **Provider:** `github-provider` with issuer `https://token.actions.githubusercontent.com`
 - **Attribute mapping:**
   - `google.subject` = `assertion.sub`
@@ -90,21 +96,21 @@ A single `db-f1-micro` instance running PostgreSQL 18 hosts both environments.
 | Availability | Zonal |
 | Edition | Enterprise |
 | SSL | `ENCRYPTED_ONLY` |
-| Backups | Disabled (cost optimization) |
-| Deletion protection | Enabled in prod |
+| Backups | Enabled (PITR, 7 retained) |
+| Deletion protection | Enabled |
 
-**Databases:** `aha_sicu_dev` and `aha_sicu_prod` on the same instance.
+**Databases:** `aha_coms_sicu_dev` and `aha_coms_sicu_prod` on the same instance (created by environment module).
 
 **User:** `aha_sicu` -- password managed via Secret Manager, not Terraform state.
 
-**Scheduled start/stop** for cost optimization:
+**Scheduled start/stop** for cost optimization (weekdays only):
 
-| Job | Schedule (UTC) | Local Time (WIB) | Action |
-|---|---|---|---|
-| `aha-sicu-cloud-sql-start` | `30 1 * * *` | 08:30 | `activationPolicy = ALWAYS` |
-| `aha-sicu-cloud-sql-stop` | `30 11 * * *` | 18:30 | `activationPolicy = NEVER` |
+| Job | Schedule (WIB) | Action |
+|---|---|---|
+| `aha-coms-sicu-sql-start` | 08:00 Mon-Fri | `activationPolicy = ALWAYS` |
+| `aha-coms-sicu-sql-stop` | 18:30 Mon-Fri | `activationPolicy = NEVER` |
 
-Both jobs call the SQL Admin API directly via the `aha-sicu-sql-scheduler-sa` service account OAuth token.
+Both jobs call the SQL Admin API directly via the `aha-coms-sicu-sql-sched-sa` service account OAuth token.
 
 ---
 
@@ -113,20 +119,20 @@ Both jobs call the SQL Admin API directly via the `aha-sicu-sql-scheduler-sa` se
 Terraform creates the secret resources but does **not** manage values. Values are injected via `gcloud`:
 
 ```bash
-echo -n "VALUE" | gcloud secrets versions add aha_sicu_{env}_db_password --data-file=-
-echo -n "VALUE" | gcloud secrets versions add aha_sicu_{env}_gsheets_credentials --data-file=-
-echo -n "VALUE" | gcloud secrets versions add aha_sicu_{env}_firebase_admin --data-file=-
-echo -n "VALUE" | gcloud secrets versions add aha_sicu_{env}_smtp_password --data-file=-
+echo -n "VALUE" | gcloud secrets versions add aha_coms_sicu_{env}_db_password --data-file=-
+echo -n "VALUE" | gcloud secrets versions add aha_coms_sicu_{env}_gsheets_credentials --data-file=-
+echo -n "VALUE" | gcloud secrets versions add aha_coms_sicu_{env}_firebase_admin --data-file=-
+echo -n "VALUE" | gcloud secrets versions add aha_coms_sicu_{env}_smtp_password --data-file=-
 ```
 
 Secrets are mounted as environment variables in Cloud Run via `value_source.secret_key_ref` (not volume mounts):
 
 | Secret | Cloud Run Env Var |
 |---|---|
-| `aha_sicu_{env}_db_password` | `DB_PASSWORD` |
-| `aha_sicu_{env}_gsheets_credentials` | `GSHEETS_CREDENTIALS_JSON` |
-| `aha_sicu_{env}_firebase_admin` | `FIREBASE_CREDENTIALS_JSON` |
-| `aha_sicu_{env}_smtp_password` | `SMTP_PASSWORD` |
+| `aha_coms_sicu_{env}_db_password` | `DB_PASSWORD` |
+| `aha_coms_sicu_{env}_gsheets_credentials` | `GSHEETS_CREDENTIALS_JSON` |
+| `aha_coms_sicu_{env}_firebase_admin` | `FIREBASE_CREDENTIALS_JSON` |
+| `aha_coms_sicu_{env}_smtp_password` | `SMTP_PASSWORD` |
 
 ---
 
@@ -134,12 +140,12 @@ Secrets are mounted as environment variables in Cloud Run via `value_source.secr
 
 | Property | Value |
 |---|---|
-| Bucket name | `{project_id}-aha-sicu-{env}-uploads` |
+| Bucket name | `{project_id}-aha-coms-sicu-{env}-uploads` |
 | Location | `asia-southeast2` |
 | Bucket-level access | Uniform (no ACLs) |
 | Lifecycle | Delete objects after 1 day (24h) |
 | Force destroy | Enabled in dev, disabled in prod |
-| CORS origins | `https://aha-sicu-dev.web.app`, `http://localhost:5173` |
+| CORS origins | Dev: `https://aha-coms-sicu-dev.web.app`, `http://localhost:5173`; Prod: `https://aha-coms-sicu-prod.web.app` |
 | CORS methods | `PUT` |
 | IAM | Cloud Run SA gets `roles/storage.objectAdmin` (bucket-scoped, not project-wide) |
 
@@ -147,11 +153,11 @@ Secrets are mounted as environment variables in Cloud Run via `value_source.secr
 
 ## Cloud Scheduler
 
-| Job | Schedule | Target | Auth |
+| Job | Schedule (WIB) | Target | Auth |
 |---|---|---|---|
-| `aha-sicu-{env}-daily-sync` | `0 2 * * *` UTC (09:00 WIB) | `POST {cloud_run_url}/api/v1/sync` | OIDC token via Scheduler SA |
-| `aha-sicu-cloud-sql-start` | `30 1 * * *` UTC (08:30 WIB) | `PATCH sqladmin.googleapis.com/.../instances/{name}` | OAuth token via SQL Scheduler SA |
-| `aha-sicu-cloud-sql-stop` | `30 11 * * *` UTC (18:30 WIB) | `PATCH sqladmin.googleapis.com/.../instances/{name}` | OAuth token via SQL Scheduler SA |
+| `aha-coms-sicu-{env}-daily-sync` | 08:30 Mon-Fri | `POST {cloud_run_url}/api/v1/sync` | OIDC token via Scheduler SA |
+| `aha-coms-sicu-sql-start` | 08:00 Mon-Fri | `PATCH sqladmin.googleapis.com/.../instances/{name}` | OAuth token via SQL Scheduler SA |
+| `aha-coms-sicu-sql-stop` | 18:30 Mon-Fri | `PATCH sqladmin.googleapis.com/.../instances/{name}` | OAuth token via SQL Scheduler SA |
 
 The daily sync job retries up to 3 times with backoff between 30s and 300s.
 
@@ -163,20 +169,23 @@ The daily sync job retries up to 3 times with backoff between 30s and 300s.
 - **No SA keys:** Deploy SA uses Workload Identity Federation (OIDC). Scheduler SAs use Cloud Scheduler-injected tokens. Sheets SA credentials are stored in Secret Manager.
 - **Secret externalization:** All sensitive values live in Secret Manager, never in Terraform state or environment config files.
 - **Uniform bucket-level access:** No object ACLs; access controlled entirely via IAM.
-- **Deletion protection:** Enabled on Cloud Run and Cloud SQL in prod (`var.environment == "prod"`).
+- **Deletion protection:** Enabled on Cloud Run (prod) and Cloud SQL instance.
 - **Repository-scoped OIDC:** Workload Identity attribute condition restricts federation to a single GitHub repository.
 - **Encrypted-only SQL connections:** `ssl_mode = "ENCRYPTED_ONLY"` on Cloud SQL.
+- **Automated backups:** Cloud SQL PITR enabled with 7 retained backups. Pre-deploy backups created before prod migrations.
 
 ---
 
 ## Environment Separation
 
-Both environments share the same Terraform configuration, differentiated by variable files:
+Both environments are provisioned by a single `terraform apply` using the environment module pattern:
 
-- `dev.tfvars` -- development settings (no deletion protection, force_destroy on bucket)
-- `prod.tfvars` -- production settings (deletion protection enabled, no force_destroy)
+```hcl
+module "dev"  { source = "./modules/environment"; environment = "dev";  ... }
+module "prod" { source = "./modules/environment"; environment = "prod"; ... }
+```
 
-The Cloud SQL instance is shared; environment separation happens at the database level (`aha_sicu_dev` vs `aha_sicu_prod`). Each environment has its own Cloud Run service, service accounts, secrets, storage bucket, Artifact Registry, and Workload Identity pool.
+The Cloud SQL instance is shared; environment separation happens at the database level (`aha_coms_sicu_dev` vs `aha_coms_sicu_prod`). Each environment has its own Cloud Run service, service accounts, secrets, storage bucket, Artifact Registry, Firebase Hosting site, and Workload Identity pool.
 
 ---
 
@@ -205,12 +214,12 @@ graph TD
 **Step-by-step:**
 
 1. **APIs** -- Enable all required GCP APIs (`main.tf`).
-2. **Service Accounts** -- Create all 4+1 SAs and their IAM bindings (`iam.tf`, `cloud_sql.tf`, `main.tf`).
-3. **Secret Manager** -- Create secret resources and accessor bindings (`secrets.tf`). Inject values via `gcloud`.
-4. **Cloud Storage** -- Create upload bucket with lifecycle and CORS (`storage.tf`).
-5. **Artifact Registry** -- Create Docker repository (`artifact_registry.tf`). Push an initial image.
-6. **Cloud SQL** -- Create instance and databases (`cloud_sql.tf`). Set DB password via Secret Manager.
-7. **Cloud Run v2** -- Deploy service with secrets, SQL connector, and env vars (`cloud_run.tf`).
-8. **Workload Identity** -- Create pool and provider for GitHub Actions (`workload_identity.tf`).
-9. **Firebase Hosting** -- Create hosting site (`firebase.tf`). Deploy frontend via Firebase CLI.
-10. **Cloud Scheduler** -- Create daily sync and SQL start/stop jobs (`scheduler.tf`, `cloud_sql.tf`).
+2. **Service Accounts** -- Create all SAs and their IAM bindings (environment module).
+3. **Secret Manager** -- Create secret resources and accessor bindings. Inject values via `gcloud`.
+4. **Cloud Storage** -- Create upload bucket with lifecycle and CORS.
+5. **Artifact Registry** -- Create Docker repository. Push an initial image.
+6. **Cloud SQL** -- Create instance (`cloud_sql.tf`) and per-env databases (environment module). Set DB password via Secret Manager.
+7. **Cloud Run v2** -- Deploy service with secrets, SQL connector, and env vars.
+8. **Workload Identity** -- Create pool and provider for GitHub Actions.
+9. **Firebase Hosting** -- Create hosting site. Deploy frontend via Firebase CLI.
+10. **Cloud Scheduler** -- Create daily sync (environment module) and SQL start/stop jobs (`cloud_sql.tf`).

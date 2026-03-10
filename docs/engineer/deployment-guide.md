@@ -89,14 +89,17 @@ Defined in `.github/workflows/deploy-backend.yml`. Both dev and prod follow the 
 ```
  1. Checkout code
  2. Authenticate to GCP (Workload Identity Federation)
- 3. Start Cloud SQL Auth Proxy (port 5432)
- 4. Run Alembic migrations against Cloud SQL
- 5. Stop Cloud SQL Auth Proxy
- 6. Build Docker image (Buildx with GHA cache)
- 7. Push to Artifact Registry (sha + latest tags)
- 8. Deploy to Cloud Run
- 9. Health check via /docs
-10. Cleanup old revisions (keep 2)
+ 3. Ensure Cloud SQL is running (start if stopped)
+ 4. Create pre-migration backup (prod only)
+ 5. Start Cloud SQL Auth Proxy (port 5432)
+ 6. Run Alembic migrations against Cloud SQL
+ 7. Stop Cloud SQL Auth Proxy
+ 8. Build Docker image (Buildx with GHA cache)
+ 9. Push to Artifact Registry (sha + latest tags)
+10. Deploy to Cloud Run
+11. Health check via /docs
+12. Cleanup old revisions (keep 2)
+13. Cleanup old pre-deploy backups (prod only, keep 5)
 ```
 
 ### Required GitHub Actions Variables
@@ -109,10 +112,11 @@ Set these per environment (`dev` / `production`) in the repository settings:
 | `GCP_REGION`                      | GCP region (e.g., `asia-southeast2`)                     |
 | `WORKLOAD_IDENTITY_PROVIDER`      | Full WIF provider path (from Terraform output)           |
 | `DEPLOY_SERVICE_ACCOUNT`          | Deploy service account email (from Terraform output)     |
-| `CLOUD_RUN_SERVICE`               | Cloud Run service name (e.g., `aha-sicu-dev-api`)        |
+| `CLOUD_RUN_SERVICE`               | Cloud Run service name (e.g., `aha-coms-sicu-dev-api`)   |
 | `ARTIFACT_REGISTRY_URL`           | Docker push URL (from Terraform output)                  |
 | `DB_SECRET_NAME`                  | Secret Manager secret name for the database password     |
 | `CLOUD_SQL_INSTANCE_CONNECTION`   | Cloud SQL connection name (`project:region:instance`)    |
+| `CLOUD_SQL_INSTANCE_NAME`         | Cloud SQL instance name (for backups and start/stop API) |
 | `DB_USER`                         | Database username                                        |
 | `DB_NAME`                         | Database name                                            |
 
@@ -207,7 +211,7 @@ Defined in `.github/workflows/deploy-frontend.yml`. Both dev and prod follow the
 | `GCP_PROJECT_ID`             | GCP project ID                                   |
 | `WORKLOAD_IDENTITY_PROVIDER` | Full WIF provider path (from Terraform output)   |
 | `DEPLOY_SERVICE_ACCOUNT`     | Deploy service account email                     |
-| `FIREBASE_HOSTING_SITE`      | Firebase Hosting site ID (e.g., `aha-sicu-dev`)  |
+| `FIREBASE_HOSTING_SITE`      | Firebase Hosting site ID (e.g., `aha-coms-sicu-dev`)  |
 | `VITE_FIREBASE_API_KEY`      | Firebase Web API key                             |
 | `VITE_FIREBASE_AUTH_DOMAIN`  | Firebase Auth domain                             |
 | `VITE_FIREBASE_PROJECT_ID`   | Firebase project ID                              |
@@ -277,9 +281,9 @@ The script walks through the following steps:
 4. **Terraform plan** -- generates a plan with the selected `.tfvars` file and asks for confirmation.
 5. **Terraform apply** -- applies the plan.
 6. **Inject secret placeholders** -- for each secret that has no versions, injects a `"placeholder"` value so downstream services can start. The secrets checked are:
-   - `aha_sicu_<env>_db_url`
-   - `aha_sicu_<env>_gsheets_credentials`
-   - `aha_sicu_<env>_firebase_admin`
+   - `aha_coms_sicu_<env>_db_url`
+   - `aha_coms_sicu_<env>_gsheets_credentials`
+   - `aha_coms_sicu_<env>_firebase_admin`
 7. **Show outputs** -- prints Terraform outputs (WIF provider, service account, Artifact Registry URL, etc.).
 
 ### Post-Bootstrap: Inject Real Secrets
@@ -289,7 +293,7 @@ After the bootstrap, replace placeholder secrets with real values:
 ```bash
 # Example: update the database URL secret for dev
 echo -n "postgresql://user:pass@host:5432/dbname" > /tmp/db_url.txt
-gcloud secrets versions add aha_sicu_dev_db_url \
+gcloud secrets versions add aha_coms_sicu_dev_db_url \
   --data-file /tmp/db_url.txt \
   --project <PROJECT_ID>
 rm /tmp/db_url.txt
@@ -365,8 +369,8 @@ npm test
 Example with all variables set:
 
 ```bash
-SMOKE_BACKEND_URL=https://aha-sicu-dev-api-xxxxx.run.app \
-SMOKE_FRONTEND_URL=https://aha-sicu-dev.web.app \
+SMOKE_BACKEND_URL=https://aha-coms-sicu-dev-api-xxxxx.run.app \
+SMOKE_FRONTEND_URL=https://aha-coms-sicu-dev.web.app \
 SMOKE_AUTH_TOKEN=eyJhbGciOi... \
 npm test
 ```
@@ -433,3 +437,47 @@ After a deploy, walk through this 10-step end-to-end evaluation cycle to confirm
 8. **SSE events** -- open `/api/v1/events?token=<valid>` and confirm `text/event-stream` response.
 9. **Frontend routing** -- navigate to `/brands`, `/history`, `/evaluation/1` and confirm SPA renders correctly (no 404).
 10. **Smoke suite green** -- run the full smoke test suite and confirm all 19 tests pass.
+
+---
+
+## Database Migration Safety Rules
+
+1. **All migrations MUST be additive** -- `CREATE TABLE`, `ADD COLUMN`, `ADD INDEX` only.
+2. **Destructive changes require two-step release:**
+   - Release 1: Add new structure, backfill data, code reads/writes both old and new.
+   - Release 2: Remove old structure, code uses only new.
+3. **No exceptions.** Violating this risks prod data loss.
+
+---
+
+## Rollback Procedures
+
+### Cloud Run Revision Rollback (~10 seconds)
+
+```bash
+gcloud run services update-traffic aha-coms-sicu-prod-api \
+  --region=asia-southeast2 --to-revisions=PREVIOUS_REVISION=100
+```
+
+### Code-Level Rollback (~3 minutes)
+
+```bash
+git revert HEAD    # on main branch
+git push origin main   # triggers auto-redeploy
+```
+
+### Pre-deploy Backups
+
+Every prod deploy creates a Cloud SQL backup before running migrations. The last 5 pre-deploy backups are retained; older ones are automatically cleaned up.
+
+To list backups:
+
+```bash
+gcloud sql backups list --instance=aha-sicu-db --filter="description~'^pre-deploy-'"
+```
+
+To restore from a backup:
+
+```bash
+gcloud sql backups restore BACKUP_ID --restore-instance=aha-sicu-db
+```
