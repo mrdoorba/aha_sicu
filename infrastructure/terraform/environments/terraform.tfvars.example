@@ -1,14 +1,12 @@
-# Store ICU - Development Environment Variables
-# Copy to dev.tfvars and fill in real values
+# Store ICU - Shared Terraform Variables (single apply creates both dev + prod)
+# Copy to terraform.tfvars and fill in real values
 
 project_id          = "YOUR_GCP_PROJECT_ID"
-region              = "asia-southeast1"
-environment         = "dev"
+region              = "asia-southeast2"
 github_repo         = "YOUR_ORG/aha_sicu"
 firebase_project_id = "YOUR_GCP_PROJECT_ID"
 
-# Cloud Run - dev sizing
-cloud_run_url           = ""
+# Cloud Run sizing (shared defaults for both environments)
 cloud_run_image         = "us-docker.pkg.dev/cloudrun/container/hello"
 cloud_run_min_instances = 0
 cloud_run_max_instances = 2
@@ -18,3 +16,6 @@ cloud_run_cpu           = "1"
 # Google Sheets spreadsheet IDs
 gsheets_vp_spreadsheet_id      = "YOUR_VP_SPREADSHEET_ID"
 gsheets_meeting_spreadsheet_id = "YOUR_MEETING_SPREADSHEET_ID"
+
+# Email / SMTP
+smtp_user = "your-email@gmail.com"

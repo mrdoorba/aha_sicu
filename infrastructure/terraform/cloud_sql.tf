@@ -1,12 +1,12 @@
-# Cloud SQL PostgreSQL: Single instance with dual databases
-# One db-f1-micro instance hosts both aha_sicu_dev and aha_sicu_prod databases.
+# Cloud SQL PostgreSQL: Shared instance across environments
+# Per-environment databases are created by the environment module.
 
 resource "google_sql_database_instance" "main" {
   name                = var.cloud_sql_instance_name
   database_version    = "POSTGRES_18"
   region              = var.region
   project             = var.project_id
-  deletion_protection = var.environment == "prod" ? true : false
+  deletion_protection = true
 
   settings {
     tier              = var.cloud_sql_tier
@@ -21,24 +21,15 @@ resource "google_sql_database_instance" "main" {
     }
 
     backup_configuration {
-      enabled = false
+      enabled                        = true
+      point_in_time_recovery_enabled = true
+      backup_retention_settings {
+        retained_backups = 7
+      }
     }
   }
 
   depends_on = [google_project_service.sqladmin_api]
-}
-
-# Databases — both on the same instance
-resource "google_sql_database" "dev" {
-  name     = "aha_sicu_dev"
-  instance = google_sql_database_instance.main.name
-  project  = var.project_id
-}
-
-resource "google_sql_database" "prod" {
-  name     = "aha_sicu_prod"
-  instance = google_sql_database_instance.main.name
-  project  = var.project_id
 }
 
 # Database user — password managed via Secret Manager, not Terraform
@@ -52,9 +43,8 @@ resource "google_sql_user" "app" {
 # Scheduled Start/Stop — Cloud Scheduler → SQL Admin API
 # =============================================================================
 
-# Dedicated SA for Cloud Scheduler to call SQL Admin API
 resource "google_service_account" "cloud_sql_scheduler" {
-  account_id   = "aha-sicu-sql-scheduler-sa"
+  account_id   = "aha-coms-sicu-sql-sched-sa"
   display_name = "Store ICU Cloud SQL Scheduler"
   description  = "Service account for Cloud Scheduler to start/stop Cloud SQL instance"
   project      = var.project_id
@@ -68,7 +58,7 @@ resource "google_project_iam_member" "cloud_sql_scheduler_admin" {
 
 # START job — 08:00 WIB, weekdays only
 resource "google_cloud_scheduler_job" "cloud_sql_start" {
-  name        = "aha-sicu-cloud-sql-start"
+  name        = "aha-coms-sicu-sql-start"
   description = "Start Cloud SQL instance at 08:00 WIB"
   schedule    = "0 8 * * 1-5"
   time_zone   = "Asia/Jakarta"
@@ -94,7 +84,7 @@ resource "google_cloud_scheduler_job" "cloud_sql_start" {
 
 # STOP job — 18:30 WIB, weekdays only
 resource "google_cloud_scheduler_job" "cloud_sql_stop" {
-  name        = "aha-sicu-cloud-sql-stop"
+  name        = "aha-coms-sicu-sql-stop"
   description = "Stop Cloud SQL instance at 18:30 WIB"
   schedule    = "30 18 * * 1-5"
   time_zone   = "Asia/Jakarta"

@@ -1,4 +1,4 @@
-# Store ICU Infrastructure - Variables
+# Store ICU Infrastructure - Variables (shared across environments)
 
 variable "project_id" {
   description = "GCP project ID"
@@ -10,33 +10,6 @@ variable "region" {
   type        = string
   default     = "asia-southeast2"
 }
-
-variable "environment" {
-  description = "Deployment environment (dev or prod)"
-  type        = string
-  default     = "dev"
-}
-
-variable "cloud_run_url" {
-  description = "Cloud Run service URL for the Store ICU API (e.g., https://aha-sicu-api-xxxx.a.run.app)"
-  type        = string
-  default     = ""
-
-  validation {
-    condition     = var.cloud_run_url == "" || can(regex("^https://", var.cloud_run_url))
-    error_message = "cloud_run_url must be empty or start with https://"
-  }
-}
-
-variable "cloud_run_service_name" {
-  description = "Cloud Run v2 service name (e.g., aha-sicu-api)"
-  type        = string
-  default     = ""
-}
-
-# =============================================================================
-# New Variables (Story 6.1)
-# =============================================================================
 
 variable "github_repo" {
   description = "GitHub repository in format 'owner/repo' for Workload Identity Federation"
@@ -50,7 +23,7 @@ variable "firebase_project_id" {
 }
 
 variable "cloud_run_image" {
-  description = "Docker image URI for Cloud Run (e.g., asia-southeast1-docker.pkg.dev/PROJECT/aha-sicu-registry/aha-sicu-api:latest)"
+  description = "Docker image URI for Cloud Run initial deployment"
   type        = string
   default     = "us-docker.pkg.dev/cloudrun/container/hello"
 }
@@ -108,7 +81,7 @@ variable "smtp_from_name" {
 }
 
 # =============================================================================
-# Cloud SQL Variables
+# Cloud SQL Variables (shared instance)
 # =============================================================================
 
 variable "cloud_sql_tier" {
@@ -133,10 +106,4 @@ variable "db_user" {
   description = "Cloud SQL database user"
   type        = string
   default     = "aha_sicu"
-}
-
-variable "db_name" {
-  description = "Cloud SQL database name (per environment)"
-  type        = string
-  default     = ""
 }

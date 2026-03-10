@@ -30,7 +30,7 @@ provider "google-beta" {
 }
 
 # =============================================================================
-# GCP API Enablement
+# GCP API Enablement (shared)
 # =============================================================================
 
 resource "google_project_service" "run_api" {
@@ -81,32 +81,73 @@ resource "google_project_service" "sqladmin_api" {
   disable_on_destroy = false
 }
 
-# =============================================================================
-# Google Sheets API & Service Account (Epic 2 - Brand Data Availability)
-# =============================================================================
-
-# Enable Google Sheets API
 resource "google_project_service" "sheets_api" {
-  project = var.project_id
-  service = "sheets.googleapis.com"
-
+  project            = var.project_id
+  service            = "sheets.googleapis.com"
   disable_on_destroy = false
 }
 
-# Service Account for Google Sheets access
-# Naming follows architecture convention: aha-sicu-{env}-{purpose}-sa
-resource "google_service_account" "gsheets_sync" {
-  account_id   = "aha-sicu-${var.environment}-sheets-sa"
-  display_name = "Store ICU ${var.environment} Google Sheets Sync"
-  description  = "Service account for syncing brand data from Google Sheets"
-  project      = var.project_id
+# =============================================================================
+# Environment Modules
+# =============================================================================
+
+module "dev" {
+  source      = "./modules/environment"
+  environment = "dev"
+  project_id  = var.project_id
+  region      = var.region
+
+  cloud_sql_instance_name            = google_sql_database_instance.main.name
+  cloud_sql_instance_connection_name = google_sql_database_instance.main.connection_name
+  db_user                            = var.db_user
+
+  github_repo        = var.github_repo
+  firebase_project_id = var.firebase_project_id
+  cloud_run_image    = var.cloud_run_image
+
+  cloud_run_min_instances = var.cloud_run_min_instances
+  cloud_run_max_instances = var.cloud_run_max_instances
+  cloud_run_memory        = var.cloud_run_memory
+  cloud_run_cpu           = var.cloud_run_cpu
+
+  smtp_user      = var.smtp_user
+  smtp_from_name = var.smtp_from_name
+
+  gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
+  gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id
+
+  cors_origins = [
+    "https://aha-coms-sicu-dev.web.app",
+    "http://localhost:5173"
+  ]
 }
 
-# NOTE: SA key generation removed during code review — use Secret Manager instead.
-# Inject gsheets credentials via: gcloud secrets versions add aha_sicu_{env}_gsheets_credentials --data-file path/to/key.json
+module "prod" {
+  source      = "./modules/environment"
+  environment = "prod"
+  project_id  = var.project_id
+  region      = var.region
 
-# Output the service account email (share this with Google Sheet)
-output "gsheets_service_account_email" {
-  description = "Email of the service account - share this with your Google Sheet"
-  value       = google_service_account.gsheets_sync.email
+  cloud_sql_instance_name            = google_sql_database_instance.main.name
+  cloud_sql_instance_connection_name = google_sql_database_instance.main.connection_name
+  db_user                            = var.db_user
+
+  github_repo        = var.github_repo
+  firebase_project_id = var.firebase_project_id
+  cloud_run_image    = var.cloud_run_image
+
+  cloud_run_min_instances = var.cloud_run_min_instances
+  cloud_run_max_instances = var.cloud_run_max_instances
+  cloud_run_memory        = var.cloud_run_memory
+  cloud_run_cpu           = var.cloud_run_cpu
+
+  smtp_user      = var.smtp_user
+  smtp_from_name = var.smtp_from_name
+
+  gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
+  gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id
+
+  cors_origins = [
+    "https://aha-coms-sicu-prod.web.app"
+  ]
 }
