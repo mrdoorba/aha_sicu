@@ -528,8 +528,10 @@
   "scoring.campaignParticipation.noData": "❌ [ไม่มีแคมเปญที่เข้าร่วม]",
   "scoring.avgStockTop20.pass": "✔️ สต็อกเฉลี่ย Top 20% SKU = {{value}} [ดี]",
   "scoring.avgStockTop20.fail": "❌ สต็อกเฉลี่ย Top 20% SKU = {{value}} [ต้องปรับปรุง, เป้าหมาย: >={{threshold}}]",
+  "scoring.avgStockTop20.benchmark": ">={{threshold}}",
   "scoring.stockAvailability.pass": "✔️ ความพร้อมสต็อก = {{value}} หมดสต็อก [ดี]",
   "scoring.stockAvailability.fail": "❌ ความพร้อมสต็อก = {{value}} หมดสต็อก [ต้องปรับปรุง, เป้าหมาย: <={{threshold}}%]",
+  "scoring.stockAvailability.benchmark": "≤{{threshold}}% หมดสต็อก",
   "scoring.discountCheckup.pass": "% ส่วนลด TOP SKU: {{discountPct}}\nช่วง: {{rangeMin}} ~ {{rangeMax}}\nคูปอง {{voucherPct}}\nแพ็คเกจส่วนลด {{paketPct}}",
   "scoring.discountCheckup.fail": "% ส่วนลด TOP SKU: {{discountPct}}\nช่วง: {{rangeMin}} ~ {{rangeMax}}\nคูปอง {{voucherPct}}\nแพ็คเกจส่วนลด {{paketPct}}\n📌 อาจมีการใช้ 'fake discount'",
 

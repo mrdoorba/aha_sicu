@@ -583,14 +583,20 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
 
     if avg_stock_int >= high_threshold:
         msg70 = f"✔️ Rata² Stok TOP 20% SKU = {avg_stock_int} [Sudah Baik]"
+        msg70_key = "scoring.avgStockTop20.pass"
     else:
         msg70 = f"❌ Rata² Stok TOP 20% SKU = {avg_stock_int} [Kurang Baik, nilai disarankan: >={high_threshold:g}]"
+        msg70_key = "scoring.avgStockTop20.fail"
+
+    stock_vars = {"value": str(avg_stock_int), "threshold": f"{high_threshold:g}"}
 
     row70 = RowScore(
         row=70, metric="Rata² Stok TOP 20% SKU",
         value=avg_stock_int, benchmark=f">={high_threshold:g}", verdict=f70,
         message=msg70, score=h70,
         metric_i18n=TranslatableText(key="scoring.avgStockTop20", vars={}),
+        message_i18n=TranslatableText(key=msg70_key, vars=stock_vars),
+        benchmark_i18n=TranslatableText(key="scoring.avgStockTop20.benchmark", vars={"threshold": f"{high_threshold:g}"}),
     )
 
     # Row 71: Stock availability penalty
@@ -604,17 +610,24 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
         f71, h71 = "✔️", 0.0
 
     oos_pct_display = f"{out_of_stock_pct * 100:.0f}%"
+    oos_threshold_display = f"{oos_threshold * 100:.0f}"
     if f71 == "✔️":
         msg71 = f"✔️ % Ketersediaan Stok = {oos_pct_display} stok habis [Sudah Baik]"
+        msg71_key = "scoring.stockAvailability.pass"
     else:
-        msg71 = f"❌ % Ketersediaan Stok = {oos_pct_display} stok habis [Kurang Baik, nilai disarankan: ≤{oos_threshold * 100:.0f}%]"
+        msg71 = f"❌ % Ketersediaan Stok = {oos_pct_display} stok habis [Kurang Baik, nilai disarankan: ≤{oos_threshold_display}%]"
+        msg71_key = "scoring.stockAvailability.fail"
+
+    oos_vars = {"value": oos_pct_display, "threshold": oos_threshold_display}
 
     row71 = RowScore(
         row=71, metric="% Ketersediaan Stok",
         value=out_of_stock_pct,
-        benchmark=f"≤{oos_threshold * 100:.0f}% stok habis",
+        benchmark=f"≤{oos_threshold_display}% stok habis",
         verdict=f71, message=msg71, score=h71,
         metric_i18n=TranslatableText(key="scoring.stockAvailability", vars={}),
+        message_i18n=TranslatableText(key=msg71_key, vars=oos_vars),
+        benchmark_i18n=TranslatableText(key="scoring.stockAvailability.benchmark", vars={"threshold": oos_threshold_display}),
     )
 
     total_score = h70 + h71

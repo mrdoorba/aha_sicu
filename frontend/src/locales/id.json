@@ -528,8 +528,10 @@
   "scoring.campaignParticipation.noData": "❌ [Tidak ada Campaign yang dipartisipasikan]",
   "scoring.avgStockTop20.pass": "✔️ Rata² Stok TOP 20% SKU = {{value}} [Sudah Baik]",
   "scoring.avgStockTop20.fail": "❌ Rata² Stok TOP 20% SKU = {{value}} [Kurang Baik, nilai disarankan: >={{threshold}}]",
+  "scoring.avgStockTop20.benchmark": ">={{threshold}}",
   "scoring.stockAvailability.pass": "✔️ % Ketersediaan Stok = {{value}} stok habis [Sudah Baik]",
   "scoring.stockAvailability.fail": "❌ % Ketersediaan Stok = {{value}} stok habis [Kurang Baik, nilai disarankan: ≤{{threshold}}%]",
+  "scoring.stockAvailability.benchmark": "≤{{threshold}}% stok habis",
   "scoring.discountCheckup.pass": "% Diskon TOP SKU: {{discountPct}}\nRange: {{rangeMin}} ~ {{rangeMax}}\nVoucher {{voucherPct}}\nPaket Diskon {{paketPct}}",
   "scoring.discountCheckup.fail": "% Diskon TOP SKU: {{discountPct}}\nRange: {{rangeMin}} ~ {{rangeMax}}\nVoucher {{voucherPct}}\nPaket Diskon {{paketPct}}\n📌 Berpotensi menggunakan 'fake discount'",
 
