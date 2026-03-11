@@ -1,30 +1,9 @@
 import { useTranslation } from 'react-i18next';
-import type { CalculatorResult, AdsKeywordDetails, TranslatableI18n, AdListI18n } from '../../../hooks/useCalculator';
-import { renderTranslatable } from '../../../utils/renderTranslatable';
+import type { CalculatorResult, AdsKeywordDetails, TranslatableI18n } from '../../../hooks/useCalculator';
+import { renderTranslatable, renderAdList, renderFlagList } from '../../../utils/renderTranslatable';
 
 interface AdsKeywordResultsProps {
   result: CalculatorResult;
-}
-
-function renderAdList(
-  fallbackText: string,
-  i18n: AdListI18n | null | undefined,
-  t: (key: string, vars?: Record<string, string>) => string,
-): string {
-  if (!i18n) return fallbackText;
-
-  const header = t(i18n.header.key, i18n.header.vars);
-  const ads = i18n.ads.map((ad) => t(ad.key, ad.vars)).join('\n');
-  return `${header}\n${ads}`;
-}
-
-function renderFlagList(
-  fallbackText: string,
-  i18n: TranslatableI18n[] | null | undefined,
-  t: (key: string, vars?: Record<string, string>) => string,
-): string {
-  if (!i18n) return fallbackText;
-  return i18n.map((flag) => t(flag.key, flag.vars)).join('\n');
 }
 
 export function AdsKeywordResults({ result }: AdsKeywordResultsProps) {

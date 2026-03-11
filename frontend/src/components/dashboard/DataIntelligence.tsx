@@ -3,6 +3,8 @@ import { Card, CardContent } from '../ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
 import { useTranslation } from 'react-i18next';
+import type { AdsKeywordDetails, TranslatableI18n } from '../../hooks/useCalculator';
+import { renderTranslatable, renderAdList, renderFlagList } from '../../utils/renderTranslatable';
 
 interface DataIntelligenceProps {
   calculatorResults: Record<string, unknown>;
@@ -15,27 +17,44 @@ function formatIDR(value: unknown): string {
 
 function AdsContent({ data, t }: { data: Record<string, unknown>; t: (key: string, vars?: Record<string, string>) => string }) {
   const text = (data.output_text as string) || '';
-  const details = data.details as Record<string, unknown> | undefined;
+  const details = data.details as AdsKeywordDetails | undefined;
 
-  // If i18n data exists, render translated sections
-  if (details?.ak2_i18n) {
-    const renderSection = (i18n: { key: string; vars: Record<string, string> } | undefined) => {
-      if (!i18n) return null;
-      return <p>{t(i18n.key, i18n.vars)}</p>;
-    };
-
-    return (
-      <div className="whitespace-pre-wrap rounded-lg bg-muted/50 p-4 text-sm font-mono border border-border/50 space-y-2">
-        {renderSection(details.ak2_i18n as { key: string; vars: Record<string, string> })}
-        {renderSection(details.ak3_i18n as { key: string; vars: Record<string, string> })}
-        {renderSection(details.ak4_i18n as { key: string; vars: Record<string, string> })}
-      </div>
-    );
+  if (!details) {
+    if (!text) return <p className="text-sm text-muted-foreground py-6 text-center">{t('common.noData')}</p>;
+    return <pre className="whitespace-pre-wrap rounded-lg bg-muted/50 p-4 text-sm font-mono border border-border/50">{text}</pre>;
   }
 
-  // Fallback to raw text
-  if (!text) return <p className="text-sm text-muted-foreground py-6 text-center">{t('common.noData')}</p>;
-  return <pre className="whitespace-pre-wrap rounded-lg bg-muted/50 p-4 text-sm font-mono border border-border/50">{text}</pre>;
+  const sections: string[] = [];
+
+  // Sheet 1
+  sections.push(renderTranslatable(details.ak2, details.ak2_i18n, t));
+  sections.push(renderTranslatable(details.ak3, details.ak3_i18n, t));
+  const ak4Text = renderFlagList(details.ak4, details.ak4_i18n, t);
+  if (ak4Text) sections.push(ak4Text);
+
+  // Sheet 2
+  const al2Text = renderAdList(details.al2, details.al2_i18n, t);
+  if (al2Text) sections.push(al2Text);
+  const al3Text = renderTranslatable(details.al3, details.al3_i18n, t);
+  if (al3Text) sections.push(al3Text);
+  const al5Text = renderAdList(details.al5, details.al5_i18n, t);
+  if (al5Text) sections.push(al5Text);
+
+  // Bottom flags
+  for (const key of ['al6', 'al7', 'al8', 'al9'] as const) {
+    const i18nKey = `${key}_i18n` as keyof AdsKeywordDetails;
+    const val = renderTranslatable(details[key], details[i18nKey] as TranslatableI18n | null | undefined, t);
+    if (val) sections.push(val);
+  }
+
+  const combined = sections.filter(Boolean).join('\n\n');
+  if (!combined) return <p className="text-sm text-muted-foreground py-6 text-center">{t('common.noData')}</p>;
+
+  return (
+    <pre className="whitespace-pre-wrap break-words rounded-lg bg-muted/50 p-4 text-sm font-mono leading-relaxed border border-border/50">
+      {combined}
+    </pre>
+  );
 }
 
 function TopSkuContent({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
