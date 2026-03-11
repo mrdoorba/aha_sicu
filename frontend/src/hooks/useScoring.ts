@@ -48,15 +48,26 @@ interface ScoringRequest {
   email?: string | null;
 }
 
-export function useScoring(brandId: number) {
+export type ScoringStep = 'idle' | 'recalculating' | 'scoring';
+
+export function useScoring(brandId: number, preStep?: () => Promise<void>) {
   const queryClient = useQueryClient();
   const [scoringResult, setScoringResult] = useState<ScoringResult | null>(null);
   const [isStale, setIsStale] = useState(false);
   const [lastPeriod, setLastPeriod] = useState('');
+  const [step, setStep] = useState<ScoringStep>('idle');
 
   const mutation = useMutation<ScoringResult, Error, ScoringRequest>({
     mutationFn: async (request) => {
       setLastPeriod(request.period);
+
+      // Run pre-step (recalculate all calculators) if provided
+      if (preStep) {
+        setStep('recalculating');
+        await preStep();
+      }
+
+      setStep('scoring');
       const { data, error } = await client.POST(
         '/api/v1/evaluations/brands/{brand_id}/score',
         {
@@ -70,7 +81,11 @@ export function useScoring(brandId: number) {
     onSuccess: (data) => {
       setScoringResult(data);
       setIsStale(false);
+      setStep('idle');
       queryClient.setQueryData(['scoring', brandId], data);
+    },
+    onError: () => {
+      setStep('idle');
     },
   });
 
@@ -102,6 +117,7 @@ export function useScoring(brandId: number) {
     isStale,
     markStale,
     isGenerating: mutation.isPending,
+    scoringStep: step,
     error: mutation.error,
   };
 }

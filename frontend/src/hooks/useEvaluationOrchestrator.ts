@@ -6,7 +6,7 @@ import { useAutoSaveForm } from './useAutoSaveForm';
 import { computeSectionProgress } from '../components/evaluation/forms/formConfig';
 import { useScoring } from './useScoring';
 import { useSaveEvaluation } from './useSaveEvaluation';
-import { useCalculatorResults } from './useCalculator';
+import { useCalculatorResults, useRunAllCalculators } from './useCalculator';
 import { useRules } from './useRules';
 import { toast } from 'sonner';
 
@@ -51,11 +51,17 @@ export function useEvaluationOrchestrator(brandId: number) {
     lastPeriod,
     isStale,
     isGenerating,
+    scoringStep,
     error: scoringError,
-  } = useScoring(brandId);
+  } = useScoring(brandId, recalculateAll);
 
   // --- Calculator ---
   const { data: calculatorResultsData } = useCalculatorResults(brandId);
+  const runAllMutation = useRunAllCalculators(brandId);
+
+  const recalculateAll = useCallback(async () => {
+    await runAllMutation.mutateAsync();
+  }, [runAllMutation]);
 
   // --- Rules ---
   const { rules: rulesData } = useRules();
@@ -169,6 +175,7 @@ export function useEvaluationOrchestrator(brandId: number) {
     scoringResult,
     isGenerating,
     isStale,
+    scoringStep,
     scoringError,
 
     // Save evaluation
