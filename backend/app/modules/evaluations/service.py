@@ -370,6 +370,7 @@ async def generate_score(
                     message=r.message,
                     score=r.score,
                     metric_i18n=_to_schema(r.metric_i18n),
+                    value_i18n=_to_schema(r.value_i18n),
                     message_i18n=_to_schema(r.message_i18n),
                     benchmark_i18n=_to_schema(r.benchmark_i18n),
                 )
