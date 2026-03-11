@@ -464,6 +464,8 @@
   "scoring.availableSessions": "เซสชันที่พร้อมใช้งาน",
   "scoring.campaignParticipation": "การเข้าร่วมแคมเปญ",
   "scoring.competitionProduct": "สินค้าแข่งขัน",
+  "scoring.competitionProduct.pass": "{{name}} (IDR {{sellingPrice}}) = ✅[แข่งขันได้]",
+  "scoring.competitionProduct.fail": "{{name}} (IDR {{sellingPrice}}) = ❌[ไม่แข่งขัน (ช่วงราคาตลาด: IDR {{marketPrice}})]",
   "scoring.avgStockTop20": "สต็อกเฉลี่ย Top 20",
   "scoring.stockAvailability": "ความพร้อมของสต็อก",
   "scoring.discountCheckup": "การตรวจสอบส่วนลด",
