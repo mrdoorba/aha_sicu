@@ -113,53 +113,61 @@ class TestSheet1I18nAk3:
         assert result["ak3_i18n"]["vars"]["toko_manual"] == "0"
 
 
-class TestSheet1I18nAk4:
-    """AK4 i18n: recommendation flags."""
+class TestSheet1I18nAk4Individual:
+    """AK4 i18n: individual flag objects instead of single key."""
 
-    def test_has_ak4_i18n_key_when_rows_provided(self):
+    def test_ak4_i18n_is_list_when_product_pct_below_50(self):
         rows = [
             {"Status": "Berjalan", "Jenis Iklan": "Iklan Produk", "Nama Iklan": "Ad 1",
              "Penempatan Iklan": "Semua Penempatan", "Mode Bidding": "Bidding Otomatis"},
         ]
-        result = calculate_sheet1(rows, 10)
-        assert "ak4_i18n" in result
+        result = calculate_sheet1(rows, 100)  # 1/100 = 1% < 50%
+        assert isinstance(result["ak4_i18n"], list)
 
-    def test_ak4_i18n_key_is_ads_recommendations(self):
+    def test_ak4_i18n_first_flag_is_product_low_when_below_50(self):
         rows = [
             {"Status": "Berjalan", "Jenis Iklan": "Iklan Produk", "Nama Iklan": "Ad 1",
              "Penempatan Iklan": "Semua Penempatan", "Mode Bidding": "Bidding Otomatis"},
         ]
-        result = calculate_sheet1(rows, 10)
-        assert result["ak4_i18n"]["key"] == "ads.recommendations"
+        result = calculate_sheet1(rows, 100)
+        assert result["ak4_i18n"][0]["key"] == "ads.flag.productLow"
 
-    def test_ak4_i18n_vars_has_product_pct(self):
+    def test_ak4_i18n_first_flag_is_product_good_when_above_50(self):
+        rows = [
+            {"Status": "Berjalan", "Jenis Iklan": "Iklan Produk", "Nama Iklan": f"Ad {i}",
+             "Penempatan Iklan": "Semua Penempatan", "Mode Bidding": "Bidding Otomatis"}
+            for i in range(6)
+        ]
+        result = calculate_sheet1(rows, 10)  # 6/10 = 60% > 50%
+        assert result["ak4_i18n"][0]["key"] == "ads.flag.productGood"
+
+    def test_ak4_i18n_has_active_low_flag_when_below_50(self):
+        rows = [
+            {"Status": "Berjalan", "Jenis Iklan": "Iklan Produk", "Nama Iklan": "Ad 1",
+             "Penempatan Iklan": "Semua Penempatan", "Mode Bidding": "Bidding Otomatis"},
+            {"Status": "Berakhir", "Jenis Iklan": "Iklan Produk", "Nama Iklan": "Ad 2",
+             "Penempatan Iklan": "Semua Penempatan", "Mode Bidding": "Bidding Otomatis"},
+            {"Status": "Berakhir", "Jenis Iklan": "Iklan Produk", "Nama Iklan": "Ad 3",
+             "Penempatan Iklan": "Semua Penempatan", "Mode Bidding": "Bidding Otomatis"},
+        ]
+        result = calculate_sheet1(rows, 100)  # 1/3 active = 33% < 50%
+        keys = [f["key"] for f in result["ak4_i18n"]]
+        assert "ads.flag.activeLow" in keys
+
+    def test_ak4_i18n_has_no_shop_ad_flag_when_no_toko(self):
         rows = [
             {"Status": "Berjalan", "Jenis Iklan": "Iklan Produk", "Nama Iklan": "Ad 1",
              "Penempatan Iklan": "Semua Penempatan", "Mode Bidding": "Bidding Otomatis"},
         ]
-        result = calculate_sheet1(rows, 10)
-        assert "product_pct" in result["ak4_i18n"]["vars"]
+        result = calculate_sheet1(rows, 100)
+        keys = [f["key"] for f in result["ak4_i18n"]]
+        assert "ads.flag.noShopAd" in keys
 
-    def test_ak4_i18n_vars_has_active_ratio(self):
-        rows = [
-            {"Status": "Berjalan", "Jenis Iklan": "Iklan Produk", "Nama Iklan": "Ad 1",
-             "Penempatan Iklan": "Semua Penempatan", "Mode Bidding": "Bidding Otomatis"},
-        ]
-        result = calculate_sheet1(rows, 10)
-        assert "active_ratio" in result["ak4_i18n"]["vars"]
-
-    def test_ak4_i18n_vars_has_has_toko(self):
+    def test_ak4_i18n_no_shop_ad_flag_absent_when_toko_exists(self):
         rows = [
             {"Status": "Berjalan", "Jenis Iklan": "Iklan Toko", "Nama Iklan": "Shop Ad",
              "Penempatan Iklan": "Halaman Pencarian", "Mode Bidding": "Bidding Otomatis"},
         ]
-        result = calculate_sheet1(rows, 10)
-        assert result["ak4_i18n"]["vars"]["has_toko"] == "true"
-
-    def test_ak4_i18n_vars_has_toko_false_when_no_toko_ads(self):
-        rows = [
-            {"Status": "Berjalan", "Jenis Iklan": "Iklan Produk", "Nama Iklan": "Ad 1",
-             "Penempatan Iklan": "Semua Penempatan", "Mode Bidding": "Bidding Otomatis"},
-        ]
-        result = calculate_sheet1(rows, 10)
-        assert result["ak4_i18n"]["vars"]["has_toko"] == "false"
+        result = calculate_sheet1(rows, 100)
+        keys = [f["key"] for f in result["ak4_i18n"]]
+        assert "ads.flag.noShopAd" not in keys

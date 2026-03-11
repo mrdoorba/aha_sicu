@@ -245,15 +245,23 @@ def calculate_sheet1(
         },
     }
 
-    has_toko = any(_safe_str(r.get("Jenis Iklan")) == "Iklan Toko" for r in rows)
-    ak4_i18n = {
-        "key": "ads.recommendations",
-        "vars": {
-            "product_pct": _format_pct(product_pct) if product_pct else "0%",
-            "active_ratio": _format_pct(active_ratio) if active_ratio else "0%",
-            "has_toko": "true" if has_toko else "false",
-        },
-    }
+    # --- AK4 i18n: individual flag objects ---
+    ak4_i18n_flags: list[dict[str, Any]] = []
+
+    if product_pct < 0.5:
+        ak4_i18n_flags.append({"key": "ads.flag.productLow", "vars": {}})
+    else:
+        ak4_i18n_flags.append({"key": "ads.flag.productGood", "vars": {}})
+
+    if active_ratio < 0.5:
+        ak4_i18n_flags.append({"key": "ads.flag.activeLow", "vars": {}})
+    elif product_pct >= 0.5:
+        ak4_i18n_flags.append({"key": "ads.flag.activeGood", "vars": {}})
+
+    if not any(j == "Iklan Toko" for j in all_jenis):
+        ak4_i18n_flags.append({"key": "ads.flag.noShopAd", "vars": {}})
+
+    ak4_i18n = ak4_i18n_flags
 
     return {
         "ak2": ak2, "ak3": ak3, "ak4": ak4,
