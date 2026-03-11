@@ -1,6 +1,16 @@
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import client from '../services/apiClient';
 
+export interface TranslatableI18n {
+  key: string;
+  vars: Record<string, string>;
+}
+
+export interface AdListI18n {
+  header: TranslatableI18n;
+  ads: TranslatableI18n[];
+}
+
 export interface AdsKeywordDetails {
   ak2: string;
   ak3: string;
@@ -12,6 +22,16 @@ export interface AdsKeywordDetails {
   al7: string;
   al8: string;
   al9: string;
+  ak2_i18n?: TranslatableI18n | null;
+  ak3_i18n?: TranslatableI18n | null;
+  ak4_i18n?: TranslatableI18n[] | null;
+  al2_i18n?: AdListI18n | null;
+  al3_i18n?: TranslatableI18n | null;
+  al5_i18n?: AdListI18n | null;
+  al6_i18n?: TranslatableI18n | null;
+  al7_i18n?: TranslatableI18n | null;
+  al8_i18n?: TranslatableI18n | null;
+  al9_i18n?: TranslatableI18n | null;
   thresholds: {
     am6: number;
     am7: number;
