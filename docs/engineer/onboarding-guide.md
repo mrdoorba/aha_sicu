@@ -71,7 +71,7 @@ If a user already exists in Firebase Auth, the script skips creation and prints 
 
 ### 1.3 First Login (Auto-Create User Record)
 
-Have ALL users log in once at the app URL (e.g., `https://aha-sicu-prod.web.app`).
+Have ALL users log in once at the app URL (e.g., `https://aha-coms-sicu-prod.web.app`).
 
 The backend's `get_current_user` dependency auto-creates a user record in the database with `role='member'` on first login. Users **must** log in before role assignment will work, because the `UPDATE` in the next step targets rows that only exist after this auto-creation.
 
@@ -82,7 +82,7 @@ Update `scripts/assign-roles.sql` with the real UIDs from the provisioning outpu
 Retrieve the database URL from Secret Manager:
 
 ```bash
-export DATABASE_URL=$(gcloud secrets versions access latest --secret=aha_sicu_prod_db_url)
+export DATABASE_URL=$(gcloud secrets versions access latest --secret=aha_coms_sicu_prod_db_password)
 ```
 
 Run the role assignment:
@@ -184,8 +184,8 @@ A 10-step end-to-end verification cycle. Run this after each production deployme
 
 | Item | Details |
 |------|---------|
-| Production Backend URL | Get via: `gcloud run services describe aha-sicu-prod-api --region=asia-southeast1 --format="value(status.url)"` |
-| Production Frontend URL | `https://aha-sicu-prod.web.app` |
+| Production Backend URL | Get via: `gcloud run services describe aha-coms-sicu-prod-api --region=asia-southeast2 --format="value(status.url)"` |
+| Production Frontend URL | `https://aha-coms-sicu-prod.web.app` |
 | Test user credentials | A valid Firebase Auth email/password account |
 | Sample CPC Ad Report | CSV file with CPC ad data for a test brand |
 | Sample Keyword Report | CSV file with keyword report data |

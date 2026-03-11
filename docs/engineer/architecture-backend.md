@@ -376,4 +376,4 @@ The `lifespan()` async context manager in `main.py` handles startup and shutdown
 **Shutdown:**
 1. Close the asyncpg connection pool
 
-CORS middleware is configured with an explicit origin allowlist covering localhost dev servers and Firebase Hosting domains (`aha-sicu-dev`, `aha-sicu-prod`).
+CORS middleware is configured with an explicit origin allowlist covering localhost dev servers and Firebase Hosting domains (`aha-coms-sicu-dev`, `aha-coms-sicu-prod`).

@@ -6,8 +6,8 @@ Brand health evaluation system for Shopee e-commerce stores. Enables Business De
 
 | Environment | Frontend | Backend |
 |-------------|----------|---------|
-| **Production** | [aha-sicu-prod.web.app](https://aha-sicu-prod.web.app) | Cloud Run (asia-southeast2) |
-| **Staging** | [aha-sicu-dev.web.app](https://aha-sicu-dev.web.app) | Cloud Run (asia-southeast2) |
+| **Production** | [aha-coms-sicu-prod.web.app](https://aha-coms-sicu-prod.web.app) | Cloud Run (asia-southeast2) |
+| **Staging** | [aha-coms-sicu-dev.web.app](https://aha-coms-sicu-dev.web.app) | Cloud Run (asia-southeast2) |
 
 ## Tech Stack
 

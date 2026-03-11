@@ -12,7 +12,7 @@ Provisioning Process:
 Prerequisites:
   - pip install firebase-admin pyyaml  (or use backend venv which has firebase-admin)
   - Firebase Admin credentials (service account JSON) for the target project
-  - Target the PRODUCTION Firebase project (e.g., aha-sicu-prod)
+  - Target the PRODUCTION Firebase project (e.g., aha-coms-sicu-prod)
 
 Credential options (checked in order):
   1. FIREBASE_CREDENTIALS_JSON env var — JSON string (used in production/CI)
@@ -167,7 +167,7 @@ def main() -> None:
             print(f"  {r['email']:40s} role={r['role']:8s} uid={r['uid']}")
 
     print("\nNext steps:")
-    print("  1. Have ALL users log in once at https://aha-sicu-prod.web.app")
+    print("  1. Have ALL users log in once at https://aha-coms-sicu-prod.web.app")
     print("     (this triggers auto-creation of their record in the users table)")
     print("  2. Update assign-roles.sql with the UIDs shown above")
     print("  3. Run assign-roles.sql against the production database")

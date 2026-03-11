@@ -4,7 +4,7 @@ terraform {
   required_version = ">= 1.5"
 
   # Local backend for initial bootstrap. Migrate to GCS when team collaboration needed:
-  # backend "gcs" { bucket = "aha-sicu-terraform-state" prefix = "terraform/state" }
+  # backend "gcs" { bucket = "aha-coms-sicu-terraform-state" prefix = "terraform/state" }
   backend "local" {}
 
   required_providers {

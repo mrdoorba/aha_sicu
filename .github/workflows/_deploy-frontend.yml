@@ -5,7 +5,7 @@
 #   GCP_PROJECT_ID            – GCP project ID
 #   WORKLOAD_IDENTITY_PROVIDER – Full WIF provider path from terraform output
 #   DEPLOY_SERVICE_ACCOUNT    – Deploy SA email from terraform output
-#   FIREBASE_HOSTING_SITE     – Firebase Hosting site ID (aha-sicu-dev / aha-sicu-prod)
+#   FIREBASE_HOSTING_SITE     – Firebase Hosting site ID (aha-coms-sicu-dev / aha-coms-sicu-prod)
 #   VITE_FIREBASE_API_KEY     – Firebase Web API key
 #   VITE_FIREBASE_AUTH_DOMAIN – Firebase Auth domain
 #   VITE_FIREBASE_PROJECT_ID  – Firebase project ID

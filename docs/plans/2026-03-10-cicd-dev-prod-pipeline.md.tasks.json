@@ -1,20 +1,20 @@
 {
   "planPath": "docs/plans/2026-03-10-cicd-dev-prod-pipeline.md",
   "tasks": [
-    {"id": 1, "subject": "Task 1: Create Terraform environment module structure", "status": "pending"},
-    {"id": 2, "subject": "Task 2: Refactor root Terraform to use modules", "status": "pending", "blockedBy": [1]},
-    {"id": 3, "subject": "Task 3: Terraform state migration", "status": "pending", "blockedBy": [2]},
-    {"id": 4, "subject": "Task 4: Backup dev database", "status": "pending", "blockedBy": [2]},
-    {"id": 5, "subject": "Task 5: Apply Terraform", "status": "pending", "blockedBy": [3, 4]},
-    {"id": 6, "subject": "Task 6: Restore dev DB + inject secrets", "status": "pending", "blockedBy": [5]},
-    {"id": 7, "subject": "Task 7: Clone dev DB to prod", "status": "pending", "blockedBy": [6]},
-    {"id": 8, "subject": "Task 8: Update Firebase configuration", "status": "pending"},
-    {"id": 9, "subject": "Task 9: Add pre-migration backup to prod workflow", "status": "pending"},
-    {"id": 10, "subject": "Task 10: Update GitHub environment variables", "status": "pending", "blockedBy": [5]},
-    {"id": 11, "subject": "Task 11: Deploy dev + verify", "status": "pending", "blockedBy": [6, 8, 9, 10]},
-    {"id": 12, "subject": "Task 12: Initial prod deploy + verify", "status": "pending", "blockedBy": [11]},
-    {"id": 13, "subject": "Task 13: Update documentation", "status": "pending", "blockedBy": [12]},
-    {"id": 14, "subject": "Task 14: Cleanup old databases", "status": "pending", "blockedBy": [12]}
+    {"id": 1, "subject": "Task 1: Create Terraform environment module structure", "status": "completed", "lastUpdated": "2026-03-10T10:00:00Z"},
+    {"id": 2, "subject": "Task 2: Refactor root Terraform to use modules", "status": "completed", "lastUpdated": "2026-03-10T10:05:00Z"},
+    {"id": 3, "subject": "Task 3: Terraform state migration", "status": "completed", "lastUpdated": "2026-03-10T10:10:00Z"},
+    {"id": 4, "subject": "Task 4: Backup dev database", "status": "completed", "lastUpdated": "2026-03-10T10:10:00Z"},
+    {"id": 5, "subject": "Task 5: Apply Terraform", "status": "completed", "lastUpdated": "2026-03-10T10:15:00Z"},
+    {"id": 6, "subject": "Task 6: Restore dev DB + inject secrets", "status": "completed", "lastUpdated": "2026-03-10T10:20:00Z"},
+    {"id": 7, "subject": "Task 7: Clone dev DB to prod", "status": "completed", "lastUpdated": "2026-03-10T10:25:00Z"},
+    {"id": 8, "subject": "Task 8: Update Firebase configuration", "status": "completed", "lastUpdated": "2026-03-10T10:00:00Z"},
+    {"id": 9, "subject": "Task 9: Add pre-migration backup to prod workflow", "status": "completed", "lastUpdated": "2026-03-10T10:00:00Z"},
+    {"id": 10, "subject": "Task 10: Update GitHub environment variables", "status": "completed", "lastUpdated": "2026-03-10T10:18:00Z"},
+    {"id": 11, "subject": "Task 11: Deploy dev + verify", "status": "completed", "lastUpdated": "2026-03-10T10:26:00Z"},
+    {"id": 12, "subject": "Task 12: Initial prod deploy + verify", "status": "completed", "lastUpdated": "2026-03-10T10:34:00Z"},
+    {"id": 13, "subject": "Task 13: Update documentation", "status": "completed", "lastUpdated": "2026-03-10T10:40:00Z"},
+    {"id": 14, "subject": "Task 14: Cleanup old databases", "status": "pending", "blockedBy": [12], "note": "Wait 1+ day before cleanup"}
   ],
-  "lastUpdated": "2026-03-10T00:00:00Z"
+  "lastUpdated": "2026-03-10T10:40:00Z"
 }

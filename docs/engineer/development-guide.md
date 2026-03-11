@@ -94,7 +94,7 @@ Use **Option 1** for local development. Option 2 is for Cloud Run deployments.
 Local development example:
 
 ```dotenv
-DATABASE_URL=postgresql://aha_sicu:password@localhost:5432/aha_sicu_dev
+DATABASE_URL=postgresql://aha_sicu:password@localhost:5432/aha_coms_sicu_dev
 ```
 
 #### Firebase Admin SDK

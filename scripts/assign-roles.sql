@@ -2,14 +2,14 @@
 --
 -- Provisioning Process:
 --   1. Run provision-users.py to create Firebase Auth accounts
---   2. Have ALL users log in once at the app URL (dev: https://aha-sicu-dev.web.app)
+--   2. Have ALL users log in once at the app URL (dev: https://aha-coms-sicu-dev.web.app)
 --      (the backend auto-creates user records with role='member' on first login)
 --   3. Replace the placeholder UIDs below with real UIDs from provision-users.py output
 --   4. Run this script against the production Neon PostgreSQL database:
 --      psql $DATABASE_URL -f scripts/assign-roles.sql
 --
 -- DATABASE_URL can be retrieved from Secret Manager:
---   gcloud secrets versions access latest --secret=aha_sicu_prod_db_url
+--   gcloud secrets versions access latest --secret=aha_coms_sicu_prod_db_password
 --
 -- Role definitions:
 --   admin  — System owner, full access

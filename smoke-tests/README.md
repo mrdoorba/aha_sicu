@@ -13,22 +13,22 @@ npm install
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `SMOKE_BACKEND_URL` | Yes | Cloud Run backend URL (e.g., `https://aha-sicu-dev-api-xxx.run.app`) |
-| `SMOKE_FRONTEND_URL` | Yes | Firebase Hosting URL (e.g., `https://aha-sicu-dev.web.app`) |
+| `SMOKE_BACKEND_URL` | Yes | Cloud Run backend URL (e.g., `https://aha-coms-sicu-dev-api-xxx.run.app`) |
+| `SMOKE_FRONTEND_URL` | Yes | Firebase Hosting URL (e.g., `https://aha-coms-sicu-dev.web.app`) |
 | `SMOKE_AUTH_TOKEN` | No | Firebase JWT token for authenticated tests. Omit to skip auth tests. |
 
 ### Getting `SMOKE_BACKEND_URL`
 
 ```bash
-gcloud run services describe aha-sicu-dev-api \
-  --region=asia-southeast1 \
+gcloud run services describe aha-coms-sicu-dev-api \
+  --region=asia-southeast2 \
   --format="value(status.url)"
 ```
 
 ### Getting `SMOKE_FRONTEND_URL`
 
-- **Dev:** `https://aha-sicu-dev.web.app`
-- **Prod:** `https://aha-sicu-prod.web.app`
+- **Dev:** `https://aha-coms-sicu-dev.web.app`
+- **Prod:** `https://aha-coms-sicu-prod.web.app`
 
 ### Getting `SMOKE_AUTH_TOKEN`
 

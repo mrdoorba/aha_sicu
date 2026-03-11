@@ -10,8 +10,8 @@
 
 | Item | Details |
 |------|---------|
-| **Production Backend URL** | `https://aha-sicu-prod-api-<hash>.asia-southeast1.run.app` (get via `gcloud run services describe aha-sicu-prod-api --region=asia-southeast1 --format="value(status.url)"`) |
-| **Production Frontend URL** | `https://aha-sicu-prod.web.app` |
+| **Production Backend URL** | `https://aha-coms-sicu-prod-api-<hash>.asia-southeast2.run.app` (get via `gcloud run services describe aha-coms-sicu-prod-api --region=asia-southeast2 --format="value(status.url)"`) |
+| **Production Frontend URL** | `https://aha-coms-sicu-prod.web.app` |
 | **Test user credentials** | A valid Firebase Auth email/password account with access to the system |
 | **Sample CPC Ad Report CSV** | CSV file with CPC ad data for a test brand |
 | **Sample Keyword Report CSV** | CSV file with keyword report data |

@@ -1,5 +1,5 @@
 {
-  "name": "aha-sicu-smoke-tests",
+  "name": "aha-coms-sicu-smoke-tests",
   "version": "1.0.0",
   "private": true,
   "description": "Production smoke tests for AHA SICU application",

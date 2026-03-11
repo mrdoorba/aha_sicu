@@ -7,7 +7,7 @@
 #   GCP_REGION                – GCP region (asia-southeast2)
 #   WORKLOAD_IDENTITY_PROVIDER – Full WIF provider path from terraform output
 #   DEPLOY_SERVICE_ACCOUNT    – Deploy SA email from terraform output
-#   CLOUD_RUN_SERVICE         – Cloud Run service name (aha-sicu-dev-api / aha-sicu-prod-api)
+#   CLOUD_RUN_SERVICE         – Cloud Run service name (aha-coms-sicu-dev-api / aha-coms-sicu-prod-api)
 #   ARTIFACT_REGISTRY_URL     – Docker push URL from terraform output
 #   DB_SECRET_NAME            – Secret Manager secret name for database password
 #   CLOUD_SQL_INSTANCE_CONNECTION – Cloud SQL instance connection name (project:region:instance)

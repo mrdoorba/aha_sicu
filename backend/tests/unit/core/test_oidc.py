@@ -12,13 +12,13 @@ from app.core.oidc import verify_oidc_token
 async def test_verify_oidc_token_valid():
     """Test successful OIDC token verification."""
     mock_claims = {
-        "email": "aha-sicu-scheduler-sa@project.iam.gserviceaccount.com",
+        "email": "aha-coms-sicu-dev-sched-sa@project.iam.gserviceaccount.com",
         "iss": "https://accounts.google.com",
         "aud": "https://api.example.com",
     }
     with patch("app.core.oidc.id_token.verify_oauth2_token", return_value=mock_claims):
         result = await verify_oidc_token("valid-oidc-token")
-        assert result["email"] == "aha-sicu-scheduler-sa@project.iam.gserviceaccount.com"
+        assert result["email"] == "aha-coms-sicu-dev-sched-sa@project.iam.gserviceaccount.com"
         assert result["issuer"] == "https://accounts.google.com"
 
 

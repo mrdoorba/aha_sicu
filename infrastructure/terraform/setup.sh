@@ -116,9 +116,10 @@ echo ""
 info "Checking Secret Manager versions..."
 
 SECRETS=(
-  "aha_sicu_${ENV}_db_url"
-  "aha_sicu_${ENV}_gsheets_credentials"
-  "aha_sicu_${ENV}_firebase_admin"
+  "aha_coms_sicu_${ENV}_db_password"
+  "aha_coms_sicu_${ENV}_gsheets_credentials"
+  "aha_coms_sicu_${ENV}_firebase_admin"
+  "aha_coms_sicu_${ENV}_smtp_password"
 )
 
 SECRETS_NEEDING_VALUES=()

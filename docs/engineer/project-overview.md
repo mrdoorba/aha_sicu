@@ -76,8 +76,8 @@ flowchart TD
 
 | Environment | Frontend | Backend |
 |-------------|----------|---------|
-| **Production** | [aha-sicu-prod.web.app](https://aha-sicu-prod.web.app) | Cloud Run (asia-southeast2) |
-| **Staging** | [aha-sicu-dev.web.app](https://aha-sicu-dev.web.app) | Cloud Run (asia-southeast2) |
+| **Production** | [aha-coms-sicu-prod.web.app](https://aha-coms-sicu-prod.web.app) | Cloud Run (asia-southeast2) |
+| **Staging** | [aha-coms-sicu-dev.web.app](https://aha-coms-sicu-dev.web.app) | Cloud Run (asia-southeast2) |
 
 CORS is configured to allow requests from both Firebase Hosting domains (`*.web.app` and `*.firebaseapp.com`) as well as local development servers (`localhost:5173`, `localhost:4173`).
 

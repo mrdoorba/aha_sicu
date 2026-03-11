@@ -234,7 +234,7 @@ def test_post_sync_with_oidc_token_returns_200(client):
         )
         # OIDC succeeds
         mock_oidc.return_value = {
-            "email": "aha-sicu-scheduler-sa@project.iam.gserviceaccount.com",
+            "email": "aha-coms-sicu-dev-sched-sa@project.iam.gserviceaccount.com",
             "issuer": "https://accounts.google.com",
         }
 
@@ -293,7 +293,7 @@ def test_post_sync_oidc_rejected_when_email_not_in_allowlist(client):
             "email": "unauthorized-sa@project.iam.gserviceaccount.com",
             "issuer": "https://accounts.google.com",
         }
-        mock_settings.allowed_scheduler_emails = "aha-sicu-scheduler-sa@project.iam.gserviceaccount.com"
+        mock_settings.allowed_scheduler_emails = "aha-coms-sicu-dev-sched-sa@project.iam.gserviceaccount.com"
 
         response = client.post(
             "/api/v1/sync",
@@ -325,7 +325,7 @@ def test_post_sync_oidc_skips_db_user_lookup(client):
             code="AUTH_TOKEN_INVALID", detail="Token validation failed"
         )
         mock_oidc.return_value = {
-            "email": "aha-sicu-scheduler-sa@project.iam.gserviceaccount.com",
+            "email": "aha-coms-sicu-dev-sched-sa@project.iam.gserviceaccount.com",
             "issuer": "https://accounts.google.com",
         }
 
