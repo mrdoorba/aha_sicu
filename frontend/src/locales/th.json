@@ -530,8 +530,8 @@
   "scoring.avgStockTop20.fail": "❌ สต็อกเฉลี่ย Top 20% SKU = {{value}} [ต้องปรับปรุง, เป้าหมาย: >={{threshold}}]",
   "scoring.stockAvailability.pass": "✔️ ความพร้อมสต็อก = {{value}} หมดสต็อก [ดี]",
   "scoring.stockAvailability.fail": "❌ ความพร้อมสต็อก = {{value}} หมดสต็อก [ต้องปรับปรุง, เป้าหมาย: <={{threshold}}%]",
-  "scoring.discountCheckup.pass": "✔️ การตรวจสอบส่วนลด [ไม่พบส่วนลดปลอม]",
-  "scoring.discountCheckup.fail": "❌ การตรวจสอบส่วนลด [ตรวจพบส่วนลดปลอม]",
+  "scoring.discountCheckup.pass": "% ส่วนลด TOP SKU: {{discountPct}}\nช่วง: {{rangeMin}} ~ {{rangeMax}}\nคูปอง {{voucherPct}}\nแพ็คเกจส่วนลด {{paketPct}}",
+  "scoring.discountCheckup.fail": "% ส่วนลด TOP SKU: {{discountPct}}\nช่วง: {{rangeMin}} ~ {{rangeMax}}\nคูปอง {{voucherPct}}\nแพ็คเกจส่วนลด {{paketPct}}\n📌 อาจมีการใช้ 'fake discount'",
 
   "conclusion.salesRange": "รายได้ร้านค้าอยู่ในช่วง {{min}} ล้าน - {{max}} ล้านต่อเดือนในช่วง 6 เดือนที่ผ่านมา",
   "conclusion.operationalGood": "สุขภาพการดำเนินงานร้านค้าอยู่ในเกณฑ์ดี",

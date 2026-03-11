@@ -530,8 +530,8 @@
   "scoring.avgStockTop20.fail": "❌ Rata² Stok TOP 20% SKU = {{value}} [Kurang Baik, nilai disarankan: >={{threshold}}]",
   "scoring.stockAvailability.pass": "✔️ % Ketersediaan Stok = {{value}} stok habis [Sudah Baik]",
   "scoring.stockAvailability.fail": "❌ % Ketersediaan Stok = {{value}} stok habis [Kurang Baik, nilai disarankan: ≤{{threshold}}%]",
-  "scoring.discountCheckup.pass": "✔️ Discount Check Up [Tidak ada fake discount terdeteksi]",
-  "scoring.discountCheckup.fail": "❌ Discount Check Up [Berpotensi menggunakan fake discount]",
+  "scoring.discountCheckup.pass": "% Diskon TOP SKU: {{discountPct}}\nRange: {{rangeMin}} ~ {{rangeMax}}\nVoucher {{voucherPct}}\nPaket Diskon {{paketPct}}",
+  "scoring.discountCheckup.fail": "% Diskon TOP SKU: {{discountPct}}\nRange: {{rangeMin}} ~ {{rangeMax}}\nVoucher {{voucherPct}}\nPaket Diskon {{paketPct}}\n📌 Berpotensi menggunakan 'fake discount'",
 
   "conclusion.salesRange": "Pendapatan toko dalam range {{min}} juta - {{max}} juta per bulan selama 6 bulan terakhir",
   "conclusion.operationalGood": "Kesehatan operasional toko dalam kondisi baik",

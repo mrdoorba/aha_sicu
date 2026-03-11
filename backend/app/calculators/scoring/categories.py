@@ -657,11 +657,28 @@ def _score_discount_row(calculator_results: dict, rules: dict | None = None) -> 
     h73 = pts_flag if fake_flag else pts_no_flag
     f73 = "❌" if fake_flag else "✔️"
 
+    # Extract structured details for i18n
+    discount_pct = str(disc_details.get("discount_pct", "0.0%"))
+    range_min = str(disc_details.get("range_min", "0.0%"))
+    range_max = str(disc_details.get("range_max", "0.0%"))
+    voucher_pct = str(disc_details.get("voucher_pct", "0.0%"))
+    paket_pct = str(disc_details.get("paket_pct", "0.0%"))
+
+    i18n_key = "scoring.discountCheckup.fail" if fake_flag else "scoring.discountCheckup.pass"
+    i18n_vars = {
+        "discountPct": discount_pct,
+        "rangeMin": range_min,
+        "rangeMax": range_max,
+        "voucherPct": voucher_pct,
+        "paketPct": paket_pct,
+    }
+
     row = RowScore(
         row=73, metric="Discount Check Up",
         value=disc_output, benchmark="-", verdict=f73,
-        message="", score=h73,
+        message=disc_output, score=h73,
         metric_i18n=TranslatableText(key="scoring.discountCheckup", vars={}),
+        message_i18n=TranslatableText(key=i18n_key, vars=i18n_vars),
     )
     return CategoryScore(
         category="Discount",

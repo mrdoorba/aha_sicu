@@ -530,8 +530,8 @@
   "scoring.avgStockTop20.fail": "❌ Avg Stock Top 20% SKU = {{value}} [Needs Improvement, target: >={{threshold}}]",
   "scoring.stockAvailability.pass": "✔️ Stock Availability = {{value}} out of stock [Good]",
   "scoring.stockAvailability.fail": "❌ Stock Availability = {{value}} out of stock [Needs Improvement, target: <={{threshold}}%]",
-  "scoring.discountCheckup.pass": "✔️ Discount Check Up [No fake discounts detected]",
-  "scoring.discountCheckup.fail": "❌ Discount Check Up [Fake discount detected]",
+  "scoring.discountCheckup.pass": "% Discount TOP SKU: {{discountPct}}\nRange: {{rangeMin}} ~ {{rangeMax}}\nVoucher {{voucherPct}}\nDiscount Bundle {{paketPct}}",
+  "scoring.discountCheckup.fail": "% Discount TOP SKU: {{discountPct}}\nRange: {{rangeMin}} ~ {{rangeMax}}\nVoucher {{voucherPct}}\nDiscount Bundle {{paketPct}}\n📌 Potentially using 'fake discount'",
 
   "conclusion.salesRange": "Store revenue in the range of {{min}} million - {{max}} million per month over the last 6 months",
   "conclusion.operationalGood": "Store operational health is in good condition",
