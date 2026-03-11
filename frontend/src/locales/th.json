@@ -466,7 +466,7 @@
   "scoring.competitionProduct": "สินค้าแข่งขัน",
   "scoring.competitionProduct.pass": "{{name}} (IDR {{sellingPrice}}) = ✅[แข่งขันได้]",
   "scoring.competitionProduct.fail": "{{name}} (IDR {{sellingPrice}}) = ❌[ไม่แข่งขัน (ช่วงราคาตลาด: IDR {{marketPrice}})]",
-  "scoring.avgStockTop20": "สต็อกเฉลี่ย Top 20",
+  "scoring.avgStockTop20": "สต็อกเฉลี่ย Top 20% SKU",
   "scoring.stockAvailability": "ความพร้อมของสต็อก",
   "scoring.discountCheckup": "การตรวจสอบส่วนลด",
 

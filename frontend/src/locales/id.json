@@ -466,7 +466,7 @@
   "scoring.competitionProduct": "Produk Kompetisi",
   "scoring.competitionProduct.pass": "{{name}} (IDR {{sellingPrice}}) = ✅[kompetitif]",
   "scoring.competitionProduct.fail": "{{name}} (IDR {{sellingPrice}}) = ❌[tidak kompetitif (harga kisaran pasaran: IDR {{marketPrice}})]",
-  "scoring.avgStockTop20": "Rata-rata Stok Top 20",
+  "scoring.avgStockTop20": "Rata-rata Stok Top 20% SKU",
   "scoring.stockAvailability": "Ketersediaan Stok",
   "scoring.discountCheckup": "Checkup Diskon",
 

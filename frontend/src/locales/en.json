@@ -466,7 +466,7 @@
   "scoring.competitionProduct": "Competition Product",
   "scoring.competitionProduct.pass": "{{name}} (IDR {{sellingPrice}}) = ✅[competitive]",
   "scoring.competitionProduct.fail": "{{name}} (IDR {{sellingPrice}}) = ❌[not competitive (market price range: IDR {{marketPrice}})]",
-  "scoring.avgStockTop20": "Avg Stock Top 20",
+  "scoring.avgStockTop20": "Avg Stock Top 20% SKU",
   "scoring.stockAvailability": "Stock Availability",
   "scoring.discountCheckup": "Discount Checkup",
 
