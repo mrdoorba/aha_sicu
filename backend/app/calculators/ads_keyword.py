@@ -25,6 +25,28 @@ class AdsKeywordResult:
 
 
 # ---------------------------------------------------------------------------
+# i18n value mapping — CSV Indonesian values → i18n keys for $t() resolution
+# ---------------------------------------------------------------------------
+
+_VALUE_I18N_KEYS: dict[str, str] = {
+    "Iklan Produk": "ads.value.iklanProduk",
+    "Iklan Toko": "ads.value.iklanToko",
+    "Semua Penempatan": "ads.value.semuaPenempatan",
+    "Halaman Pencarian": "ads.value.halamanPencarian",
+    "Halaman Rekomendasi": "ads.value.halamanRekomendasi",
+    "Bidding Otomatis": "ads.value.biddingOtomatis",
+    "Bidding Manual": "ads.value.biddingManual",
+    "GMV Max Auto": "ads.value.gmvMaxAuto",
+    "GMV Max ROAS": "ads.value.gmvMaxRoas",
+}
+
+
+def _i18n_value(raw: str) -> str:
+    """Return i18n key for a known CSV value, or the raw string."""
+    return _VALUE_I18N_KEYS.get(raw, raw)
+
+
+# ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
 
@@ -427,8 +449,9 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any
                         "name": clean_name(_safe_str(ad.get("Nama Iklan"))),
                         "gmv": _format_idr(_safe_num(ad.get("Omzet Penjualan"))),
                         "roas": _format_roas(_safe_num(ad.get("Efektifitas Iklan"))),
-                        "bidding": _safe_str(ad.get("Mode Bidding")),
-                        "placement": f"{_safe_str(ad.get('Jenis Iklan'))} {_safe_str(ad.get('Penempatan Iklan'))}",
+                        "biddingKey": _i18n_value(_safe_str(ad.get("Mode Bidding"))),
+                        "jenisKey": _i18n_value(_safe_str(ad.get("Jenis Iklan"))),
+                        "penempatanKey": _i18n_value(_safe_str(ad.get("Penempatan Iklan"))),
                         "keyword": _safe_str(ad.get("Kata Pencarian/Penempatan")),
                     },
                 }
@@ -521,8 +544,9 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any
                         "name": clean_name(_safe_str(ad.get("Nama Iklan"))),
                         "cost": _format_idr(_safe_num(ad.get("Biaya"))),
                         "roas": _format_roas(_safe_num(ad.get("Efektifitas Iklan"))),
-                        "bidding": _safe_str(ad.get("Mode Bidding")),
-                        "placement": f"{_safe_str(ad.get('Jenis Iklan'))} {_safe_str(ad.get('Penempatan Iklan'))}",
+                        "biddingKey": _i18n_value(_safe_str(ad.get("Mode Bidding"))),
+                        "jenisKey": _i18n_value(_safe_str(ad.get("Jenis Iklan"))),
+                        "penempatanKey": _i18n_value(_safe_str(ad.get("Penempatan Iklan"))),
                         "keyword": _safe_str(ad.get("Kata Pencarian/Penempatan")),
                     },
                 }
