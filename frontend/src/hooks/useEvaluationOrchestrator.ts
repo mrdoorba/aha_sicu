@@ -51,7 +51,7 @@ export function useEvaluationOrchestrator(brandId: number) {
   }, [brand]);
 
   // --- Calculator ---
-  const { data: calculatorResultsData } = useCalculatorResults(brandId);
+  useCalculatorResults(brandId);
   const runAllMutation = useRunAllCalculators(brandId);
 
   const recalculateAll = useCallback(async () => {
