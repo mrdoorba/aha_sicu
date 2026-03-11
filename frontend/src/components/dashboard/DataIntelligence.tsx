@@ -13,8 +13,27 @@ function formatIDR(value: unknown): string {
   return value.toLocaleString('en-US');
 }
 
-function AdsContent({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
+function AdsContent({ data, t }: { data: Record<string, unknown>; t: (key: string, vars?: Record<string, string>) => string }) {
   const text = (data.output_text as string) || '';
+  const details = data.details as Record<string, unknown> | undefined;
+
+  // If i18n data exists, render translated sections
+  if (details?.ak2_i18n) {
+    const renderSection = (i18n: { key: string; vars: Record<string, string> } | undefined) => {
+      if (!i18n) return null;
+      return <p>{t(i18n.key, i18n.vars)}</p>;
+    };
+
+    return (
+      <div className="whitespace-pre-wrap rounded-lg bg-muted/50 p-4 text-sm font-mono border border-border/50 space-y-2">
+        {renderSection(details.ak2_i18n as { key: string; vars: Record<string, string> })}
+        {renderSection(details.ak3_i18n as { key: string; vars: Record<string, string> })}
+        {renderSection(details.ak4_i18n as { key: string; vars: Record<string, string> })}
+      </div>
+    );
+  }
+
+  // Fallback to raw text
   if (!text) return <p className="text-sm text-muted-foreground py-6 text-center">{t('common.noData')}</p>;
   return <pre className="whitespace-pre-wrap rounded-lg bg-muted/50 p-4 text-sm font-mono border border-border/50">{text}</pre>;
 }
