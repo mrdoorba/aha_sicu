@@ -84,9 +84,9 @@ export const SyncStatus = () => {
               </Badge>
             )}
             {syncStatus?.status === 'failed' && (
-              <Badge variant="destructive">
-                <XCircle className="size-3" aria-hidden="true" />
-                {t('sync.lastFailed', { error: syncStatus.error_message })}
+              <Badge variant="destructive" className="max-w-md truncate">
+                <XCircle className="size-3 shrink-0" aria-hidden="true" />
+                <span className="truncate">{t('sync.lastFailed', { error: syncStatus.error_message })}</span>
               </Badge>
             )}
           </div>
