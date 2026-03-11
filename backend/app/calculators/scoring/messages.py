@@ -98,7 +98,7 @@ def _generate_business_messages(cat: CategoryScore, manual_data: dict, rules: di
                 row.message = _format_message_template(tmpl, idr_val=idr_val, change_pct=change_pct_str, idr_avg=idr_avg)
                 row.message_i18n = TranslatableText(
                     key="scoring.monthlySales.pass",
-                    vars={"value": idr_val, "changePct": change_pct_str, "average": idr_avg},
+                    vars={"value": idr_val, "changePct": change_pct_str, "avg": idr_avg},
                 )
             else:
                 tmpl = _get_rule_value(biz_rules, "monthly_sales_trend", "message_fail",
@@ -111,7 +111,7 @@ def _generate_business_messages(cat: CategoryScore, manual_data: dict, rules: di
                 row.message = msg
                 row.message_i18n = TranslatableText(
                     key="scoring.monthlySales.fail",
-                    vars={"value": idr_val, "changePct": change_pct_str, "average": idr_avg},
+                    vars={"value": idr_val, "changePct": change_pct_str, "avg": idr_avg},
                 )
         elif row.row == 20:
             val_str = f"{row.value:.1f}%"
@@ -192,12 +192,13 @@ def _generate_promo_messages(cat: CategoryScore, manual_data: dict, rules: dict 
             pct_of_sales = d_value / d13 if d13 > 0 else 0.0
             pct_str = _fmt_pct_1dp(pct_of_sales)
 
+            metric_key = f"scoring.promo.{field_key}"
             if d_value == 0:
                 tmpl = indiv.get("message_zero", "{verdict} {metric} nil pendapatan")
                 row.message = _format_message_template(tmpl, verdict=row.verdict, metric=row.metric)
                 row.message_i18n = TranslatableText(
-                    key=f"scoring.promo.{field_key}.noData",
-                    vars={"value": pct_str},
+                    key="scoring.promoIndividual.zero",
+                    vars={"verdict": row.verdict, "metricKey": metric_key},
                 )
             elif row.row == PROMO_START_ROW and d13 > 0 and d_value / d13 >= 0.50:
                 # "Terlalu mengandalkan promo" only applies to Promo Toko (row 31)
@@ -205,29 +206,33 @@ def _generate_promo_messages(cat: CategoryScore, manual_data: dict, rules: dict 
                     "{verdict} {metric} = {pct_str} [Terlalu mengandalkan promo, nilai disarankan: 15%-50%]")
                 row.message = _format_message_template(tmpl, verdict=row.verdict, metric=row.metric, pct_str=pct_str)
                 row.message_i18n = TranslatableText(
-                    key=f"scoring.promo.{field_key}.fail",
-                    vars={"value": pct_str},
+                    key="scoring.promoIndividual.dependent",
+                    vars={"verdict": row.verdict, "metricKey": metric_key, "pct": pct_str},
                 )
             elif row.verdict == "❌":
                 tmpl = indiv.get("message_fail",
                     "❌ {metric} = {pct_str} [Kurang Efektif, nilai disarankan: {benchmark}]")
                 row.message = _format_message_template(tmpl, metric=row.metric, pct_str=pct_str, benchmark=row.benchmark)
                 row.message_i18n = TranslatableText(
-                    key=f"scoring.promo.{field_key}.fail",
-                    vars={"value": pct_str, "benchmark": row.benchmark},
+                    key="scoring.promoIndividual.fail",
+                    vars={"metricKey": metric_key, "pct": pct_str, "benchmark": row.benchmark},
                 )
             elif row.verdict == "✔️":
                 if row.metric == "Program Afiliasi":
                     tmpl = indiv.get("message_pass_afiliasi", "✔️ {metric} ({pct_str}) digunakan")
                     row.message = _format_message_template(tmpl, metric=row.metric, pct_str=pct_str)
+                    row.message_i18n = TranslatableText(
+                        key="scoring.promoIndividual.passAffiliate",
+                        vars={"metricKey": metric_key, "pct": pct_str},
+                    )
                 else:
                     tmpl = indiv.get("message_pass",
                         "✔️ {metric} ({pct_str}) digunakan & persentase penggunaan baik")
                     row.message = _format_message_template(tmpl, metric=row.metric, pct_str=pct_str)
-                row.message_i18n = TranslatableText(
-                    key=f"scoring.promo.{field_key}.pass",
-                    vars={"value": pct_str},
-                )
+                    row.message_i18n = TranslatableText(
+                        key="scoring.promoIndividual.pass",
+                        vars={"metricKey": metric_key, "pct": pct_str},
+                    )
 
         elif row.row == 42:
             val_str = _fmt_pct_0dp(row.value) if isinstance(row.value, float) else str(row.value)
@@ -357,8 +362,8 @@ def _generate_ads_messages(
                     "❌ [Iklan tidak aktif sama sekali]")
                 row.message = _format_message_template(tmpl)
                 row.message_i18n = TranslatableText(
-                    key="scoring.adsGMVPct.noData",
-                    vars={"value": pct_str},
+                    key="scoring.adsGMVPct.noAds",
+                    vars={},
                 )
             elif row.verdict == "✔️":
                 tmpl = _get_rule_value(ads_rules, "gmv_ratio_threshold", "message_pass",
@@ -387,8 +392,8 @@ def _generate_ads_messages(
                     "❌ [Iklan tidak aktif sama sekali]")
                 row.message = _format_message_template(tmpl)
                 row.message_i18n = TranslatableText(
-                    key="scoring.adsCostPct.noData",
-                    vars={"value": pct_str},
+                    key="scoring.adsCostPct.noAds",
+                    vars={},
                 )
             elif d52 < 0.05:
                 tmpl = _get_rule_value(ads_rules, "cost_ratio_range", "message_too_minimal",
@@ -396,8 +401,8 @@ def _generate_ads_messages(
                 row.message = _format_message_template(tmpl, pct_str=pct_str,
                     min=str(int(cost_min)), max=str(int(cost_max)))
                 row.message_i18n = TranslatableText(
-                    key="scoring.adsCostPct.fail",
-                    vars={"value": pct_str, "threshold": threshold},
+                    key="scoring.adsCostPct.tooMinimal",
+                    vars={"value": pct_str, "min": str(int(cost_min)), "max": str(int(cost_max))},
                 )
             elif row.verdict == "❌":
                 tmpl = _get_rule_value(ads_rules, "cost_ratio_range", "message_fail",
