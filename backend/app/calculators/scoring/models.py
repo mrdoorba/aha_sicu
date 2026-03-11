@@ -7,6 +7,14 @@ from typing import Any
 
 
 @dataclass
+class TranslatableText:
+    """Structured data for frontend i18n rendering."""
+
+    key: str                         # i18n translation key
+    vars: dict[str, str]             # interpolation variables
+
+
+@dataclass
 class RowScore:
     """Score for a single metric row."""
 
