@@ -87,6 +87,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
       message: string;
       score: number;
       metric_i18n?: { key: string; vars: Record<string, string> } | null;
+      value_i18n?: { key: string; vars: Record<string, string> } | null;
       message_i18n?: { key: string; vars: Record<string, string> } | null;
       benchmark_i18n?: { key: string; vars: Record<string, string> } | null;
     }>) || []).filter((r) => r.metric !== 'Iklan check up'),
