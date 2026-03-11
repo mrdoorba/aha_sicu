@@ -35,11 +35,13 @@ vi.mock('../hooks/useSaveEvaluation', () => ({
   useSaveEvaluation: (...args: unknown[]) => mockUseSaveEvaluation(...args),
 }));
 
+const mockUseRunAllCalculators = vi.fn();
+
 vi.mock('../hooks/useCalculator', () => ({
   useCalculatorResults: (...args: unknown[]) => mockUseCalculatorResults(...args),
   useCalculatorStatus: () => ({ data: null }),
   useRunCalculator: () => ({ mutate: vi.fn(), isPending: false }),
-  useRunAllCalculators: () => ({ mutate: vi.fn(), isPending: false }),
+  useRunAllCalculators: (...args: unknown[]) => mockUseRunAllCalculators(...args),
   useAutoCalcErrors: () => [],
 }));
 
@@ -90,9 +92,11 @@ function setupMocks() {
   mockUseScoring.mockReturnValue({
     generateScore: vi.fn(),
     scoringResult: null,
+    lastPeriod: '',
     isStale: false,
     markStale: vi.fn(),
     isGenerating: false,
+    scoringStep: 'idle',
     error: null,
   });
   mockUseSaveEvaluation.mockReturnValue({
@@ -104,6 +108,11 @@ function setupMocks() {
   });
   mockUseCalculatorResults.mockReturnValue({
     data: { brand_id: 1, results: [] },
+  });
+  mockUseRunAllCalculators.mockReturnValue({
+    mutate: vi.fn(),
+    mutateAsync: vi.fn().mockResolvedValue({ results: [] }),
+    isPending: false,
   });
 }
 
@@ -180,40 +189,56 @@ describe('EvaluationPage', () => {
   it('assembles correct save payload from scoring and calculator data', async () => {
     setupMocks();
 
-    const mockSaveEvaluation = vi.fn();
+    const scoringData = {
+      total_score: 75.5,
+      category_scores: [
+        { category: 'Operational', score: 8.0, max_score: 10.0, rows: [], available: true },
+      ],
+      verdict: '✔️',
+      template: 'fashion',
+      email_body: 'Dear Store,\nScore: 75.5',
+      conclusion: 'Approved',
+      marketing_estimation: '10%',
+      marketing_percentage: '10%',
+      marketing_budget: 'IDR 1,000,000',
+      closing_message: 'Thank you',
+      email_subject: 'Result',
+      rule_version: 3,
+    };
+
+    const mockSaveEvaluation = vi.fn((_payload, opts) => {
+      opts?.onSuccess?.();
+    });
+
+    // Need category_type set for the chained save guard
+    mockUseEvaluationState.mockReturnValue({
+      data: { brand_id: 1, category_type: 'fashion', manual_data: null, updated_at: null },
+    });
+
+    // generateScore must invoke onSuccess with scoring data
     mockUseScoring.mockReturnValue({
-      generateScore: vi.fn(),
-      scoringResult: {
-        total_score: 75.5,
-        category_scores: [
-          { category: 'Operational', score: 8.0, max_score: 10.0, rows: [], available: true },
-        ],
-        verdict: '✔️',
-        template: 'fashion',
-        email_body: 'Dear Store,\nScore: 75.5',
-        conclusion: 'Approved',
-        marketing_estimation: '10%',
-        marketing_percentage: '10%',
-        marketing_budget: 'IDR 1,000,000',
-        closing_message: 'Thank you',
-        email_subject: 'Result',
-        rule_version: 3,
-      },
+      generateScore: vi.fn((_req, opts) => {
+        opts?.onSuccess?.(scoringData);
+      }),
+      scoringResult: scoringData,
+      lastPeriod: '',
       isStale: false,
       markStale: vi.fn(),
       isGenerating: false,
+      scoringStep: 'idle',
       error: null,
     });
 
-    mockUseCalculatorResults.mockReturnValue({
-      data: {
-        brand_id: 1,
-        results: [
-          { calculator_type: 'ads_keyword', output_text: 'Ads output', details: { keyword: 'test' }, calculated_at: '2026-02-11' },
-          { calculator_type: 'discount', output_text: 'Disc output', details: { flag: false }, calculated_at: '2026-02-11' },
-        ],
-      },
-    });
+    // Seed calculator results into the query cache
+    const calcResultsData = {
+      brand_id: 1,
+      results: [
+        { calculator_type: 'ads_keyword', output_text: 'Ads output', details: { keyword: 'test' }, calculated_at: '2026-02-11' },
+        { calculator_type: 'discount', output_text: 'Disc output', details: { flag: false }, calculated_at: '2026-02-11' },
+      ],
+    };
+    mockUseCalculatorResults.mockReturnValue({ data: calcResultsData });
+    queryClient.setQueryData(['calculatorResults', 1], calcResultsData);
 
     mockUseSaveEvaluation.mockReturnValue({
       saveEvaluation: mockSaveEvaluation,
@@ -229,7 +254,10 @@ describe('EvaluationPage', () => {
     const saveBtn = screen.getByRole('button', { name: /simpan evaluasi/i });
     await user.click(saveBtn);
 
-    expect(mockSaveEvaluation).toHaveBeenCalledOnce();
+    // Wait for the chained async flow to complete
+    await vi.waitFor(() => {
+      expect(mockSaveEvaluation).toHaveBeenCalledOnce();
+    });
     const [payload] = mockSaveEvaluation.mock.calls[0];
 
     expect(payload).toEqual(expect.objectContaining({
@@ -258,26 +286,40 @@ describe('EvaluationPage', () => {
   it('should include scoring_summary in calculator_results when saving', async () => {
     setupMocks();
 
-    const mockSaveEvaluation = vi.fn();
+    const scoringData = {
+      total_score: 60,
+      category_scores: [],
+      verdict: '❌',
+      template: 'non_fashion',
+      email_body: '',
+      conclusion: '- Finding A\n- Finding B',
+      marketing_estimation: '22.4% ~ 26.2%',
+      marketing_percentage: '24%',
+      marketing_budget: '',
+      closing_message: '',
+      email_subject: '',
+      rule_version: 1,
+    };
+
+    const mockSaveEvaluation = vi.fn((_payload, opts) => {
+      opts?.onSuccess?.();
+    });
+
+    // Need category_type set for the chained save guard
+    mockUseEvaluationState.mockReturnValue({
+      data: { brand_id: 1, category_type: 'non_fashion', manual_data: null, updated_at: null },
+    });
+
     mockUseScoring.mockReturnValue({
-      generateScore: vi.fn(),
-      scoringResult: {
-        total_score: 60,
-        category_scores: [],
-        verdict: '❌',
-        template: 'non_fashion',
-        email_body: '',
-        conclusion: '- Finding A\n- Finding B',
-        marketing_estimation: '22.4% ~ 26.2%',
-        marketing_percentage: '24%',
-        marketing_budget: '',
-        closing_message: '',
-        email_subject: '',
-        rule_version: 1,
-      },
+      generateScore: vi.fn((_req, opts) => {
+        opts?.onSuccess?.(scoringData);
+      }),
+      scoringResult: scoringData,
+      lastPeriod: '',
       isStale: false,
       markStale: vi.fn(),
       isGenerating: false,
+      scoringStep: 'idle',
       error: null,
     });
 
@@ -295,6 +337,9 @@ describe('EvaluationPage', () => {
     const saveBtn = screen.getByRole('button', { name: /simpan evaluasi/i });
     await user.click(saveBtn);
 
+    await vi.waitFor(() => {
+      expect(mockSaveEvaluation).toHaveBeenCalledOnce();
+    });
     const [payload] = mockSaveEvaluation.mock.calls[0];
     expect(payload.calculator_results.scoring_summary).toEqual({
       conclusion: '- Finding A\n- Finding B',

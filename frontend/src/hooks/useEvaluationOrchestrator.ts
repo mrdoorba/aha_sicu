@@ -1,14 +1,20 @@
 import { useState, useCallback, useMemo, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { useQueryClient } from '@tanstack/react-query';
 import { useBrandDetail } from './useBrandDetail';
 import { useEvaluationState, useSaveEvaluationInputs, type CategoryType } from './useEvaluation';
 import { useAutoSaveForm } from './useAutoSaveForm';
 import { computeSectionProgress } from '../components/evaluation/forms/formConfig';
 import { useScoring } from './useScoring';
+import type { ScoringResult } from './useScoring';
 import { useSaveEvaluation } from './useSaveEvaluation';
 import { useCalculatorResults, useRunAllCalculators } from './useCalculator';
+import type { CalculatorResultsListResponse } from './useCalculator';
 import { useRules } from './useRules';
 import { toast } from 'sonner';
+import { generatePeriodOptions } from '../components/evaluation/scoring/periodOptions';
+
+export type SaveStep = 'idle' | 'recalculating' | 'scoring' | 'saving';
 
 export function useEvaluationOrchestrator(brandId: number) {
   const { t } = useTranslation();
@@ -44,6 +50,14 @@ export function useEvaluationOrchestrator(brandId: number) {
     return null;
   }, [brand]);
 
+  // --- Calculator ---
+  const { data: calculatorResultsData } = useCalculatorResults(brandId);
+  const runAllMutation = useRunAllCalculators(brandId);
+
+  const recalculateAll = useCallback(async () => {
+    await runAllMutation.mutateAsync();
+  }, [runAllMutation]);
+
   // --- Scoring ---
   const {
     generateScore,
@@ -55,26 +69,19 @@ export function useEvaluationOrchestrator(brandId: number) {
     error: scoringError,
   } = useScoring(brandId, recalculateAll);
 
-  // --- Calculator ---
-  const { data: calculatorResultsData } = useCalculatorResults(brandId);
-  const runAllMutation = useRunAllCalculators(brandId);
-
-  const recalculateAll = useCallback(async () => {
-    await runAllMutation.mutateAsync();
-  }, [runAllMutation]);
-
   // --- Rules ---
   const { rules: rulesData } = useRules();
   const activeRules = rulesData.length > 0 ? rulesData[0].rules : undefined;
 
   // --- Save evaluation ---
+  const queryClient = useQueryClient();
   const {
     saveEvaluation,
-    isSaving,
     isSaved,
     error: saveError,
     reset: resetSave,
   } = useSaveEvaluation(brandId);
+  const [saveStep, setSaveStep] = useState<SaveStep>('idle');
 
   // Reset save state when evaluation data changes after a successful save
   // This re-enables the save button for multi-save workflow (AC #2)
@@ -87,51 +94,94 @@ export function useEvaluationOrchestrator(brandId: number) {
   }, [manualData, scoringResult]);
 
   // --- Handlers ---
-  const handleSaveEvaluation = useCallback(() => {
-    if (!scoringResult) return;
+  const handleSaveEvaluation = useCallback(async () => {
+    if (!evaluationState?.category_type) return;
 
-    const calcResults: Record<string, unknown> = {};
-    if (calculatorResultsData?.results) {
-      for (const r of calculatorResultsData.results) {
-        calcResults[r.calculator_type] = {
-          details: r.details,
-          output_text: r.output_text,
-        };
+    try {
+      // Step 1: Recalculate all
+      setSaveStep('recalculating');
+      await runAllMutation.mutateAsync();
+
+      // Step 2: Score
+      setSaveStep('scoring');
+      const scoringRequest = {
+        template: evaluationState.category_type as 'fashion' | 'non_fashion',
+        verdict: scoringResult?.verdict ?? '✔️',
+        store_name: brand?.brand_name ?? '',
+        period: lastPeriod || generatePeriodOptions()[0],
+        brand_name: brand?.brand_name ?? '',
+      };
+
+      const scoreResponse = await new Promise<ScoringResult>((resolve, reject) => {
+        generateScore(scoringRequest, {
+          onSuccess: resolve,
+          onError: (err: Error) => reject(err),
+        });
+      });
+
+      // Step 3: Save — use freshly fetched calculator results
+      setSaveStep('saving');
+
+      await queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });
+      const freshCalcData = queryClient.getQueryData<CalculatorResultsListResponse>(
+        ['calculatorResults', brandId],
+      );
+
+      const calcResults: Record<string, unknown> = {};
+      if (freshCalcData?.results) {
+        for (const r of freshCalcData.results) {
+          calcResults[r.calculator_type] = {
+            details: r.details,
+            output_text: r.output_text,
+          };
+        }
       }
+
+      calcResults['scoring_summary'] = {
+        conclusion: scoreResponse.conclusion,
+        conclusion_i18n: scoreResponse.conclusion_i18n,
+        marketing_estimation: scoreResponse.marketing_estimation,
+        marketing_budget: scoreResponse.marketing_budget,
+        marketing_budget_i18n: scoreResponse.marketing_budget_i18n,
+        closing_message: scoreResponse.closing_message,
+        closing_message_i18n: scoreResponse.closing_message_i18n,
+      };
+
+      await new Promise<void>((resolve, reject) => {
+        saveEvaluation(
+          {
+            template: scoreResponse.template as 'fashion' | 'non_fashion',
+            final_score: scoreResponse.total_score,
+            verdict: scoreResponse.verdict,
+            score_breakdown: scoreResponse.category_scores as unknown as Array<Record<string, unknown>>,
+            calculator_results: calcResults,
+            manual_inputs: manualData as unknown as Record<string, unknown>,
+            rule_version: scoreResponse.rule_version,
+            email_output: scoreResponse.email_body || null,
+            period: lastPeriod || generatePeriodOptions()[0],
+          },
+          {
+            onSuccess: () => {
+              toast.success(t('evaluation.saved'));
+              resolve();
+            },
+            onError: (err: Error) => {
+              toast.error(t('evaluation.saveFailed'));
+              reject(err);
+            },
+          },
+        );
+      });
+    } catch {
+      // Error toasts handled by individual steps
+    } finally {
+      setSaveStep('idle');
     }
-
-    calcResults['scoring_summary'] = {
-      conclusion: scoringResult.conclusion,
-      conclusion_i18n: scoringResult.conclusion_i18n,
-      marketing_estimation: scoringResult.marketing_estimation,
-      marketing_budget: scoringResult.marketing_budget,
-      marketing_budget_i18n: scoringResult.marketing_budget_i18n,
-      closing_message: scoringResult.closing_message,
-      closing_message_i18n: scoringResult.closing_message_i18n,
-    };
-
-    saveEvaluation(
-      {
-        template: scoringResult.template as 'fashion' | 'non_fashion',
-        final_score: scoringResult.total_score,
-        verdict: scoringResult.verdict,
-        score_breakdown: scoringResult.category_scores as unknown as Array<Record<string, unknown>>,
-        calculator_results: calcResults,
-        manual_inputs: manualData as unknown as Record<string, unknown>,
-        rule_version: scoringResult.rule_version,
-        email_output: scoringResult.email_body || null,
-        period: lastPeriod,
-      },
-      {
-        onSuccess: () => {
-          toast.success(t('evaluation.saved'));
-        },
-        onError: () => {
-          toast.error(t('evaluation.saveFailed'));
-        },
-      },
-    );
-  }, [scoringResult, calculatorResultsData, manualData, saveEvaluation, t, lastPeriod]);
+  }, [
+    evaluationState?.category_type, runAllMutation, scoringResult, brand,
+    lastPeriod, generateScore, queryClient, brandId, saveEvaluation,
+    manualData, t,
+  ]);
 
   const handleCategoryChange = useCallback(
     (value: string) => {
@@ -180,7 +230,8 @@ export function useEvaluationOrchestrator(brandId: number) {
 
     // Save evaluation
     handleSaveEvaluation,
-    isSaving,
+    isSaving: saveStep !== 'idle',
+    saveStep,
     isSaved,
     saveError,
 

@@ -179,7 +179,7 @@ describe('CalculatorResultsSection', () => {
 
     render(<CalculatorResultsSection brandId={1} />, { wrapper: createWrapper() });
 
-    const recalcBtn = screen.getByText('Recalculate All');
+    const recalcBtn = screen.getByText('Hitung Ulang Semua');
     await user.click(recalcBtn);
 
     expect(mockMutate).toHaveBeenCalledOnce();
@@ -224,8 +224,8 @@ describe('CalculatorResultsSection', () => {
     await user.click(calcButtons[0]);
     expect(mockCalcMutate).toHaveBeenCalledOnce();
 
-    // Should also show "Calculate All" (not "Recalculate All")
-    expect(screen.getByText('Calculate All')).toBeInTheDocument();
+    // Should also show "Hitung Semua" (not "Hitung Ulang Semua")
+    expect(screen.getByText('Hitung Semua')).toBeInTheDocument();
   });
 
   it('shows auto-calc error warning with Calculate button', async () => {

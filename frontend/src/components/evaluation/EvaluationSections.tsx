@@ -56,6 +56,7 @@ interface ScoringProps {
 interface SaveProps {
   onSaveEvaluation: () => void;
   isSaving: boolean;
+  saveStep?: 'idle' | 'recalculating' | 'scoring' | 'saving';
   isSaved: boolean;
   saveError: Error | null;
 }
@@ -91,6 +92,7 @@ export const EvaluationSections = ({
   scoringStep,
   onSaveEvaluation,
   isSaving,
+  saveStep,
   isSaved,
   saveError,
 }: EvaluationSectionsProps) => {
@@ -268,13 +270,17 @@ export const EvaluationSections = ({
         <div className="mt-6">
           <Button
             className="w-full"
-            disabled={!scoringResult || isSaving || isSaved}
+            disabled={!categoryType || isSaving || isSaved}
             onClick={onSaveEvaluation}
           >
             {isSaving ? (
               <>
                 <Loader2 className="mr-2 size-4 animate-spin" aria-hidden="true" />
-                {t('evaluationSections.saving')}
+                {saveStep === 'recalculating'
+                  ? t('evaluationSections.stepRecalculating')
+                  : saveStep === 'scoring'
+                    ? t('evaluationSections.stepScoring')
+                    : t('evaluationSections.stepSaving')}
               </>
             ) : isSaved ? (
               <>
@@ -288,9 +294,9 @@ export const EvaluationSections = ({
               </>
             )}
           </Button>
-          {!scoringResult && !isSaved && (
+          {!categoryType && !isSaved && (
             <p className="mt-1 text-center text-sm text-muted-foreground">
-              {t('evaluationSections.generateFirst')}
+              {t('scoring.selectCategory')}
             </p>
           )}
           {saveError && (

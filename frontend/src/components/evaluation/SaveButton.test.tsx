@@ -72,15 +72,16 @@ function renderWithProviders(ui: React.ReactElement) {
 }
 
 describe('Save Evaluation Button', () => {
-  it('is disabled when no scoring result', () => {
-    renderWithProviders(<EvaluationSections {...defaultProps} scoringResult={null} />);
+  it('is disabled when no category type', () => {
+    renderWithProviders(<EvaluationSections {...defaultProps} categoryType={null} />);
     const saveBtn = screen.getByRole('button', { name: /simpan evaluasi/i });
     expect(saveBtn).toBeDisabled();
   });
 
-  it('shows helper text when no scoring result', () => {
-    renderWithProviders(<EvaluationSections {...defaultProps} scoringResult={null} />);
-    expect(screen.getByText(/hitung skor terlebih dahulu/i)).toBeInTheDocument();
+  it('shows helper text when no category type', () => {
+    renderWithProviders(<EvaluationSections {...defaultProps} categoryType={null} />);
+    const matches = screen.getAllByText(/pilih tipe kategori/i);
+    expect(matches.length).toBeGreaterThanOrEqual(1);
   });
 
   it('is enabled when scoring result available', () => {
