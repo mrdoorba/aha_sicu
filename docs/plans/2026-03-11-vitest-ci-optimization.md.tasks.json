@@ -1,0 +1,10 @@
+{
+  "planPath": "docs/plans/2026-03-11-vitest-ci-optimization.md",
+  "tasks": [
+    {"id": 0, "subject": "Task 0: Add forks pool config to vite.config.ts", "status": "pending"},
+    {"id": 1, "subject": "Task 1: Split CI workflow into sharded frontend jobs", "status": "pending"},
+    {"id": 2, "subject": "Task 2: Verify sharding works locally", "status": "pending", "blockedBy": [0]},
+    {"id": 3, "subject": "Task 3: Push, verify CI, update branch protection", "status": "pending", "blockedBy": [1, 2]}
+  ],
+  "lastUpdated": "2026-03-11T03:00:00Z"
+}
