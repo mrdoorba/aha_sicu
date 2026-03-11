@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useCallback, useEffect } from 'react';
 import client from '../services/apiClient';
+import type { TranslatableText } from '../utils/renderTranslatable';
 
 export interface RowScore {
   row: number;
@@ -25,10 +26,13 @@ export interface ScoringResult {
   category_scores: CategoryScore[];
   verdict: string;
   conclusion: string;
+  conclusion_i18n?: TranslatableText[];
   marketing_estimation: string;
   marketing_percentage: string;
   marketing_budget: string;
+  marketing_budget_i18n?: TranslatableText;
   closing_message: string;
+  closing_message_i18n?: TranslatableText;
   email_subject: string;
   email_body: string;
   template: string;
