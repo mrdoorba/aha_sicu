@@ -480,30 +480,34 @@ def _generate_competition_messages(cat: CategoryScore, manual_data: dict, rules:
                 tmpl, name=product_name, selling_price=_fmt_idr(selling_price),
                 market_price=_fmt_idr(market_price),
             )
+            i18n_vars: dict[str, str] = {
+                "name": product_name,
+                "sellingPrice": _fmt_idr(selling_price),
+                "marketPrice": _fmt_idr(market_price),
+            }
             if link:
                 msg += f"\n↪{link}"
+                i18n_vars["link"] = link
             row.message = msg
             row.message_i18n = TranslatableText(
                 key="scoring.competitionProduct.fail",
-                vars={
-                    "name": product_name,
-                    "sellingPrice": _fmt_idr(selling_price),
-                    "marketPrice": _fmt_idr(market_price),
-                },
+                vars=i18n_vars,
             )
         elif row.verdict == "✔️":
             tmpl = comp_rules.get("message_pass", "{name} (IDR {selling_price}) = ✅[kompetitif]")
             msg = _format_message_template(
                 tmpl, name=product_name, selling_price=_fmt_idr(selling_price),
             )
+            i18n_vars = {
+                "name": product_name,
+                "sellingPrice": _fmt_idr(selling_price),
+            }
             if link:
                 msg += f"\n↪{link}"
+                i18n_vars["link"] = link
             row.message = msg
             row.message_i18n = TranslatableText(
                 key="scoring.competitionProduct.pass",
-                vars={
-                    "name": product_name,
-                    "sellingPrice": _fmt_idr(selling_price),
-                },
+                vars=i18n_vars,
             )
 

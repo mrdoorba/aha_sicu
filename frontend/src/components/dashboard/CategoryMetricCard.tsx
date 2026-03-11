@@ -19,7 +19,9 @@ interface CategoryMetricCardProps {
 export const CategoryMetricCard = ({ metric, value, benchmark, message, metric_i18n, value_i18n, message_i18n, benchmark_i18n }: CategoryMetricCardProps) => {
   const { t } = useTranslation();
   const displayMetric = renderTranslatable(metric, metric_i18n, t);
-  const displayMessage = renderTranslatable(message, message_i18n, t);
+  const translatedMessage = renderTranslatable(message, message_i18n, t);
+  const i18nLink = message_i18n?.vars?.link;
+  const displayMessage = i18nLink ? `${translatedMessage}\n↪${i18nLink}` : translatedMessage;
   const displayBenchmark = renderTranslatable(benchmark, benchmark_i18n, t);
 
   const displayValue = (() => {
