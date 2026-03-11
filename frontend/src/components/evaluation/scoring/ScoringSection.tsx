@@ -9,7 +9,7 @@ import { EmailOutput } from './EmailOutput';
 import { VerdictSelector } from './VerdictSelector';
 import { PeriodSelector } from './PeriodSelector';
 import { generatePeriodOptions } from './periodOptions';
-import type { ScoringResult } from '../../../hooks/useScoring';
+import type { ScoringResult, ScoringStep } from '../../../hooks/useScoring';
 
 interface ScoringSectionProps {
   onGenerate: (request: {
@@ -26,6 +26,7 @@ interface ScoringSectionProps {
   categoryType: string | null;
   storeName: string;
   brandName: string;
+  scoringStep?: ScoringStep;
 }
 
 export const ScoringSection = ({
@@ -37,6 +38,7 @@ export const ScoringSection = ({
   categoryType,
   storeName,
   brandName,
+  scoringStep = 'idle',
 }: ScoringSectionProps) => {
   const { t } = useTranslation();
   const [verdict, setVerdict] = useState('✔️');
@@ -86,9 +88,15 @@ export const ScoringSection = ({
               disabled={!canGenerate || isGenerating}
             >
               {isGenerating ? (
-                <RefreshCw className="mr-1 size-4 animate-spin" aria-hidden="true" />
-              ) : null}
-              {scoringResult && !isStale ? t('scoring.recalculate') : t('scoring.calculate')}
+                <>
+                  <RefreshCw className="mr-1 size-4 animate-spin" aria-hidden="true" />
+                  {scoringStep === 'recalculating'
+                    ? t('scoring.stepRecalculating')
+                    : t('scoring.stepScoring')}
+                </>
+              ) : (
+                scoringResult && !isStale ? t('scoring.recalculate') : t('scoring.calculate')
+              )}
             </Button>
           </div>
 

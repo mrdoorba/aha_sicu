@@ -86,6 +86,28 @@ describe('ScoringSection', () => {
     expect(screen.getByText(/email output/i)).toBeInTheDocument();
   });
 
+  it('should show recalculating label when scoringStep is recalculating', () => {
+    render(
+      <ScoringSection
+        {...defaultProps}
+        isGenerating
+        scoringStep="recalculating"
+      />,
+    );
+    expect(screen.getByText(/menghitung ulang data/i)).toBeInTheDocument();
+  });
+
+  it('should show scoring label when scoringStep is scoring', () => {
+    render(
+      <ScoringSection
+        {...defaultProps}
+        isGenerating
+        scoringStep="scoring"
+      />,
+    );
+    expect(screen.getByText(/menghitung skor/i)).toBeInTheDocument();
+  });
+
   it('disables button while generating', () => {
     render(<ScoringSection {...defaultProps} isGenerating />);
     // Period is empty by default so button is disabled for multiple reasons,

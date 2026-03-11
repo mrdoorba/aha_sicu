@@ -20,7 +20,7 @@ import { CalculatorResultsSection } from './calculators';
 import { ScoringSection } from './scoring';
 import type { ManualData } from './forms/formConfig';
 import type { SaveStatus } from '../../hooks/useAutoSaveForm';
-import type { ScoringResult } from '../../hooks/useScoring';
+import type { ScoringResult, ScoringStep } from '../../hooks/useScoring';
 import type { ScoringRules } from '../../hooks/useRules';
 import { useBrandUploads } from '../../hooks/useUpload';
 
@@ -50,6 +50,7 @@ interface ScoringProps {
   isGenerating: boolean;
   isStale: boolean;
   scoringError: Error | null;
+  scoringStep?: ScoringStep;
 }
 
 interface SaveProps {
@@ -87,6 +88,7 @@ export const EvaluationSections = ({
   isGenerating,
   isStale,
   scoringError,
+  scoringStep,
   onSaveEvaluation,
   isSaving,
   isSaved,
@@ -258,6 +260,7 @@ export const EvaluationSections = ({
             categoryType={categoryType}
             storeName={storeName}
             brandName={brandName}
+            scoringStep={scoringStep}
           />
         </section>
 
