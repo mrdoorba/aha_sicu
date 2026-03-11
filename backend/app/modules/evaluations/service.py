@@ -16,6 +16,7 @@ from app.db.queries import brands as brand_queries
 from app.db.queries import calculator_results as calc_queries
 from app.db.queries import evaluations as eval_queries
 from app.db.queries import rules as rules_queries
+from app.calculators.scoring.models import TranslatableText
 from app.modules.evaluations.schemas import (
     BrandEvaluationItem,
     BrandEvaluationListResponse,
@@ -36,8 +37,25 @@ from app.modules.evaluations.schemas import (
     SaveEvaluationResponse,
     ScoringResponse,
     SingleCalculatorStatus,
+    TranslatableTextSchema,
 )
 logger = logging.getLogger(__name__)
+
+
+def _to_schema(t: TranslatableText | None) -> TranslatableTextSchema | None:
+    """Convert a TranslatableText dataclass to its Pydantic schema."""
+    if t is None:
+        return None
+    return TranslatableTextSchema(key=t.key, vars=t.vars)
+
+
+def _to_schema_list(
+    items: list[TranslatableText] | None,
+) -> list[TranslatableTextSchema] | None:
+    """Convert a list of TranslatableText dataclasses to Pydantic schemas."""
+    if items is None:
+        return None
+    return [TranslatableTextSchema(key=t.key, vars=t.vars) for t in items]
 
 
 async def list_evaluations(
@@ -351,10 +369,14 @@ async def generate_score(
                     verdict=r.verdict,
                     message=r.message,
                     score=r.score,
+                    metric_i18n=_to_schema(r.metric_i18n),
+                    message_i18n=_to_schema(r.message_i18n),
+                    benchmark_i18n=_to_schema(r.benchmark_i18n),
                 )
                 for r in cat.rows
             ],
             available=cat.available,
+            category_i18n=_to_schema(cat.category_i18n),
         )
         for cat in result.category_scores
     ]
@@ -372,6 +394,10 @@ async def generate_score(
         email_body=result.email_body,
         template=result.template,
         rule_version=result.rule_version,
+        conclusion_i18n=_to_schema_list(result.conclusion_i18n),
+        marketing_budget_i18n=_to_schema(result.marketing_budget_i18n),
+        closing_message_i18n=_to_schema(result.closing_message_i18n),
+        email_subject_i18n=_to_schema(result.email_subject_i18n),
     )
 
 
