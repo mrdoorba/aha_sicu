@@ -557,6 +557,11 @@
   "ads.summary": "• โฆษณาทั้งหมด: {{active}} กำลังทำงาน, {{paused}} หยุดชั่วคราว และ {{ended}} สิ้นสุด\n• เกี่ยวข้องกับ {{unique_count}} ({{product_pct}}) สินค้าจากทั้งหมด: {{total_products}}",
   "ads.typeBreakdown": "การแบ่งประเภทโฆษณา: {{semua_total}} การจัดวางทั้งหมด, {{toko_total}} โฆษณาร้านค้า ({{toko_auto}} อัตโนมัติ, {{toko_manual}} ตั้งเอง)",
   "ads.recommendations": "คำแนะนำโฆษณา",
+  "ads.flag.productLow": "📌 จำนวนสินค้าที่เข้าร่วมโฆษณายังไม่เต็มที่ (แนะนำ >50%)",
+  "ads.flag.productGood": "📌 จำนวนสินค้าที่เข้าร่วมโฆษณาอยู่ในระดับดี",
+  "ads.flag.activeLow": "📌 จำนวนโฆษณาที่ใช้งานยังไม่เต็มที่ (แนะนำ >50%)",
+  "ads.flag.activeGood": "📌 จำนวนโฆษณาที่ใช้งานอยู่ในระดับดี",
+  "ads.flag.noShopAd": "📌 ยังไม่ได้ใช้โฆษณาร้านค้า",
 
   "email.subject": "รายงานคะแนน - {{store}} - {{period}}"
 }

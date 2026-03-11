@@ -557,6 +557,11 @@
   "ads.summary": "• Total Ads: {{active}} Active, {{paused}} Paused and {{ended}} Ended.\n• Involving {{unique_count}} ({{product_pct}}) products out of total products: {{total_products}}.",
   "ads.typeBreakdown": "Ad Type Breakdown: {{semua_total}} All Placement, {{toko_total}} Store Ads ({{toko_auto}} Auto, {{toko_manual}} Manual)",
   "ads.recommendations": "Ads Recommendations",
+  "ads.flag.productLow": "📌 Product participation in ads is not optimal (recommended >50%).",
+  "ads.flag.productGood": "📌 Product participation in ads is good enough.",
+  "ads.flag.activeLow": "📌 Number of active ads is not optimal (recommended >50%).",
+  "ads.flag.activeGood": "📌 Number of active ads is good enough.",
+  "ads.flag.noShopAd": "📌 Shop Ads have not been utilized.",
 
   "email.subject": "Scoring Report - {{store}} - {{period}}"
 }

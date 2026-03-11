@@ -557,6 +557,11 @@
   "ads.summary": "• Total Iklan: {{active}} Berjalan, {{paused}} Nonaktif dan {{ended}} Berakhir.\n• Melibatkan {{unique_count}} ({{product_pct}}) produk dari total produk: {{total_products}}.",
   "ads.typeBreakdown": "Jenis Iklan: {{semua_total}} Semua Penempatan, {{toko_total}} Iklan Toko ({{toko_auto}} Otomatis, {{toko_manual}} Manual)",
   "ads.recommendations": "Rekomendasi Iklan",
+  "ads.flag.productLow": "📌 Jumlah produk yang dipartisipasikan ke dalam iklan kurang maksimal (saran >50%).",
+  "ads.flag.productGood": "📌 Jumlah produk yang dipartisipasikan ke dalam iklan sudah cukup baik.",
+  "ads.flag.activeLow": "📌 Jumlah iklan dengan status aktif kurang maksimal (saran >50%).",
+  "ads.flag.activeGood": "📌 Jumlah iklan dengan status aktif sudah cukup baik.",
+  "ads.flag.noShopAd": "📌 Iklan Toko belum dimanfaatkan.",
 
   "email.subject": "Laporan Scoring - {{store}} - {{period}}"
 }
