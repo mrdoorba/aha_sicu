@@ -49,7 +49,13 @@ const SAMPLE_RESULTS = {
     {
       calculator_type: 'ads_keyword',
       output_text: '34 dari 80 produk (42.5%) sudah beriklan',
-      details: { ak2: 'text', thresholds: {} },
+      details: {
+        ak2: '34 dari 80 produk',
+        ak3: '',
+        ak4: '',
+        al2: '', al3: '', al5: '', al6: '', al7: '', al8: '', al9: '',
+        thresholds: { am6: 0, am7: 0, am9: 0, am10: 0 },
+      },
       calculated_at: '2026-02-11T10:00:00Z',
     },
     {
