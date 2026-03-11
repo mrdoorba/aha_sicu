@@ -415,6 +415,29 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any
     else:
         al2 = ""
 
+    # --- AL2 i18n ---
+    if top_ads:
+        header_key = "ads.topHeaderFallback" if is_top_fallback else "ads.topHeader"
+        al2_i18n: dict[str, Any] | None = {
+            "header": {"key": header_key, "vars": {}},
+            "ads": [
+                {
+                    "key": "ads.topAd",
+                    "vars": {
+                        "name": clean_name(_safe_str(ad.get("Nama Iklan"))),
+                        "gmv": _format_idr(_safe_num(ad.get("Omzet Penjualan"))),
+                        "roas": _format_roas(_safe_num(ad.get("Efektifitas Iklan"))),
+                        "bidding": _safe_str(ad.get("Mode Bidding")),
+                        "placement": f"{_safe_str(ad.get('Jenis Iklan'))} {_safe_str(ad.get('Penempatan Iklan'))}",
+                        "keyword": _safe_str(ad.get("Kata Pencarian/Penempatan")),
+                    },
+                }
+                for ad in top_ads
+            ],
+        }
+    else:
+        al2_i18n = None
+
     # --- AL3: Top Ads Recommendation ---
     auto_count = al2.count("Bidding Otomatis")
     gmv_max_count = al2.count("GMV Max")
@@ -431,6 +454,12 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any
         )
     else:
         al3 = "📌 Iklan dengan performa terbaik sudah mengandalkan pengaturan manual."
+
+    # --- AL3 i18n ---
+    if auto_count >= 3 or gmv_max_count >= 3:
+        al3_i18n = {"key": "ads.topRecommendation.auto", "vars": {}}
+    else:
+        al3_i18n = {"key": "ads.topRecommendation.manual", "vars": {}}
 
     # --- AL5: BOTTOM Ads ---
     # Language-variant thresholds:
@@ -479,6 +508,30 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any
     else:
         al5 = ""
 
+    # --- AL5 i18n ---
+    if bottom_ads:
+        header_key = "ads.bottomHeaderFallback" if is_bottom_fallback else "ads.bottomHeader"
+        ad_key = "ads.bottomAdFallback" if is_bottom_fallback else "ads.bottomAd"
+        al5_i18n: dict[str, Any] | None = {
+            "header": {"key": header_key, "vars": {}},
+            "ads": [
+                {
+                    "key": ad_key,
+                    "vars": {
+                        "name": clean_name(_safe_str(ad.get("Nama Iklan"))),
+                        "cost": _format_idr(_safe_num(ad.get("Biaya"))),
+                        "roas": _format_roas(_safe_num(ad.get("Efektifitas Iklan"))),
+                        "bidding": _safe_str(ad.get("Mode Bidding")),
+                        "placement": f"{_safe_str(ad.get('Jenis Iklan'))} {_safe_str(ad.get('Penempatan Iklan'))}",
+                        "keyword": _safe_str(ad.get("Kata Pencarian/Penempatan")),
+                    },
+                }
+                for ad in bottom_ads
+            ],
+        }
+    else:
+        al5_i18n = None
+
     # --- AL6-AL9: Bottom Flags (substring checks on AL5 text) ---
     # AL6: Indonesian checks "Otomatis", English checks "Bidding Otomatis"
     al6 = ""
@@ -510,6 +563,12 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any
             "terkontrol biayanya (disarankan dimonitor 1-2x setiap hari)."
         )
 
+    # --- AL6-AL9 i18n ---
+    al6_i18n = {"key": "ads.flag.autoUncontrolled", "vars": {}} if al6 else None
+    al7_i18n = {"key": "ads.flag.manualUncontrolled", "vars": {}} if al7 else None
+    al8_i18n = {"key": "ads.flag.keywordUncontrolled", "vars": {}} if al8 else None
+    al9_i18n = {"key": "ads.flag.autoBiddingUncontrolled", "vars": {}} if al9 else None
+
     return {
         "al2": al2,
         "al3": al3,
@@ -518,6 +577,13 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any
         "al7": al7,
         "al8": al8,
         "al9": al9,
+        "al2_i18n": al2_i18n,
+        "al3_i18n": al3_i18n,
+        "al5_i18n": al5_i18n,
+        "al6_i18n": al6_i18n,
+        "al7_i18n": al7_i18n,
+        "al8_i18n": al8_i18n,
+        "al9_i18n": al9_i18n,
         "thresholds": thresholds,
         "is_top_fallback": is_top_fallback,
         "is_bottom_fallback": is_bottom_fallback,
