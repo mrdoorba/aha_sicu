@@ -38,9 +38,11 @@ export const EvaluationPage = () => {
     scoringResult,
     isGenerating,
     isStale,
+    scoringStep,
     scoringError,
     handleSaveEvaluation,
     isSaving,
+    saveStep,
     isSaved,
     saveError,
     storeName,
@@ -104,8 +106,10 @@ export const EvaluationPage = () => {
                   isGenerating={isGenerating}
                   isStale={isStale}
                   scoringError={scoringError}
+                  scoringStep={scoringStep}
                   onSaveEvaluation={handleSaveEvaluation}
                   isSaving={isSaving}
+                  saveStep={saveStep}
                   isSaved={isSaved}
                   saveError={saveError}
                 />
