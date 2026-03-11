@@ -1073,6 +1073,9 @@ class TestCalculateAdsKeyword:
         expected_keys = {
             "ak2", "ak3", "ak4", "al2", "al3", "al5",
             "al6", "al7", "al8", "al9", "thresholds",
+            "ak2_i18n", "ak3_i18n", "ak4_i18n",
+            "al2_i18n", "al3_i18n", "al5_i18n",
+            "al6_i18n", "al7_i18n", "al8_i18n", "al9_i18n",
         }
         assert set(result.details.keys()) == expected_keys
 

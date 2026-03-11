@@ -646,6 +646,9 @@ def calculate_ads_keyword(
         "ak2": sheet1["ak2"],
         "ak3": sheet1["ak3"],
         "ak4": sheet1["ak4"],
+        "ak2_i18n": sheet1["ak2_i18n"],
+        "ak3_i18n": sheet1["ak3_i18n"],
+        "ak4_i18n": sheet1["ak4_i18n"],
         "al2": sheet2["al2"],
         "al3": sheet2["al3"],
         "al5": sheet2["al5"],
@@ -653,6 +656,13 @@ def calculate_ads_keyword(
         "al7": sheet2["al7"],
         "al8": sheet2["al8"],
         "al9": sheet2["al9"],
+        "al2_i18n": sheet2["al2_i18n"],
+        "al3_i18n": sheet2["al3_i18n"],
+        "al5_i18n": sheet2["al5_i18n"],
+        "al6_i18n": sheet2["al6_i18n"],
+        "al7_i18n": sheet2["al7_i18n"],
+        "al8_i18n": sheet2["al8_i18n"],
+        "al9_i18n": sheet2["al9_i18n"],
         "thresholds": sheet2["thresholds"],
     }
 
