@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import type { TFunction } from 'i18next';
 import { Card, CardContent } from '../ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../ui/table';
@@ -15,7 +16,7 @@ function formatIDR(value: unknown): string {
   return value.toLocaleString('en-US');
 }
 
-function AdsContent({ data, t }: { data: Record<string, unknown>; t: (key: string, vars?: Record<string, string>) => string }) {
+function AdsContent({ data, t }: { data: Record<string, unknown>; t: TFunction }) {
   const text = (data.output_text as string) || '';
   const details = data.details as AdsKeywordDetails | undefined;
 
@@ -57,7 +58,7 @@ function AdsContent({ data, t }: { data: Record<string, unknown>; t: (key: strin
   );
 }
 
-function TopSkuContent({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
+function TopSkuContent({ data, t }: { data: Record<string, unknown>; t: TFunction }) {
   const details = data.details as Record<string, unknown> | undefined;
   const output1 = (details?.output_1 as Array<Record<string, unknown>>) || [];
   const output2 = (details?.output_2 as Array<Record<string, unknown>>) || [];
