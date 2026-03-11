@@ -13,7 +13,7 @@ from app.calculators.scoring.helpers import (
     _rounddown,
     _safe_num,
 )
-from app.calculators.scoring.models import CategoryScore
+from app.calculators.scoring.models import CategoryScore, TranslatableText
 from app.calculators.scoring.rules import DEFAULT_RULES, PROMO_START_ROW, PROMO_TOOLS
 
 def _parse_d73_percentages(d73_text: str) -> tuple[float, float, float, float, float]:
@@ -217,6 +217,87 @@ def _compute_g75(verdict: str, store_name: str = "", rules: dict | None = None) 
         template = messages.get(verdict, "")
 
     return template.replace("{store_name}", store_name) if template else ""
+
+
+def _compute_g66_i18n(
+    categories: list[CategoryScore],
+    manual_data: dict,
+    g68_text: str,
+) -> list[TranslatableText]:
+    """G66 i18n: return structured list of conclusion items."""
+    items: list[TranslatableText] = []
+    biz = _get_nested(manual_data, "business") or {}
+    sales_months = [_safe_num(biz.get(f"salesMonth{i}")) for i in range(6)]
+    valid_sales = [s for s in sales_months if s > 0]
+
+    if valid_sales:
+        items.append(TranslatableText(
+            key="conclusion.salesRange",
+            vars={"min": f"{min(valid_sales) / 1_000_000:.0f}", "max": f"{max(valid_sales) / 1_000_000:.0f}"},
+        ))
+
+    ops_cat = next((c for c in categories if c.category == "Kesehatan Operasional Toko"), None)
+    if ops_cat:
+        chat_row = next((r for r in ops_cat.rows if r.row == 10), None)
+        if chat_row and chat_row.verdict == "❌":
+            items.append(TranslatableText(key="conclusion.operationalChatIssue", vars={}))
+        else:
+            items.append(TranslatableText(key="conclusion.operationalGood", vars={}))
+
+    items.append(TranslatableText(key="conclusion.productNaming", vars={}))
+    items.append(TranslatableText(key="conclusion.photoBackground", vars={}))
+
+    promo_cat = next((c for c in categories if c.category == "Promo Toko"), None)
+    if promo_cat:
+        eff_row = next((r for r in promo_cat.rows if r.row == 43), None)
+        if eff_row and isinstance(eff_row.value, (int, float)) and eff_row.value < 0.80:
+            items.append(TranslatableText(key="conclusion.promoUnderutilized", vars={}))
+
+    campaign_cat = next((c for c in categories if c.category == "Partisipasi Campaign"), None)
+    if campaign_cat:
+        camp_row = next((r for r in campaign_cat.rows if r.row == 57), None)
+        if camp_row and isinstance(camp_row.value, (int, float)) and camp_row.value < 0.80:
+            items.append(TranslatableText(key="conclusion.campaignLow", vars={}))
+
+    items.append(TranslatableText(key="conclusion.stockNotArchived", vars={}))
+    items.append(TranslatableText(key="conclusion.unsoldProducts", vars={}))
+
+    if g68_text:
+        items.append(TranslatableText(key="conclusion.discountRange", vars={"range": g68_text}))
+
+    return items
+
+
+def _compute_g73_i18n(
+    verdict: str, g72_value: float, d13: float,
+    rules: dict | None = None,
+) -> TranslatableText | None:
+    """G73 i18n: marketing budget recommendation as TranslatableText."""
+    if verdict.startswith("❌"):
+        return None
+
+    mkt_rules = _get_rule_category(rules, "marketing")
+    display_max = _get_rule_value(mkt_rules, "display_max", "value", 0.25)
+    display_min = _get_rule_value(mkt_rules, "display_min", "value", 0.10)
+    display_pct = max(min(g72_value, display_max), display_min)
+    return TranslatableText(key="marketing.budgetRecommendation", vars={"pct": f"{display_pct * 100:.0f}%"})
+
+
+def _compute_g75_i18n(
+    verdict: str, store_name: str = "", rules: dict | None = None,
+) -> TranslatableText | None:
+    """G75 i18n: closing message as TranslatableText."""
+    verdict_key_map = {
+        "✔️": "closing.potential",
+        "❌": "closing.valueAdd",
+        "❌ Non Mall": "closing.directAnalysis",
+        "❌ No Brand": "closing.noBrand",
+        "❌ Opex": "closing.experience",
+    }
+    key = verdict_key_map.get(verdict)
+    if not key:
+        return None
+    return TranslatableText(key=key, vars={"store_name": store_name})
 
 
 # ---------------------------------------------------------------------------
