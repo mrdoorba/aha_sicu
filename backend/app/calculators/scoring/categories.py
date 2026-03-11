@@ -43,7 +43,7 @@ def _score_operational(manual_data: dict, rules: dict | None = None) -> Category
     rows.append(RowScore(
         row=7, metric="Tingkat Pesanan Tidak Terselesaikan",
         value=d7, benchmark=f"<{uor_threshold:g}%", verdict=f7, message="", score=h7,
-        metric_i18n=TranslatableText(key="scoring.unfulfilledOrderRate"),
+        metric_i18n=TranslatableText(key="scoring.unfulfilledOrderRate", vars={}),
     ))
 
     # H8: Keterlambatan Pengiriman
@@ -57,7 +57,7 @@ def _score_operational(manual_data: dict, rules: dict | None = None) -> Category
     rows.append(RowScore(
         row=8, metric="Tingkat Keterlambatan Pengiriman",
         value=d8, benchmark=f"<{lsr_threshold:g}%", verdict=f8, message="", score=h8,
-        metric_i18n=TranslatableText(key="scoring.lateShipmentRate"),
+        metric_i18n=TranslatableText(key="scoring.lateShipmentRate", vars={}),
     ))
 
     # H9: Masa Pengemasan
@@ -71,7 +71,7 @@ def _score_operational(manual_data: dict, rules: dict | None = None) -> Category
     rows.append(RowScore(
         row=9, metric="Masa Pengemasan",
         value=d9, benchmark=f"<{pt_threshold:g}", verdict=f9, message="", score=h9,
-        metric_i18n=TranslatableText(key="scoring.preparationTime"),
+        metric_i18n=TranslatableText(key="scoring.preparationTime", vars={}),
     ))
 
     # Row 10: Chat Dibalas (no score)
@@ -83,7 +83,7 @@ def _score_operational(manual_data: dict, rules: dict | None = None) -> Category
     rows.append(RowScore(
         row=10, metric="Persentase Chat Dibalas",
         value=d10, benchmark=f">{chat_threshold:g}%", verdict=f10, message="", score=0.0,
-        metric_i18n=TranslatableText(key="scoring.chatResponseRate"),
+        metric_i18n=TranslatableText(key="scoring.chatResponseRate", vars={}),
     ))
 
     # Row 11: Overall Rating (no score)
@@ -93,14 +93,14 @@ def _score_operational(manual_data: dict, rules: dict | None = None) -> Category
     rows.append(RowScore(
         row=11, metric="Keseluruhan Penilaian",
         value=d11, benchmark=f">{rating_threshold:g}", verdict=f11, message="", score=0.0,
-        metric_i18n=TranslatableText(key="scoring.overallRating"),
+        metric_i18n=TranslatableText(key="scoring.overallRating", vars={}),
     ))
 
     total = sum(r.score for r in rows)
     return CategoryScore(
         category="Kesehatan Operasional Toko",
         score=total, max_score=10.0, rows=rows,
-        category_i18n=TranslatableText(key="category.operational"),
+        category_i18n=TranslatableText(key="category.operational", vars={}),
     )
 
 
@@ -140,7 +140,7 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
     rows.append(RowScore(
         row=13, metric=f"Penjualan Bulan {month_labels[0]}",
         value=current_month, benchmark=e13, verdict=f13, message="", score=h13,
-        metric_i18n=TranslatableText(key="scoring.monthlySales"),
+        metric_i18n=TranslatableText(key="scoring.monthlySales", vars={}),
     ))
 
     # Rows 14-18: Past months (no score, kept for reference)
@@ -148,7 +148,7 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
         rows.append(RowScore(
             row=13 + i, metric=f"Penjualan Bulan {month_labels[i]}",
             value=sales_months[i], benchmark="-", verdict="-", message="", score=0.0,
-            metric_i18n=TranslatableText(key="scoring.pastMonthlySales"),
+            metric_i18n=TranslatableText(key="scoring.pastMonthlySales", vars={}),
         ))
 
     # Row 19: Average (computed)
@@ -158,7 +158,7 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
     rows.append(RowScore(
         row=19, metric="Rata² Penjualan 6 bulan terakhir",
         value=avg_6mo, benchmark="-", verdict="-", message="", score=h19,
-        metric_i18n=TranslatableText(key="scoring.avgSales6mo"),
+        metric_i18n=TranslatableText(key="scoring.avgSales6mo", vars={}),
     ))
 
     # Row 20: Conversion rate (no score) — benchmark depends on template
@@ -167,14 +167,14 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
     rows.append(RowScore(
         row=20, metric="Tingkat Konversi",
         value=d20, benchmark=">3%", verdict="-", message="", score=0.0,
-        metric_i18n=TranslatableText(key="scoring.conversionRate"),
+        metric_i18n=TranslatableText(key="scoring.conversionRate", vars={}),
     ))
 
     total = sum(r.score for r in rows)
     return CategoryScore(
         category="Bisnis Analisis",
         score=total, max_score=20.0, rows=rows,
-        category_i18n=TranslatableText(key="category.business"),
+        category_i18n=TranslatableText(key="category.business", vars={}),
     )
 
 
@@ -195,12 +195,12 @@ def _score_visitors(manual_data: dict, rules: dict | None = None) -> CategorySco
     rows.append(RowScore(
         row=26, metric="Total Pengunjung",
         value=d26, benchmark="-", verdict="-", message="", score=0.0,
-        metric_i18n=TranslatableText(key="scoring.totalVisitors"),
+        metric_i18n=TranslatableText(key="scoring.totalVisitors", vars={}),
     ))
     rows.append(RowScore(
         row=27, metric="Pengunjung Lama",
         value=d27, benchmark="-", verdict="-", message="", score=0.0,
-        metric_i18n=TranslatableText(key="scoring.returningVisitors"),
+        metric_i18n=TranslatableText(key="scoring.returningVisitors", vars={}),
     ))
 
     # Row 28: % Returning visitors (computed)
@@ -212,7 +212,7 @@ def _score_visitors(manual_data: dict, rules: dict | None = None) -> CategorySco
     rows.append(RowScore(
         row=28, metric="% Pengunjung Lama",
         value=d28, benchmark=f">{rv_threshold * 100:g}%", verdict=f28, message="", score=h28,
-        metric_i18n=TranslatableText(key="scoring.returningVisitorPct"),
+        metric_i18n=TranslatableText(key="scoring.returningVisitorPct", vars={}),
     ))
 
     # Row 29: Total followers
@@ -223,14 +223,14 @@ def _score_visitors(manual_data: dict, rules: dict | None = None) -> CategorySco
     rows.append(RowScore(
         row=29, metric="Total Pengikut",
         value=d29, benchmark=f">{fl_threshold:g}", verdict=f29, message="", score=h29,
-        metric_i18n=TranslatableText(key="scoring.totalFollowers"),
+        metric_i18n=TranslatableText(key="scoring.totalFollowers", vars={}),
     ))
 
     total = h28 + h29
     return CategoryScore(
         category="Tinjauan Pengunjung",
         score=total, max_score=5.0, rows=rows,
-        category_i18n=TranslatableText(key="category.visitors"),
+        category_i18n=TranslatableText(key="category.visitors", vars={}),
     )
 
 
@@ -287,7 +287,7 @@ def _score_promo_tools(manual_data: dict, rules: dict | None = None) -> Category
             row=row_num, metric=display_name,
             value=d_value, benchmark=benchmark_str, verdict=f_verdict,
             message="", score=0.0,
-            metric_i18n=TranslatableText(key=f"scoring.promo.{field_key}"),
+            metric_i18n=TranslatableText(key=f"scoring.promo.{field_key}", vars={}),
         ))
 
     # Row 42: % Usage
@@ -299,7 +299,7 @@ def _score_promo_tools(manual_data: dict, rules: dict | None = None) -> Category
     rows.append(RowScore(
         row=42, metric="% Penggunaan alat promosi",
         value=usage_rate, benchmark=f">{usage_threshold * 100:g}%", verdict=f42, message="", score=h42,
-        metric_i18n=TranslatableText(key="scoring.promoUsageRate"),
+        metric_i18n=TranslatableText(key="scoring.promoUsageRate", vars={}),
     ))
 
     # Row 43: % Effectiveness
@@ -311,14 +311,14 @@ def _score_promo_tools(manual_data: dict, rules: dict | None = None) -> Category
     rows.append(RowScore(
         row=43, metric="% Efektifitas alat promosi",
         value=effectiveness_rate, benchmark=f">{eff_threshold * 100:g}%", verdict=f43, message="", score=h43,
-        metric_i18n=TranslatableText(key="scoring.promoEffectiveness"),
+        metric_i18n=TranslatableText(key="scoring.promoEffectiveness", vars={}),
     ))
 
     total = h42 + h43
     return CategoryScore(
         category="Promo Toko",
         score=total, max_score=15.0, rows=rows,
-        category_i18n=TranslatableText(key="category.promo"),
+        category_i18n=TranslatableText(key="category.promo", vars={}),
     )
 
 
@@ -341,7 +341,7 @@ def _score_products(manual_data: dict, rules: dict | None = None) -> CategorySco
     rows.append(RowScore(
         row=45, metric="Jumlah Produk",
         value=d45, benchmark=f">={pc_threshold:g}", verdict=f45, message="", score=h45,
-        metric_i18n=TranslatableText(key="scoring.productCount"),
+        metric_i18n=TranslatableText(key="scoring.productCount", vars={}),
     ))
 
     # Row 46: Store status
@@ -360,14 +360,14 @@ def _score_products(manual_data: dict, rules: dict | None = None) -> CategorySco
     rows.append(RowScore(
         row=46, metric="Status Toko",
         value=d46, benchmark="Shopee Mall", verdict=f46, message="", score=h46,
-        metric_i18n=TranslatableText(key="scoring.storeStatus"),
+        metric_i18n=TranslatableText(key="scoring.storeStatus", vars={}),
     ))
 
     total = h45 + h46
     return CategoryScore(
         category="Jumlah Produk & Status Toko",
         score=total, max_score=15.0, rows=rows,
-        category_i18n=TranslatableText(key="category.products"),
+        category_i18n=TranslatableText(key="category.products", vars={}),
     )
 
 
@@ -390,7 +390,7 @@ def _score_ads(manual_data: dict, template: str, rules: dict | None = None) -> C
     rows.append(RowScore(
         row=48, metric="Penjualan (iklan)",
         value=d48, benchmark="-", verdict="-", message="", score=0.0,
-        metric_i18n=TranslatableText(key="scoring.adSales"),
+        metric_i18n=TranslatableText(key="scoring.adSales", vars={}),
     ))
 
     # Row 49: Ad cost (no score), E49 = D49/D13
@@ -399,7 +399,7 @@ def _score_ads(manual_data: dict, template: str, rules: dict | None = None) -> C
         row=49, metric="Biaya (iklan)",
         value=d49, benchmark=f"{_fmt_pct_1dp(d49_pct)}", verdict="-",
         message="", score=0.0,
-        metric_i18n=TranslatableText(key="scoring.adCost"),
+        metric_i18n=TranslatableText(key="scoring.adCost", vars={}),
     ))
 
     # Row 50: ROI = D48/D49
@@ -412,7 +412,7 @@ def _score_ads(manual_data: dict, template: str, rules: dict | None = None) -> C
         row=50, metric="ROI",
         value=d50, benchmark=f">{roi_threshold:g}", verdict=f50,
         message="", score=h50,
-        metric_i18n=TranslatableText(key="scoring.adsROI"),
+        metric_i18n=TranslatableText(key="scoring.adsROI", vars={}),
     ))
 
     # Row 51: GMV ratio = D48/D13
@@ -424,7 +424,7 @@ def _score_ads(manual_data: dict, template: str, rules: dict | None = None) -> C
     rows.append(RowScore(
         row=51, metric="% GMV Iklan / GMV Toko",
         value=d51, benchmark=f"<{gmv_threshold * 100:g}%", verdict=f51, message="", score=h51,
-        metric_i18n=TranslatableText(key="scoring.adsGMVPct"),
+        metric_i18n=TranslatableText(key="scoring.adsGMVPct", vars={}),
     ))
 
     # Row 52: Ad cost % = D49/D13
@@ -440,21 +440,21 @@ def _score_ads(manual_data: dict, template: str, rules: dict | None = None) -> C
     rows.append(RowScore(
         row=52, metric="% Biaya Iklan / GMV Toko",
         value=d52, benchmark="<10%", verdict=f52, message="", score=0.0,
-        metric_i18n=TranslatableText(key="scoring.adsCostPct"),
+        metric_i18n=TranslatableText(key="scoring.adsCostPct", vars={}),
     ))
 
     # Row 53: Calculator 1 output (no score, just email content)
     rows.append(RowScore(
         row=53, metric="Iklan check up",
         value="", benchmark="Iklan check up", verdict="-", message="", score=0.0,
-        metric_i18n=TranslatableText(key="scoring.adsCheckup"),
+        metric_i18n=TranslatableText(key="scoring.adsCheckup", vars={}),
     ))
 
     total = h50 + h51
     return CategoryScore(
         category="Data Iklan",
         score=total, max_score=10.0, rows=rows,
-        category_i18n=TranslatableText(key="category.ads"),
+        category_i18n=TranslatableText(key="category.ads", vars={}),
     )
 
 
@@ -473,12 +473,12 @@ def _score_campaign(manual_data: dict, rules: dict | None = None) -> CategorySco
     rows.append(RowScore(
         row=55, metric="Sesi dinominasikan",
         value=d55, benchmark="-", verdict="-", message="", score=0.0,
-        metric_i18n=TranslatableText(key="scoring.nominatedSessions"),
+        metric_i18n=TranslatableText(key="scoring.nominatedSessions", vars={}),
     ))
     rows.append(RowScore(
         row=56, metric="Sesi tersedia",
         value=d56, benchmark="-", verdict="-", message="", score=0.0,
-        metric_i18n=TranslatableText(key="scoring.availableSessions"),
+        metric_i18n=TranslatableText(key="scoring.availableSessions", vars={}),
     ))
 
     # Row 57: Participation rate = D55/D56
@@ -490,13 +490,13 @@ def _score_campaign(manual_data: dict, rules: dict | None = None) -> CategorySco
     rows.append(RowScore(
         row=57, metric="% Partisipasi Campaign",
         value=d57, benchmark=f">{part_threshold * 100:g}%", verdict=f57, message="", score=h57,
-        metric_i18n=TranslatableText(key="scoring.campaignParticipation"),
+        metric_i18n=TranslatableText(key="scoring.campaignParticipation", vars={}),
     ))
 
     return CategoryScore(
         category="Partisipasi Campaign",
         score=h57, max_score=10.0, rows=rows,
-        category_i18n=TranslatableText(key="category.campaign"),
+        category_i18n=TranslatableText(key="category.campaign", vars={}),
     )
 
 
@@ -530,13 +530,13 @@ def _score_competition(
             row=row_num, metric=f"Produk {i + 1}",
             value=selling_price, benchmark=f"IDR {_fmt_idr(market_price)}" if market_price > 0 else "-",
             verdict=f_verdict, message="", score=0.0,
-            metric_i18n=TranslatableText(key="scoring.competitionProduct"),
+            metric_i18n=TranslatableText(key="scoring.competitionProduct", vars={}),
         ))
 
     return CategoryScore(
         category="Kompetisi TOP Produk",
         score=0.0, max_score=0.0, rows=rows,
-        category_i18n=TranslatableText(key="category.competition"),
+        category_i18n=TranslatableText(key="category.competition", vars={}),
     )
 
 
@@ -558,12 +558,12 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
             row=70, metric="Rata² Stok TOP 20% SKU",
             value="N/A", benchmark=f">={high_threshold:g}", verdict="-",
             message="Calculator 2 (Top SKU) belum dijalankan", score=0.0,
-            metric_i18n=TranslatableText(key="scoring.avgStockTop20"),
+            metric_i18n=TranslatableText(key="scoring.avgStockTop20", vars={}),
         )
         return CategoryScore(
             category="Stok",
             score=0.0, max_score=10.0, rows=[row], available=False,
-            category_i18n=TranslatableText(key="category.stock"),
+            category_i18n=TranslatableText(key="category.stock", vars={}),
         )
     high_points = float(_get_rule_value(stock_rules, "high_threshold", "points", 10.0))
     mid_threshold = _get_rule_value(stock_rules, "mid_threshold", "threshold", 12)
@@ -590,7 +590,7 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
         row=70, metric="Rata² Stok TOP 20% SKU",
         value=avg_stock_int, benchmark=f">={high_threshold:g}", verdict=f70,
         message=msg70, score=h70,
-        metric_i18n=TranslatableText(key="scoring.avgStockTop20"),
+        metric_i18n=TranslatableText(key="scoring.avgStockTop20", vars={}),
     )
 
     # Row 71: Stock availability penalty
@@ -614,14 +614,14 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
         value=out_of_stock_pct,
         benchmark=f"≤{oos_threshold * 100:.0f}% stok habis",
         verdict=f71, message=msg71, score=h71,
-        metric_i18n=TranslatableText(key="scoring.stockAvailability"),
+        metric_i18n=TranslatableText(key="scoring.stockAvailability", vars={}),
     )
 
     total_score = h70 + h71
     return CategoryScore(
         category="Stok",
         score=total_score, max_score=10.0, rows=[row70, row71],
-        category_i18n=TranslatableText(key="category.stock"),
+        category_i18n=TranslatableText(key="category.stock", vars={}),
     )
 
 
@@ -639,12 +639,12 @@ def _score_discount_row(calculator_results: dict, rules: dict | None = None) -> 
             row=73, metric="Discount Check Up",
             value="N/A", benchmark="-", verdict="-",
             message="Calculator 3 (Discount) belum dijalankan", score=0.0,
-            metric_i18n=TranslatableText(key="scoring.discountCheckup"),
+            metric_i18n=TranslatableText(key="scoring.discountCheckup", vars={}),
         )
         return CategoryScore(
             category="Discount",
             score=0.0, max_score=5.0, rows=[row], available=False,
-            category_i18n=TranslatableText(key="category.discount"),
+            category_i18n=TranslatableText(key="category.discount", vars={}),
         )
 
     disc_rules = _get_rule_category(rules, "discount")
@@ -661,12 +661,12 @@ def _score_discount_row(calculator_results: dict, rules: dict | None = None) -> 
         row=73, metric="Discount Check Up",
         value=disc_output, benchmark="-", verdict=f73,
         message="", score=h73,
-        metric_i18n=TranslatableText(key="scoring.discountCheckup"),
+        metric_i18n=TranslatableText(key="scoring.discountCheckup", vars={}),
     )
     return CategoryScore(
         category="Discount",
         score=h73, max_score=5.0, rows=[row],
-        category_i18n=TranslatableText(key="category.discount"),
+        category_i18n=TranslatableText(key="category.discount", vars={}),
     )
 
 
