@@ -10,18 +10,22 @@ interface CategoryMetricCardProps {
   benchmark: string;
   message: string;
   metric_i18n?: TranslatableText | null;
+  value_i18n?: TranslatableText | null;
   message_i18n?: TranslatableText | null;
   benchmark_i18n?: TranslatableText | null;
 }
 
 
-export const CategoryMetricCard = ({ metric, value, benchmark, message, metric_i18n, message_i18n, benchmark_i18n }: CategoryMetricCardProps) => {
+export const CategoryMetricCard = ({ metric, value, benchmark, message, metric_i18n, value_i18n, message_i18n, benchmark_i18n }: CategoryMetricCardProps) => {
   const { t } = useTranslation();
   const displayMetric = renderTranslatable(metric, metric_i18n, t);
   const displayMessage = renderTranslatable(message, message_i18n, t);
   const displayBenchmark = renderTranslatable(benchmark, benchmark_i18n, t);
 
   const displayValue = (() => {
+    if (value_i18n) {
+      return renderTranslatable(String(value ?? '-'), value_i18n, t);
+    }
     if (value === null || value === undefined) return '-';
     if (typeof value === 'number') {
       // Use original metric (Indonesian) for format checks — stable across languages

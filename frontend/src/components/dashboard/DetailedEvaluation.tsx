@@ -13,6 +13,7 @@ interface RowScore {
   message: string;
   score: number;
   metric_i18n?: { key: string; vars: Record<string, string> } | null;
+  value_i18n?: { key: string; vars: Record<string, string> } | null;
   message_i18n?: { key: string; vars: Record<string, string> } | null;
   benchmark_i18n?: { key: string; vars: Record<string, string> } | null;
 }
@@ -76,6 +77,7 @@ export const DetailedEvaluation = ({ scoreBreakdown }: DetailedEvaluationProps) 
                               benchmark={row.benchmark}
                               message={row.message}
                               metric_i18n={row.metric_i18n}
+                              value_i18n={row.value_i18n}
                               message_i18n={row.message_i18n}
                               benchmark_i18n={row.benchmark_i18n}
                             />

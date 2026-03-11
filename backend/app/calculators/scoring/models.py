@@ -26,6 +26,7 @@ class RowScore:
     message: str         # G column: text output
     score: float         # H column: points
     metric_i18n: TranslatableText | None = None
+    value_i18n: TranslatableText | None = None
     message_i18n: TranslatableText | None = None
     benchmark_i18n: TranslatableText | None = None
 

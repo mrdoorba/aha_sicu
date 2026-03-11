@@ -676,9 +676,9 @@ def _score_discount_row(calculator_results: dict, rules: dict | None = None) -> 
     row = RowScore(
         row=73, metric="Discount Check Up",
         value=disc_output, benchmark="-", verdict=f73,
-        message=disc_output, score=h73,
+        message="", score=h73,
         metric_i18n=TranslatableText(key="scoring.discountCheckup", vars={}),
-        message_i18n=TranslatableText(key=i18n_key, vars=i18n_vars),
+        value_i18n=TranslatableText(key=i18n_key, vars=i18n_vars),
     )
     return CategoryScore(
         category="Discount",

@@ -152,6 +152,7 @@ class RowScoreItem(BaseModel):
     message: str
     score: float
     metric_i18n: TranslatableTextSchema | None = None
+    value_i18n: TranslatableTextSchema | None = None
     message_i18n: TranslatableTextSchema | None = None
     benchmark_i18n: TranslatableTextSchema | None = None
 
