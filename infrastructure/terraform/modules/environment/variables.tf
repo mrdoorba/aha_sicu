@@ -31,6 +31,12 @@ variable "db_user" {
   type        = string
 }
 
+variable "db_password" {
+  description = "Database password (from random_password)"
+  type        = string
+  sensitive   = true
+}
+
 variable "github_repo" {
   description = "GitHub repository in format 'owner/repo'"
   type        = string

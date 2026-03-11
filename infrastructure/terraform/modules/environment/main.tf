@@ -108,6 +108,11 @@ resource "google_secret_manager_secret" "db_password" {
   }
 }
 
+resource "google_secret_manager_secret_version" "db_password" {
+  secret      = google_secret_manager_secret.db_password.id
+  secret_data = var.db_password
+}
+
 resource "google_secret_manager_secret" "gsheets_credentials" {
   secret_id = "aha_coms_sicu_${var.environment}_gsheets_credentials"
   project   = var.project_id
@@ -115,6 +120,15 @@ resource "google_secret_manager_secret" "gsheets_credentials" {
   replication {
     auto {}
   }
+}
+
+resource "google_service_account_key" "gsheets_sync" {
+  service_account_id = google_service_account.gsheets_sync.name
+}
+
+resource "google_secret_manager_secret_version" "gsheets_credentials" {
+  secret      = google_secret_manager_secret.gsheets_credentials.id
+  secret_data = base64decode(google_service_account_key.gsheets_sync.private_key)
 }
 
 resource "google_secret_manager_secret" "firebase_admin" {

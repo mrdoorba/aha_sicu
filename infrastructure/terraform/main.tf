@@ -16,6 +16,10 @@ terraform {
       source  = "hashicorp/google-beta"
       version = "~> 7.0"
     }
+    random = {
+      source  = "hashicorp/random"
+      version = "~> 3.0"
+    }
   }
 }
 
@@ -100,6 +104,7 @@ module "dev" {
   cloud_sql_instance_name            = google_sql_database_instance.main.name
   cloud_sql_instance_connection_name = google_sql_database_instance.main.connection_name
   db_user                            = var.db_user
+  db_password                        = random_password.db.result
 
   github_repo        = var.github_repo
   firebase_project_id = var.firebase_project_id
@@ -131,6 +136,7 @@ module "prod" {
   cloud_sql_instance_name            = google_sql_database_instance.main.name
   cloud_sql_instance_connection_name = google_sql_database_instance.main.connection_name
   db_user                            = var.db_user
+  db_password                        = random_password.db.result
 
   github_repo        = var.github_repo
   firebase_project_id = var.firebase_project_id
