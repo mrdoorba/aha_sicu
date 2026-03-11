@@ -222,7 +222,43 @@ def calculate_sheet1(
 
     ak4 = "\n".join(flags)
 
-    return {"ak2": ak2, "ak3": ak3, "ak4": ak4}
+    # --- i18n structured data ---
+    ak2_i18n = {
+        "key": "ads.summary",
+        "vars": {
+            "active": str(count_active),
+            "paused": str(count_paused),
+            "ended": str(count_ended),
+            "unique_count": str(unique_count),
+            "product_pct": _format_pct(product_pct) if product_pct else "0%",
+            "total_products": str(total_products),
+        },
+    }
+
+    ak3_i18n = {
+        "key": "ads.typeBreakdown",
+        "vars": {
+            "semua_total": str(semua_total),
+            "toko_total": str(toko_total),
+            "toko_auto": str(toko_auto),
+            "toko_manual": str(toko_manual),
+        },
+    }
+
+    has_toko = any(_safe_str(r.get("Jenis Iklan")) == "Iklan Toko" for r in rows)
+    ak4_i18n = {
+        "key": "ads.recommendations",
+        "vars": {
+            "product_pct": _format_pct(product_pct) if product_pct else "0%",
+            "active_ratio": _format_pct(active_ratio) if active_ratio else "0%",
+            "has_toko": "true" if has_toko else "false",
+        },
+    }
+
+    return {
+        "ak2": ak2, "ak3": ak3, "ak4": ak4,
+        "ak2_i18n": ak2_i18n, "ak3_i18n": ak3_i18n, "ak4_i18n": ak4_i18n,
+    }
 
 
 # ---------------------------------------------------------------------------
