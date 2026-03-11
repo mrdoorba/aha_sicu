@@ -1,0 +1,12 @@
+{
+  "planPath": "docs/plans/2026-03-11-chained-evaluation-flow.md",
+  "tasks": [
+    {"id": 0, "subject": "Task 0: Add Indonesian translations for calculator buttons and step-aware loading labels", "status": "pending"},
+    {"id": 1, "subject": "Task 1: Chain run-all into useScoring's generateScore", "status": "pending", "blockedBy": [0]},
+    {"id": 2, "subject": "Task 2: Update ScoringSection to show step-aware loading labels", "status": "pending", "blockedBy": [1]},
+    {"id": 3, "subject": "Task 3: Chain full flow into Simpan Evaluasi", "status": "pending", "blockedBy": [1]},
+    {"id": 4, "subject": "Task 4: Wire scoringStep and saveStep through EvaluationPage", "status": "pending", "blockedBy": [2, 3]},
+    {"id": 5, "subject": "Task 5: Final integration test and cleanup", "status": "pending", "blockedBy": [4]}
+  ],
+  "lastUpdated": "2026-03-11T09:00:00Z"
+}
