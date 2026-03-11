@@ -24,10 +24,13 @@ from app.calculators.scoring.categories import (
 from app.calculators.scoring.computations import (
     _assemble_email_body,
     _compute_g66,
+    _compute_g66_i18n,
     _compute_g68,
     _compute_g72,
     _compute_g73,
+    _compute_g73_i18n,
     _compute_g75,
+    _compute_g75_i18n,
 )
 from app.calculators.scoring.helpers import (
     _get_nested,
@@ -45,7 +48,7 @@ from app.calculators.scoring.messages import (
     _generate_products_messages,
     _generate_visitors_messages,
 )
-from app.calculators.scoring.models import ScoringResult
+from app.calculators.scoring.models import ScoringResult, TranslatableText
 
 def calculate_score(
     manual_data: dict,
@@ -136,6 +139,15 @@ def calculate_score(
     g66 = _compute_g66(all_categories, manual_data, g68)
     g75 = _compute_g75(verdict, store_name, rules)
 
+    # --- i18n companions ---
+    g66_i18n = _compute_g66_i18n(all_categories, manual_data, g68)
+    g73_i18n = _compute_g73_i18n(verdict, g72, d13, rules)
+    g75_i18n = _compute_g75_i18n(verdict, store_name, rules)
+    email_subject_i18n = TranslatableText(
+        key="email.subject",
+        vars={"store": store_name, "period": period},
+    )
+
     # --- Email ---
     email_subject = f"🏥 AHA Store Internal Check Up (Store ICU) - {store_name} {period}"
     email_body = _assemble_email_body(
@@ -155,4 +167,8 @@ def calculate_score(
         email_body=email_body,
         template=template,
         rule_version=rule_version,
+        conclusion_i18n=g66_i18n,
+        marketing_budget_i18n=g73_i18n,
+        closing_message_i18n=g75_i18n,
+        email_subject_i18n=email_subject_i18n,
     )

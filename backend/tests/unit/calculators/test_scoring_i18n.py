@@ -1,5 +1,8 @@
 """Tests for i18n fields in scoring categories and messages."""
 
+import pytest
+
+from app.calculators.scoring import calculate_score
 from app.calculators.scoring.categories import (
     _score_ads,
     _score_business,
@@ -379,3 +382,87 @@ def test_discount_no_data_has_i18n():
 
     for row in cat.rows:
         assert row.metric_i18n is not None, f"Row {row.row} missing metric_i18n"
+
+
+# ---------------------------------------------------------------------------
+# Task 5: Wire i18n into calculate_score() orchestrator
+# ---------------------------------------------------------------------------
+
+@pytest.fixture
+def full_manual_data():
+    return {
+        "operational": {
+            "unfulfilledOrderRate": 0.5, "lateShipmentRate": 0.3,
+            "preparationTime": 0.8, "chatResponseRate": 98.0, "overallRating": 4.9,
+        },
+        "business": {
+            "salesMonth0": 200_000_000, "salesMonth1": 180_000_000,
+            "salesMonth2": 190_000_000, "salesMonth3": 170_000_000,
+            "salesMonth4": 160_000_000, "salesMonth5": 150_000_000,
+        },
+        "visitors": {
+            "totalVisitors": 100_000, "returningVisitors": 30_000,
+            "totalFollowers": 60_000,
+        },
+        "promoTools": {
+            "promoToko": 20_000_000, "paketDiskon": 40_000_000,
+            "komboHemat": 5_000_000, "flashSale": 5_000_000,
+            "voucher": 180_000_000, "shopeeLive": 35_000_000,
+            "gameToko": 3_000_000, "brandMembership": 4_000_000,
+            "gratisOngkir": 10_000_000, "chatBroadcast": 3_000_000,
+            "programAfiliasi": 40_000_000,
+        },
+        "products": {"productCount": 50, "storeStatus": "Shopee Mall"},
+        "ads": {"adSales": 50_000_000, "adCost": 5_000_000},
+        "campaign": {"nominatedSessions": 18, "availableSessions": 20},
+        "competition": {
+            "product1": {"keyword": "sepatu", "sellingPrice": 180_000, "marketPrice": 200_000, "productName": "A"},
+            "product2": {"keyword": "sandal", "sellingPrice": 140_000, "marketPrice": 150_000, "productName": "B"},
+            "product3": {"keyword": "tas", "sellingPrice": 280_000, "marketPrice": 300_000, "productName": "C"},
+        },
+    }
+
+
+@pytest.fixture
+def full_calculator_results():
+    return {
+        "ads_keyword": {"details": {}, "output_text": "Sheet 1\nSheet 2"},
+        "top_sku": {
+            "details": {"average_stock": 30, "output_1": [
+                {"kode_variasi": "A1", "product_name": "A", "rata2_harga_jual": 180_000},
+            ]},
+            "output_text": "",
+        },
+        "discount": {
+            "details": {"fake_discount_flag": False},
+            "output_text": "% Diskon TOP SKU: 25.0%\nRange: 15.0% ~ 35.0%\nVoucher 3.0%\nPaket Diskon 1.0%",
+        },
+    }
+
+
+def test_calculate_score_has_i18n_fields(full_manual_data, full_calculator_results):
+    result = calculate_score(
+        manual_data=full_manual_data,
+        calculator_results=full_calculator_results,
+        template="fashion",
+        verdict="✔️",
+        store_name="Test Store",
+        period="Jan 2026",
+        brand_name="Test Brand",
+    )
+    # ScoringResult i18n fields
+    assert result.conclusion_i18n is not None
+    assert len(result.conclusion_i18n) > 0
+    assert result.closing_message_i18n is not None
+    assert result.email_subject_i18n is not None
+
+    # CategoryScore i18n
+    for cat in result.category_scores:
+        assert cat.category_i18n is not None, f"{cat.category} missing category_i18n"
+
+    # RowScore i18n (spot check operational)
+    ops = next(c for c in result.category_scores if c.category == "Kesehatan Operasional Toko")
+    for row in ops.rows:
+        assert row.metric_i18n is not None, f"Row {row.row} missing metric_i18n"
+        if row.message:
+            assert row.message_i18n is not None, f"Row {row.row} missing message_i18n"
