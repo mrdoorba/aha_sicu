@@ -43,6 +43,20 @@ Author: Mr. Door
 
 ---
 
+## SOLID Principles
+
+Apply SOLID where it reduces complexity — not as ritual.
+
+- **S — Single Responsibility:** Each class/module has one reason to change. If a class handles both business logic and persistence, split it.
+- **O — Open/Closed:** Extend behavior through new code (new classes, strategies, handlers), not by modifying existing working code. Use abstractions (protocols, interfaces) as extension points.
+- **L — Liskov Substitution:** Subtypes must be substitutable for their base types without breaking behavior. If overriding changes the contract, the hierarchy is wrong.
+- **I — Interface Segregation:** Prefer small, focused interfaces over fat ones. Clients should not depend on methods they don't use.
+- **D — Dependency Inversion:** High-level modules depend on abstractions, not concrete implementations. Inject dependencies; don't instantiate them internally.
+
+**When to apply:** Classes with multiple responsibilities, modules that change for unrelated reasons, or code that's hard to test due to tight coupling. **When to skip:** Simple scripts, one-off utilities, or code that's unlikely to change.
+
+---
+
 ## Code Style & Conventions
 
 ### General Principles
