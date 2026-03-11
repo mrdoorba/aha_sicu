@@ -134,6 +134,13 @@ class ScoringRequest(BaseModel):
     email: str | None = Field(default=None, max_length=254)
 
 
+class TranslatableTextSchema(BaseModel):
+    """i18n structured data for frontend translation."""
+
+    key: str
+    vars: dict[str, str] = {}
+
+
 class RowScoreItem(BaseModel):
     """A single metric row score."""
 
@@ -144,6 +151,9 @@ class RowScoreItem(BaseModel):
     verdict: str
     message: str
     score: float
+    metric_i18n: TranslatableTextSchema | None = None
+    message_i18n: TranslatableTextSchema | None = None
+    benchmark_i18n: TranslatableTextSchema | None = None
 
 
 class CategoryScoreItem(BaseModel):
@@ -154,6 +164,7 @@ class CategoryScoreItem(BaseModel):
     max_score: float
     rows: list[RowScoreItem]
     available: bool = True
+    category_i18n: TranslatableTextSchema | None = None
 
 
 class ScoringResponse(BaseModel):
@@ -171,6 +182,10 @@ class ScoringResponse(BaseModel):
     email_body: str
     template: str
     rule_version: int
+    conclusion_i18n: list[TranslatableTextSchema] | None = None
+    marketing_budget_i18n: TranslatableTextSchema | None = None
+    closing_message_i18n: TranslatableTextSchema | None = None
+    email_subject_i18n: TranslatableTextSchema | None = None
 
 
 # ---------------------------------------------------------------------------
