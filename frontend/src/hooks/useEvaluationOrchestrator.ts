@@ -96,9 +96,12 @@ export function useEvaluationOrchestrator(brandId: number) {
 
     calcResults['scoring_summary'] = {
       conclusion: scoringResult.conclusion,
+      conclusion_i18n: scoringResult.conclusion_i18n,
       marketing_estimation: scoringResult.marketing_estimation,
       marketing_budget: scoringResult.marketing_budget,
+      marketing_budget_i18n: scoringResult.marketing_budget_i18n,
       closing_message: scoringResult.closing_message,
+      closing_message_i18n: scoringResult.closing_message_i18n,
     };
 
     saveEvaluation(
