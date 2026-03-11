@@ -25,6 +25,9 @@ class RowScore:
     verdict: str         # F column: "✔️" or "❌" or "-"
     message: str         # G column: text output
     score: float         # H column: points
+    metric_i18n: TranslatableText | None = None
+    message_i18n: TranslatableText | None = None
+    benchmark_i18n: TranslatableText | None = None
 
 
 @dataclass
@@ -36,6 +39,7 @@ class CategoryScore:
     max_score: float
     rows: list[RowScore] = field(default_factory=list)
     available: bool = True  # False when required calculator data is missing
+    category_i18n: TranslatableText | None = None
 
 
 @dataclass
@@ -54,3 +58,7 @@ class ScoringResult:
     email_body: str                  # G1 assembled
     template: str                    # "fashion" or "non_fashion"
     rule_version: int = 1            # Version of rules used for scoring
+    conclusion_i18n: list[TranslatableText] | None = None
+    marketing_budget_i18n: TranslatableText | None = None
+    closing_message_i18n: TranslatableText | None = None
+    email_subject_i18n: TranslatableText | None = None
