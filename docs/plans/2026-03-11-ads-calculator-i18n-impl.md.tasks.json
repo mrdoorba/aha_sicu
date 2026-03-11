@@ -1,0 +1,15 @@
+{
+  "planPath": "docs/plans/2026-03-11-ads-calculator-i18n-impl.md",
+  "tasks": [
+    {"id": 0, "subject": "Task 0: Add AK4 individual flag i18n keys to locale files", "status": "pending"},
+    {"id": 1, "subject": "Task 1: Add Sheet 2 (AL2-AL9) i18n keys to locale files", "status": "pending"},
+    {"id": 2, "subject": "Task 2: Refactor AK4 backend to return individual flag i18n objects", "status": "pending", "blockedBy": [0]},
+    {"id": 3, "subject": "Task 3: Add Sheet 2 i18n objects to backend calculator", "status": "pending", "blockedBy": [1]},
+    {"id": 4, "subject": "Task 4: Pass i18n objects through to details dict", "status": "pending", "blockedBy": [2, 3]},
+    {"id": 5, "subject": "Task 5: Update frontend TypeScript types for i18n fields", "status": "pending", "blockedBy": [4]},
+    {"id": 6, "subject": "Task 6: Rewrite AdsKeywordResults component to use renderTranslatable", "status": "pending", "blockedBy": [4, 5]},
+    {"id": 7, "subject": "Task 7: Add CSV value translation keys for ad entry vars", "status": "pending", "blockedBy": [0, 1, 5]},
+    {"id": 8, "subject": "Task 8: End-to-end verification", "status": "pending", "blockedBy": [6, 7]}
+  ],
+  "lastUpdated": "2026-03-11T00:00:00Z"
+}
