@@ -24,9 +24,9 @@ let mockMutationReturn: {
   reset: mockReset,
 };
 
-const mockToPng = vi.fn();
-vi.mock('html-to-image', () => ({
-  toPng: (...args: unknown[]) => mockToPng(...args),
+const mockCaptureChart = vi.fn();
+vi.mock('../../lib/captureChart', () => ({
+  captureChartAsPng: (...args: unknown[]) => mockCaptureChart(...args),
 }));
 
 vi.mock('react-i18next', () => ({
@@ -99,7 +99,7 @@ describe('SendEmailDialog', () => {
     };
     mockMutate.mockReset();
     mockReset.mockReset();
-    mockToPng.mockReset();
+    mockCaptureChart.mockReset();
     mockToastSuccess.mockReset();
   });
 
@@ -184,7 +184,7 @@ describe('SendEmailDialog', () => {
   });
 
   it('proceeds with send when chart capture fails (chart is optional)', async () => {
-    mockToPng.mockRejectedValue(new Error('canvas error'));
+    mockCaptureChart.mockRejectedValue(new Error('canvas error'));
     renderDialog();
 
     const sendBtn = screen.getByRole('button', { name: /sendEmail\.send/i });
@@ -233,7 +233,7 @@ describe('SendEmailDialog', () => {
   });
 
   it('sends correct payload shape with recipients array, cc, bcc, note', async () => {
-    mockToPng.mockResolvedValue('data:image/png;base64,abc123');
+    mockCaptureChart.mockResolvedValue('abc123');
     mockMutate.mockImplementation(
       (_params: Record<string, unknown>, opts?: { onSuccess?: () => void }) => {
         opts?.onSuccess?.();
@@ -263,7 +263,7 @@ describe('SendEmailDialog', () => {
   });
 
   it('calls onSuccess callback on successful send', async () => {
-    mockToPng.mockResolvedValue('data:image/png;base64,abc123');
+    mockCaptureChart.mockResolvedValue('abc123');
     mockMutate.mockImplementation(
       (_params: Record<string, unknown>, opts?: { onSuccess?: () => void }) => {
         opts?.onSuccess?.();

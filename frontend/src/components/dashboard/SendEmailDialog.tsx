@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Mail, Loader2, ChevronDown, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
-import { toPng } from 'html-to-image';
+import { captureChartAsPng } from '../../lib/captureChart';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -117,42 +117,9 @@ export function SendEmailDialog({
     const node = chartRef.current;
     if (node) {
       try {
-        // html-to-image crashes on SVG elements with CSS variable values
-        // (e.g. stroke="var(--chart-grid)") because it calls .trim() on
-        // undefined computed style values. Fix: inline all computed styles
-        // on SVG elements before capture, then restore.
-        const svgEls = Array.from(node.querySelectorAll('svg, svg *'));
-        const saved = new Map<Element, Map<string, string>>();
-        for (const el of svgEls) {
-          const patches = new Map<string, string>();
-          for (const attr of ['fill', 'stroke', 'color', 'stop-color', 'flood-color', 'lighting-color']) {
-            const val = el.getAttribute(attr);
-            if (val?.includes('var(')) {
-              patches.set(attr, val);
-              const computed = getComputedStyle(el as HTMLElement).getPropertyValue(attr);
-              el.setAttribute(attr, computed || 'none');
-            }
-          }
-          if (patches.size > 0) saved.set(el, patches);
-        }
-
-        try {
-          const dataUrl = await toPng(node, {
-            cacheBust: true,
-            backgroundColor: '#ffffff',
-            pixelRatio: 2,
-          });
-          chartImage = dataUrl.replace(/^data:image\/png;base64,/, '');
-        } finally {
-          for (const [el, patches] of saved) {
-            for (const [attr, val] of patches) {
-              el.setAttribute(attr, val);
-            }
-          }
-        }
+        chartImage = await captureChartAsPng(node);
       } catch (err) {
         console.error('[SendEmail] Chart capture failed:', err);
-        // Continue without chart — email will use placeholder
       }
     }
 
