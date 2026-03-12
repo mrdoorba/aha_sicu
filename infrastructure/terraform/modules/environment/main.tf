@@ -131,15 +131,6 @@ resource "google_secret_manager_secret_version" "gsheets_credentials" {
   secret_data = base64decode(google_service_account_key.gsheets_sync.private_key)
 }
 
-resource "google_secret_manager_secret" "firebase_admin" {
-  secret_id = "aha_coms_sicu_${var.environment}_firebase_admin"
-  project   = var.project_id
-
-  replication {
-    auto {}
-  }
-}
-
 resource "google_secret_manager_secret" "smtp_password" {
   secret_id = "aha_coms_sicu_${var.environment}_smtp_password"
   project   = var.project_id
@@ -174,13 +165,6 @@ resource "google_secret_manager_secret_iam_member" "api_sa_gsheets" {
 
 resource "google_secret_manager_secret_iam_member" "api_sa_smtp_password" {
   secret_id = google_secret_manager_secret.smtp_password.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.cloud_run.email}"
-  project   = var.project_id
-}
-
-resource "google_secret_manager_secret_iam_member" "api_sa_firebase" {
-  secret_id = google_secret_manager_secret.firebase_admin.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.cloud_run.email}"
   project   = var.project_id
@@ -251,16 +235,6 @@ resource "google_cloud_run_v2_service" "api" {
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.gsheets_credentials.secret_id
-            version = "latest"
-          }
-        }
-      }
-
-      env {
-        name = "FIREBASE_CREDENTIALS_JSON"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.firebase_admin.secret_id
             version = "latest"
           }
         }
@@ -360,7 +334,6 @@ resource "google_cloud_run_v2_service" "api" {
   depends_on = [
     google_secret_manager_secret_iam_member.api_sa_db_password,
     google_secret_manager_secret_iam_member.api_sa_gsheets,
-    google_secret_manager_secret_iam_member.api_sa_firebase,
     google_secret_manager_secret_iam_member.api_sa_smtp_password,
   ]
 }
