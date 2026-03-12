@@ -34,26 +34,28 @@ function sortBy<T>(data: T[], field: keyof T, dir: SortDir): T[] {
 
 export function TopSkuResults({ result }: TopSkuResultsProps) {
   const { t } = useTranslation();
-  if (!isTopSkuDetails(result.details)) {
-    return <p className="text-sm text-muted-foreground">Invalid top SKU data</p>;
-  }
-  const details = result.details;
-
   const [isOpen, setIsOpen] = useState(false);
   const [revSortField, setRevSortField] = useState<keyof TopSkuDetails['output_1'][0]>('total_omzet');
   const [revSortDir, setRevSortDir] = useState<SortDir>('desc');
   const [stockSortField, setStockSortField] = useState<keyof TopSkuDetails['output_2'][0]>('stok');
   const [stockSortDir, setStockSortDir] = useState<SortDir>('desc');
 
+  const valid = isTopSkuDetails(result.details);
+  const details = valid ? result.details : null;
+
   const sortedRevenue = useMemo(
-    () => sortBy(details.output_1 ?? [], revSortField, revSortDir).slice(0, TOP_N),
-    [details.output_1, revSortField, revSortDir],
+    () => details ? sortBy(details.output_1 ?? [], revSortField, revSortDir).slice(0, TOP_N) : [],
+    [details, revSortField, revSortDir],
   );
 
   const sortedStock = useMemo(
-    () => sortBy(details.output_2 ?? [], stockSortField, stockSortDir).slice(0, TOP_N),
-    [details.output_2, stockSortField, stockSortDir],
+    () => details ? sortBy(details.output_2 ?? [], stockSortField, stockSortDir).slice(0, TOP_N) : [],
+    [details, stockSortField, stockSortDir],
   );
+
+  if (!details) {
+    return <p className="text-sm text-muted-foreground">Invalid top SKU data</p>;
+  }
 
   const toggleRevSort = (field: keyof TopSkuDetails['output_1'][0]) => {
     if (revSortField === field) {

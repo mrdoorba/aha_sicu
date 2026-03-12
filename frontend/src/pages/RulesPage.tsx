@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { useRules, type ScoringRule, type ScoringRules, type RuleThreshold } from '../hooks/useRules';
+import { useRules, type ScoringRules, type RuleThreshold } from '../hooks/useRules';
 import type { UpdateRuleParams } from '../hooks/useUpdateRule';
 import { useUpdateRule } from '../hooks/useUpdateRule';
 import { useCurrentUser } from '../hooks/useCurrentUser';

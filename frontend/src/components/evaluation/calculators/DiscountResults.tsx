@@ -1,6 +1,6 @@
 import { AlertTriangle } from 'lucide-react';
 import { Badge } from '../../ui/badge';
-import type { CalculatorResult, DiscountDetails } from '../../../hooks/useCalculator';
+import type { CalculatorResult } from '../../../hooks/useCalculator';
 import { isDiscountDetails } from '../../../lib/calculatorGuards';
 
 interface DiscountResultsProps {
