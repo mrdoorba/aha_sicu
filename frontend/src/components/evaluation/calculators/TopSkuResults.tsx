@@ -40,8 +40,9 @@ export function TopSkuResults({ result }: TopSkuResultsProps) {
   const [stockSortField, setStockSortField] = useState<keyof TopSkuDetails['output_2'][0]>('stok');
   const [stockSortDir, setStockSortDir] = useState<SortDir>('desc');
 
-  const valid = isTopSkuDetails(result.details);
-  const details = valid ? result.details : null;
+  const details: TopSkuDetails | null = isTopSkuDetails(result.details)
+    ? result.details
+    : null;
 
   const sortedRevenue = useMemo(
     () => details ? sortBy(details.output_1 ?? [], revSortField, revSortDir).slice(0, TOP_N) : [],

@@ -44,8 +44,9 @@ export function useRequestSignedUrl() {
         body,
       });
       if (error) {
+        const err: unknown = error;
         throw new Error(
-          isApiErrorWithDetail(error) ? error.detail : 'Failed to get signed URL',
+          isApiErrorWithDetail(err) ? err.detail : 'Failed to get signed URL',
         );
       }
       return data satisfies { upload_url: string; upload_id: string; expires_at: string };
@@ -83,8 +84,9 @@ export function useProcessUpload() {
           signal: controller.signal,
         });
         if (error) {
+          const err: unknown = error;
           throw new Error(
-            isApiErrorWithDetail(error) ? error.detail : 'Failed to process upload',
+            isApiErrorWithDetail(err) ? err.detail : 'Failed to process upload',
           );
         }
         return data satisfies ProcessUploadResponse;

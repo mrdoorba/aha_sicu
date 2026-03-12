@@ -6,7 +6,7 @@ import { useEvaluationState, useSaveEvaluationInputs, type CategoryType } from '
 import { useAutoSaveForm } from './useAutoSaveForm';
 import { computeSectionProgress } from '../components/evaluation/forms/formConfig';
 import { useScoring } from './useScoring';
-import type { ScoringResult, CategoryScore } from './useScoring';
+import type { ScoringResult, ScoringRequest, CategoryScore } from './useScoring';
 import { useSaveEvaluation } from './useSaveEvaluation';
 import { useCalculatorResults, useRunAllCalculators } from './useCalculator';
 import type { CalculatorResultsListResponse } from './useCalculator';
@@ -105,8 +105,10 @@ export function useEvaluationOrchestrator(brandId: number) {
 
   // --- Handlers ---
   const handleSaveEvaluation = useCallback(async () => {
-    const categoryType = evaluationState?.category_type;
-    if (!categoryType) return;
+    const rawCategory = evaluationState?.category_type;
+    if (!rawCategory || !isCategoryType(rawCategory)) return;
+    // Capture the narrowed value so it stays typed inside the async closure
+    const validatedCategory: CategoryType = rawCategory;
 
     try {
       // Step 1: Recalculate all
@@ -115,8 +117,8 @@ export function useEvaluationOrchestrator(brandId: number) {
 
       // Step 2: Score
       setSaveStep('scoring');
-      const scoringRequest = {
-        template: categoryType,
+      const scoringRequest: ScoringRequest = {
+        template: validatedCategory,
         verdict: scoringResult?.verdict ?? '✔️',
         store_name: brand?.brand_name ?? '',
         period: lastPeriod || generatePeriodOptions()[0],
@@ -159,9 +161,9 @@ export function useEvaluationOrchestrator(brandId: number) {
       };
 
       // scoreResponse.template is string from API — narrow it safely
-      const saveTemplate = isCategoryType(scoreResponse.template)
+      const saveTemplate: CategoryType = isCategoryType(scoreResponse.template)
         ? scoreResponse.template
-        : categoryType; // fallback to the already-validated category
+        : validatedCategory; // fallback to the already-validated category
 
       await new Promise<void>((resolve, reject) => {
         saveEvaluation(

@@ -46,12 +46,16 @@ export function useEvaluationDetail(id: number) {
         },
       );
       if (error) {
-        if (isApiErrorWithCode(error)) {
-          throw new ApiError(error.detail, error.code);
+        // openapi-fetch types `error` narrowly based on the schema, but the
+        // server can return arbitrary error shapes (e.g. { detail, code }).
+        // Widen to `unknown` so the runtime type guard can narrow properly.
+        const rawError: unknown = error;
+        if (isApiErrorWithCode(rawError)) {
+          throw new ApiError(rawError.detail, rawError.code);
         }
         throw new ApiError('Failed to fetch evaluation detail');
       }
-      return data as EvaluationDetail;
+      return data;
     },
     enabled: id > 0,
   });

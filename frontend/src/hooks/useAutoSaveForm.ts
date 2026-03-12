@@ -11,6 +11,15 @@ function isFlatCategory(key: string): key is FlatCategory {
   return ['operational', 'business', 'visitors', 'promoTools', 'products', 'ads', 'campaign'].includes(key);
 }
 
+/** Correlated update helper — preserves key-value relationship so TS doesn't widen to intersection */
+function setFlatCategory<K extends FlatCategory>(
+  target: Partial<ManualData>,
+  category: K,
+  value: ManualData[K],
+): void {
+  target[category] = value;
+}
+
 function isCompetitionProductKey(key: string): key is keyof CompetitionData {
   return key === 'product1' || key === 'product2' || key === 'product3';
 }
@@ -111,7 +120,7 @@ export function useAutoSaveForm({ brandId, categoryType, initialData }: UseAutoS
           const baseCategory = base[category];
           const prevCategory = prev[category];
           const currentCat = { ...baseCategory, ...prevCategory, [key]: value };
-          (updated as Partial<ManualData>)[category] = currentCat;
+          setFlatCategory(updated, category, currentCat);
         }
 
         return updated;

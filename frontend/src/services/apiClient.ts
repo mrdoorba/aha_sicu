@@ -202,7 +202,7 @@ interface paths {
               };
               auto_calculated: Array<{
                 calculator_type: string;
-                status: string;
+                status: 'success' | 'skipped' | 'error';
                 result?: Record<string, unknown>;
                 reason?: string;
               }>;

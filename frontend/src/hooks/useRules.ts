@@ -16,13 +16,10 @@ interface ApiScoringRule {
  * A full deep validation is impractical for this shape — we trust the backend contract
  * but verify the skeleton so a schema drift fails fast here, not deep in a component.
  */
-function looksLikeScoringRules(value: Record<string, unknown>): value is ScoringRules {
-  return (
-    typeof value === 'object' &&
-    value !== null &&
-    'interpretation' in value &&
-    typeof value.interpretation === 'object'
-  );
+function looksLikeScoringRules(value: unknown): value is ScoringRules {
+  if (typeof value !== 'object' || value === null) return false;
+  if (!('interpretation' in value)) return false;
+  return typeof value.interpretation === 'object';
 }
 
 /**

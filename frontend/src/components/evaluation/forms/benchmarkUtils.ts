@@ -1,5 +1,23 @@
 import type { ScoringRules, RuleThreshold } from '../../../hooks/useRules';
-import { isRecord } from '../../../lib/typeGuards';
+
+/** Categories in ScoringRules whose values are Record<string, RuleThreshold>. */
+type ThresholdCategory = Exclude<keyof ScoringRules, 'competition' | 'interpretation'>;
+
+function isThresholdCategory(key: string): key is ThresholdCategory {
+  const categories: ReadonlySet<string> = new Set<ThresholdCategory>([
+    'operational',
+    'business',
+    'visitors',
+    'promo_tools',
+    'products_status',
+    'ads',
+    'campaign',
+    'stock',
+    'discount',
+    'marketing',
+  ]);
+  return categories.has(key);
+}
 
 const COMPARISON_OPERATORS: Record<string, string> = {
   gte: '>',
@@ -58,10 +76,11 @@ export function getBenchmarkFromRules(
 ): string | undefined {
   if (!rules) return fallback;
 
-  const categoryRules = rules[category as keyof ScoringRules];
-  if (!isRecord(categoryRules)) return fallback;
+  if (!isThresholdCategory(category)) return fallback;
 
-  const rule = categoryRules[key] as RuleThreshold | undefined;
+  const categoryRules: Record<string, RuleThreshold> = rules[category];
+
+  const rule: RuleThreshold | undefined = categoryRules[key];
   if (!rule || rule.threshold == null) return fallback;
 
   const operator = rule.comparison ? COMPARISON_OPERATORS[rule.comparison] : '>';

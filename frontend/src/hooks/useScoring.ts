@@ -39,7 +39,7 @@ export interface ScoringResult {
   rule_version: number;
 }
 
-interface ScoringRequest {
+export interface ScoringRequest {
   template: 'fashion' | 'non_fashion';
   verdict: string;
   store_name: string;

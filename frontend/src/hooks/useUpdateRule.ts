@@ -17,8 +17,9 @@ export function useUpdateRule() {
         body: { rules },
       });
       if (error) {
+        const err: unknown = error;
         throw new Error(
-          isApiErrorWithDetail(error) ? error.detail : 'Failed to update scoring rules',
+          isApiErrorWithDetail(err) ? err.detail : 'Failed to update scoring rules',
         );
       }
       return data;
