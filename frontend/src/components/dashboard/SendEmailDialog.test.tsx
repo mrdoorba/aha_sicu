@@ -183,7 +183,7 @@ describe('SendEmailDialog', () => {
     expect(screen.getByRole('button', { name: /sendEmail\.retry/i })).toBeInTheDocument();
   });
 
-  it('shows capture error message when chart capture fails', async () => {
+  it('proceeds with send when chart capture fails (chart is optional)', async () => {
     mockToPng.mockRejectedValue(new Error('canvas error'));
     renderDialog();
 
@@ -191,9 +191,10 @@ describe('SendEmailDialog', () => {
     fireEvent.click(sendBtn);
 
     await waitFor(() => {
-      expect(screen.getByText('sendEmail.captureError')).toBeInTheDocument();
+      expect(mockMutate).toHaveBeenCalled();
     });
-    expect(mockMutate).not.toHaveBeenCalled();
+    // Chart image should be empty string when capture fails
+    expect(mockMutate.mock.calls[0][0].chartImage).toBe('');
   });
 
   it('renders note textarea with character count', () => {

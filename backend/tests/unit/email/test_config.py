@@ -100,12 +100,12 @@ class TestSendEmailRequestSchema:
                 chart_image="abc123",
             )
 
-    def test_requires_chart_image(self) -> None:
-        with pytest.raises(ValidationError, match="chart_image"):
-            SendEmailRequest(
-                evaluation_id=1,
-                recipients=["test@example.com"],
-            )
+    def test_chart_image_defaults_to_empty(self) -> None:
+        req = SendEmailRequest(
+            evaluation_id=1,
+            recipients=["test@example.com"],
+        )
+        assert req.chart_image == ""
 
     def test_subject_optional(self) -> None:
         req = SendEmailRequest(
