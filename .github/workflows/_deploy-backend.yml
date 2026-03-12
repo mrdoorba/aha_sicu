@@ -36,7 +36,7 @@ jobs:
       CLOUD_SQL_PROXY_VERSION: "2.14.3"
 
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v3
@@ -85,7 +85,7 @@ jobs:
           echo "Backup created successfully"
 
       - name: Install uv
-        uses: astral-sh/setup-uv@v5
+        uses: astral-sh/setup-uv@v7
         with:
           version: "latest"
           enable-cache: true
