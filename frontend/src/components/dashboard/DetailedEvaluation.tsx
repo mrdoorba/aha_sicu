@@ -74,7 +74,7 @@ export const DetailedEvaluation = ({ scoreBreakdown }: DetailedEvaluationProps) 
                               value={row.value}
                               verdict={row.verdict}
                               score={row.score}
-                              benchmark={row.benchmark}
+                              benchmark={row.metric === 'Biaya (iklan)' ? '-' : row.benchmark}
                               message={row.message}
                               metric_i18n={row.metric_i18n}
                               value_i18n={row.value_i18n}
