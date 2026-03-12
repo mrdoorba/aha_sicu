@@ -560,7 +560,7 @@
   "closing.experience": "Through our experience with hundreds of online stores, an online store's revenue is highly dependent on the store's operational performance level (on-time delivery >90%, cancellation rate <1%, etc.).\n\nWe are confident that the AHA system can add value to Store {{store_name}} by increasing incoming orders and significantly boosting revenue from current levels. However, we observe a fairly high delay rate, and our concern is that if orders increase and the delay rate rises, it could potentially cause the store to receive penalties and affect store performance.\n\nTherefore, if the brand can maximize delivery speed and bring the delay rate below 2% and packaging time under one day, we are very open to further discussions for collaboration with {{store_name}}.",
 
   "ads.summary": "• Total Ads: {{active}} Active, {{paused}} Paused and {{ended}} Ended.\n• Involving {{unique_count}} ({{product_pct}}) products out of total products: {{total_products}}.",
-  "ads.typeBreakdown": "Ad Type Breakdown: {{semua_total}} All Placement, {{toko_total}} Store Ads ({{toko_auto}} Auto, {{toko_manual}} Manual)",
+  "ads.typeBreakdown": "• Active Ad Types Used:\n  {{semua_total}} Auto Product Ads All Placement.\n  {{toko_total}} Store Ads ({{toko_auto}} Auto & {{toko_manual}} Manual).",
   "ads.recommendations": "Ads Recommendations",
   "ads.flag.productLow": "📌 Product participation in ads is not optimal (recommended >50%).",
   "ads.flag.productGood": "📌 Product participation in ads is good enough.",
