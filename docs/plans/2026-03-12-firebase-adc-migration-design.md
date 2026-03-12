@@ -46,3 +46,16 @@ After deployment:
 - Create a new user from the Accounts page
 - Reset a user's password
 - Confirm login still works
+
+## Manual Cleanup (requires project owner/IAM admin)
+
+After deploying and verifying the changes:
+
+- [ ] `terraform apply` to remove the secret and env var from Cloud Run
+- [ ] Delete old SA: `gcloud iam service-accounts delete aha-sicu-dev-api-sa@fbi-dev-484410.iam.gserviceaccount.com --project=fbi-dev-484410`
+- [ ] Delete Secret Manager secrets (Terraform will handle this if the secret resource is removed, but verify):
+  - `gcloud secrets delete aha_coms_sicu_dev_firebase_admin --project=fbi-dev-484410`
+  - `gcloud secrets delete aha_coms_sicu_prod_firebase_admin --project=fbi-dev-484410`
+- [ ] Verify: create a new user from Accounts page
+- [ ] Verify: reset a user's password
+- [ ] Verify: login still works
