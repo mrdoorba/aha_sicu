@@ -115,7 +115,30 @@ export function SendEmailDialog({
 
     let dataUrl: string;
     try {
-      dataUrl = await toPng(chartRef.current!, { cacheBust: true, backgroundColor: '#ffffff', pixelRatio: 2 });
+      const node = chartRef.current!;
+      // Resolve CSS variables to computed values before capture —
+      // html-to-image cannot resolve var(--x) inside SVG elements
+      const svgEls = node.querySelectorAll('svg *');
+      const originals: { el: Element; attr: string; val: string }[] = [];
+      svgEls.forEach((el) => {
+        for (const attr of ['fill', 'stroke'] as const) {
+          const val = el.getAttribute(attr);
+          if (val?.startsWith('var(')) {
+            originals.push({ el, attr, val });
+            el.setAttribute(attr, getComputedStyle(el)[attr as 'fill' | 'stroke'] || val);
+          }
+        }
+      });
+      try {
+        dataUrl = await toPng(node, {
+          cacheBust: true,
+          backgroundColor: '#ffffff',
+          pixelRatio: 2,
+        });
+      } finally {
+        // Restore original CSS variable references
+        originals.forEach(({ el, attr, val }) => el.setAttribute(attr, val));
+      }
     } catch {
       setCaptureError(true);
       return;
