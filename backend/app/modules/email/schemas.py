@@ -13,6 +13,7 @@ class SendEmailRequest(BaseModel):
     chart_image: str = Field(default="", description="Base64-encoded PNG chart image (optional — placeholder used if empty)")
     subject: str | None = Field(default=None, max_length=200)
     note: str | None = Field(default=None, max_length=500)
+    language: str = Field(default="id", pattern="^(id|en|th)$")
 
     @model_validator(mode="after")
     def validate_total_recipients(self) -> "SendEmailRequest":

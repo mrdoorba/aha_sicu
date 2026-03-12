@@ -50,7 +50,7 @@ async def send_email_endpoint(
         cc=[str(c) for c in body.cc] if body.cc else None,
         bcc=[str(b) for b in body.bcc] if body.bcc else None,
         note=body.note,
-        language=current_user.get("language", "id"),
+        language=body.language,
     )
 
 

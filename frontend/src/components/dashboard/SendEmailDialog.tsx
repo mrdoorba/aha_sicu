@@ -42,7 +42,7 @@ export function SendEmailDialog({
   chartRef,
   onSuccess,
 }: SendEmailDialogProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { mutate, isPending, isError, reset } = useSendEmail();
 
   const initialRecipients = [brandRawData.email].filter(Boolean) as string[];
@@ -131,6 +131,7 @@ export function SendEmailDialog({
         cc: cc.length > 0 ? cc : undefined,
         bcc: bcc.length > 0 ? bcc : undefined,
         note: note || undefined,
+        language: i18n.language,
       },
       {
         onSuccess: () => {

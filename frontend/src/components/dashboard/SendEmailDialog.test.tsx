@@ -36,6 +36,7 @@ vi.mock('react-i18next', () => ({
       if (opts?.recipient) return `${key} ${opts.recipient}`;
       return key;
     },
+    i18n: { language: 'id' },
   }),
 }));
 

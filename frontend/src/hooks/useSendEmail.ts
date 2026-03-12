@@ -8,11 +8,12 @@ export interface SendEmailParams {
   cc?: string[];
   bcc?: string[];
   note?: string;
+  language?: string;
 }
 
 export function useSendEmail() {
   return useMutation({
-    mutationFn: async ({ evaluationId, recipients, chartImage, cc, bcc, note }: SendEmailParams) => {
+    mutationFn: async ({ evaluationId, recipients, chartImage, cc, bcc, note, language }: SendEmailParams) => {
       const { data, error } = await client.POST('/api/v1/email/send', {
         body: {
           evaluation_id: evaluationId,
@@ -21,6 +22,7 @@ export function useSendEmail() {
           ...(cc && cc.length > 0 ? { cc } : {}),
           ...(bcc && bcc.length > 0 ? { bcc } : {}),
           ...(note ? { note } : {}),
+          ...(language ? { language } : {}),
         },
       });
       if (error) throw new Error('Failed to send email');
