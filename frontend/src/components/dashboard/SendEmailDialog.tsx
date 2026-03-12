@@ -117,19 +117,25 @@ export function SendEmailDialog({
     const node = chartRef.current;
     if (node) {
       try {
-        // Resolve CSS variables to computed values before capture —
-        // html-to-image cannot resolve var(--x) inside SVG elements
-        const svgEls = node.querySelectorAll('svg *');
-        const originals: { el: Element; attr: string; val: string }[] = [];
-        svgEls.forEach((el) => {
-          for (const attr of ['fill', 'stroke'] as const) {
+        // html-to-image crashes on SVG elements with CSS variable values
+        // (e.g. stroke="var(--chart-grid)") because it calls .trim() on
+        // undefined computed style values. Fix: inline all computed styles
+        // on SVG elements before capture, then restore.
+        const svgEls = Array.from(node.querySelectorAll('svg, svg *'));
+        const saved = new Map<Element, Map<string, string>>();
+        for (const el of svgEls) {
+          const patches = new Map<string, string>();
+          for (const attr of ['fill', 'stroke', 'color', 'stop-color', 'flood-color', 'lighting-color']) {
             const val = el.getAttribute(attr);
-            if (val?.startsWith('var(')) {
-              originals.push({ el, attr, val });
-              el.setAttribute(attr, getComputedStyle(el)[attr as 'fill' | 'stroke'] || val);
+            if (val?.includes('var(')) {
+              patches.set(attr, val);
+              const computed = getComputedStyle(el as HTMLElement).getPropertyValue(attr);
+              el.setAttribute(attr, computed || 'none');
             }
           }
-        });
+          if (patches.size > 0) saved.set(el, patches);
+        }
+
         try {
           const dataUrl = await toPng(node, {
             cacheBust: true,
@@ -138,7 +144,11 @@ export function SendEmailDialog({
           });
           chartImage = dataUrl.replace(/^data:image\/png;base64,/, '');
         } finally {
-          originals.forEach(({ el, attr, val }) => el.setAttribute(attr, val));
+          for (const [el, patches] of saved) {
+            for (const [attr, val] of patches) {
+              el.setAttribute(attr, val);
+            }
+          }
         }
       } catch (err) {
         console.error('[SendEmail] Chart capture failed:', err);

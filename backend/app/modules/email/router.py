@@ -1,9 +1,10 @@
 """Email API endpoints for sending and previewing evaluation reports."""
 
+from asyncpg import Connection
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import HTMLResponse
 
-from app.core.dependencies import get_current_user
+from app.core.dependencies import get_current_user, get_db_connection
 from app.modules.email.schemas import SendEmailRequest, SendEmailResponse
 from app.modules.email.service import asset_to_data_uri, send_evaluation_email
 from app.modules.email.template import _get_strings, render_email_html
@@ -30,13 +31,14 @@ def _chart_placeholder_svg(language: str = "id") -> str:
 async def send_email_endpoint(
     body: SendEmailRequest,
     current_user: dict = Depends(get_current_user),
+    conn: Connection = Depends(get_db_connection),
 ) -> SendEmailResponse:
     """Send an evaluation report email.
 
     Fetches evaluation data, renders the HTML template with the provided
     chart image, and sends (or previews in debug mode) the email.
     """
-    evaluation = await get_evaluation_detail(evaluation_id=body.evaluation_id)
+    evaluation = await get_evaluation_detail(conn=conn, evaluation_id=body.evaluation_id)
     eval_dict = evaluation.model_dump()
 
     return await send_evaluation_email(
@@ -56,6 +58,7 @@ async def send_email_endpoint(
 async def preview_email_endpoint(
     evaluation_id: int,
     current_user: dict = Depends(get_current_user),
+    conn: Connection = Depends(get_db_connection),
     note: str | None = Query(default=None, max_length=500),
 ) -> HTMLResponse:
     """Preview the evaluation email as rendered HTML.
@@ -63,7 +66,7 @@ async def preview_email_endpoint(
     Returns the HTML that would be sent, with data URI images for browser
     rendering. Protected by authentication (no debug guard needed).
     """
-    evaluation = await get_evaluation_detail(evaluation_id=evaluation_id)
+    evaluation = await get_evaluation_detail(conn=conn, evaluation_id=evaluation_id)
     eval_dict = evaluation.model_dump()
 
     # Convert header/footer assets to data URIs for browser rendering
