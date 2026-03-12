@@ -36,7 +36,6 @@ class Settings(BaseSettings):
 
     # Firebase Admin SDK
     firebase_credentials_path: str | None = None
-    firebase_credentials_json: str | None = None
 
     # Cloud Run service URL (for OIDC audience validation)
     # Set in production; empty in local dev (disables audience check)

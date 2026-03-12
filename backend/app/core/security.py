@@ -1,8 +1,6 @@
 """Security: Firebase Auth validation."""
 
 import asyncio
-import json
-
 import firebase_admin
 from firebase_admin import auth, credentials
 
@@ -13,21 +11,15 @@ from app.core.exceptions import AuthException
 def init_firebase(settings: Settings) -> None:
     """Initialize Firebase Admin SDK.
 
-    Priority: explicit JSON → file path → ADC (Application Default Credentials).
-    ADC is used on Cloud Run, where the runtime SA already has firebaseauth.admin.
+    Priority: file path (local dev) → ADC (Cloud Run).
     """
     if firebase_admin._apps:
         return  # Already initialized
 
-    if settings.firebase_credentials_json:
-        cred_dict = json.loads(settings.firebase_credentials_json)
-        cred = credentials.Certificate(cred_dict)
-        firebase_admin.initialize_app(cred)
-    elif settings.firebase_credentials_path:
+    if settings.firebase_credentials_path:
         cred = credentials.Certificate(settings.firebase_credentials_path)
         firebase_admin.initialize_app(cred)
     else:
-        # ADC: on Cloud Run, uses the runtime service account automatically
         firebase_admin.initialize_app()
 
 
