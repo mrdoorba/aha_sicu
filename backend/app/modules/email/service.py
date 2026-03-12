@@ -39,8 +39,13 @@ def _strip_base64_prefix(data: str) -> str:
     return data
 
 
-def _decode_chart_image(chart_image_b64: str) -> bytes:
-    """Decode a base64 chart image string, stripping data URI prefix first."""
+def _decode_chart_image(chart_image_b64: str) -> bytes | None:
+    """Decode a base64 chart image string, stripping data URI prefix first.
+
+    Returns None if the input is empty (chart capture was skipped).
+    """
+    if not chart_image_b64:
+        return None
     stripped = _strip_base64_prefix(chart_image_b64)
     try:
         return base64.b64decode(stripped, validate=True)
@@ -226,16 +231,19 @@ async def send_evaluation_email(
     # Generate CIDs (strip angle brackets for HTML src references)
     header_msgid = make_msgid(domain="ahacommerce.id")
     footer_msgid = make_msgid(domain="ahacommerce.id")
-    chart_msgid = make_msgid(domain="ahacommerce.id")
-
     header_cid = header_msgid.strip("<>")
     footer_cid = footer_msgid.strip("<>")
-    chart_cid = chart_msgid.strip("<>")
+
+    chart_cid = ""
+    if chart_bytes:
+        chart_msgid = make_msgid(domain="ahacommerce.id")
+        chart_cid = chart_msgid.strip("<>")
 
     # Render HTML using the provided function (pass full cid: URIs)
+    chart_src = f"cid:{chart_cid}" if chart_cid else ""
     html_content = render_html_fn(
         evaluation_data=evaluation_data,
-        chart_src=f"cid:{chart_cid}",
+        chart_src=chart_src,
         header_src=f"cid:{header_cid}",
         footer_src=f"cid:{footer_cid}",
         note=note,
@@ -267,8 +275,9 @@ async def send_evaluation_email(
     images = [
         (header_bytes, "png", header_cid),
         (footer_bytes, "png", footer_cid),
-        (chart_bytes, "png", chart_cid),
     ]
+    if chart_bytes and chart_cid:
+        images.append((chart_bytes, "png", chart_cid))
 
     msg = build_email_message(
         subject=subject,

@@ -113,38 +113,38 @@ export function SendEmailDialog({
   const handleSend = async () => {
     setCaptureError(false);
 
-    let dataUrl: string;
-    try {
-      const node = chartRef.current!;
-      // Resolve CSS variables to computed values before capture —
-      // html-to-image cannot resolve var(--x) inside SVG elements
-      const svgEls = node.querySelectorAll('svg *');
-      const originals: { el: Element; attr: string; val: string }[] = [];
-      svgEls.forEach((el) => {
-        for (const attr of ['fill', 'stroke'] as const) {
-          const val = el.getAttribute(attr);
-          if (val?.startsWith('var(')) {
-            originals.push({ el, attr, val });
-            el.setAttribute(attr, getComputedStyle(el)[attr as 'fill' | 'stroke'] || val);
-          }
-        }
-      });
+    let chartImage = '';
+    const node = chartRef.current;
+    if (node) {
       try {
-        dataUrl = await toPng(node, {
-          cacheBust: true,
-          backgroundColor: '#ffffff',
-          pixelRatio: 2,
+        // Resolve CSS variables to computed values before capture —
+        // html-to-image cannot resolve var(--x) inside SVG elements
+        const svgEls = node.querySelectorAll('svg *');
+        const originals: { el: Element; attr: string; val: string }[] = [];
+        svgEls.forEach((el) => {
+          for (const attr of ['fill', 'stroke'] as const) {
+            const val = el.getAttribute(attr);
+            if (val?.startsWith('var(')) {
+              originals.push({ el, attr, val });
+              el.setAttribute(attr, getComputedStyle(el)[attr as 'fill' | 'stroke'] || val);
+            }
+          }
         });
-      } finally {
-        // Restore original CSS variable references
-        originals.forEach(({ el, attr, val }) => el.setAttribute(attr, val));
+        try {
+          const dataUrl = await toPng(node, {
+            cacheBust: true,
+            backgroundColor: '#ffffff',
+            pixelRatio: 2,
+          });
+          chartImage = dataUrl.replace(/^data:image\/png;base64,/, '');
+        } finally {
+          originals.forEach(({ el, attr, val }) => el.setAttribute(attr, val));
+        }
+      } catch (err) {
+        console.error('[SendEmail] Chart capture failed:', err);
+        // Continue without chart — email will use placeholder
       }
-    } catch {
-      setCaptureError(true);
-      return;
     }
-
-    const chartImage = dataUrl.replace(/^data:image\/png;base64,/, '');
 
     mutate(
       {
