@@ -74,7 +74,12 @@ export const LanguageToggle = ({ className, isCollapsed }: LanguageToggleProps) 
 
       {open && (
         <div
-          className="absolute bottom-full left-0 mb-1 w-full min-w-[120px] rounded-md border border-sidebar-border bg-sidebar shadow-lg z-50"
+          className={cn(
+            "absolute rounded-md border border-sidebar-border bg-sidebar shadow-lg z-50",
+            isCollapsed
+              ? "left-full bottom-0 ml-2 min-w-[120px]"
+              : "bottom-full left-0 mb-1 w-full min-w-[120px]"
+          )}
           data-testid="language-dropdown"
         >
           {LANGUAGES.map((lang) => (
