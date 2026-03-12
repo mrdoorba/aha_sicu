@@ -8,8 +8,6 @@ on:
   workflow_dispatch:
   push:
     branches: [develop, production]
-    paths:
-      - 'frontend/**'
 
 concurrency:
   group: deploy-frontend-${{ github.ref_name }}
