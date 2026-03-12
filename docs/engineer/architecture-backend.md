@@ -207,9 +207,7 @@ Key behaviors:
 
 ### `app/core/security.py` -- Firebase Auth
 
-- `init_firebase(settings)` -- Initializes the Firebase Admin SDK. Supports two credential sources:
-  - **Production:** `firebase_credentials_json` (JSON string from Secret Manager)
-  - **Development:** `firebase_credentials_path` (local file path)
+- `init_firebase(settings)` -- Initializes the Firebase Admin SDK. Local dev uses `FIREBASE_CREDENTIALS_PATH` (service account JSON file); Cloud Run uses Application Default Credentials (ADC) automatically.
 - `verify_firebase_token(token)` -- Verifies a Firebase ID token asynchronously (delegates to `asyncio.to_thread` to avoid blocking the event loop). Returns `{"uid", "email"}`.
 
 ### `app/core/oidc.py` -- Google OIDC
@@ -353,7 +351,7 @@ Application settings are managed via Pydantic `BaseSettings` in `app/config.py`,
 | Group | Settings | Description |
 |-------|----------|-------------|
 | **Database** | `database_url`, `db_user`, `db_password`, `db_name`, `cloud_sql_instance`, `database_pool_min`, `database_pool_max` | Cloud SQL PostgreSQL connection. Direct URL for local dev; component-based construction for Cloud Run (via Unix socket). |
-| **Firebase** | `firebase_credentials_path`, `firebase_credentials_json` | Admin SDK credentials. File path for local dev, JSON string (Secret Manager) for production. |
+| **Firebase** | `firebase_credentials_path` | Admin SDK credentials. Local dev uses `FIREBASE_CREDENTIALS_PATH` (file path); Cloud Run uses Application Default Credentials (ADC) automatically. |
 | **OIDC** | `cloud_run_url`, `allowed_scheduler_emails` | OIDC audience validation and service account allowlist for Cloud Scheduler auth. |
 | **SMTP** | `smtp_host`, `smtp_port`, `smtp_user`, `smtp_password`, `smtp_from_name`, `smtp_from_email`, `email_enabled` | Email sending configuration. Defaults to Gmail SMTP on port 587. Gated by `email_enabled` flag. |
 | **Google Sheets** | `gsheets_credentials_path`, `gsheets_credentials_json`, `gsheets_vp_spreadsheet_id`, `gsheets_vp_range`, `gsheets_meeting_spreadsheet_id`, `gsheets_meeting_range` | Credentials and spreadsheet IDs for VP and 1st Meeting data sync. |

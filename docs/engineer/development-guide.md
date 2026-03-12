@@ -101,8 +101,7 @@ DATABASE_URL=postgresql://aha_sicu:password@localhost:5432/aha_coms_sicu_dev
 
 | Variable                     | Default | Description                                       |
 |------------------------------|---------|---------------------------------------------------|
-| `FIREBASE_CREDENTIALS_PATH`  | (none)  | Path to service account JSON file (development)   |
-| `FIREBASE_CREDENTIALS_JSON`  | (none)  | Raw JSON string from Secret Manager (production)  |
+| `FIREBASE_CREDENTIALS_PATH`  | (none)  | Path to service account JSON file (local dev). Cloud Run uses ADC automatically. |
 
 #### Cloud Run / OIDC
 

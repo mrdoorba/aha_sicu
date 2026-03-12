@@ -47,9 +47,9 @@ Prerequisites:
 - Firebase Admin credentials (service account JSON) for the target project.
 
 Set credentials via one of these methods (checked in order):
-1. `FIREBASE_CREDENTIALS_JSON` env var -- JSON string (used in production/CI).
-2. `FIREBASE_CREDENTIALS_PATH` env var -- path to service account JSON file.
-3. `--credentials` CLI argument -- path to service account JSON file.
+1. `FIREBASE_CREDENTIALS_PATH` env var -- path to service account JSON file.
+2. `--credentials` CLI argument -- path to service account JSON file.
+3. Falls back to Application Default Credentials (ADC) if neither is set.
 
 Run:
 

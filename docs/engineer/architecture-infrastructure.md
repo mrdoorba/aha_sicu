@@ -131,8 +131,9 @@ Secrets are mounted as environment variables in Cloud Run via `value_source.secr
 |---|---|
 | `aha_coms_sicu_{env}_db_password` | `DB_PASSWORD` |
 | `aha_coms_sicu_{env}_gsheets_credentials` | `GSHEETS_CREDENTIALS_JSON` |
-| `aha_coms_sicu_{env}_firebase_admin` | `FIREBASE_CREDENTIALS_JSON` |
 | `aha_coms_sicu_{env}_smtp_password` | `SMTP_PASSWORD` |
+
+Note: Firebase Admin SDK uses Application Default Credentials (ADC) on Cloud Run -- no secret mapping needed.
 
 ---
 

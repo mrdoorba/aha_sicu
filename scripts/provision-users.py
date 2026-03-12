@@ -4,7 +4,7 @@
 Provisioning Process:
   1. Copy users-config.example.yaml to users-config.yaml
   2. Fill in real user emails, passwords, and display names
-  3. Set FIREBASE_CREDENTIALS_PATH or FIREBASE_CREDENTIALS_JSON env var
+  3. Set FIREBASE_CREDENTIALS_PATH env var (or use --credentials flag)
   4. Run: python provision-users.py [--config users-config.yaml]
   5. After ALL users have logged in once (to trigger auto-creation in DB),
      run assign-roles.sql against the production database
@@ -15,9 +15,9 @@ Prerequisites:
   - Target the PRODUCTION Firebase project (e.g., aha-coms-sicu-prod)
 
 Credential options (checked in order):
-  1. FIREBASE_CREDENTIALS_JSON env var — JSON string (used in production/CI)
-  2. FIREBASE_CREDENTIALS_PATH env var — path to service account JSON file
-  3. --credentials CLI argument — path to service account JSON file
+  1. FIREBASE_CREDENTIALS_PATH env var — path to service account JSON file
+  2. --credentials CLI argument — path to service account JSON file
+  3. Falls back to Application Default Credentials (ADC)
 
 Security:
   - NEVER commit users-config.yaml (contains real credentials)
@@ -26,7 +26,6 @@ Security:
 """
 
 import argparse
-import json
 import os
 import sys
 from pathlib import Path
@@ -46,24 +45,22 @@ except ImportError:
 
 
 def init_firebase(cred_path: str | None = None) -> None:
-    """Initialize Firebase Admin SDK."""
+    """Initialize Firebase Admin SDK.
+
+    Priority: file path (FIREBASE_CREDENTIALS_PATH / --credentials) → ADC.
+    """
     if firebase_admin._apps:
         return
 
-    cred_json = os.environ.get("FIREBASE_CREDENTIALS_JSON")
     cred_file = cred_path or os.environ.get("FIREBASE_CREDENTIALS_PATH")
 
-    if cred_json:
-        cred = credentials.Certificate(json.loads(cred_json))
-        firebase_admin.initialize_app(cred)
-    elif cred_file:
+    if cred_file:
         cred = credentials.Certificate(cred_file)
         firebase_admin.initialize_app(cred)
     else:
-        # Fallback: use Application Default Credentials (gcloud auth)
-        print("INFO: No explicit credentials found, using Application Default Credentials (gcloud auth)")
-        cred = credentials.ApplicationDefault()
-        firebase_admin.initialize_app(cred)
+        # Fallback: use Application Default Credentials (gcloud auth / Cloud Run)
+        print("INFO: No explicit credentials found, using Application Default Credentials")
+        firebase_admin.initialize_app()
 
 
 def load_config(config_path: str) -> list[dict]:
