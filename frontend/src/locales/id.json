@@ -550,6 +550,7 @@
   "conclusion.stockNotArchived": "Pastikan produk yang stoknya habis di-archive",
   "conclusion.unsoldProducts": "Tinjau dan optimalkan produk yang kurang laku",
   "conclusion.discountRange": "Range diskon yang disarankan: {{range}}",
+  "conclusion.fakeDiscount": "📌 Berpotensi menggunakan 'fake discount'",
 
   "marketing.budgetRecommendation": "💡 Minimum budget marketing yang dibutuhkan AHA untuk meningkatkan performa penjualan toko = {{pct}}",
 

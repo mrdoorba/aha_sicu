@@ -550,6 +550,7 @@
   "conclusion.stockNotArchived": "Ensure out-of-stock products are archived",
   "conclusion.unsoldProducts": "Review and optimize slow-moving products",
   "conclusion.discountRange": "Recommended discount range: {{range}}",
+  "conclusion.fakeDiscount": "📌 Potentially using 'fake discount'",
 
   "marketing.budgetRecommendation": "💡 Minimum marketing budget needed by AHA to improve store sales performance = {{pct}}",
 

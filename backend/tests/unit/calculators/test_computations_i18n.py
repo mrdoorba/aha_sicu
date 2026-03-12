@@ -35,6 +35,24 @@ def test_g66_i18n_returns_translatable_list():
     assert "max" in items[0].vars
 
 
+def test_g66_i18n_splits_fake_discount_into_separate_bullet_when_flag_present():
+    manual = {"business": {"salesMonth0": 200_000_000}}
+    g68_with_flag = "20.3% ~ 39.0%\n📌 Berpotensi menggunakan 'fake discount'"
+    items = _compute_g66_i18n([], manual, g68_with_flag)
+    discount_items = [i for i in items if "discount" in i.key.lower()]
+    assert len(discount_items) == 2
+    assert discount_items[0].key == "conclusion.discountRange"
+    assert discount_items[0].vars["range"] == "20.3% ~ 39.0%"
+    assert discount_items[1].key == "conclusion.fakeDiscount"
+
+
+def test_g66_i18n_no_fake_discount_bullet_when_flag_absent():
+    manual = {"business": {"salesMonth0": 200_000_000}}
+    items = _compute_g66_i18n([], manual, "20.3% ~ 39.0%")
+    fake_items = [i for i in items if i.key == "conclusion.fakeDiscount"]
+    assert len(fake_items) == 0
+
+
 def test_g73_i18n_returns_translatable_text():
     result = _compute_g73_i18n("✔️", 0.15, 200_000_000)
     assert result is not None

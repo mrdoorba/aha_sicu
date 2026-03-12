@@ -550,6 +550,7 @@
   "conclusion.stockNotArchived": "ตรวจสอบให้แน่ใจว่าสินค้าหมดสต็อกถูกเก็บถาวร",
   "conclusion.unsoldProducts": "ตรวจสอบและปรับปรุงสินค้าที่ขายช้า",
   "conclusion.discountRange": "ช่วงส่วนลดที่แนะนำ: {{range}}",
+  "conclusion.fakeDiscount": "📌 อาจใช้ 'ส่วนลดปลอม'",
 
   "marketing.budgetRecommendation": "💡 งบการตลาดขั้นต่ำที่ AHA ต้องการเพื่อปรับปรุงยอดขาย = {{pct}}",
 

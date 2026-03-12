@@ -263,7 +263,10 @@ def _compute_g66_i18n(
     items.append(TranslatableText(key="conclusion.unsoldProducts", vars={}))
 
     if g68_text:
-        items.append(TranslatableText(key="conclusion.discountRange", vars={"range": g68_text}))
+        range_only = g68_text.split("\n")[0]
+        items.append(TranslatableText(key="conclusion.discountRange", vars={"range": range_only}))
+        if "Berpotensi" in g68_text or "fake discount" in g68_text.lower():
+            items.append(TranslatableText(key="conclusion.fakeDiscount", vars={}))
 
     return items
 
