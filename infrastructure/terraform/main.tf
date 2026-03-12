@@ -154,6 +154,7 @@ module "prod" {
   gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id
 
   cors_origins = [
-    "https://aha-coms-sicu-prod.web.app"
+    "https://aha-coms-sicu-prod.web.app",
+    "https://sicu.ahabot.ai"
   ]
 }

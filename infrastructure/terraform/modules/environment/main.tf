@@ -296,6 +296,7 @@ resource "google_cloud_run_v2_service" "api" {
       }
 
       resources {
+        cpu_idle = true
         limits = {
           cpu    = var.cloud_run_cpu
           memory = var.cloud_run_memory
