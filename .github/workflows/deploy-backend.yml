@@ -7,7 +7,7 @@ name: Deploy Backend
 on:
   workflow_dispatch:
   push:
-    branches: [develop, main]
+    branches: [develop, production]
     paths:
       - 'backend/**'
 
@@ -26,4 +26,4 @@ jobs:
       contents: read
       id-token: write
     with:
-      environment: ${{ github.ref == 'refs/heads/main' && 'production' || 'dev' }}
+      environment: ${{ github.ref == 'refs/heads/production' && 'production' || 'dev' }}
