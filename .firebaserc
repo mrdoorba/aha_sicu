@@ -6,9 +6,21 @@
   "targets": {
     "YOUR_GCP_PROJECT_ID": {
       "hosting": {
-        "aha-coms-sicu-dev": ["aha-coms-sicu-dev"],
-        "aha-coms-sicu-prod": ["aha-coms-sicu-prod"]
+        "aha-coms-sicu-dev": [
+          "aha-coms-sicu-dev"
+        ],
+        "aha-coms-sicu-prod": [
+          "aha-coms-sicu-prod"
+        ]
+      }
+    },
+    "fbi-dev-484410": {
+      "hosting": {
+        "aha-coms-sicu-dev": [
+          "aha-coms-sicu-dev"
+        ]
       }
     }
-  }
+  },
+  "etags": {}
 }
