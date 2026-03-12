@@ -1,11 +1,66 @@
-"""Unit tests for Firebase token verification."""
+"""Unit tests for Firebase token verification and initialization."""
 
 from unittest.mock import patch
 
 import pytest
 
+from app.config import Settings
 from app.core.exceptions import AuthException
-from app.core.security import verify_firebase_token
+from app.core.security import init_firebase, verify_firebase_token
+
+
+# --- init_firebase tests ---
+
+
+def test_init_firebase_uses_adc_when_no_credentials():
+    """ADC fallback when neither credentials_json nor credentials_path is set."""
+    settings = Settings(
+        firebase_credentials_json=None,
+        firebase_credentials_path=None,
+    )
+    with patch("app.core.security.firebase_admin._apps", {}), \
+         patch("app.core.security.firebase_admin.initialize_app") as mock_init:
+        init_firebase(settings)
+        mock_init.assert_called_once_with()
+
+
+def test_init_firebase_uses_json_when_provided():
+    """Explicit JSON credentials take priority."""
+    settings = Settings(
+        firebase_credentials_json='{"type": "service_account", "project_id": "test"}',
+        firebase_credentials_path=None,
+    )
+    with patch("app.core.security.firebase_admin._apps", {}), \
+         patch("app.core.security.firebase_admin.initialize_app") as mock_init, \
+         patch("app.core.security.credentials.Certificate") as mock_cert:
+        init_firebase(settings)
+        mock_cert.assert_called_once()
+        mock_init.assert_called_once_with(mock_cert.return_value)
+
+def test_init_firebase_uses_file_path_when_json_not_provided():
+    """File path credentials used when JSON is absent."""
+    settings = Settings(
+        firebase_credentials_json=None,
+        firebase_credentials_path="/path/to/creds.json",
+    )
+    with patch("app.core.security.firebase_admin._apps", {}), \
+         patch("app.core.security.firebase_admin.initialize_app") as mock_init, \
+         patch("app.core.security.credentials.Certificate") as mock_cert:
+        init_firebase(settings)
+        mock_cert.assert_called_once_with("/path/to/creds.json")
+        mock_init.assert_called_once_with(mock_cert.return_value)
+
+
+def test_init_firebase_skips_when_already_initialized():
+    """No-op when Firebase is already initialized."""
+    settings = Settings(firebase_credentials_json=None, firebase_credentials_path=None)
+    with patch("app.core.security.firebase_admin._apps", {"default": "app"}), \
+         patch("app.core.security.firebase_admin.initialize_app") as mock_init:
+        init_firebase(settings)
+        mock_init.assert_not_called()
+
+
+# --- verify_firebase_token tests ---
 
 
 @pytest.mark.asyncio
