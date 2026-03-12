@@ -49,7 +49,7 @@ export const ScoreBreakdownChart = forwardRef<HTMLDivElement, ScoreBreakdownChar
 
         <div className="grid gap-8 lg:grid-cols-2 items-center">
           {/* Left: Radar Chart */}
-          <div ref={ref} className="w-full h-96" style={{ backgroundColor: '#ffffff' }}>
+          <div ref={ref} className="w-full h-96 bg-card rounded-lg">
             <ResponsiveContainer width="100%" height="100%">
               <RadarChart data={radarData} outerRadius="70%">
                 <PolarGrid gridType="polygon" stroke="var(--chart-grid)" />
