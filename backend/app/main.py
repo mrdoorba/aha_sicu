@@ -49,6 +49,7 @@ app.add_middleware(
         "https://aha-coms-sicu-dev.firebaseapp.com",
         "https://aha-coms-sicu-prod.web.app",
         "https://aha-coms-sicu-prod.firebaseapp.com",
+        "https://sicu.ahabot.ai",
     ],
     allow_credentials=True,
     allow_methods=["*"],
