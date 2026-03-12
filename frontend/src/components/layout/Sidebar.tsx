@@ -87,7 +87,7 @@ export const Sidebar = ({ className }: SidebarProps) => {
     <>
       <aside
         className={cn(
-          "relative flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300 ease-in-out overflow-hidden",
+          "relative flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300 ease-in-out",
           isCollapsed ? "w-16" : "w-64",
           className
         )}
@@ -102,8 +102,8 @@ export const Sidebar = ({ className }: SidebarProps) => {
             </button>
             <span
               className={cn(
-                "text-xl font-bold tracking-tight text-sidebar-primary whitespace-nowrap transition-opacity duration-300",
-                isCollapsed ? "opacity-0" : "opacity-100"
+                "text-xl font-bold tracking-tight text-sidebar-primary whitespace-nowrap overflow-hidden transition-all duration-300",
+                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
               )}
             >
               Store ICU

@@ -1,4 +1,5 @@
 import { render, screen } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { Sidebar } from './Sidebar';
@@ -117,5 +118,44 @@ describe('Sidebar Riwayat link visibility', () => {
         mockProfile.role = 'member';
         renderSidebar();
         expect(screen.queryByText(/riwayat/i)).not.toBeInTheDocument();
+    });
+});
+
+describe('Sidebar overflow behavior', () => {
+    it('should not apply overflow-hidden on aside element', () => {
+        // Arrange & Act
+        renderSidebar();
+
+        // Assert
+        const aside = document.querySelector('aside');
+        expect(aside).not.toBeNull();
+        expect(aside!.className).not.toContain('overflow-hidden');
+    });
+});
+
+describe('Sidebar title collapse transition', () => {
+    it('should apply w-0 and opacity-0 to title when collapsed', async () => {
+        // Arrange
+        const user = userEvent.setup();
+        renderSidebar();
+
+        // Act — click the logo to collapse
+        const logo = screen.getByAltText('Store ICU Logo');
+        await user.click(logo);
+
+        // Assert
+        const title = screen.getByText('Store ICU');
+        expect(title.className).toContain('w-0');
+        expect(title.className).toContain('opacity-0');
+    });
+
+    it('should apply w-auto and opacity-100 to title when expanded', () => {
+        // Arrange & Act
+        renderSidebar();
+
+        // Assert
+        const title = screen.getByText('Store ICU');
+        expect(title.className).toContain('w-auto');
+        expect(title.className).toContain('opacity-100');
     });
 });
