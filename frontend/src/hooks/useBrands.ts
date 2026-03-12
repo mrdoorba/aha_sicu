@@ -19,7 +19,7 @@ export interface BrandListResponse {
 }
 
 export function useBrands(page = 1, limit = 20, search = '') {
-  return useQuery<BrandListResponse>({
+  return useQuery({
     queryKey: ['brands', page, limit, search],
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/brands', {
@@ -28,7 +28,7 @@ export function useBrands(page = 1, limit = 20, search = '') {
         },
       });
       if (error) throw new Error('Failed to fetch brands');
-      return data as BrandListResponse;
+      return data;
     },
   });
 }

@@ -26,6 +26,7 @@ import {
   generateMonthLabels,
   type FieldDefinition,
 } from '../components/evaluation/forms/formConfig';
+import { isRecord, isRecordArray } from '../lib/typeGuards';
 
 // Build module-level lookup: category key → { displayName, fieldMap }
 const CATEGORY_LOOKUP = new Map(
@@ -129,15 +130,15 @@ function ScoreBreakdownTable({
 }
 
 function AdsKeywordSection({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
-  const text = (data.output_text as string) || '';
+  const text = typeof data.output_text === 'string' ? data.output_text : '';
   if (!text) return <p className="text-muted-foreground">{t('common.noData')}</p>;
   return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
 }
 
 function TopSkuSection({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
-  const details = data.details as Record<string, unknown> | undefined;
-  const output1 = ((details?.output_1 as Array<Record<string, unknown>>) || []).slice(0, 5);
-  const output2 = ((details?.output_2 as Array<Record<string, unknown>>) || []).slice(0, 5);
+  const details = isRecord(data.details) ? data.details : undefined;
+  const output1 = (isRecordArray(details?.output_1) ? details.output_1 : []).slice(0, 5);
+  const output2 = (isRecordArray(details?.output_2) ? details.output_2 : []).slice(0, 5);
   const avgStock = details?.average_stock;
   const [isOpen, setIsOpen] = useState(false);
 
@@ -224,7 +225,7 @@ function TopSkuSection({ data, t }: { data: Record<string, unknown>; t: (key: st
 }
 
 function DiscountSection({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
-  const text = (data.output_text as string) || '';
+  const text = typeof data.output_text === 'string' ? data.output_text : '';
   if (!text) return <p className="text-muted-foreground">{t('common.noData')}</p>;
   return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
 }
@@ -233,8 +234,8 @@ function resolveNestedValue(obj: Record<string, unknown>, dotKey: string): unkno
   const parts = dotKey.split('.');
   let val: unknown = obj;
   for (const part of parts) {
-    if (typeof val !== 'object' || val === null) return undefined;
-    val = (val as Record<string, unknown>)[part];
+    if (!isRecord(val)) return undefined;
+    val = val[part];
   }
   return val;
 }
@@ -257,7 +258,7 @@ function ManualInputsSection({
         const categoryInfo = CATEGORY_LOOKUP.get(category);
         const categoryLabel = categoryInfo?.displayName ?? capitalize(category);
 
-        if (typeof values !== 'object' || values === null) {
+        if (!isRecord(values)) {
           return (
             <div key={category}>
               <h3 className="mb-2 text-sm font-semibold">{categoryLabel}</h3>
@@ -266,7 +267,7 @@ function ManualInputsSection({
           );
         }
 
-        const valuesObj = values as Record<string, unknown>;
+        const valuesObj = values;
 
         // Build entries: [key, value, fieldDef, displayLabel]
         let entries: Array<[string, unknown, FieldDefinition | undefined, string | undefined]>;
@@ -282,7 +283,9 @@ function ManualInputsSection({
           // Generate dynamic month labels for business category
           let monthLabels: string[] | undefined;
           if (category === 'business' && valuesObj.salesStartMonth) {
-            monthLabels = generateMonthLabels(valuesObj.salesStartMonth as string);
+            monthLabels = typeof valuesObj.salesStartMonth === 'string'
+              ? generateMonthLabels(valuesObj.salesStartMonth)
+              : undefined;
           }
 
           entries = Object.entries(valuesObj)
@@ -569,9 +572,9 @@ export function EvaluationDetailPage() {
               <CardContent className="space-y-6">
                 <div>
                   <h3 className="mb-3 text-base font-semibold">{t('evaluationDetail.adsKeywordAnalysis')}</h3>
-                  {evaluation.calculator_results.ads_keyword ? (
+                  {isRecord(evaluation.calculator_results.ads_keyword) ? (
                     <AdsKeywordSection
-                      data={evaluation.calculator_results.ads_keyword as Record<string, unknown>}
+                      data={evaluation.calculator_results.ads_keyword}
                       t={t}
                     />
                   ) : (
@@ -581,9 +584,9 @@ export function EvaluationDetailPage() {
 
                 <div>
                   <h3 className="mb-3 text-base font-semibold">{t('evaluationDetail.topSkuAnalysis')}</h3>
-                  {evaluation.calculator_results.top_sku ? (
+                  {isRecord(evaluation.calculator_results.top_sku) ? (
                     <TopSkuSection
-                      data={evaluation.calculator_results.top_sku as Record<string, unknown>}
+                      data={evaluation.calculator_results.top_sku}
                       t={t}
                     />
                   ) : (
@@ -593,9 +596,9 @@ export function EvaluationDetailPage() {
 
                 <div>
                   <h3 className="mb-3 text-base font-semibold">{t('evaluationDetail.discountCheck')}</h3>
-                  {evaluation.calculator_results.discount ? (
+                  {isRecord(evaluation.calculator_results.discount) ? (
                     <DiscountSection
-                      data={evaluation.calculator_results.discount as Record<string, unknown>}
+                      data={evaluation.calculator_results.discount}
                       t={t}
                     />
                   ) : (

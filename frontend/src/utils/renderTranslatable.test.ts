@@ -1,14 +1,14 @@
 import { describe, it, expect, vi } from 'vitest';
+import type { TFunction } from 'i18next';
 import { renderTranslatable } from './renderTranslatable';
 
 describe('renderTranslatable', () => {
-  const mockT = vi.fn((key: string, vars?: Record<string, string>) => {
+  const mockT: TFunction = vi.fn((key: string, vars?: Record<string, string>) => {
     if (key === 'scoring.preparationTime.pass') {
       return `✔️ Preparation Time = ${vars?.value} days [Good]`;
     }
     return key;
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  }) as any;
+  }) as TFunction;
 
   it('should use i18n translation when i18n data is provided', () => {
     const result = renderTranslatable(

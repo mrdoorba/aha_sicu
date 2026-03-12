@@ -79,7 +79,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
     category: String(cat.category),
     score: Number(cat.score),
     max_score: Number(cat.max_score),
-    rows: ((cat.rows as Array<{
+    rows: (Array.isArray(cat.rows) ? (cat.rows as Array<{
       metric: string;
       value: unknown;
       benchmark: string;
@@ -90,7 +90,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
       value_i18n?: { key: string; vars: Record<string, string> } | null;
       message_i18n?: { key: string; vars: Record<string, string> } | null;
       benchmark_i18n?: { key: string; vars: Record<string, string> } | null;
-    }>) || []).filter((r) => r.metric !== 'Iklan check up'),
+    }>) : []).filter((r) => r.metric !== 'Iklan check up'),
   }));
 
   return (

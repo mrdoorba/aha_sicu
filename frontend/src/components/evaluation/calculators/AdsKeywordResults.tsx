@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import type { CalculatorResult, AdsKeywordDetails, TranslatableI18n } from '../../../hooks/useCalculator';
 import { renderTranslatable, renderAdList, renderFlagList } from '../../../utils/renderTranslatable';
+import { isAdsKeywordDetails } from '../../../lib/calculatorGuards';
 
 interface AdsKeywordResultsProps {
   result: CalculatorResult;
@@ -8,7 +9,10 @@ interface AdsKeywordResultsProps {
 
 export function AdsKeywordResults({ result }: AdsKeywordResultsProps) {
   const { t } = useTranslation();
-  const d = result.details as AdsKeywordDetails;
+  if (!isAdsKeywordDetails(result.details)) {
+    return <p className="text-sm text-muted-foreground">Invalid ads keyword data</p>;
+  }
+  const d = result.details;
 
   const sections: string[] = [];
 

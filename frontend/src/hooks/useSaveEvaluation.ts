@@ -36,7 +36,7 @@ export function useSaveEvaluation(brandId: number) {
         },
       );
       if (error) throw error;
-      return data as SaveEvaluationResponse;
+      return data;
     },
     onSuccess: () => {
       setIsSaved(true);

@@ -6,12 +6,12 @@ export interface FeatureFlags {
 }
 
 export function useFeatureFlags() {
-  return useQuery<FeatureFlags>({
+  return useQuery({
     queryKey: ['featureFlags'],
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/config/features');
       if (error) throw new Error('Failed to fetch feature flags');
-      return data as FeatureFlags;
+      return data;
     },
     staleTime: Infinity,
   });

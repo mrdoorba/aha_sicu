@@ -22,7 +22,7 @@ export function useBrandEvaluations(
   dateTo?: string,
   enabled = false,
 ) {
-  const query = useQuery<BrandEvaluationListResponse>({
+  const query = useQuery({
     queryKey: ['brand-evaluations', brandId, limit, dateFrom, dateTo],
     queryFn: async () => {
       const { data, error } = await client.GET(
@@ -39,7 +39,7 @@ export function useBrandEvaluations(
         },
       );
       if (error) throw new Error('Failed to fetch brand evaluations');
-      return data as BrandEvaluationListResponse;
+      return data;
     },
     enabled,
   });

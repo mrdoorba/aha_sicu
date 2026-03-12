@@ -1,5 +1,6 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import client from '../services/apiClient';
+import { isApiErrorWithDetail } from '../lib/typeGuards';
 
 export interface UpdateRuleParams {
   template: 'fashion' | 'non_fashion' | 'default';
@@ -16,8 +17,9 @@ export function useUpdateRule() {
         body: { rules },
       });
       if (error) {
-        const detail = (error as Record<string, unknown>)?.detail;
-        throw new Error(typeof detail === 'string' ? detail : 'Failed to update scoring rules');
+        throw new Error(
+          isApiErrorWithDetail(error) ? error.detail : 'Failed to update scoring rules',
+        );
       }
       return data;
     },

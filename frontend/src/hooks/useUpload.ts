@@ -1,10 +1,10 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useState, useCallback, useRef, useEffect } from 'react';
 import client from '../services/apiClient';
+import { isApiErrorWithDetail, extractErrorMessage } from '../lib/typeGuards';
 
 export interface UploadInfo {
   id: number;
-  brand_id: number;
   file_type: string;
   filename: string;
   file_size: number;
@@ -26,7 +26,7 @@ export function useBrandUploads(brandId: number) {
         { params: { path: { brand_id: brandId } } },
       );
       if (error) throw new Error('Failed to fetch brand uploads');
-      return data as BrandUploads;
+      return data satisfies BrandUploads;
     },
     enabled: brandId > 0,
   });
@@ -44,10 +44,11 @@ export function useRequestSignedUrl() {
         body,
       });
       if (error) {
-        const detail = (error as Record<string, unknown>).detail;
-        throw new Error(typeof detail === 'string' ? detail : 'Failed to get signed URL');
+        throw new Error(
+          isApiErrorWithDetail(error) ? error.detail : 'Failed to get signed URL',
+        );
       }
-      return data as { upload_url: string; upload_id: string; expires_at: string };
+      return data satisfies { upload_url: string; upload_id: string; expires_at: string };
     },
   });
 }
@@ -60,7 +61,7 @@ export interface AutoCalculatedItem {
 }
 
 export interface ProcessUploadResponse {
-  upload: UploadInfo;
+  upload: UploadInfo & { brand_id: number };
   auto_calculated: AutoCalculatedItem[];
 }
 
@@ -82,10 +83,11 @@ export function useProcessUpload() {
           signal: controller.signal,
         });
         if (error) {
-          const detail = (error as Record<string, unknown>).detail;
-          throw new Error(typeof detail === 'string' ? detail : 'Failed to process upload');
+          throw new Error(
+            isApiErrorWithDetail(error) ? error.detail : 'Failed to process upload',
+          );
         }
-        return data as ProcessUploadResponse;
+        return data satisfies ProcessUploadResponse;
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') {
           throw new Error(
@@ -140,7 +142,7 @@ export function useUploadFile(brandId: number) {
             { params: { path: { brand_id: brandId } } },
           );
           if (error) throw new Error('Failed to fetch brand uploads');
-          return data as BrandUploads;
+          return data satisfies BrandUploads;
         },
         staleTime: 0,
       });
@@ -264,11 +266,7 @@ export function useUploadFile(brandId: number) {
 
         if (abortController.signal.aborted) return;
 
-        let message = 'Upload failed';
-        if (err instanceof Error) {
-          const detail = (err as unknown as Record<string, unknown>).detail;
-          message = typeof detail === 'string' ? detail : err.message;
-        }
+        const message = extractErrorMessage(err, 'Upload failed');
         setError(message);
         setStatus('error');
         throw err;
@@ -309,7 +307,7 @@ export function useDownloadFile() {
         { params: { path: { brand_id: brandId, file_type: fileType } } },
       );
       if (error) throw new Error('Failed to get download URL');
-      return data as { download_url: string; filename: string };
+      return data satisfies { download_url: string; filename: string };
     },
   });
 }

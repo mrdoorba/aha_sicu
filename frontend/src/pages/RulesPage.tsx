@@ -1,13 +1,20 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
-import { useRules, type ScoringRule } from '../hooks/useRules';
+import { useRules, type ScoringRule, type ScoringRules, type RuleThreshold } from '../hooks/useRules';
+import type { UpdateRuleParams } from '../hooks/useUpdateRule';
 import { useUpdateRule } from '../hooks/useUpdateRule';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { RulesCategoryCard } from '../components/rules/RulesCategoryCard';
 import { PasswordConfirmDialog } from '../components/rules/PasswordConfirmDialog';
+
+type RuleTemplate = UpdateRuleParams['template'];
+
+function isRuleTemplate(value: string): value is RuleTemplate {
+  return value === 'fashion' || value === 'non_fashion' || value === 'default';
+}
 
 const CATEGORY_ORDER = [
   'operational',
@@ -22,13 +29,27 @@ const CATEGORY_ORDER = [
   'marketing',
 ] as const;
 
+type RuleCategory = typeof CATEGORY_ORDER[number];
+
+/**
+ * Type-safe accessor for ScoringRules category data.
+ * Every key in CATEGORY_ORDER maps to Record<string, RuleThreshold> in ScoringRules.
+ */
+function getCategoryRules(rules: ScoringRules, category: RuleCategory): Record<string, RuleThreshold> {
+  return rules[category];
+}
+
+function isRuleCategory(value: string): value is RuleCategory {
+  return (CATEGORY_ORDER as readonly string[]).includes(value);
+}
+
 export const RulesPage = () => {
   const { t } = useTranslation();
   const { rules, isLoading, isError, refetch } = useRules();
   const { profile } = useCurrentUser();
   const updateRule = useUpdateRule();
   const [isEditing, setIsEditing] = useState(false);
-  const [editedRules, setEditedRules] = useState<Record<string, Record<string, unknown>>>({});
+  const [editedRules, setEditedRules] = useState<Record<string, ScoringRules>>({});
   const [showPasswordDialog, setShowPasswordDialog] = useState(false);
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
@@ -36,11 +57,12 @@ export const RulesPage = () => {
 
   // Find the default rule (or fall back to first available)
   const activeRule = rules.find((r) => r.template === 'default') ?? rules[0] ?? null;
-  const template = (activeRule?.template ?? 'default') as 'fashion' | 'non_fashion' | 'default';
+  const rawTemplate = activeRule?.template ?? 'default';
+  const template: RuleTemplate = isRuleTemplate(rawTemplate) ? rawTemplate : 'default';
 
   const enterEditMode = () => {
     if (!activeRule) return;
-    const cloned: Record<string, Record<string, unknown>> = {
+    const cloned: Record<string, ScoringRules> = {
       [template]: JSON.parse(JSON.stringify(activeRule.rules)),
     };
     setEditedRules(cloned);
@@ -71,9 +93,13 @@ export const RulesPage = () => {
       });
     }
     setEditedRules((prev) => {
-      const updated = JSON.parse(JSON.stringify(prev));
-      if (updated[template]?.[category]?.[key]) {
-        updated[template][category][key][field] = value;
+      const updated: Record<string, ScoringRules> = JSON.parse(JSON.stringify(prev));
+      const rules = updated[template];
+      if (rules && isRuleCategory(category)) {
+        const cat = getCategoryRules(rules, category);
+        if (cat[key]) {
+          cat[key] = { ...cat[key], [field]: value };
+        }
       }
       return updated;
     });
@@ -81,9 +107,13 @@ export const RulesPage = () => {
 
   const handleMessageChange = (category: string, key: string, field: string, value: string) => {
     setEditedRules((prev) => {
-      const updated = JSON.parse(JSON.stringify(prev));
-      if (updated[template]?.[category]?.[key]) {
-        updated[template][category][key][field] = value;
+      const updated: Record<string, ScoringRules> = JSON.parse(JSON.stringify(prev));
+      const rules = updated[template];
+      if (rules && isRuleCategory(category)) {
+        const cat = getCategoryRules(rules, category);
+        if (cat[key]) {
+          cat[key] = { ...cat[key], [field]: value };
+        }
       }
       return updated;
     });
@@ -91,9 +121,10 @@ export const RulesPage = () => {
 
   const handleClosingMessageChange = (_tmpl: string, verdictKey: string, value: string) => {
     setEditedRules((prev) => {
-      const updated = JSON.parse(JSON.stringify(prev));
-      if (updated[template]?.interpretation?.closing_messages) {
-        updated[template].interpretation.closing_messages[verdictKey] = value;
+      const updated: Record<string, ScoringRules> = JSON.parse(JSON.stringify(prev));
+      const closingMessages = updated[template]?.interpretation?.closing_messages;
+      if (closingMessages) {
+        closingMessages[verdictKey] = value;
       }
       return updated;
     });
@@ -101,9 +132,10 @@ export const RulesPage = () => {
 
   const handleCompetitionMessageChange = (_tmpl: string, field: string, value: string) => {
     setEditedRules((prev) => {
-      const updated = JSON.parse(JSON.stringify(prev));
-      if (updated[template]?.competition) {
-        updated[template].competition[field] = value;
+      const updated: Record<string, ScoringRules> = JSON.parse(JSON.stringify(prev));
+      const competition = updated[template]?.competition;
+      if (competition && (field === 'message_pass' || field === 'message_fail')) {
+        competition[field] = value;
       }
       return updated;
     });
@@ -114,10 +146,11 @@ export const RulesPage = () => {
   const handleSaveConfirm = async () => {
     if (!activeRule) return;
     const edited = editedRules[template];
+    if (!edited) return;
     if (JSON.stringify(activeRule.rules) !== JSON.stringify(edited)) {
       await updateRule.mutateAsync({
         template,
-        rules: edited,
+        rules: { ...edited },
       });
     }
     setShowPasswordDialog(false);
@@ -164,8 +197,8 @@ export const RulesPage = () => {
     );
   }
 
-  const rulesData = isEditing
-    ? editedRules[template] as unknown as ScoringRule['rules']
+  const rulesData: ScoringRules = isEditing
+    ? (editedRules[template] ?? activeRule.rules)
     : activeRule.rules;
 
   // Filter validation errors for this template
@@ -207,14 +240,14 @@ export const RulesPage = () => {
 
         <div className="space-y-4">
           {CATEGORY_ORDER.map((category) => {
-            const categoryRules = rulesData[category];
+            const categoryRules = getCategoryRules(rulesData, category);
             if (!categoryRules) return null;
 
             return (
               <RulesCategoryCard
                 key={category}
                 category={category}
-                rules={categoryRules as Record<string, import('../hooks/useRules').RuleThreshold>}
+                rules={categoryRules}
                 isEditing={isEditing}
                 onRuleChange={handleRuleChange}
                 onMessageChange={handleMessageChange}

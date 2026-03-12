@@ -38,7 +38,6 @@ const FILE_TYPE = 'order_export';
 
 const OLD_UPLOAD: UploadInfo = {
   id: 1,
-  brand_id: BRAND_ID,
   file_type: FILE_TYPE,
   filename: 'old.zip',
   file_size: 1000,
@@ -48,7 +47,6 @@ const OLD_UPLOAD: UploadInfo = {
 
 const NEW_UPLOAD: UploadInfo = {
   id: 2,
-  brand_id: BRAND_ID,
   file_type: FILE_TYPE,
   filename: 'new.zip',
   file_size: 2000,

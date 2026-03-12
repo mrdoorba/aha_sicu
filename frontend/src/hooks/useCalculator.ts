@@ -89,8 +89,15 @@ export type CalculatorDetails = AdsKeywordDetails | DiscountDetails | TopSkuDeta
 export interface CalculatorResult {
   calculator_type: string;
   output_text: string;
-  details: CalculatorDetails;
+  details: Record<string, unknown>;
   calculated_at: string;
+}
+
+/** Narrow CalculatorResult.details to a specific calculator detail type at the consumption point. */
+export function getTypedDetails<T extends CalculatorDetails>(result: CalculatorResult): T {
+  // The API guarantees the shape matches the calculator_type, so this is safe
+  // after the boundary check (error thrown if data is missing).
+  return result.details as T;
 }
 
 export interface CalculatorResultsListResponse {
@@ -122,7 +129,7 @@ export function useRunCalculator(brandId: number, calculatorType: CalculatorType
         params: { path: { brand_id: brandId } },
       });
       if (error) throw error;
-      return data as unknown as CalculatorResult;
+      return data satisfies CalculatorResult;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });
@@ -153,7 +160,7 @@ export function useCalculatorResults(brandId: number) {
         { params: { path: { brand_id: brandId } } },
       );
       if (error) throw error;
-      return data as unknown as CalculatorResultsListResponse;
+      return data satisfies CalculatorResultsListResponse;
     },
     enabled: brandId > 0,
   });
@@ -164,7 +171,7 @@ export function useCalculatorResults(brandId: number) {
 // ---------------------------------------------------------------------------
 
 export interface SingleCalculatorStatus {
-  status: 'ready' | 'pending';
+  status: string;
   has_result: boolean;
   required_files: string[];
   required_manual: string[];
@@ -188,7 +195,7 @@ export function useCalculatorStatus(brandId: number) {
         { params: { path: { brand_id: brandId } } },
       );
       if (error) throw error;
-      return data as CalculatorStatusResponse;
+      return data satisfies CalculatorStatusResponse;
     },
     enabled: brandId > 0,
   });
@@ -209,8 +216,8 @@ export function useAutoCalcErrors(brandId: number): AutoCalcError[] {
 
 export interface RunCalculatorItem {
   calculator_type: string;
-  status: 'success' | 'skipped' | 'error';
-  result?: CalculatorResult;
+  status: string;
+  result?: Record<string, unknown>;
   reason?: string;
 }
 
@@ -228,7 +235,7 @@ export function useRunAllCalculators(brandId: number) {
         { params: { path: { brand_id: brandId } } },
       );
       if (error) throw error;
-      return data as RunAllResponse;
+      return data satisfies RunAllResponse;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });

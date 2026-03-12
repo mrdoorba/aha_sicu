@@ -22,7 +22,6 @@ vi.mock('../../hooks/useUpload', () => ({
 const mockUploads: UploadInfo[] = [
   {
     id: 1,
-    brand_id: 1,
     file_type: 'cpc_ad_report',
     filename: 'Brand_report.csv',
     file_size: 1024,

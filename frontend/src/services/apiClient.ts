@@ -607,13 +607,26 @@ interface paths {
               }>;
               verdict: string;
               conclusion: string;
+              conclusion_i18n?: Array<{
+                key: string;
+                vars: Record<string, string>;
+              }>;
               marketing_estimation: string;
               marketing_percentage: string;
               marketing_budget: string;
+              marketing_budget_i18n?: {
+                key: string;
+                vars: Record<string, string>;
+              };
               closing_message: string;
+              closing_message_i18n?: {
+                key: string;
+                vars: Record<string, string>;
+              };
               email_subject: string;
               email_body: string;
               template: string;
+              rule_version: number;
             };
           };
         };

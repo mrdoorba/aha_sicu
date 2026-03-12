@@ -31,7 +31,7 @@ export function useEvaluationHistory(
   dateFrom?: string,
   dateTo?: string,
 ) {
-  const query = useQuery<EvaluationListResponse>({
+  const query = useQuery({
     queryKey: ['evaluations', page, limit, sortBy, sortOrder, search, dateFrom, dateTo],
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/evaluations', {
@@ -48,7 +48,7 @@ export function useEvaluationHistory(
         },
       });
       if (error) throw new Error('Failed to fetch evaluation history');
-      return data as EvaluationListResponse;
+      return data;
     },
     placeholderData: keepPreviousData,
     refetchInterval: 30_000,

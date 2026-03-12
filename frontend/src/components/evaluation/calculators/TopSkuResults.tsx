@@ -12,6 +12,7 @@ import {
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible';
 import { formatIDR } from '../forms/formConfig';
 import type { CalculatorResult, TopSkuDetails } from '../../../hooks/useCalculator';
+import { isTopSkuDetails } from '../../../lib/calculatorGuards';
 
 interface TopSkuResultsProps {
   result: CalculatorResult;
@@ -33,7 +34,10 @@ function sortBy<T>(data: T[], field: keyof T, dir: SortDir): T[] {
 
 export function TopSkuResults({ result }: TopSkuResultsProps) {
   const { t } = useTranslation();
-  const details = result.details as TopSkuDetails;
+  if (!isTopSkuDetails(result.details)) {
+    return <p className="text-sm text-muted-foreground">Invalid top SKU data</p>;
+  }
+  const details = result.details;
 
   const [isOpen, setIsOpen] = useState(false);
   const [revSortField, setRevSortField] = useState<keyof TopSkuDetails['output_1'][0]>('total_omzet');

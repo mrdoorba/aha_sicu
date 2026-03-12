@@ -125,11 +125,11 @@ describe('CompetitionForm', () => {
 
   it('handles backward compatibility — old data with only keyword + marketPrice', () => {
     // Simulate old saved data that only has keyword + marketPrice
-    const oldData = {
-      product1: { keyword: 'shoes', marketPrice: 50000 },
-      product2: { keyword: null, marketPrice: null },
-      product3: { keyword: null, marketPrice: null },
-    } as unknown as CompetitionData;
+    const oldData: CompetitionData = {
+      product1: { productName: null, sellingPrice: null, keyword: 'shoes', link: null, marketPrice: 50000 },
+      product2: { productName: null, sellingPrice: null, keyword: null, link: null, marketPrice: null },
+      product3: { productName: null, sellingPrice: null, keyword: null, link: null, marketPrice: null },
+    };
 
     render(<CompetitionForm data={oldData} onChange={vi.fn()} onBlur={vi.fn()} />);
 

@@ -16,10 +16,10 @@ export interface UserProfile {
 export function useCurrentUser() {
   const { user } = useAuth();
 
-  const query = useQuery<UserProfile>({
+  const query = useQuery({
     queryKey: ['currentUser'],
     queryFn: async () => {
-      return await getCurrentUser() as UserProfile;
+      return await getCurrentUser();
     },
     enabled: !!user,
   });

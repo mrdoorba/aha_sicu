@@ -1,5 +1,6 @@
 import { useQuery } from '@tanstack/react-query';
 import client from '../services/apiClient';
+import { isApiErrorWithCode } from '../lib/typeGuards';
 
 export interface BrandRawData {
   email: string | null;
@@ -45,13 +46,10 @@ export function useEvaluationDetail(id: number) {
         },
       );
       if (error) {
-        const apiError = error as Record<string, unknown>;
-        throw new ApiError(
-          typeof apiError.detail === 'string'
-            ? apiError.detail
-            : 'Failed to fetch evaluation detail',
-          typeof apiError.code === 'string' ? apiError.code : undefined,
-        );
+        if (isApiErrorWithCode(error)) {
+          throw new ApiError(error.detail, error.code);
+        }
+        throw new ApiError('Failed to fetch evaluation detail');
       }
       return data as EvaluationDetail;
     },
@@ -59,7 +57,9 @@ export function useEvaluationDetail(id: number) {
   });
 
   const isNotFound =
-    query.isError && (query.error as ApiError)?.code === 'EVAL_NOT_FOUND';
+    query.isError &&
+    query.error instanceof ApiError &&
+    query.error.code === 'EVAL_NOT_FOUND';
 
   return {
     evaluation: query.data ?? null,

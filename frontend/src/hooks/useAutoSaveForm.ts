@@ -1,7 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { useSaveEvaluationInputs } from './useEvaluation';
-import type { ManualData } from '../components/evaluation/forms/formConfig';
+import { useSaveEvaluationInputs, type CategoryType } from './useEvaluation';
+import type { ManualData, CompetitionData } from '../components/evaluation/forms/formConfig';
 import { buildManualData, mergeWithOverrides } from './manualDataUtils';
+import { toRecord } from '../lib/typeGuards';
+
+/** Type-safe keys of ManualData (excluding competition which has nested structure) */
+type FlatCategory = Exclude<keyof ManualData, 'competition'>;
+
+function isFlatCategory(key: string): key is FlatCategory {
+  return ['operational', 'business', 'visitors', 'promoTools', 'products', 'ads', 'campaign'].includes(key);
+}
+
+function isCompetitionProductKey(key: string): key is keyof CompetitionData {
+  return key === 'product1' || key === 'product2' || key === 'product3';
+}
+
+function isCategoryType(value: string | null): value is CategoryType | null {
+  return value === null || value === 'fashion' || value === 'non_fashion';
+}
 
 export type SaveStatus = 'idle' | 'saving' | 'saved' | 'error';
 
@@ -41,8 +57,8 @@ export function useAutoSaveForm({ brandId, categoryType, initialData }: UseAutoS
       setSaveStatus('saving');
       saveMutation.mutate(
         {
-          category_type: categoryType as 'fashion' | 'non_fashion' | null,
-          manual_data: dataToSave as unknown as Record<string, unknown>,
+          category_type: isCategoryType(categoryType) ? categoryType : null,
+          manual_data: toRecord(dataToSave),
         },
         {
           onSuccess: () => {
@@ -82,20 +98,20 @@ export function useAutoSaveForm({ brandId, categoryType, initialData }: UseAutoS
 
         if (category === 'competition' && key.includes('.')) {
           const [productKey, fieldKey] = key.split('.');
-          const currentComp = {
+          const currentComp: CompetitionData = {
             product1: { ...base.competition.product1, ...prev.competition?.product1 },
             product2: { ...base.competition.product2, ...prev.competition?.product2 },
             product3: { ...base.competition.product3, ...prev.competition?.product3 },
           };
-          (currentComp as Record<string, Record<string, unknown>>)[productKey][fieldKey] = value;
+          if (isCompetitionProductKey(productKey)) {
+            currentComp[productKey] = { ...currentComp[productKey], [fieldKey]: value };
+          }
           updated.competition = currentComp;
-        } else {
-          const currentCat = {
-            ...(base as unknown as Record<string, Record<string, unknown>>)[category],
-            ...(prev as unknown as Record<string, Record<string, unknown>>)[category],
-          };
-          currentCat[key] = value;
-          (updated as Record<string, unknown>)[category] = currentCat;
+        } else if (isFlatCategory(category)) {
+          const baseCategory = base[category];
+          const prevCategory = prev[category];
+          const currentCat = { ...baseCategory, ...prevCategory, [key]: value };
+          (updated as Partial<ManualData>)[category] = currentCat;
         }
 
         return updated;

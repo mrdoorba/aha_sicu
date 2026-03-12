@@ -1,6 +1,49 @@
 import { useQuery } from '@tanstack/react-query';
 import client from '../services/apiClient';
 
+/** Shape returned by the API — rules is untyped Record from the backend JSONB column. */
+interface ApiScoringRule {
+  id: number;
+  template: string;
+  rules: Record<string, unknown>;
+  version: number;
+  updated_by: number | null;
+  updated_at: string;
+}
+
+/**
+ * Minimal structural check that the JSONB rules blob has the expected top-level keys.
+ * A full deep validation is impractical for this shape — we trust the backend contract
+ * but verify the skeleton so a schema drift fails fast here, not deep in a component.
+ */
+function looksLikeScoringRules(value: Record<string, unknown>): value is ScoringRules {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    'interpretation' in value &&
+    typeof value.interpretation === 'object'
+  );
+}
+
+/**
+ * Map an API rule response to our typed ScoringRule.
+ * The backend JSONB column returns Record<string, unknown> — we verify the
+ * skeleton and trust the backend contract for nested field shapes.
+ */
+function toScoringRule(apiRule: ApiScoringRule): ScoringRule {
+  if (!looksLikeScoringRules(apiRule.rules)) {
+    throw new Error(`Scoring rules for template "${apiRule.template}" have unexpected shape`);
+  }
+  return {
+    id: apiRule.id,
+    template: apiRule.template,
+    rules: apiRule.rules,
+    version: apiRule.version,
+    updated_by: apiRule.updated_by,
+    updated_at: apiRule.updated_at,
+  };
+}
+
 export interface RuleThreshold {
   threshold?: number;
   threshold_pct?: number;
@@ -71,7 +114,7 @@ export function useRules() {
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/rules');
       if (error) throw new Error('Failed to fetch scoring rules');
-      return data as unknown as ScoringRule[];
+      return data.map(toScoringRule);
     },
   });
 

@@ -1,13 +1,17 @@
 import { AlertTriangle } from 'lucide-react';
 import { Badge } from '../../ui/badge';
 import type { CalculatorResult, DiscountDetails } from '../../../hooks/useCalculator';
+import { isDiscountDetails } from '../../../lib/calculatorGuards';
 
 interface DiscountResultsProps {
   result: CalculatorResult;
 }
 
 export function DiscountResults({ result }: DiscountResultsProps) {
-  const details = result.details as DiscountDetails;
+  if (!isDiscountDetails(result.details)) {
+    return <p className="text-sm text-muted-foreground">Invalid discount data</p>;
+  }
+  const details = result.details;
 
   return (
     <div>

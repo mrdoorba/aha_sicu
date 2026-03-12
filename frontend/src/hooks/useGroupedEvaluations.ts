@@ -25,7 +25,7 @@ export function useGroupedEvaluations(
   dateFrom?: string,
   dateTo?: string,
 ) {
-  const query = useQuery<GroupedEvaluationListResponse>({
+  const query = useQuery({
     queryKey: ['evaluations-grouped', page, limit, search, dateFrom, dateTo],
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/evaluations/grouped', {
@@ -40,7 +40,7 @@ export function useGroupedEvaluations(
         },
       });
       if (error) throw new Error('Failed to fetch grouped evaluations');
-      return data as GroupedEvaluationListResponse;
+      return data;
     },
     placeholderData: keepPreviousData,
   });

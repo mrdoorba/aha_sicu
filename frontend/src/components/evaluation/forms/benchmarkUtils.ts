@@ -1,4 +1,5 @@
 import type { ScoringRules, RuleThreshold } from '../../../hooks/useRules';
+import { isRecord } from '../../../lib/typeGuards';
 
 const COMPARISON_OPERATORS: Record<string, string> = {
   gte: '>',
@@ -58,9 +59,9 @@ export function getBenchmarkFromRules(
   if (!rules) return fallback;
 
   const categoryRules = rules[category as keyof ScoringRules];
-  if (!categoryRules || typeof categoryRules !== 'object') return fallback;
+  if (!isRecord(categoryRules)) return fallback;
 
-  const rule = (categoryRules as Record<string, RuleThreshold>)[key];
+  const rule = categoryRules[key] as RuleThreshold | undefined;
   if (!rule || rule.threshold == null) return fallback;
 
   const operator = rule.comparison ? COMPARISON_OPERATORS[rule.comparison] : '>';

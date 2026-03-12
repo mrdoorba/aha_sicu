@@ -6,13 +6,23 @@ import { useEvaluationState, useSaveEvaluationInputs, type CategoryType } from '
 import { useAutoSaveForm } from './useAutoSaveForm';
 import { computeSectionProgress } from '../components/evaluation/forms/formConfig';
 import { useScoring } from './useScoring';
-import type { ScoringResult } from './useScoring';
+import type { ScoringResult, CategoryScore } from './useScoring';
 import { useSaveEvaluation } from './useSaveEvaluation';
 import { useCalculatorResults, useRunAllCalculators } from './useCalculator';
 import type { CalculatorResultsListResponse } from './useCalculator';
 import { useRules } from './useRules';
 import { toast } from 'sonner';
 import { generatePeriodOptions } from '../components/evaluation/scoring/periodOptions';
+import { toRecord } from '../lib/typeGuards';
+
+function isCategoryType(value: string): value is CategoryType {
+  return value === 'fashion' || value === 'non_fashion';
+}
+
+/** Convert CategoryScore[] to the untyped array the save API expects. */
+function categoryScoresToRecords(scores: CategoryScore[]): Array<Record<string, unknown>> {
+  return scores.map((score) => toRecord(score));
+}
 
 export type SaveStep = 'idle' | 'recalculating' | 'scoring' | 'saving';
 
@@ -95,7 +105,8 @@ export function useEvaluationOrchestrator(brandId: number) {
 
   // --- Handlers ---
   const handleSaveEvaluation = useCallback(async () => {
-    if (!evaluationState?.category_type) return;
+    const categoryType = evaluationState?.category_type;
+    if (!categoryType) return;
 
     try {
       // Step 1: Recalculate all
@@ -105,7 +116,7 @@ export function useEvaluationOrchestrator(brandId: number) {
       // Step 2: Score
       setSaveStep('scoring');
       const scoringRequest = {
-        template: evaluationState.category_type as 'fashion' | 'non_fashion',
+        template: categoryType,
         verdict: scoringResult?.verdict ?? '✔️',
         store_name: brand?.brand_name ?? '',
         period: lastPeriod || generatePeriodOptions()[0],
@@ -147,15 +158,20 @@ export function useEvaluationOrchestrator(brandId: number) {
         closing_message_i18n: scoreResponse.closing_message_i18n,
       };
 
+      // scoreResponse.template is string from API — narrow it safely
+      const saveTemplate = isCategoryType(scoreResponse.template)
+        ? scoreResponse.template
+        : categoryType; // fallback to the already-validated category
+
       await new Promise<void>((resolve, reject) => {
         saveEvaluation(
           {
-            template: scoreResponse.template as 'fashion' | 'non_fashion',
+            template: saveTemplate,
             final_score: scoreResponse.total_score,
             verdict: scoreResponse.verdict,
-            score_breakdown: scoreResponse.category_scores as unknown as Array<Record<string, unknown>>,
+            score_breakdown: categoryScoresToRecords(scoreResponse.category_scores),
             calculator_results: calcResults,
-            manual_inputs: manualData as unknown as Record<string, unknown>,
+            manual_inputs: toRecord(manualData),
             rule_version: scoreResponse.rule_version,
             email_output: scoreResponse.email_body || null,
             period: lastPeriod || generatePeriodOptions()[0],
@@ -185,8 +201,9 @@ export function useEvaluationOrchestrator(brandId: number) {
 
   const handleCategoryChange = useCallback(
     (value: string) => {
+      if (!isCategoryType(value)) return;
       saveMutation.mutate({
-        category_type: value as CategoryType,
+        category_type: value,
         manual_data: evaluationState?.manual_data ?? undefined,
       });
     },

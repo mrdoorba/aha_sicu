@@ -1,6 +1,7 @@
 import { Card, CardContent } from '../ui/card';
 import { useTranslation } from 'react-i18next';
 import { renderTranslatable, type TranslatableText } from '../../utils/renderTranslatable';
+import { isRecord } from '../../lib/typeGuards';
 
 interface KesimpulanSectionProps {
   calculatorResults: Record<string, unknown>;
@@ -16,6 +17,17 @@ interface ScoringSummary {
   closing_message_i18n?: TranslatableText;
 }
 
+function isScoringSummary(value: unknown): value is ScoringSummary {
+  if (!isRecord(value)) return false;
+  // All properties are optional, but at least one content field should exist
+  const hasContent =
+    typeof value.conclusion === 'string' ||
+    Array.isArray(value.conclusion_i18n) ||
+    typeof value.marketing_budget === 'string' ||
+    typeof value.closing_message === 'string';
+  return hasContent;
+}
+
 function parseBulletPoints(text: string): string[] {
   return text
     .split('\n')
@@ -25,7 +37,9 @@ function parseBulletPoints(text: string): string[] {
 
 export const KesimpulanSection = ({ calculatorResults }: KesimpulanSectionProps) => {
   const { t } = useTranslation();
-  const summary = calculatorResults.scoring_summary as ScoringSummary | undefined;
+  const summary = isScoringSummary(calculatorResults.scoring_summary)
+    ? calculatorResults.scoring_summary
+    : undefined;
 
   return (
     <Card className="border-none shadow-xl bg-card overflow-hidden">

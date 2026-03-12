@@ -35,6 +35,27 @@ const mockedUseStatus = vi.mocked(useCalculatorStatus);
 const mockedUseRunCalculator = vi.mocked(useRunCalculator);
 const mockedUseAutoCalcErrors = vi.mocked(useAutoCalcErrors);
 
+function mockRunCalcResult(overrides: Partial<ReturnType<typeof useRunCalculator>> = {}): ReturnType<typeof useRunCalculator> {
+  return {
+    mutate: vi.fn(),
+    mutateAsync: vi.fn(),
+    isPending: false,
+    isError: false,
+    isIdle: true,
+    isSuccess: false,
+    error: null,
+    data: undefined,
+    reset: vi.fn(),
+    status: 'idle',
+    variables: undefined,
+    failureCount: 0,
+    failureReason: null,
+    submittedAt: 0,
+    context: undefined,
+    ...overrides,
+  };
+}
+
 function createWrapper() {
   const queryClient = new QueryClient({
     defaultOptions: { queries: { retry: false } },
@@ -189,12 +210,7 @@ describe('CalculatorResultsSection', () => {
     const user = userEvent.setup();
     const mockCalcMutate = vi.fn();
 
-    mockedUseRunCalculator.mockReturnValue({
-      mutate: mockCalcMutate,
-      isPending: false,
-      isError: false,
-      error: null,
-    } as unknown as ReturnType<typeof useRunCalculator>);
+    mockedUseRunCalculator.mockReturnValue(mockRunCalcResult({ mutate: mockCalcMutate }));
 
     // All calculators ready, no results
     const allReadyStatus = {
@@ -232,12 +248,7 @@ describe('CalculatorResultsSection', () => {
     const user = userEvent.setup();
     const mockCalcMutate = vi.fn();
 
-    mockedUseRunCalculator.mockReturnValue({
-      mutate: mockCalcMutate,
-      isPending: false,
-      isError: false,
-      error: null,
-    } as unknown as ReturnType<typeof useRunCalculator>);
+    mockedUseRunCalculator.mockReturnValue(mockRunCalcResult({ mutate: mockCalcMutate }));
 
     mockedUseAutoCalcErrors.mockReturnValue([
       { calculator_type: 'ads_keyword', status: 'error', reason: 'Data validation failed' },
@@ -269,12 +280,7 @@ describe('CalculatorResultsSection', () => {
   });
 
   it('shows loading state on Calculate button during calculation', () => {
-    mockedUseRunCalculator.mockReturnValue({
-      mutate: vi.fn(),
-      isPending: true,
-      isError: false,
-      error: null,
-    } as unknown as ReturnType<typeof useRunCalculator>);
+    mockedUseRunCalculator.mockReturnValue(mockRunCalcResult({ isPending: true }));
 
     // All ready, no results
     const allReadyStatus = {
@@ -311,19 +317,13 @@ describe('CalculatorResultsSection', () => {
     // Make ads_keyword return error state
     mockedUseRunCalculator.mockImplementation((_brandId, calcType) => {
       if (calcType === 'ads_keyword') {
-        return {
+        return mockRunCalcResult({
           mutate: mockRetryMutate,
-          isPending: false,
           isError: true,
           error: new Error('Calculator execution failed'),
-        } as unknown as ReturnType<typeof useRunCalculator>;
+        });
       }
-      return {
-        mutate: vi.fn(),
-        isPending: false,
-        isError: false,
-        error: null,
-      } as unknown as ReturnType<typeof useRunCalculator>;
+      return mockRunCalcResult();
     });
 
     // No ads_keyword result (so error state shows instead of result)

@@ -10,12 +10,12 @@ export interface Account {
 }
 
 export function useAccounts() {
-  const query = useQuery<Account[]>({
+  const query = useQuery({
     queryKey: ['accounts'],
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/accounts');
       if (error) throw new Error('Failed to fetch accounts');
-      return data as Account[];
+      return data;
     },
   });
 
@@ -40,7 +40,7 @@ export function useCreateAccount() {
         body: params,
       });
       if (error) throw error;
-      return data as Account;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });
@@ -64,7 +64,7 @@ export function useUpdateRole() {
         },
       );
       if (error) throw error;
-      return data as Account;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['accounts'] });

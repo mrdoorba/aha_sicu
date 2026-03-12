@@ -16,7 +16,7 @@ export interface EvaluationInputsUpdate {
 }
 
 export function useEvaluationState(brandId: number) {
-  return useQuery<EvaluationState>({
+  return useQuery({
     queryKey: ['evaluation', brandId],
     queryFn: async () => {
       const { data, error } = await client.GET(
@@ -24,7 +24,7 @@ export function useEvaluationState(brandId: number) {
         { params: { path: { brand_id: brandId } } },
       );
       if (error) throw new Error('Failed to fetch evaluation state');
-      return data as EvaluationState;
+      return data;
     },
     enabled: brandId > 0,
   });
@@ -42,7 +42,7 @@ export function useSaveEvaluationInputs(brandId: number) {
         },
       );
       if (error) throw new Error('Failed to save evaluation inputs');
-      return data as EvaluationState;
+      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['evaluation', brandId] });

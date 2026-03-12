@@ -6,6 +6,8 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '.
 import { useTranslation } from 'react-i18next';
 import type { AdsKeywordDetails, TranslatableI18n } from '../../hooks/useCalculator';
 import { renderTranslatable, renderAdList, renderFlagList } from '../../utils/renderTranslatable';
+import { isRecord, isRecordArray } from '../../lib/typeGuards';
+import { isAdsKeywordDetails } from '../../lib/calculatorGuards';
 
 interface DataIntelligenceProps {
   calculatorResults: Record<string, unknown>;
@@ -17,8 +19,8 @@ function formatIDR(value: unknown): string {
 }
 
 function AdsContent({ data, t }: { data: Record<string, unknown>; t: TFunction }) {
-  const text = (data.output_text as string) || '';
-  const details = data.details as AdsKeywordDetails | undefined;
+  const text = typeof data.output_text === 'string' ? data.output_text : '';
+  const details = isAdsKeywordDetails(data.details) ? data.details : undefined;
 
   if (!details) {
     if (!text) return <p className="text-sm text-muted-foreground py-6 text-center">{t('common.noData')}</p>;
@@ -59,9 +61,9 @@ function AdsContent({ data, t }: { data: Record<string, unknown>; t: TFunction }
 }
 
 function TopSkuContent({ data, t }: { data: Record<string, unknown>; t: TFunction }) {
-  const details = data.details as Record<string, unknown> | undefined;
-  const output1 = (details?.output_1 as Array<Record<string, unknown>>) || [];
-  const output2 = (details?.output_2 as Array<Record<string, unknown>>) || [];
+  const details = isRecord(data.details) ? data.details : undefined;
+  const output1 = isRecordArray(details?.output_1) ? details.output_1 : [];
+  const output2 = isRecordArray(details?.output_2) ? details.output_2 : [];
   const avgStock = details?.average_stock;
 
   if (output1.length === 0 && output2.length === 0) {
@@ -140,8 +142,8 @@ export const DataIntelligence = ({ calculatorResults }: DataIntelligenceProps) =
     setVisitedTabs((prev) => new Set(prev).add(value));
   };
 
-  const adsData = (calculatorResults.ads_keyword as Record<string, unknown>) || {};
-  const skuData = (calculatorResults.top_sku as Record<string, unknown>) || {};
+  const adsData = isRecord(calculatorResults.ads_keyword) ? calculatorResults.ads_keyword : {};
+  const skuData = isRecord(calculatorResults.top_sku) ? calculatorResults.top_sku : {};
 
   return (
     <Card className="border-none shadow-xl bg-card overflow-hidden">

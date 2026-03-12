@@ -18,12 +18,12 @@ export interface SyncStatusData {
 }
 
 export function useSyncStatus() {
-  return useQuery<SyncStatusData | null>({
+  return useQuery({
     queryKey: ['syncStatus'],
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/sync/status');
       if (error) throw new Error('Failed to fetch sync status');
-      return (data as SyncStatusData) ?? null;
+      return data ?? null;
     },
     refetchInterval: (query) => {
       const status = query.state.data?.status;

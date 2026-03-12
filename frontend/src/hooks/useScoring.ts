@@ -57,8 +57,8 @@ export function useScoring(brandId: number, preStep?: () => Promise<void>) {
   const [lastPeriod, setLastPeriod] = useState('');
   const [step, setStep] = useState<ScoringStep>('idle');
 
-  const mutation = useMutation<ScoringResult, Error, ScoringRequest>({
-    mutationFn: async (request) => {
+  const mutation = useMutation({
+    mutationFn: async (request: ScoringRequest) => {
       setLastPeriod(request.period);
 
       // Run pre-step (recalculate all calculators) if provided
@@ -76,7 +76,7 @@ export function useScoring(brandId: number, preStep?: () => Promise<void>) {
         },
       );
       if (error) throw error;
-      return data as ScoringResult;
+      return data;
     },
     onSuccess: (data) => {
       setScoringResult(data);
