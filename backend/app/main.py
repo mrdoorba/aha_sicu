@@ -29,8 +29,7 @@ logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(name)s: %(messa
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     """Application lifespan: startup and shutdown events."""
     # Startup
-    if settings.firebase_credentials_path or settings.firebase_credentials_json:
-        init_firebase(settings)
+    init_firebase(settings)
     if settings.effective_database_url:
         await db.init(settings.effective_database_url, settings.database_pool_min, settings.database_pool_max)
     yield
