@@ -109,6 +109,12 @@ variable "cloud_run_url" {
   default     = ""
 }
 
+variable "email_enabled" {
+  description = "Whether to enable the send-email feature"
+  type        = bool
+  default     = false
+}
+
 variable "cors_origins" {
   description = "Allowed CORS origins for GCS upload bucket"
   type        = list(string)

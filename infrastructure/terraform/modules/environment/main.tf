@@ -282,7 +282,7 @@ resource "google_cloud_run_v2_service" "api" {
 
       env {
         name  = "EMAIL_ENABLED"
-        value = "true"
+        value = tostring(var.email_enabled)
       }
 
       env {

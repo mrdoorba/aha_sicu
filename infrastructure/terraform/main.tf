@@ -117,6 +117,7 @@ module "dev" {
 
   smtp_user      = var.smtp_user
   smtp_from_name = var.smtp_from_name
+  email_enabled  = var.dev_email_enabled
 
   gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
   gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id
@@ -150,6 +151,7 @@ module "prod" {
 
   smtp_user      = var.smtp_user
   smtp_from_name = var.smtp_from_name
+  email_enabled  = var.prod_email_enabled
 
   gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
   gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id

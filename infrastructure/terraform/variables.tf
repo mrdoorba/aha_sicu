@@ -86,6 +86,18 @@ variable "smtp_from_name" {
   default     = "AHA Commerce"
 }
 
+variable "dev_email_enabled" {
+  description = "Whether to enable the send-email feature in dev"
+  type        = bool
+  default     = false
+}
+
+variable "prod_email_enabled" {
+  description = "Whether to enable the send-email feature in prod"
+  type        = bool
+  default     = false
+}
+
 # =============================================================================
 # Cloud SQL Variables (shared instance)
 # =============================================================================
