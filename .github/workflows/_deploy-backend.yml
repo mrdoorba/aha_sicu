@@ -129,6 +129,25 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Extract env vars from tfvars
+        id: tfvars
+        run: |
+          TFVARS_ENV="${{ inputs.environment == 'production' && 'prod' || inputs.environment }}"
+          TFVARS="infrastructure/terraform/environments/${TFVARS_ENV}.tfvars"
+          echo "Reading env vars from $TFVARS"
+
+          extract() { grep "^$1" "$TFVARS" | sed 's/.*"\(.*\)".*/\1/'; }
+
+          VP_ID=$(extract gsheets_vp_spreadsheet_id)
+          MEETING_ID=$(extract gsheets_meeting_spreadsheet_id)
+          EVAL_ID=$(extract gsheets_eval_spreadsheet_id)
+
+          {
+            echo "GSHEETS_VP_SPREADSHEET_ID=${VP_ID}"
+            echo "GSHEETS_MEETING_SPREADSHEET_ID=${MEETING_ID}"
+            echo "GSHEETS_EVAL_SPREADSHEET_ID=${EVAL_ID}"
+          } >> "$GITHUB_OUTPUT"
+
       - name: Deploy to Cloud Run
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v3
@@ -136,6 +155,10 @@ jobs:
           service: ${{ vars.CLOUD_RUN_SERVICE }}
           region: ${{ vars.GCP_REGION }}
           image: ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
+          env_vars: |
+            GSHEETS_VP_SPREADSHEET_ID=${{ steps.tfvars.outputs.GSHEETS_VP_SPREADSHEET_ID }}
+            GSHEETS_MEETING_SPREADSHEET_ID=${{ steps.tfvars.outputs.GSHEETS_MEETING_SPREADSHEET_ID }}
+            GSHEETS_EVAL_SPREADSHEET_ID=${{ steps.tfvars.outputs.GSHEETS_EVAL_SPREADSHEET_ID }}
           flags: ${{ inputs.environment == 'dev' && '--cpu-throttling' || '' }}
 
       - name: Verify deployment
