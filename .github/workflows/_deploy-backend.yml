@@ -135,6 +135,9 @@ jobs:
           TFVARS_ENV="${{ inputs.environment == 'production' && 'prod' || inputs.environment }}"
           TFVARS="infrastructure/terraform/environments/${TFVARS_ENV}.tfvars"
           echo "Reading env vars from $TFVARS"
+          echo "PWD=$(pwd)"
+          echo "File exists: $(test -f "$TFVARS" && echo yes || echo no)"
+          grep gsheets "$TFVARS" || echo "grep found nothing"
 
           extract() { grep "^$1" "$TFVARS" | cut -d'"' -f2; }
 
