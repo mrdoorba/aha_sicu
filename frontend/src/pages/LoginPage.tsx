@@ -77,13 +77,13 @@ export const LoginPage = () => {
 
         {/* Top Centered AHA Logo */}
         <div className="absolute top-16 left-0 w-full flex justify-center z-20 px-8">
-          <img src="/images/AHA-Logo-Color.png" alt="AHA Commerce" className="h-24 md:h-32 w-fit drop-shadow-md brightness-0 invert" />
+          <img src="/images/aha-logo-color.webp" alt="AHA Commerce" className="h-24 md:h-32 w-fit drop-shadow-md brightness-0 invert" />
         </div>
 
         <div className="relative z-10 max-w-xl space-y-8 w-full">
           <div className="flex items-center gap-3">
             <div className="h-12 w-12 rounded-2xl bg-white flex items-center justify-center shadow-lg shadow-white/20">
-              <img src="/images/02 AHA-LogoIcon-Flat.png" alt="Store ICU Logo" className="size-8 object-contain" />
+              <img src="/images/aha-logo-icon.webp" alt="Store ICU Logo" className="size-8 object-contain" />
             </div>
             <span className="text-3xl font-black tracking-tighter text-white">Store ICU</span>
           </div>
@@ -189,7 +189,7 @@ export const LoginPage = () => {
 
         {/* Bottom Image */}
         <div className="w-full flex justify-center relative z-10 mt-auto">
-          <img src="/images/GOPN Hi-Res-01.png" alt="Garansi Omzet dan Profit Naik" className="h-20 md:h-28 object-contain drop-shadow-sm" />
+          <img src="/images/gopn-banner.webp" alt="Garansi Omzet dan Profit Naik" className="h-20 md:h-28 object-contain drop-shadow-sm" />
         </div>
       </main>
     </div>

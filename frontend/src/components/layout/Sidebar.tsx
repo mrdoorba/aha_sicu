@@ -98,7 +98,7 @@ export const Sidebar = ({ className }: SidebarProps) => {
               className="shrink-0 flex items-center justify-center h-10 w-10 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
               onClick={() => setIsCollapsed(!isCollapsed)}
             >
-              <img src="/images/02%20AHA-LogoIcon-Flat.png" alt="Store ICU Logo" className="size-7 object-contain" />
+              <img src="/images/aha-logo-icon.webp" alt="Store ICU Logo" className="size-7 object-contain" />
             </button>
             <span
               className={cn(
