@@ -87,6 +87,9 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 
+# GitHub environment vars reference (contains real IDs)
+infrastructure/GITHUB_ENVIRONMENT_VARS.md
+
 # Provisioning (real user credentials)
 scripts/users-config.yaml
 
