@@ -14,6 +14,7 @@ import { DataIntelligence } from './DataIntelligence';
 import { KesimpulanSection } from './KesimpulanSection';
 import { DashboardFooter } from './DashboardFooter';
 import { SendEmailDialog } from './SendEmailDialog';
+import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 
 interface PresentationDashboardProps {
   brandId: number;
@@ -25,6 +26,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
   const navigate = useNavigate();
   const chartRef = useRef<HTMLDivElement>(null);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
+  const { data: featureFlags } = useFeatureFlags();
   const { data: brand, isLoading: brandLoading } = useBrandDetail(brandId);
   const { evaluations, isLoading: evLoading } = useBrandEvaluations(brandId, 1, undefined, undefined, true);
   const latestEvaluationId = evaluations?.[0]?.id;
@@ -99,7 +101,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
         template={evaluation.template}
         period={evaluation.period}
         onBack={onBack}
-        onSendEmail={() => setSendDialogOpen(true)}
+        onSendEmail={featureFlags?.email_enabled ? () => setSendDialogOpen(true) : undefined}
       />
 
       <ScoreOverview
