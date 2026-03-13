@@ -88,7 +88,7 @@ def sample_categories() -> list[dict]:
 
 @pytest.fixture()
 def sample_calculator_results() -> dict:
-    """Minimal calculator_results for testing."""
+    """Minimal calculator_results for testing with correct output_1/output_2 keys."""
     return {
         "ads_keyword": {
             "output_text": "Keyword 'sepatu' memiliki CTR 2.5%\nKeyword 'tas' memiliki CTR 1.8%",
@@ -97,19 +97,32 @@ def sample_calculator_results() -> dict:
         "top_sku": {
             "output_text": "Top SKU analysis",
             "details": {
-                "revenue_ranking": [
-                    {"rank": 1, "sku": "SKU-001", "product_name": "Sepatu Running", "revenue": 15_000_000},
-                    {"rank": 2, "sku": "SKU-002", "product_name": "Tas Ransel", "revenue": 12_000_000},
-                    {"rank": 3, "sku": "SKU-003", "product_name": "Jaket Outdoor", "revenue": 9_000_000},
-                    {"rank": 4, "sku": "SKU-004", "product_name": "Topi Baseball", "revenue": 5_000_000},
+                "average_stock": 325,
+                "output_1": [
+                    {"kode_variasi": "SKU-001", "product_name": "Sepatu Running", "total_omzet": 15_000_000, "rata2_harga_jual": 500_000},
+                    {"kode_variasi": "SKU-002", "product_name": "Tas Ransel", "total_omzet": 12_000_000, "rata2_harga_jual": 400_000},
+                    {"kode_variasi": "SKU-003", "product_name": "Jaket Outdoor", "total_omzet": 9_000_000, "rata2_harga_jual": 350_000},
+                    {"kode_variasi": "SKU-004", "product_name": "Topi Baseball", "total_omzet": 5_000_000, "rata2_harga_jual": 150_000},
+                    {"kode_variasi": "SKU-005", "product_name": "Kaos Polos", "total_omzet": 3_000_000, "rata2_harga_jual": 100_000},
+                    {"kode_variasi": "SKU-006", "product_name": "Celana Jeans", "total_omzet": 2_000_000, "rata2_harga_jual": 200_000},
                 ],
-                "stock_ranking": [
-                    {"rank": 1, "sku": "SKU-001", "product_name": "Sepatu Running", "stock": 500},
-                    {"rank": 2, "sku": "SKU-002", "product_name": "Tas Ransel", "stock": 350},
-                    {"rank": 3, "sku": "SKU-003", "product_name": "Jaket Outdoor", "stock": 200},
-                    {"rank": 4, "sku": "SKU-004", "product_name": "Topi Baseball", "stock": 100},
+                "output_2": [
+                    {"kode_variasi": "SKU-001", "nama_produk": "Sepatu Running", "varian": "42 Black", "stok": 500},
+                    {"kode_variasi": "SKU-002", "nama_produk": "Tas Ransel", "varian": "Large Grey", "stok": 350},
+                    {"kode_variasi": "SKU-003", "nama_produk": "Jaket Outdoor", "varian": "M Navy", "stok": 200},
+                    {"kode_variasi": "SKU-004", "nama_produk": "Topi Baseball", "varian": "One Size", "stok": 100},
+                    {"kode_variasi": "SKU-005", "nama_produk": "Kaos Polos", "varian": "L White", "stok": 80},
+                    {"kode_variasi": "SKU-006", "nama_produk": "Celana Jeans", "varian": "32 Blue", "stok": 50},
                 ],
+                "product_count": 6,
+                "total_unique_products": 6,
             },
+        },
+        "scoring_summary": {
+            "conclusion": "- Performa toko sangat baik\n- Chat response rate tinggi\n- Konversi perlu ditingkatkan",
+            "marketing_estimation": "22.4% ~ 26.2%",
+            "marketing_budget": "IDR 5,000,000",
+            "closing_message": "Secara keseluruhan, brand ini menunjukkan performa yang baik.\nFokus pada peningkatan konversi untuk hasil optimal.",
         },
     }
 
@@ -272,6 +285,15 @@ class TestScoreOverview:
         )
         assert "\u2714\ufe0f" in html
 
+    def test_section_number_01(self, evaluation_data: dict) -> None:
+        html = render_email_html(
+            evaluation_data=evaluation_data,
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
+        )
+        assert "01" in html
+
 
 class TestVerdictCounting:
     """Verdict counting logic tests."""
@@ -304,9 +326,17 @@ class TestStringsAndCategoryMap:
             "data_intelligence",
             "ads_analysis",
             "top_sku",
+            "kesimpulan",
+            "marketing_budget",
         ]
         for key in required_keys:
             assert key in id_strings, f"Missing STRINGS key: {key}"
+
+    def test_strings_has_new_keys(self) -> None:
+        for lang in ("id", "en", "th"):
+            s = STRINGS[lang]
+            for key in ("average_stock", "product_code", "product_name", "kesimpulan", "marketing_budget"):
+                assert key in s, f"Missing STRINGS[{lang}] key: {key}"
 
     def test_category_map_entries(self) -> None:
         expected_keys = [
@@ -368,6 +398,29 @@ class TestDetailedEvaluation:
         # 2-column layout means td elements with width ~50%
         assert "width:50%" in html.replace(" ", "") or 'width="50%"' in html
 
+    def test_section_number_02(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "02" in html
+
+    def test_skips_category_with_no_rows_in_detailed(self, sample_calculator_results: dict) -> None:
+        """Category with empty rows should not render metric cards in detailed section."""
+        data = {
+            "id": 1,
+            "brand_id": 1,
+            "brand_name": "Test",
+            "final_score": 50.0,
+            "verdict": "\u2714\ufe0f",
+            "template": "fashion",
+            "score_breakdown": [
+                {"category": "Bisnis Analisis", "score": 5.0, "max_score": 10.0, "rows": []},
+            ],
+            "calculator_results": sample_calculator_results,
+            "period": "Maret 2026",
+        }
+        html = _render_full(data)
+        # Detailed Evaluation section header should not appear (no categories with rows)
+        assert STRINGS["id"]["detailed_evaluation"] not in html
+
 
 class TestScoreBreakdown:
     """Score breakdown section tests."""
@@ -385,6 +438,10 @@ class TestScoreBreakdown:
         assert "8" in html
         assert "10" in html
 
+    def test_section_number_03(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "03" in html
+
 
 class TestDataIntelligence:
     """Data intelligence section tests."""
@@ -396,22 +453,33 @@ class TestDataIntelligence:
 
     def test_top_sku_revenue_table(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
-        # Top 3 revenue SKUs should appear
+        # Top 5 revenue SKUs should appear (output_1)
         assert "Sepatu Running" in html
         assert "Tas Ransel" in html
         assert "Jaket Outdoor" in html
+        assert "Topi Baseball" in html
+        assert "Kaos Polos" in html
 
     def test_top_sku_stock_table(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
-        # Stock values for top 3
+        # Stock values for top 5 (output_2)
         assert "500" in html
         assert "350" in html
         assert "200" in html
 
-    def test_top_sku_limits_to_three(self, evaluation_data: dict) -> None:
+    def test_top_sku_limits_to_five(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
-        # 4th item should NOT appear
-        assert "Topi Baseball" not in html
+        # 6th item should NOT appear
+        assert "Celana Jeans" not in html
+
+    def test_top_sku_kode_variasi(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "SKU-001" in html
+        assert "SKU-002" in html
+
+    def test_average_stock_displayed(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "325" in html
 
     def test_missing_calculator_results(self, sample_categories: list[dict]) -> None:
         """Should not crash with empty calculator_results."""
@@ -433,6 +501,143 @@ class TestDataIntelligence:
     def test_section_header_present(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
         assert STRINGS["id"]["data_intelligence"] in html
+
+    def test_section_number_04(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "04" in html
+
+    def test_skips_when_no_data(self, sample_categories: list[dict]) -> None:
+        """Data intelligence section should be omitted when calculator_results is empty."""
+        data = {
+            "id": 1,
+            "brand_id": 1,
+            "brand_name": "Test",
+            "final_score": 50.0,
+            "verdict": "\u2714\ufe0f",
+            "template": "fashion",
+            "score_breakdown": sample_categories,
+            "calculator_results": {},
+            "period": "Maret 2026",
+        }
+        html = _render_full(data)
+        assert STRINGS["id"]["data_intelligence"] not in html
+
+
+# ===================================================================
+# Kesimpulan (Conclusion) section tests
+# ===================================================================
+
+
+class TestKesimpulan:
+    """Kesimpulan (conclusion) section tests."""
+
+    def test_conclusion_bullets_rendered(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "Performa toko sangat baik" in html
+        assert "Chat response rate tinggi" in html
+        assert "Konversi perlu ditingkatkan" in html
+
+    def test_marketing_budget_rendered(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "IDR 5,000,000" in html
+        assert STRINGS["id"]["marketing_budget"] in html
+
+    def test_closing_message_rendered(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "brand ini menunjukkan performa yang baik" in html
+
+    def test_closing_message_preserves_line_breaks(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "<br>" in html
+
+    def test_section_header_present(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert STRINGS["id"]["kesimpulan"] in html
+
+    def test_section_number_05(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "05" in html
+
+    def test_skips_when_no_scoring_summary(self, sample_categories: list[dict]) -> None:
+        data = {
+            "id": 1,
+            "brand_id": 1,
+            "brand_name": "Test",
+            "final_score": 50.0,
+            "verdict": "\u2714\ufe0f",
+            "template": "fashion",
+            "score_breakdown": sample_categories,
+            "calculator_results": {"ads_keyword": {"output_text": "test", "details": {}}},
+            "period": "Maret 2026",
+        }
+        html = _render_full(data)
+        assert STRINGS["id"]["kesimpulan"] not in html
+
+    def test_skips_when_summary_has_no_content(self, sample_categories: list[dict]) -> None:
+        data = {
+            "id": 1,
+            "brand_id": 1,
+            "brand_name": "Test",
+            "final_score": 50.0,
+            "verdict": "\u2714\ufe0f",
+            "template": "fashion",
+            "score_breakdown": sample_categories,
+            "calculator_results": {
+                "scoring_summary": {
+                    "conclusion": "",
+                    "marketing_budget": "",
+                    "closing_message": "",
+                },
+            },
+            "period": "Maret 2026",
+        }
+        html = _render_full(data)
+        assert STRINGS["id"]["kesimpulan"] not in html
+
+    def test_renders_only_conclusion_when_budget_missing(self, sample_categories: list[dict]) -> None:
+        data = {
+            "id": 1,
+            "brand_id": 1,
+            "brand_name": "Test",
+            "final_score": 50.0,
+            "verdict": "\u2714\ufe0f",
+            "template": "fashion",
+            "score_breakdown": sample_categories,
+            "calculator_results": {
+                "scoring_summary": {
+                    "conclusion": "- Good performance",
+                    "marketing_budget": "",
+                    "closing_message": "",
+                },
+            },
+            "period": "Maret 2026",
+        }
+        html = _render_full(data)
+        assert STRINGS["id"]["kesimpulan"] in html
+        assert "Good performance" in html
+        assert STRINGS["id"]["marketing_budget"] not in html
+
+    def test_html_escaped(self, sample_categories: list[dict]) -> None:
+        data = {
+            "id": 1,
+            "brand_id": 1,
+            "brand_name": "Test",
+            "final_score": 50.0,
+            "verdict": "\u2714\ufe0f",
+            "template": "fashion",
+            "score_breakdown": sample_categories,
+            "calculator_results": {
+                "scoring_summary": {
+                    "conclusion": "- <script>alert('xss')</script>",
+                    "marketing_budget": "",
+                    "closing_message": "",
+                },
+            },
+            "period": "Maret 2026",
+        }
+        html = _render_full(data)
+        assert "<script>" not in html
+        assert "&lt;script&gt;" in html
 
 
 class TestResponsive:
@@ -460,6 +665,7 @@ class TestFullRender:
         assert s["detailed_evaluation"] in html
         assert s["score_breakdown"] in html
         assert s["data_intelligence"] in html
+        assert s["kesimpulan"] in html
 
     def test_complete_html_structure(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
@@ -470,6 +676,17 @@ class TestFullRender:
         assert "</head>" in lower
         assert "<body" in lower
         assert "</body>" in lower
+
+    def test_section_ordering(self, evaluation_data: dict) -> None:
+        """Sections should appear in order: 01-05."""
+        html = _render_full(evaluation_data)
+        s = STRINGS["id"]
+        pos_overview = html.find(s["score_overview"])
+        pos_detailed = html.find(s["detailed_evaluation"])
+        pos_breakdown = html.find(s["score_breakdown"])
+        pos_intelligence = html.find(s["data_intelligence"])
+        pos_kesimpulan = html.find(s["kesimpulan"])
+        assert pos_overview < pos_detailed < pos_breakdown < pos_intelligence < pos_kesimpulan
 
 
 # ===================================================================
