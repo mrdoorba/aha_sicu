@@ -140,7 +140,7 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
     rows.append(RowScore(
         row=13, metric=f"Penjualan Bulan {month_labels[0]}",
         value=current_month, benchmark=e13, verdict=f13, message="", score=h13,
-        metric_i18n=TranslatableText(key="scoring.monthlySales", vars={}),
+        metric_i18n=TranslatableText(key="scoring.monthlySales", vars={"month": month_labels[0]}),
     ))
 
     # Rows 14-18: Past months (no score, kept for reference)
@@ -148,7 +148,7 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
         rows.append(RowScore(
             row=13 + i, metric=f"Penjualan Bulan {month_labels[i]}",
             value=sales_months[i], benchmark="-", verdict="-", message="", score=0.0,
-            metric_i18n=TranslatableText(key="scoring.pastMonthlySales", vars={}),
+            metric_i18n=TranslatableText(key="scoring.pastMonthlySales", vars={"month": month_labels[i]}),
         ))
 
     # Row 19: Average (computed)
