@@ -51,7 +51,11 @@ def test_delete_evaluation_success_leader(client):
         patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries, MOCK_LEADER)
+        mock_eq.get_evaluation_brand_info = AsyncMock(
+            return_value={"brand_id": 1, "brand_name": "Test Brand"}
+        )
         mock_eq.delete_evaluation = AsyncMock(return_value=True)
+        mock_eq.count_evaluations_by_brand_id = AsyncMock(return_value=1)
 
         response = client.delete(
             "/api/v1/evaluations/42",
@@ -70,7 +74,11 @@ def test_delete_evaluation_success_admin(client):
         patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
+        mock_eq.get_evaluation_brand_info = AsyncMock(
+            return_value={"brand_id": 1, "brand_name": "Test Brand"}
+        )
         mock_eq.delete_evaluation = AsyncMock(return_value=True)
+        mock_eq.count_evaluations_by_brand_id = AsyncMock(return_value=1)
 
         response = client.delete(
             "/api/v1/evaluations/42",
@@ -108,6 +116,7 @@ def test_delete_evaluation_not_found(client):
         patch("app.modules.evaluations.service.eval_queries") as mock_eq,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries, MOCK_LEADER)
+        mock_eq.get_evaluation_brand_info = AsyncMock(return_value=None)
         mock_eq.delete_evaluation = AsyncMock(return_value=False)
 
         response = client.delete(
