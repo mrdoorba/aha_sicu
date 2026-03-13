@@ -136,6 +136,9 @@ jobs:
           TFVARS="${GITHUB_WORKSPACE}/infrastructure/terraform/environments/${TFVARS_ENV}.tfvars"
           echo "Reading env vars from $TFVARS"
           echo "File exists: $(test -f "$TFVARS" && echo yes || echo no)"
+          ls -la "${GITHUB_WORKSPACE}/infrastructure/terraform/environments/" 2>&1 || echo "DIR NOT FOUND"
+          ls -la "${GITHUB_WORKSPACE}/infrastructure/" 2>&1 || echo "infrastructure/ NOT FOUND"
+          ls -la "${GITHUB_WORKSPACE}/" 2>&1 | head -20
 
           extract() { grep "^$1" "$TFVARS" | cut -d'"' -f2; }
 
