@@ -136,11 +136,15 @@ jobs:
           TFVARS="infrastructure/terraform/environments/${TFVARS_ENV}.tfvars"
           echo "Reading env vars from $TFVARS"
 
-          extract() { grep "^$1" "$TFVARS" | sed 's/.*"\(.*\)".*/\1/'; }
+          extract() { grep "^$1" "$TFVARS" | cut -d'"' -f2; }
 
           VP_ID=$(extract gsheets_vp_spreadsheet_id)
           MEETING_ID=$(extract gsheets_meeting_spreadsheet_id)
           EVAL_ID=$(extract gsheets_eval_spreadsheet_id)
+
+          echo "Extracted VP_ID=${VP_ID}"
+          echo "Extracted MEETING_ID=${MEETING_ID}"
+          echo "Extracted EVAL_ID=${EVAL_ID}"
 
           {
             echo "GSHEETS_VP_SPREADSHEET_ID=${VP_ID}"
