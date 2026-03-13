@@ -130,6 +130,11 @@ async def delete_account(user_id: int) -> None:
 
             try:
                 await asyncio.to_thread(auth.delete_user, user["firebase_uid"])
+            except auth.UserNotFoundError:
+                logger.info(
+                    "Firebase user %s already absent — proceeding with DB deletion",
+                    user["firebase_uid"],
+                )
             except Exception as e:
                 raise AppException(
                     code="FIREBASE_DELETE_FAILED",

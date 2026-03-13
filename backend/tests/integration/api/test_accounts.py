@@ -304,6 +304,8 @@ def test_reset_own_password_blocked(client):
 
 def test_delete_account_success(client):
     """Admin can delete another user's account."""
+    from firebase_admin import auth as firebase_auth
+
     target_user = {**SAMPLE_USERS[1], "firebase_uid": "member-uid"}
 
     with (
@@ -320,6 +322,7 @@ def test_delete_account_success(client):
         mock_svc_conn.fetchrow = AsyncMock(return_value=target_user)
         mock_svc_conn.execute = AsyncMock(return_value="DELETE 1")
         mock_auth.delete_user = MagicMock()
+        mock_auth.UserNotFoundError = firebase_auth.UserNotFoundError
 
         response = client.delete(
             "/api/v1/accounts/2",
@@ -330,6 +333,8 @@ def test_delete_account_success(client):
 
 def test_delete_account_firebase_failure_returns_502(client):
     """Firebase deletion failure → 502, DB deletion rolled back."""
+    from firebase_admin import auth as firebase_auth
+
     target_user = {**SAMPLE_USERS[1], "firebase_uid": "member-uid"}
 
     with (
@@ -348,6 +353,7 @@ def test_delete_account_firebase_failure_returns_502(client):
         mock_auth.delete_user = MagicMock(
             side_effect=Exception("INSUFFICIENT_PERMISSION")
         )
+        mock_auth.UserNotFoundError = firebase_auth.UserNotFoundError
 
         response = client.delete(
             "/api/v1/accounts/2",
@@ -355,6 +361,37 @@ def test_delete_account_firebase_failure_returns_502(client):
         )
         assert response.status_code == 502
         assert response.json()["code"] == "FIREBASE_DELETE_FAILED"
+
+
+def test_delete_account_succeeds_when_firebase_user_absent(client):
+    """Deleting account where Firebase user is already gone — still 204."""
+    from firebase_admin import auth as firebase_auth
+
+    target_user = {**SAMPLE_USERS[1], "firebase_uid": "orphan-uid"}
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.accounts.service.db") as mock_svc_db,
+        patch("app.modules.accounts.service.auth") as mock_auth,
+    ):
+        _setup_auth(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.transaction = MagicMock(return_value=AsyncMock())
+        mock_svc_conn.fetchrow = AsyncMock(return_value=target_user)
+        mock_svc_conn.execute = AsyncMock(return_value="DELETE 1")
+        mock_auth.delete_user = MagicMock(
+            side_effect=firebase_auth.UserNotFoundError("user not found")
+        )
+        mock_auth.UserNotFoundError = firebase_auth.UserNotFoundError
+
+        response = client.delete(
+            "/api/v1/accounts/2",
+            headers=AUTH_HEADERS,
+        )
+        assert response.status_code == 204
 
 
 def test_delete_own_account_blocked(client):
