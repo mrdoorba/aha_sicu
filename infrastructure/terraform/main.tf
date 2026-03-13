@@ -120,6 +120,7 @@ module "dev" {
 
   gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
   gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id
+  gsheets_eval_spreadsheet_id    = var.gsheets_eval_spreadsheet_id
 
   cors_origins = [
     "https://aha-coms-sicu-dev.web.app",
@@ -152,6 +153,7 @@ module "prod" {
 
   gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
   gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id
+  gsheets_eval_spreadsheet_id    = var.gsheets_eval_spreadsheet_id
 
   cors_origins = [
     "https://aha-coms-sicu-prod.web.app",

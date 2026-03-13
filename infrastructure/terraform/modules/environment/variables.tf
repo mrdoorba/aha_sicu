@@ -98,6 +98,11 @@ variable "gsheets_meeting_spreadsheet_id" {
   type        = string
 }
 
+variable "gsheets_eval_spreadsheet_id" {
+  description = "Google Sheets spreadsheet ID for evaluated brand status (write-only)"
+  type        = string
+}
+
 variable "cloud_run_url" {
   description = "Cloud Run service URL override for scheduler"
   type        = string

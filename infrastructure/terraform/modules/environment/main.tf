@@ -295,6 +295,11 @@ resource "google_cloud_run_v2_service" "api" {
         value = var.gsheets_meeting_spreadsheet_id
       }
 
+      env {
+        name  = "GSHEETS_EVAL_SPREADSHEET_ID"
+        value = var.gsheets_eval_spreadsheet_id
+      }
+
       resources {
         cpu_idle = true
         limits = {

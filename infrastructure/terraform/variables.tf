@@ -64,6 +64,12 @@ variable "gsheets_meeting_spreadsheet_id" {
   default     = ""
 }
 
+variable "gsheets_eval_spreadsheet_id" {
+  description = "Google Sheets spreadsheet ID for evaluated brand status (write-only)"
+  type        = string
+  default     = ""
+}
+
 # =============================================================================
 # Email / SMTP Variables
 # =============================================================================

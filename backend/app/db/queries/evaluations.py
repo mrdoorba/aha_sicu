@@ -376,6 +376,35 @@ async def list_evaluations_by_brand(
     return await fetch_all(conn, query, *params), total
 
 
+async def get_evaluation_brand_info(
+    conn: Connection,
+    evaluation_id: int,
+) -> dict | None:
+    """Get brand_id and brand_name for an evaluation. Used before delete."""
+    return await fetch_one(
+        conn,
+        """
+        SELECT e.brand_id, b.brand_name
+        FROM evaluations e
+        JOIN brand_vp_data b ON e.brand_id = b.id
+        WHERE e.id = $1
+        """,
+        evaluation_id,
+    )
+
+
+async def count_evaluations_by_brand_id(
+    conn: Connection,
+    brand_id: int,
+) -> int:
+    """Count evaluations for a brand. Used to check if brand should be removed from sheet."""
+    result = await conn.fetchval(
+        "SELECT COUNT(*) FROM evaluations WHERE brand_id = $1",
+        brand_id,
+    )
+    return result or 0
+
+
 async def delete_evaluation(
     conn: Connection,
     evaluation_id: int,

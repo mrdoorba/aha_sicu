@@ -71,5 +71,9 @@ class Settings(BaseSettings):
     gsheets_meeting_range: str = "ZAP: 1st Meeting!A:D"
     gsheets_meeting_brand_column: str = "Brand"
 
+    # Evaluation Status Sheet (write-only, one row per evaluated brand)
+    gsheets_eval_spreadsheet_id: str | None = None
+    gsheets_eval_tab: str = "SICU"
+
 
 settings = Settings()

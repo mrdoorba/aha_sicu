@@ -14,7 +14,7 @@ from app.core.exceptions import SyncException
 
 logger = logging.getLogger(__name__)
 
-SCOPES = ["https://www.googleapis.com/auth/spreadsheets.readonly"]
+SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
 class GoogleSheetsClient:
@@ -156,6 +156,162 @@ class GoogleSheetsClient:
             code="SYNC_FAILED",
             detail="Failed to fetch data after all retries",
         )
+
+    async def read_column(
+        self,
+        spreadsheet_id: str,
+        range_name: str,
+    ) -> list[str]:
+        """Read a single column and return flat list of cell values.
+
+        Args:
+            spreadsheet_id: The Google Sheets spreadsheet ID.
+            range_name: The range to read (e.g., "SICU!A:A").
+
+        Returns:
+            List of string values from the column (excluding empty cells).
+        """
+        service = self._get_service()
+        request = service.spreadsheets().values().get(
+            spreadsheetId=spreadsheet_id,
+            range=range_name,
+        )
+        result = await asyncio.to_thread(request.execute)
+        rows = result.get("values", [])
+        return [row[0] for row in rows if row]
+
+    async def write_rows(
+        self,
+        spreadsheet_id: str,
+        range_name: str,
+        values: list[list[str]],
+    ) -> int:
+        """Write rows to a Google Sheet range.
+
+        Args:
+            spreadsheet_id: The Google Sheets spreadsheet ID.
+            range_name: The range to write (e.g., "SICU!A1").
+            values: 2D list of cell values.
+
+        Returns:
+            Number of rows updated.
+        """
+        service = self._get_service()
+        body = {"values": values}
+        request = service.spreadsheets().values().update(
+            spreadsheetId=spreadsheet_id,
+            range=range_name,
+            valueInputOption="RAW",
+            body=body,
+        )
+        result = await asyncio.to_thread(request.execute)
+        return result.get("updatedRows", 0)
+
+    async def append_rows(
+        self,
+        spreadsheet_id: str,
+        range_name: str,
+        values: list[list[str]],
+    ) -> int:
+        """Append rows to the end of a Google Sheet range.
+
+        Args:
+            spreadsheet_id: The Google Sheets spreadsheet ID.
+            range_name: The range to append to (e.g., "SICU!A:B").
+            values: 2D list of cell values.
+
+        Returns:
+            Number of rows appended.
+        """
+        service = self._get_service()
+        body = {"values": values}
+        request = service.spreadsheets().values().append(
+            spreadsheetId=spreadsheet_id,
+            range=range_name,
+            valueInputOption="RAW",
+            insertDataOption="INSERT_ROWS",
+            body=body,
+        )
+        result = await asyncio.to_thread(request.execute)
+        return result.get("updates", {}).get("updatedRows", 0)
+
+    async def clear_sheet(
+        self,
+        spreadsheet_id: str,
+        range_name: str,
+    ) -> None:
+        """Clear all values in a Google Sheet range.
+
+        Args:
+            spreadsheet_id: The Google Sheets spreadsheet ID.
+            range_name: The range to clear (e.g., "SICU!A:B").
+        """
+        service = self._get_service()
+        request = service.spreadsheets().values().clear(
+            spreadsheetId=spreadsheet_id,
+            range=range_name,
+            body={},
+        )
+        await asyncio.to_thread(request.execute)
+
+    async def delete_rows(
+        self,
+        spreadsheet_id: str,
+        sheet_name: str,
+        row_indices: list[int],
+    ) -> None:
+        """Delete specific rows from a sheet by row index (0-based).
+
+        Deletes in reverse order to maintain correct indices.
+
+        Args:
+            spreadsheet_id: The Google Sheets spreadsheet ID.
+            sheet_name: Tab name to resolve the sheet ID.
+            row_indices: List of 0-based row indices to delete.
+        """
+        if not row_indices:
+            return
+
+        # Get the sheet ID from the sheet name
+        service = self._get_service()
+        meta_request = service.spreadsheets().get(
+            spreadsheetId=spreadsheet_id,
+            fields="sheets.properties",
+        )
+        meta = await asyncio.to_thread(meta_request.execute)
+
+        sheet_id = None
+        for sheet in meta.get("sheets", []):
+            if sheet["properties"]["title"] == sheet_name:
+                sheet_id = sheet["properties"]["sheetId"]
+                break
+
+        if sheet_id is None:
+            raise SyncException(
+                code="SYNC_SHEET_NOT_FOUND",
+                detail=f"Sheet tab '{sheet_name}' not found",
+                status_code=404,
+            )
+
+        # Build delete requests in reverse order
+        requests = []
+        for idx in sorted(row_indices, reverse=True):
+            requests.append({
+                "deleteDimension": {
+                    "range": {
+                        "sheetId": sheet_id,
+                        "dimension": "ROWS",
+                        "startIndex": idx,
+                        "endIndex": idx + 1,
+                    }
+                }
+            })
+
+        batch_request = service.spreadsheets().batchUpdate(
+            spreadsheetId=spreadsheet_id,
+            body={"requests": requests},
+        )
+        await asyncio.to_thread(batch_request.execute)
 
     async def fetch_vp_data(self) -> list[dict[str, Any]]:
         """Fetch VP brand data from configured spreadsheet."""

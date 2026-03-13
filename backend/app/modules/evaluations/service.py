@@ -1,5 +1,6 @@
 """Evaluation service for managing evaluation inputs."""
 
+import asyncio
 import logging
 import math
 from datetime import date
@@ -203,6 +204,9 @@ async def list_evaluations_by_brand(
 
 async def delete_evaluation(conn: Connection, evaluation_id: int) -> bool:
     """Delete an evaluation by ID. Returns True if deleted, raises 404 if not found."""
+    # Get brand info before delete (for sheet sync)
+    brand_info = await eval_queries.get_evaluation_brand_info(conn, evaluation_id)
+
     deleted = await eval_queries.delete_evaluation(conn, evaluation_id)
 
     if not deleted:
@@ -211,6 +215,17 @@ async def delete_evaluation(conn: Connection, evaluation_id: int) -> bool:
             detail="Evaluation not found",
             status_code=404,
         )
+
+    # Fire-and-forget: remove brand from sheet if no evaluations remain
+    if brand_info:
+        remaining = await eval_queries.count_evaluations_by_brand_id(
+            conn, brand_info["brand_id"]
+        )
+        if remaining == 0:
+            asyncio.create_task(
+                _sync_remove_brand_from_sheet_safe(brand_info["brand_name"])
+            )
+
     return True
 
 
@@ -446,6 +461,10 @@ async def save_evaluation(
             period=period,
         )
 
+    # Fire-and-forget: sync brand to eval sheet
+    brand_name = brand["brand_name"]
+    asyncio.create_task(_sync_brand_to_sheet_safe(brand_name))
+
     return SaveEvaluationResponse(
         id=row["id"],
         brand_id=row["brand_id"],
@@ -541,3 +560,21 @@ async def save_evaluation_inputs(
         manual_data=row["manual_data"],
         updated_at=row["updated_at"],
     )
+
+
+async def _sync_brand_to_sheet_safe(brand_name: str) -> None:
+    """Fire-and-forget wrapper for eval sheet sync on save."""
+    try:
+        from app.modules.sync.eval_sheet_service import sync_brand_to_sheet
+        await sync_brand_to_sheet(brand_name)
+    except Exception:
+        logger.exception(f"Failed to sync brand '{brand_name}' to eval sheet")
+
+
+async def _sync_remove_brand_from_sheet_safe(brand_name: str) -> None:
+    """Fire-and-forget wrapper for eval sheet sync on delete."""
+    try:
+        from app.modules.sync.eval_sheet_service import remove_brand_from_sheet
+        await remove_brand_from_sheet(brand_name)
+    except Exception:
+        logger.exception(f"Failed to remove brand '{brand_name}' from eval sheet")

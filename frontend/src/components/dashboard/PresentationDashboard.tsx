@@ -2,7 +2,7 @@ import { useRef, useState } from 'react';
 import { useEvaluationDetail } from '../../hooks/useEvaluationDetail';
 import { useBrandEvaluations } from '../../hooks/useBrandEvaluations';
 import { useBrandDetail } from '../../hooks/useBrandDetail';
-import { useFeatureFlags } from '../../hooks/useFeatureFlags';
+// import { useFeatureFlags } from '../../hooks/useFeatureFlags';
 import { Loader2, ArrowLeft, AlertCircle, PlusCircle } from 'lucide-react';
 import { Button } from '../ui/button';
 import { useTranslation } from 'react-i18next';
@@ -26,8 +26,8 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
   const navigate = useNavigate();
   const chartRef = useRef<HTMLDivElement>(null);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
-  const { data: featureFlags } = useFeatureFlags();
-  const emailEnabled = featureFlags?.email_enabled === true;
+  // const { data: featureFlags } = useFeatureFlags();
+  // const emailEnabled = featureFlags?.email_enabled === true;
   const { data: brand, isLoading: brandLoading } = useBrandDetail(brandId);
   const { evaluations, isLoading: evLoading } = useBrandEvaluations(brandId, 1, undefined, undefined, true);
   const latestEvaluationId = evaluations?.[0]?.id;
@@ -102,7 +102,8 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
         template={evaluation.template}
         period={evaluation.period}
         onBack={onBack}
-        onSendEmail={emailEnabled ? () => setSendDialogOpen(true) : undefined}
+        // onSendEmail hidden for now
+        // onSendEmail={emailEnabled ? () => setSendDialogOpen(true) : undefined}
       />
 
       <ScoreOverview

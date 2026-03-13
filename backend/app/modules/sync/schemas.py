@@ -38,6 +38,14 @@ class SyncResult(BaseModel):
     success: bool
 
 
+class EvalSheetSyncResponse(BaseModel):
+    """Response model for eval sheet sync endpoint."""
+
+    success: bool
+    brands_synced: int
+    error: str | None = None
+
+
 class SyncStatusResponse(BaseModel):
     """Response model for sync status endpoint."""
 

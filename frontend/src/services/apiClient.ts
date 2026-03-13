@@ -105,6 +105,21 @@ interface paths {
       };
     };
   };
+  '/api/v1/sync/eval-sheet': {
+    post: {
+      responses: {
+        200: {
+          content: {
+            'application/json': {
+              success: boolean;
+              brands_synced: number;
+              error: string | null;
+            };
+          };
+        };
+      };
+    };
+  };
   '/api/v1/sync': {
     post: {
       responses: {
