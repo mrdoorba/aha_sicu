@@ -519,6 +519,37 @@ class TestBenchmarkVisibility:
         assert "Benchmark:" not in html
 
 
+class TestMessageFormatting:
+    """Metric card messages and multiline values render correctly in email."""
+
+    def test_multiline_message_renders_br_tags(self, evaluation_data: dict) -> None:
+        """Messages with newlines should use <br> in email HTML."""
+        evaluation_data["score_breakdown"][0]["rows"][0]["message"] = (
+            "Line one\nLine two\nLine three"
+        )
+        html = _render_full(evaluation_data)
+        assert "Line one<br>Line two<br>Line three" in html
+
+    def test_single_line_message_no_br(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        # "Baik" should appear without any <br>
+        assert "Baik" in html
+
+    def test_multiline_value_renders_br_and_left_aligned(self, evaluation_data: dict) -> None:
+        """Multiline string values (e.g. Discount Check Up) use <br> and left align."""
+        evaluation_data["score_breakdown"][0]["rows"][0]["value"] = (
+            "% Diskon TOP SKU: 84.0%\nRange: 30.0% ~ 50.0%"
+        )
+        html = _render_full(evaluation_data)
+        assert "% Diskon TOP SKU: 84.0%<br>Range: 30.0% ~ 50.0%" in html
+        assert "text-align:left" in html
+
+    def test_single_value_right_aligned(self, evaluation_data: dict) -> None:
+        """Normal numeric values stay right-aligned."""
+        html = _render_full(evaluation_data)
+        assert "text-align:right" in html
+
+
 class TestCategoryDividers:
     """Divider lines appear between metric sub-groups matching the dashboard."""
 

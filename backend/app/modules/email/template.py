@@ -480,7 +480,7 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id"
     """
     is_pass = row.get("verdict") == "\u2714\ufe0f"
     verdict_color = GREEN if is_pass else ORANGE
-    message = _esc(row.get("message", ""))
+    message = _esc(row.get("message", "")).replace("\n", "<br>")
     # Use original metric name for format logic (stable Indonesian keys)
     raw_metric = row.get("metric", "")
     # Resolve translated display name via metric_i18n
@@ -523,6 +523,18 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id"
           </td>
         </tr>"""
 
+    # Multiline values (e.g. Discount Check Up) render left-aligned with <br>,
+    # matching dashboard's whitespace-pre-wrap + text-left logic.
+    is_multiline_value = "\n" in display_value
+    if is_multiline_value:
+        escaped_value = _esc(display_value).replace("\n", "<br>")
+        value_align = "text-align:left"
+        value_wrap = "word-break:break-word"
+    else:
+        escaped_value = _esc(display_value)
+        value_align = "text-align:right"
+        value_wrap = "white-space:nowrap"
+
     return f"""\
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
        style="background-color:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};margin-bottom:8px;">
@@ -534,8 +546,8 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id"
           <td style="font-size:13px;font-weight:600;color:{TEXT_DARK};padding-bottom:{10 if has_detail else 0}px;">
             {_esc(display_metric)}
           </td>
-          <td style="text-align:right;font-size:13px;font-weight:bold;color:{TEXT_SECONDARY};padding-bottom:{10 if has_detail else 0}px;white-space:nowrap;">
-            {_esc(display_value)}
+          <td style="{value_align};font-size:13px;font-weight:bold;color:{TEXT_SECONDARY};padding-bottom:{10 if has_detail else 0}px;{value_wrap};">
+            {escaped_value}
           </td>
         </tr>
 {detail_html}
