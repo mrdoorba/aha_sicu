@@ -45,12 +45,9 @@ async def seed_from_dump(conn: asyncpg.Connection) -> None:
     # Read and execute the dump
     sql = PROD_DUMP.read_text(encoding="utf-8")
 
-    # Null out user_id references in evaluations (prod users don't exist locally)
-    # The FK is nullable (ON DELETE SET NULL), so this is safe
-    sql = sql.replace(
-        "INSERT INTO public.evaluations VALUES (",
-        "INSERT INTO public.evaluations (id, brand_id, user_id, template, final_score, verdict, score_breakdown, calculator_results, manual_inputs, rule_version, email_output, created_at, period) VALUES ("
-    )
+    # Disable FK checks during import — prod data references prod user IDs
+    # that don't exist locally. We'll clean up dangling refs after.
+    await conn.execute("SET session_replication_role = 'replica'")
 
     # Execute statements one at a time (some are very large)
     # Split on statement boundaries but handle multi-line VALUES
@@ -82,6 +79,14 @@ async def seed_from_dump(conn: asyncpg.Connection) -> None:
                 # Show first few errors for debugging
                 preview = stmt[:120].replace("\n", " ")
                 print(f"  Warning: {e.__class__.__name__}: {str(e)[:80]} | {preview}...")
+
+    # Re-enable FK checks
+    await conn.execute("SET session_replication_role = 'origin'")
+
+    # Null out dangling user references (prod users don't exist locally)
+    await conn.execute("UPDATE evaluations SET user_id = NULL WHERE user_id NOT IN (SELECT id FROM users)")
+    await conn.execute("UPDATE evaluation_inputs SET last_edited_by = NULL WHERE last_edited_by NOT IN (SELECT id FROM users)")
+    print("  Cleaned up dangling user_id references")
 
     # Reset sequences to avoid ID conflicts
     for table in ["brand_vp_data", "brand_meeting_data", "evaluations",
