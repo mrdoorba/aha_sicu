@@ -437,6 +437,42 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str]) -> str:
     metric_name = row.get("metric", "")
     display_value = _format_display_value(metric_name, row.get("value"))
 
+    # Match dashboard: override Biaya (iklan) benchmark to '-'
+    benchmark = row.get("benchmark", "")
+    if metric_name == "Biaya (iklan)":
+        benchmark = "-"
+    has_benchmark = bool(benchmark) and benchmark != "-"
+    has_detail = has_benchmark or bool(message)
+
+    # Build the detail section (separator + benchmark + message) only when content exists
+    detail_html = ""
+    if has_detail:
+        benchmark_row = ""
+        if has_benchmark:
+            benchmark_row = f"""\
+              <tr>
+                <td style="font-size:11px;color:{TEXT_SECONDARY};padding-bottom:3px;">
+                  Benchmark: {_esc(benchmark)}
+                </td>
+              </tr>"""
+        message_row = ""
+        if message:
+            message_row = f"""\
+              <tr>
+                <td style="font-size:11px;color:{verdict_color};line-height:1.5;">
+                  {message}
+                </td>
+              </tr>"""
+        detail_html = f"""\
+        <tr>
+          <td colspan="2" style="border-top:1px solid {BORDER_LIGHT};padding-top:8px;">
+            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+{benchmark_row}
+{message_row}
+            </table>
+          </td>
+        </tr>"""
+
     return f"""\
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
        style="background-color:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};margin-bottom:8px;">
@@ -445,30 +481,14 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str]) -> str:
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
         <!-- Metric name + value -->
         <tr>
-          <td style="font-size:13px;font-weight:600;color:{TEXT_DARK};padding-bottom:10px;">
+          <td style="font-size:13px;font-weight:600;color:{TEXT_DARK};padding-bottom:{10 if has_detail else 0}px;">
             {_esc(metric_name)}
           </td>
-          <td style="text-align:right;font-size:13px;font-weight:bold;color:{TEXT_SECONDARY};padding-bottom:10px;white-space:nowrap;">
+          <td style="text-align:right;font-size:13px;font-weight:bold;color:{TEXT_SECONDARY};padding-bottom:{10 if has_detail else 0}px;white-space:nowrap;">
             {_esc(display_value)}
           </td>
         </tr>
-        <!-- Separator + benchmark + message -->
-        <tr>
-          <td colspan="2" style="border-top:1px solid {BORDER_LIGHT};padding-top:8px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-              <tr>
-                <td style="font-size:11px;color:{TEXT_SECONDARY};padding-bottom:3px;">
-                  Benchmark: {_esc(row.get('benchmark', ''))}
-                </td>
-              </tr>
-              <tr>
-                <td style="font-size:11px;color:{verdict_color};line-height:1.5;">
-                  {message}
-                </td>
-              </tr>
-            </table>
-          </td>
-        </tr>
+{detail_html}
       </table>
     </td>
   </tr>

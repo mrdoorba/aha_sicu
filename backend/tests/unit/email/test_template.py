@@ -455,6 +455,45 @@ class TestDetailedEvaluation:
         assert STRINGS["id"]["detailed_evaluation"] not in html
 
 
+class TestBenchmarkVisibility:
+    """Benchmark line hidden when value is '-' or empty, matching dashboard behavior."""
+
+    def test_hides_benchmark_when_dash(self, evaluation_data: dict) -> None:
+        """Metrics with benchmark='-' should not render 'Benchmark: -'."""
+        # Inject a row with benchmark='-'
+        evaluation_data["score_breakdown"][0]["rows"].append(
+            {"metric": "Sales Info", "value": 100, "benchmark": "-", "message": "", "verdict": "-", "score": 0}
+        )
+        html = _render_full(evaluation_data)
+        assert "Benchmark: -" not in html
+
+    def test_hides_benchmark_for_biaya_iklan(self, evaluation_data: dict) -> None:
+        """Biaya (iklan) benchmark is overridden to '-' like the dashboard."""
+        evaluation_data["score_breakdown"].append(
+            {"category": "Data Iklan", "score": 0, "max_score": 10, "rows": [
+                {"metric": "Biaya (iklan)", "value": 3500000, "benchmark": "28.0%", "message": "", "verdict": "-", "score": 0}
+            ]}
+        )
+        html = _render_full(evaluation_data)
+        assert "Benchmark: 28.0%" not in html
+
+    def test_shows_benchmark_when_present(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "Benchmark:" in html
+
+    def test_hides_separator_when_no_detail(self, evaluation_data: dict) -> None:
+        """No separator or benchmark row for metrics with benchmark='-' and no message."""
+        evaluation_data["score_breakdown"] = [
+            {"category": "Bisnis Analisis", "score": 5, "max_score": 10, "rows": [
+                {"metric": "Revenue Only", "value": 1000, "benchmark": "-", "message": "", "verdict": "-", "score": 0}
+            ]}
+        ]
+        html = _render_full(evaluation_data)
+        # The card should just be name + value, no separator border
+        assert "Revenue Only" in html
+        assert "Benchmark:" not in html
+
+
 class TestScoreBreakdown:
     """Score breakdown section tests."""
 
