@@ -7,6 +7,7 @@ All images referenced via full src URI (cid: for send, data: for preview).
 from __future__ import annotations
 
 import json
+import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
@@ -279,7 +280,7 @@ def _section_header(number: str, title: str) -> str:
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
        style="margin-bottom:16px;">
   <tr>
-    <td style="font-family:{FONT_STACK};">
+    <td>
       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td style="font-size:11px;font-weight:900;color:{PRIMARY_BLUE};opacity:0.4;letter-spacing:3px;padding-right:8px;vertical-align:middle;">
@@ -345,7 +346,7 @@ def _render_header(
 </tr>
 <!-- Brand Info -->
 <tr>
-  <td style="padding:24px 30px 16px 30px;font-family:{FONT_STACK};">
+  <td style="padding:24px 30px 16px 30px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td style="font-size:24px;font-weight:bold;color:{TEXT_DARK};padding-bottom:4px;">
@@ -372,7 +373,7 @@ def _render_note(note: str) -> str:
     return f"""\
 <!-- Custom Note -->
 <tr>
-  <td style="padding:8px 30px 16px 30px;font-family:{FONT_STACK};">
+  <td style="padding:8px 30px 16px 30px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="background-color:{CARD_BG};border-radius:6px;border-left:3px solid {PRIMARY_BLUE};">
       <tr>
@@ -400,7 +401,7 @@ def _render_score_overview(
     return f"""\
 <!-- Score Overview -->
 <tr>
-  <td style="padding:16px 30px 24px 30px;font-family:{FONT_STACK};">
+  <td style="padding:16px 30px 24px 30px;">
     {_section_header("01", S['score_overview'])}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="background-color:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};">
@@ -469,91 +470,55 @@ def _render_footer(footer_src: str) -> str:
 
 
 def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id") -> str:
-    """Render a single metric card matching the dashboard CategoryMetricCard style.
-
-    Layout:
-      Metric Name (bold)          Value (bold, muted)
-      ─ separator ─
-      Benchmark: X
-      ✔️/❌ verdict message (green/orange)
-    """
+    """Render a single metric card matching the dashboard CategoryMetricCard style."""
     is_pass = row.get("verdict") == "\u2714\ufe0f"
     verdict_color = GREEN if is_pass else ORANGE
     message = _esc(row.get("message", "")).replace("\n", "<br>")
-    # Use original metric name for format logic (stable Indonesian keys)
     raw_metric = row.get("metric", "")
-    # Resolve translated display name via metric_i18n
     display_metric = _resolve_metric_name(row, lang)
     display_value = _format_display_value(raw_metric, row.get("value"))
 
-    # Match dashboard: override Biaya (iklan) benchmark to '-'
     benchmark = row.get("benchmark", "")
     if raw_metric == "Biaya (iklan)":
         benchmark = "-"
     has_benchmark = bool(benchmark) and benchmark != "-"
     has_detail = has_benchmark or bool(message)
 
-    # Build the detail section (separator + benchmark + message) only when content exists
     detail_html = ""
     if has_detail:
-        benchmark_row = ""
+        detail_parts: list[str] = []
         if has_benchmark:
-            benchmark_row = f"""\
-              <tr>
-                <td style="font-size:11px;color:{TEXT_SECONDARY};padding-bottom:3px;">
-                  Benchmark: {_esc(benchmark)}
-                </td>
-              </tr>"""
-        message_row = ""
+            detail_parts.append(
+                f'<div class="sm" style="padding-bottom:3px">Benchmark: {_esc(benchmark)}</div>'
+            )
         if message:
-            message_row = f"""\
-              <tr>
-                <td style="font-size:11px;color:{verdict_color};line-height:1.5;">
-                  {message}
-                </td>
-              </tr>"""
-        detail_html = f"""\
-        <tr>
-          <td colspan="2" style="border-top:1px solid {BORDER_LIGHT};padding-top:8px;">
-            <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-{benchmark_row}
-{message_row}
-            </table>
-          </td>
-        </tr>"""
+            detail_parts.append(
+                f'<div style="font-size:11px;color:{verdict_color};line-height:1.5">{message}</div>'
+            )
+        detail_html = (
+            f'<tr><td colspan="2" style="border-top:1px solid {BORDER_LIGHT};padding-top:8px">'
+            + "".join(detail_parts)
+            + "</td></tr>"
+        )
 
-    # Multiline values (e.g. Discount Check Up) render left-aligned with <br>,
-    # matching dashboard's whitespace-pre-wrap + text-left logic.
     is_multiline_value = "\n" in display_value
     if is_multiline_value:
         escaped_value = _esc(display_value).replace("\n", "<br>")
-        value_align = "text-align:left"
-        value_wrap = "word-break:break-word"
+        val_style = "text-align:left;word-break:break-word"
     else:
         escaped_value = _esc(display_value)
-        value_align = "text-align:right"
-        value_wrap = "white-space:nowrap"
+        val_style = "text-align:right;white-space:nowrap"
 
-    return f"""\
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-       style="background-color:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};margin-bottom:8px;">
-  <tr>
-    <td style="padding:14px 16px;font-family:{FONT_STACK};">
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-        <!-- Metric name + value -->
-        <tr>
-          <td style="font-size:13px;font-weight:600;color:{TEXT_DARK};padding-bottom:{10 if has_detail else 0}px;">
-            {_esc(display_metric)}
-          </td>
-          <td style="{value_align};font-size:13px;font-weight:bold;color:{TEXT_SECONDARY};padding-bottom:{10 if has_detail else 0}px;{value_wrap};">
-            {escaped_value}
-          </td>
-        </tr>
-{detail_html}
-      </table>
-    </td>
-  </tr>
-</table>"""
+    pb = 10 if has_detail else 0
+    return (
+        f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="mc">'
+        f'<tr><td style="padding:14px 16px">'
+        f'<table width="100%" cellpadding="0" cellspacing="0" border="0">'
+        f'<tr><td class="lbl" style="padding-bottom:{pb}px">{_esc(display_metric)}</td>'
+        f'<td class="val" style="{val_style};padding-bottom:{pb}px">{escaped_value}</td></tr>'
+        f'{detail_html}'
+        f'</table></td></tr></table>'
+    )
 
 
 def _render_detailed_evaluation(
@@ -590,12 +555,12 @@ def _render_detailed_evaluation(
             return m in _DIVIDER_AFTER or m.startswith("Rata² Penjualan")
 
         _DIVIDER_HTML = (
-            '<tr>\n'
-            f'  <td colspan="2" style="padding:8px 4px;">'
-            f'<div style="border-top:1px solid {PRIMARY_BLUE}4D;"></div>'
-            f'</td>\n'
-            '</tr>'
+            f'<tr><td colspan="2" style="padding:8px 4px">'
+            f'<div style="border-top:1px solid {PRIMARY_BLUE}4D"></div>'
+            f'</td></tr>'
         )
+
+        _HALF = 'style="width:50%;padding:4px;vertical-align:top"'
 
         # Build 2-column grid of metric cards with optional dividers.
         grid_rows: list[str] = []
@@ -603,106 +568,53 @@ def _render_detailed_evaluation(
         for row in rows:
             card = _render_metric_card(row, S, lang)
             if pending_left is None:
-                # First card in a pair.
                 if _needs_divider(row):
-                    # Render alone on left, pad right, then divider.
-                    grid_rows.append(
-                        f'<tr>\n'
-                        f'  <td style="width:50%;padding:4px;vertical-align:top;">{card}</td>\n'
-                        f'  <td style="width:50%;padding:4px;vertical-align:top;">&nbsp;</td>\n'
-                        f'</tr>'
-                    )
+                    grid_rows.append(f'<tr><td {_HALF}>{card}</td><td {_HALF}>&nbsp;</td></tr>')
                     grid_rows.append(_DIVIDER_HTML)
                 else:
                     pending_left = card
             else:
-                # Second card in the pair — complete the row.
-                grid_rows.append(
-                    f'<tr>\n'
-                    f'  <td style="width:50%;padding:4px;vertical-align:top;">{pending_left}</td>\n'
-                    f'  <td style="width:50%;padding:4px;vertical-align:top;">{card}</td>\n'
-                    f'</tr>'
-                )
+                grid_rows.append(f'<tr><td {_HALF}>{pending_left}</td><td {_HALF}>{card}</td></tr>')
                 pending_left = None
                 if _needs_divider(row):
                     grid_rows.append(_DIVIDER_HTML)
 
-        # Flush any unpaired left card.
         if pending_left is not None:
-            grid_rows.append(
-                f'<tr>\n'
-                f'  <td style="width:50%;padding:4px;vertical-align:top;">{pending_left}</td>\n'
-                f'  <td style="width:50%;padding:4px;vertical-align:top;">&nbsp;</td>\n'
-                f'</tr>'
-            )
+            grid_rows.append(f'<tr><td {_HALF}>{pending_left}</td><td {_HALF}>&nbsp;</td></tr>')
 
         grid_html = "\n".join(grid_rows)
 
-        sections.append(f"""\
-<!-- Category: {_esc(cat_name)} -->
-<tr>
-  <td style="padding:12px 30px 0 30px;font-family:{FONT_STACK};">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-           style="background-color:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};padding:16px;">
-      <tr>
-        <td style="padding:16px 16px 8px 16px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td style="font-size:15px;font-weight:bold;color:{TEXT_DARK};">
-                {_esc(cat_name)}
-              </td>
-              <td style="text-align:right;font-size:13px;font-weight:bold;">
-                <span style="color:{GREEN};">✔️ {checks}</span>
-                <span style="color:{TEXT_SECONDARY};"> / </span>
-                <span style="color:{ORANGE};">❌ {xs}</span>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-      <!-- Category progress bar -->
-      <tr>
-        <td style="padding:0 16px 16px 16px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td style="background-color:{BORDER_LIGHT};border-radius:4px;height:8px;padding:0;">
-                <table role="presentation" width="{cat_pct}%" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                    <td style="background-color:{cat_color};border-radius:4px;height:8px;font-size:0;line-height:0;">
-                      &nbsp;
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>
-      <!-- Metric cards grid (2 columns) -->
-      <tr>
-        <td style="padding:0 12px 12px 12px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                 class="metric-grid">
-            {grid_html}
-          </table>
-        </td>
-      </tr>
-    </table>
-  </td>
-</tr>""")
+        sections.append(
+            f'<tr><td style="padding:12px 30px 0 30px">'
+            f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="card" style="padding:16px">'
+            f'<tr><td style="padding:16px 16px 8px 16px">'
+            f'<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
+            f'<td class="hdr">{_esc(cat_name)}</td>'
+            f'<td style="text-align:right;font-size:13px;font-weight:bold">'
+            f'<span style="color:{GREEN}">✔️ {checks}</span>'
+            f'<span style="color:{TEXT_SECONDARY}"> / </span>'
+            f'<span style="color:{ORANGE}">❌ {xs}</span>'
+            f'</td></tr></table></td></tr>'
+            f'<tr><td style="padding:0 16px 16px 16px">'
+            f'<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
+            f'<td class="bar-bg">'
+            f'<table width="{cat_pct}%" cellpadding="0" cellspacing="0" border="0"><tr>'
+            f'<td style="background:{cat_color};border-radius:4px;height:8px;font-size:0;line-height:0">&nbsp;</td>'
+            f'</tr></table></td></tr></table></td></tr>'
+            f'<tr><td style="padding:0 12px 12px 12px">'
+            f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="metric-grid">'
+            f'{grid_html}</table></td></tr></table></td></tr>'
+        )
 
     if not sections:
         return ""
 
-    all_sections = "\n".join(sections)
-    return f"""\
-<!-- Detailed Evaluation -->
-<tr>
-  <td style="padding:16px 30px 8px 30px;font-family:{FONT_STACK};">
-    {_section_header("02", S['detailed_evaluation'])}
-  </td>
-</tr>
-{all_sections}"""
+    all_sections = "".join(sections)
+    return (
+        f'<tr><td style="padding:16px 30px 8px 30px">'
+        f'{_section_header("02", S["detailed_evaluation"])}'
+        f'</td></tr>{all_sections}'
+    )
 
 
 def _render_score_breakdown(
@@ -719,78 +631,47 @@ def _render_score_breakdown(
     for cat in categories:
         cat_name = cat_map.get(cat.get("category", ""), cat.get("category", ""))
 
-        # Per-category verdict counts
         checks = sum(1 for r in cat.get("rows", []) if r.get("verdict") == "\u2714\ufe0f")
         xs = sum(1 for r in cat.get("rows", []) if r.get("verdict") == "\u274c")
         total = checks + xs
         cat_pct = round((checks / total) * 100) if total > 0 else 0
         cat_color = _score_color(cat_pct)
 
-        cat_bars.append(f"""\
-<tr>
-  <td style="padding:6px 0;font-family:{FONT_STACK};">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="font-size:13px;font-weight:600;color:{TEXT_DARK};width:120px;padding-right:12px;">
-          {_esc(cat_name)}
-        </td>
-        <td style="padding:0;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-            <tr>
-              <td style="background-color:{BORDER_LIGHT};border-radius:4px;height:10px;padding:0;">
-                <table role="presentation" width="{cat_pct}%" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                    <td style="background-color:{cat_color};border-radius:4px;height:10px;font-size:0;line-height:0;">
-                      &nbsp;
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
-          </table>
-        </td>
-        <td style="font-size:12px;width:90px;text-align:right;padding-left:12px;">
-          <span style="color:{GREEN};font-weight:bold;">\u2714\ufe0f{checks}</span>
-          <span style="color:{TEXT_SECONDARY};"> / </span>
-          <span style="color:{ORANGE};font-weight:bold;">\u274c{xs}</span>
-        </td>
-      </tr>
-    </table>
-  </td>
-</tr>""")
+        cat_bars.append(
+            f'<tr><td style="padding:6px 0">'
+            f'<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
+            f'<td class="lbl" style="width:120px;padding-right:12px">{_esc(cat_name)}</td>'
+            f'<td style="padding:0"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
+            f'<td class="bar-bg10">'
+            f'<table width="{cat_pct}%" cellpadding="0" cellspacing="0" border="0"><tr>'
+            f'<td style="background:{cat_color};border-radius:4px;height:10px;font-size:0;line-height:0">&nbsp;</td>'
+            f'</tr></table></td></tr></table></td>'
+            f'<td style="font-size:12px;width:90px;text-align:right;padding-left:12px">'
+            f'<span style="color:{GREEN};font-weight:bold">\u2714\ufe0f{checks}</span>'
+            f'<span style="color:{TEXT_SECONDARY}"> / </span>'
+            f'<span style="color:{ORANGE};font-weight:bold">\u274c{xs}</span>'
+            f'</td></tr></table></td></tr>'
+        )
 
-    bars_html = "\n".join(cat_bars)
+    bars_html = "".join(cat_bars)
     chart_html = ""
     if chart_src:
-        chart_html = f"""\
-      <!-- Chart image -->
-      <tr>
-        <td style="padding-top:8px;padding-bottom:16px;">
-          <img src="{chart_src}" width="540"
-               style="display:block;width:100%;height:auto;border:0;border-radius:8px;"
-               alt="Score Breakdown Chart">
-        </td>
-      </tr>"""
+        chart_html = (
+            f'<tr><td style="padding-top:8px;padding-bottom:16px">'
+            f'<img src="{chart_src}" width="540" '
+            f'style="display:block;width:100%;height:auto;border:0;border-radius:8px" '
+            f'alt="Score Breakdown Chart"></td></tr>'
+        )
 
-    return f"""\
-<!-- Score Breakdown -->
-<tr>
-  <td style="padding:16px 30px 24px 30px;font-family:{FONT_STACK};">
-    {_section_header("03", S['score_breakdown'])}
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-           style="background-color:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};">
-      <tr>
-        <td style="padding:20px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-{chart_html}
-            <!-- Category summary bars -->
-            {bars_html}
-          </table>
-        </td>
-      </tr>
-    </table>
-  </td>
-</tr>"""
+    return (
+        f'<tr><td style="padding:16px 30px 24px 30px">'
+        f'{_section_header("03", S["score_breakdown"])}'
+        f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="card">'
+        f'<tr><td style="padding:20px">'
+        f'<table width="100%" cellpadding="0" cellspacing="0" border="0">'
+        f'{chart_html}{bars_html}'
+        f'</table></td></tr></table></td></tr>'
+    )
 
 
 def _render_ranking_table(
@@ -861,7 +742,7 @@ def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, s
         if output_text:
             parts.append(f"""\
 <tr>
-  <td style="padding:8px 0;font-family:{FONT_STACK};">
+  <td style="padding:8px 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td style="font-size:14px;font-weight:bold;color:{TEXT_DARK};padding-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
@@ -929,7 +810,7 @@ def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, s
 
             parts.append(f"""\
 <tr>
-  <td style="padding:8px 0;font-family:{FONT_STACK};">
+  <td style="padding:8px 0;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td style="font-size:14px;font-weight:bold;color:{TEXT_DARK};padding-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
@@ -954,7 +835,7 @@ def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, s
     return f"""\
 <!-- Data Intelligence -->
 <tr>
-  <td style="padding:16px 30px 24px 30px;font-family:{FONT_STACK};">
+  <td style="padding:16px 30px 24px 30px;">
     {_section_header("04", S['data_intelligence'])}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="background-color:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};">
@@ -1010,7 +891,7 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
         for bullet in bullets:
             bullet_html_parts.append(f"""\
             <tr>
-              <td style="padding:4px 0;font-family:{FONT_STACK};">
+              <td style="padding:4px 0;">
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td style="width:20px;vertical-align:top;padding-top:7px;">
@@ -1036,7 +917,7 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
                  style="background-color:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};margin-bottom:16px;">
             <tr>
-              <td style="padding:16px 18px;font-family:{FONT_STACK};">
+              <td style="padding:16px 18px;">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:{TEXT_SECONDARY};padding-bottom:6px;">
@@ -1060,7 +941,7 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
                  style="border-left:4px solid {PRIMARY_BLUE}40;background-color:{PRIMARY_LIGHT};border-radius:0 8px 8px 0;">
             <tr>
-              <td style="padding:16px 18px;font-size:13px;color:{TEXT_DARK};line-height:1.7;font-family:{FONT_STACK};">
+              <td style="padding:16px 18px;font-size:13px;color:{TEXT_DARK};line-height:1.7;">
                 {escaped_closing}
               </td>
             </tr>
@@ -1070,7 +951,7 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
     return f"""\
 <!-- Kesimpulan -->
 <tr>
-  <td style="padding:16px 30px 24px 30px;font-family:{FONT_STACK};">
+  <td style="padding:16px 30px 24px 30px;">
     {_section_header("05", S['kesimpulan'])}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="background-color:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};">
@@ -1082,6 +963,48 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
     </table>
   </td>
 </tr>"""
+
+
+# ---------------------------------------------------------------------------
+# HTML minification — strip comments, collapse whitespace to stay under
+# Gmail's ~102 KB clipping threshold.
+# ---------------------------------------------------------------------------
+
+_HTML_COMMENT_RE = re.compile(r"<!--.*?-->", re.DOTALL)
+_WHITESPACE_BETWEEN_TAGS_RE = re.compile(r">\s+<")
+_LEADING_WHITESPACE_RE = re.compile(r"^\s+", re.MULTILINE)
+
+
+def _minify_html(html: str) -> str:
+    """Aggressively minify HTML for email delivery.
+
+    Removes HTML comments, collapses inter-tag whitespace, and strips leading
+    indentation.  The visual rendering is identical since email clients ignore
+    source formatting.
+    """
+    html = _HTML_COMMENT_RE.sub("", html)
+    html = _LEADING_WHITESPACE_RE.sub("", html)
+    html = _WHITESPACE_BETWEEN_TAGS_RE.sub("><", html)
+    return html.strip()
+
+
+# ---------------------------------------------------------------------------
+# CSS classes — shared styles extracted to reduce repeated inline bytes.
+# Gmail supports <style> in <head> and rewrites class names with a prefix.
+# ---------------------------------------------------------------------------
+
+_EMAIL_CSS = f"""\
+body,td,th{{font-family:{FONT_STACK};}}
+.T{{border-collapse:collapse;}}
+.card{{background:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};}}
+.mc{{background:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};margin-bottom:8px;}}
+.hdr{{font-size:15px;font-weight:bold;color:{TEXT_DARK};}}
+.lbl{{font-size:13px;font-weight:600;color:{TEXT_DARK};}}
+.val{{font-size:13px;font-weight:bold;color:{TEXT_SECONDARY};}}
+.sm{{font-size:11px;color:{TEXT_SECONDARY};}}
+.bar-bg{{background:{BORDER_LIGHT};border-radius:4px;height:8px;padding:0;}}
+.bar-bg10{{background:{BORDER_LIGHT};border-radius:4px;height:10px;padding:0;}}
+"""
 
 
 # ---------------------------------------------------------------------------
@@ -1144,7 +1067,7 @@ def render_email_html(
     footer = _render_footer(footer_src)
 
     lang_code = language if language in ("id", "en", "th") else "id"
-    return f"""\
+    raw = f"""\
 <!DOCTYPE html>
 <html lang="{lang_code}">
 <head>
@@ -1153,17 +1076,17 @@ def render_email_html(
 <title>{_esc(brand_name)} - {S['brand_report']}</title>
 <style type="text/css">
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap');
+{_EMAIL_CSS}
 @media only screen and (max-width:620px) {{
   .metric-grid td {{ display:block !important; width:100% !important; }}
 }}
 </style>
 </head>
-<body style="margin:0;padding:0;background-color:{BG_GRAY};font-family:{FONT_STACK};">
+<body style="margin:0;padding:0;background-color:{BG_GRAY};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
        style="background-color:{BG_GRAY};">
   <tr>
     <td align="center" style="padding:20px 0;">
-      <!-- Content table -->
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"
              style="width:100%;max-width:600px;background-color:{WHITE};border-radius:8px;">
         {header}
@@ -1180,3 +1103,4 @@ def render_email_html(
 </table>
 </body>
 </html>"""
+    return _minify_html(raw)
