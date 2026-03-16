@@ -12,22 +12,27 @@ from typing import Any
 # Constants
 # ---------------------------------------------------------------------------
 
-PRIMARY_BLUE = "#1976D2"
-PRIMARY_LIGHT = "#E3F2FD"
-GREEN = "#4CAF50"
-GREEN_LIGHT = "#E8F5E9"
-ORANGE = "#FF9800"
-ORANGE_LIGHT = "#FFF3E0"
-BG_GRAY = "#f5f5f5"
+# AHA Brand palette — matches the presentation dashboard (light theme).
+PRIMARY_BLUE = "#325FEC"
+PRIMARY_LIGHT = "#EEF2FD"    # ~primary/10
+GREEN = "#22C55E"
+GREEN_LIGHT = "#DCFCE7"
+ORANGE = "#F97316"
+ORANGE_LIGHT = "#FFF7ED"
+BG_GRAY = "#F4F4F5"          # neutral-100
 WHITE = "#ffffff"
-TEXT_DARK = "#212121"
-TEXT_SECONDARY = "#757575"
-CARD_BG = "#FAFAFA"
-BORDER_LIGHT = "#e0e0e0"
+TEXT_DARK = "#1D388B"         # dark navy — foreground
+TEXT_SECONDARY = "#71717A"    # neutral-500
+CARD_BG = "#FFFFFF"
+BORDER_LIGHT = "#E4E4E7"     # neutral-200
+
+# Font stack: Manrope (dashboard font) with safe fallbacks.
+# Gmail won't load @font-face but will use Manrope if installed locally.
+FONT_STACK = "'Manrope',Arial,Helvetica,sans-serif"
 
 STRINGS: dict[str, dict[str, str]] = {
     "id": {
-        "score_overview": "Ringkasan Skor",
+        "score_overview": "Laporan Evaluasi Partner",
         "detailed_evaluation": "Evaluasi Detail",
         "score_breakdown": "Rincian Skor",
         "data_intelligence": "Data Inteligensi",
@@ -48,9 +53,9 @@ STRINGS: dict[str, dict[str, str]] = {
         "message": "Pesan",
         "approved": "Disetujui",
         "rejected": "Ditolak",
-        "template_type": "Tipe Template",
         "check_count": "Lolos",
         "cross_count": "Tidak Lolos",
+        "performance_verdict": "Performa dapat Ditingkatkan",
         "brand_report": "Laporan Evaluasi Brand",
         "subject": "Laporan Evaluasi Brand: {brand_name} - {period}",
         "plain_score": "Skor Akhir",
@@ -58,7 +63,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "chart_placeholder": "Chart akan ditampilkan di email",
     },
     "en": {
-        "score_overview": "Score Overview",
+        "score_overview": "Partner Evaluation Report",
         "detailed_evaluation": "Detailed Evaluation",
         "score_breakdown": "Score Breakdown",
         "data_intelligence": "Data Intelligence",
@@ -79,9 +84,9 @@ STRINGS: dict[str, dict[str, str]] = {
         "message": "Message",
         "approved": "Approved",
         "rejected": "Rejected",
-        "template_type": "Template Type",
         "check_count": "Pass",
         "cross_count": "Fail",
+        "performance_verdict": "Performance can be Improved",
         "brand_report": "Brand Evaluation Report",
         "subject": "Brand Evaluation Report: {brand_name} - {period}",
         "plain_score": "Final Score",
@@ -89,7 +94,7 @@ STRINGS: dict[str, dict[str, str]] = {
         "chart_placeholder": "Chart will be displayed in email",
     },
     "th": {
-        "score_overview": "\u0e20\u0e32\u0e1e\u0e23\u0e27\u0e21\u0e04\u0e30\u0e41\u0e19\u0e19",
+        "score_overview": "\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e40\u0e21\u0e34\u0e19\u0e1e\u0e32\u0e23\u0e4c\u0e17\u0e40\u0e19\u0e2d\u0e23\u0e4c",
         "detailed_evaluation": "\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e40\u0e21\u0e34\u0e19\u0e42\u0e14\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14",
         "score_breakdown": "\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e04\u0e30\u0e41\u0e19\u0e19",
         "data_intelligence": "\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e0a\u0e34\u0e07\u0e25\u0e36\u0e01",
@@ -110,9 +115,9 @@ STRINGS: dict[str, dict[str, str]] = {
         "message": "\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21",
         "approved": "\u0e1c\u0e48\u0e32\u0e19",
         "rejected": "\u0e44\u0e21\u0e48\u0e1c\u0e48\u0e32\u0e19",
-        "template_type": "\u0e1b\u0e23\u0e30\u0e40\u0e20\u0e17\u0e40\u0e17\u0e21\u0e40\u0e1e\u0e25\u0e15",
         "check_count": "\u0e1c\u0e48\u0e32\u0e19",
         "cross_count": "\u0e44\u0e21\u0e48\u0e1c\u0e48\u0e32\u0e19",
+        "performance_verdict": "\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e1b\u0e23\u0e31\u0e1a\u0e1b\u0e23\u0e38\u0e07\u0e1b\u0e23\u0e30\u0e2a\u0e34\u0e17\u0e18\u0e34\u0e20\u0e32\u0e1e\u0e44\u0e14\u0e49",
         "brand_report": "\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1b\u0e23\u0e30\u0e40\u0e21\u0e34\u0e19\u0e41\u0e1a\u0e23\u0e19\u0e14\u0e4c",
         "subject": "\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1b\u0e23\u0e30\u0e40\u0e21\u0e34\u0e19\u0e41\u0e1a\u0e23\u0e19\u0e14\u0e4c: {brand_name} - {period}",
         "plain_score": "\u0e04\u0e30\u0e41\u0e19\u0e19\u0e2a\u0e38\u0e14\u0e17\u0e49\u0e32\u0e22",
@@ -195,7 +200,13 @@ def _score_bg_color(score: float) -> str:
 
 
 def _compute_verdict_counts(categories: list[dict[str, Any]]) -> dict[str, int]:
-    """Count check marks and cross marks across all category rows."""
+    """Count check marks and cross marks across all category rows.
+
+    Also computes the **partner score** (dashboard score) as a simple
+    pass-ratio percentage: ``round(checks / total * 100)``.  This is the
+    score shown on the presentation dashboard and must be used in the
+    email instead of the internal ``final_score``.
+    """
     checks = 0
     xs = 0
     for cat in categories:
@@ -206,7 +217,8 @@ def _compute_verdict_counts(categories: list[dict[str, Any]]) -> dict[str, int]:
             elif verdict == "\u274c":
                 xs += 1
     total = checks + xs
-    return {"checks": checks, "xs": xs, "total": total}
+    score = round((checks / total) * 100) if total > 0 else 0
+    return {"checks": checks, "xs": xs, "total": total, "score": score}
 
 
 def _esc(text: Any) -> str:
@@ -221,7 +233,7 @@ def _section_header(number: str, title: str) -> str:
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
        style="margin-bottom:16px;">
   <tr>
-    <td style="font-family:Arial,Helvetica,sans-serif;">
+    <td style="font-family:{FONT_STACK};">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0">
         <tr>
           <td style="font-size:11px;font-weight:900;color:{PRIMARY_BLUE};opacity:0.4;letter-spacing:3px;padding-right:8px;vertical-align:middle;">
@@ -253,8 +265,6 @@ def _render_header(
     header_src: str,
     brand_name: str,
     period: str,
-    verdict: str,
-    template: str,
     S: dict[str, str],
 ) -> str:
     """Render header section: branded image + brand info."""
@@ -269,7 +279,7 @@ def _render_header(
 </tr>
 <!-- Brand Info -->
 <tr>
-  <td style="padding:24px 30px 16px 30px;font-family:Arial,Helvetica,sans-serif;">
+  <td style="padding:24px 30px 16px 30px;font-family:{FONT_STACK};">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td style="font-size:24px;font-weight:bold;color:{TEXT_DARK};padding-bottom:4px;">
@@ -279,14 +289,6 @@ def _render_header(
       <tr>
         <td style="font-size:14px;color:{TEXT_SECONDARY};padding-bottom:8px;">
           {_esc(period)}
-        </td>
-      </tr>
-      <tr>
-        <td style="padding-bottom:4px;">
-          <span style="font-size:14px;color:{TEXT_DARK};font-weight:bold;">{verdict}</span>
-          <span style="font-size:13px;color:{TEXT_SECONDARY};padding-left:12px;">
-            {S['template_type']}: {_esc(template)}
-          </span>
         </td>
       </tr>
     </table>
@@ -304,7 +306,7 @@ def _render_note(note: str) -> str:
     return f"""\
 <!-- Custom Note -->
 <tr>
-  <td style="padding:8px 30px 16px 30px;font-family:Arial,Helvetica,sans-serif;">
+  <td style="padding:8px 30px 16px 30px;font-family:{FONT_STACK};">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="background-color:{CARD_BG};border-radius:6px;border-left:3px solid {PRIMARY_BLUE};">
       <tr>
@@ -318,87 +320,57 @@ def _render_note(note: str) -> str:
 
 
 def _render_score_overview(
-    final_score: float,
-    verdict: str,
-    template: str,
     categories: list[dict[str, Any]],
     S: dict[str, str],
 ) -> str:
-    """Render score overview section: large score, progress bar, verdict counts."""
-    color = _score_color(final_score)
-    bg_color = _score_bg_color(final_score)
+    """Render score overview section: large score, progress bar, verdict counts.
+
+    Uses the **partner score** (pass-ratio from verdicts) instead of the
+    internal ``final_score`` to match the presentation dashboard display.
+    """
     counts = _compute_verdict_counts(categories)
-    score_pct = min(int(final_score), 100)
+    partner_score = counts["score"]
 
     return f"""\
 <!-- Score Overview -->
 <tr>
-  <td style="padding:16px 30px 24px 30px;font-family:Arial,Helvetica,sans-serif;">
+  <td style="padding:16px 30px 24px 30px;font-family:{FONT_STACK};">
     {_section_header("01", S['score_overview'])}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="background-color:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};">
       <tr>
-        <td style="padding:24px;">
+        <td style="padding:32px;">
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
             <!-- Score number -->
             <tr>
-              <td style="padding-bottom:16px;">
-                <span style="font-size:56px;font-weight:900;color:{color};letter-spacing:-2px;">{final_score}</span>
-                <span style="font-size:20px;color:{TEXT_SECONDARY};font-weight:500;"> / 100</span>
+              <td style="padding-bottom:20px;">
+                <span style="font-size:64px;font-weight:900;color:{TEXT_DARK};letter-spacing:-3px;line-height:1;">{partner_score}</span>
+                <span style="font-size:22px;color:{TEXT_SECONDARY};font-weight:500;"> /100</span>
               </td>
             </tr>
-            <!-- Progress bar -->
+            <!-- Verdict counts -->
             <tr>
               <td style="padding-bottom:20px;">
-                <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                   <tr>
-                    <td style="background-color:{BORDER_LIGHT};border-radius:6px;height:12px;padding:0;">
-                      <table role="presentation" width="{score_pct}%" cellpadding="0" cellspacing="0" border="0">
-                        <tr>
-                          <td style="background-color:{color};border-radius:6px;height:12px;font-size:0;line-height:0;">
-                            &nbsp;
-                          </td>
-                        </tr>
-                      </table>
+                    <td style="padding-right:20px;font-size:16px;font-weight:bold;color:{GREEN};">
+                      ⊘ {counts['checks']}
+                    </td>
+                    <td style="font-size:16px;font-weight:bold;color:{ORANGE};">
+                      ⊗ {counts['xs']}
                     </td>
                   </tr>
                 </table>
               </td>
             </tr>
-            <!-- Verdict counts -->
+            <!-- Performance badge -->
             <tr>
               <td>
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                       style="background-color:{PRIMARY_LIGHT};border:1px solid {PRIMARY_BLUE}30;border-radius:6px;">
                   <tr>
-                    <td style="padding-right:16px;">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0"
-                             style="background-color:{GREEN_LIGHT};border-radius:6px;">
-                        <tr>
-                          <td style="padding:6px 12px;font-size:14px;font-weight:bold;color:{GREEN};">
-                            \u2714\ufe0f {S['check_count']}: {counts['checks']}
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                    <td style="padding-right:16px;">
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0"
-                             style="background-color:{ORANGE_LIGHT};border-radius:6px;">
-                        <tr>
-                          <td style="padding:6px 12px;font-size:14px;font-weight:bold;color:{ORANGE};">
-                            \u274c {S['cross_count']}: {counts['xs']}
-                          </td>
-                        </tr>
-                      </table>
-                    </td>
-                    <td>
-                      <table role="presentation" cellpadding="0" cellspacing="0" border="0"
-                             style="background-color:{bg_color};border-radius:6px;border:1px solid {color}40;">
-                        <tr>
-                          <td style="padding:6px 12px;font-size:13px;font-weight:bold;color:{color};">
-                            {S['template_type']}: {_esc(template)}
-                          </td>
-                        </tr>
-                      </table>
+                    <td style="padding:8px 16px;font-size:13px;font-weight:bold;color:{PRIMARY_BLUE};letter-spacing:0.3px;">
+                      〰️ {S['performance_verdict']}
                     </td>
                   </tr>
                 </table>
@@ -431,42 +403,48 @@ def _render_footer(footer_src: str) -> str:
 
 
 def _render_metric_card(row: dict[str, Any], S: dict[str, str]) -> str:
-    """Render a single metric card as a table cell content block."""
+    """Render a single metric card matching the dashboard CategoryMetricCard style.
+
+    Layout:
+      Metric Name (bold)          Value (bold, muted)
+      ─ separator ─
+      Benchmark: X
+      ✔️/❌ verdict message (green/orange)
+    """
     is_pass = row.get("verdict") == "\u2714\ufe0f"
     verdict_color = GREEN if is_pass else ORANGE
-    verdict_bg = GREEN_LIGHT if is_pass else ORANGE_LIGHT
+    message = _esc(row.get("message", ""))
+
     return f"""\
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
        style="background-color:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};margin-bottom:8px;">
   <tr>
-    <td style="padding:12px 14px;font-family:Arial,Helvetica,sans-serif;">
+    <td style="padding:14px 16px;font-family:{FONT_STACK};">
       <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
+        <!-- Metric name + value -->
         <tr>
-          <td style="padding-bottom:6px;">
+          <td style="font-size:13px;font-weight:600;color:{TEXT_DARK};padding-bottom:10px;">
+            {_esc(row.get('metric', ''))}
+          </td>
+          <td style="text-align:right;font-size:13px;font-weight:bold;color:{TEXT_SECONDARY};padding-bottom:10px;white-space:nowrap;">
+            {_esc(row.get('value', ''))}
+          </td>
+        </tr>
+        <!-- Separator + benchmark + message -->
+        <tr>
+          <td colspan="2" style="border-top:1px solid {BORDER_LIGHT};padding-top:8px;">
             <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
               <tr>
-                <td style="font-size:13px;font-weight:bold;color:{TEXT_DARK};">
-                  {_esc(row.get('metric', ''))}
+                <td style="font-size:11px;color:{TEXT_SECONDARY};padding-bottom:3px;">
+                  Benchmark: {_esc(row.get('benchmark', ''))}
                 </td>
-                <td style="text-align:right;width:40px;">
-                  <span style="display:inline-block;background-color:{verdict_bg};color:{verdict_color};font-size:11px;font-weight:bold;padding:2px 8px;border-radius:4px;">
-                    {row.get('verdict', '')}
-                  </span>
+              </tr>
+              <tr>
+                <td style="font-size:11px;color:{verdict_color};line-height:1.5;">
+                  {message}
                 </td>
               </tr>
             </table>
-          </td>
-        </tr>
-        <tr>
-          <td style="font-size:12px;color:{TEXT_SECONDARY};padding-bottom:4px;">
-            {S['value']}: <strong style="color:{TEXT_DARK};">{_esc(row.get('value', ''))}</strong>
-            &nbsp;&middot;&nbsp;
-            {S['benchmark']}: {_esc(row.get('benchmark', ''))}
-          </td>
-        </tr>
-        <tr>
-          <td style="font-size:11px;color:{TEXT_SECONDARY};font-style:italic;line-height:1.4;">
-            {_esc(row.get('message', ''))}
           </td>
         </tr>
       </table>
@@ -519,7 +497,7 @@ def _render_detailed_evaluation(
         sections.append(f"""\
 <!-- Category: {_esc(cat_name)} -->
 <tr>
-  <td style="padding:12px 30px 0 30px;font-family:Arial,Helvetica,sans-serif;">
+  <td style="padding:12px 30px 0 30px;font-family:{FONT_STACK};">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="background-color:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};padding:16px;">
       <tr>
@@ -576,7 +554,7 @@ def _render_detailed_evaluation(
     return f"""\
 <!-- Detailed Evaluation -->
 <tr>
-  <td style="padding:16px 30px 8px 30px;font-family:Arial,Helvetica,sans-serif;">
+  <td style="padding:16px 30px 8px 30px;font-family:{FONT_STACK};">
     {_section_header("02", S['detailed_evaluation'])}
   </td>
 </tr>
@@ -606,7 +584,7 @@ def _render_score_breakdown(
 
         cat_bars.append(f"""\
 <tr>
-  <td style="padding:6px 0;font-family:Arial,Helvetica,sans-serif;">
+  <td style="padding:6px 0;font-family:{FONT_STACK};">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td style="font-size:13px;font-weight:600;color:{TEXT_DARK};width:120px;padding-right:12px;">
@@ -653,7 +631,7 @@ def _render_score_breakdown(
     return f"""\
 <!-- Score Breakdown -->
 <tr>
-  <td style="padding:16px 30px 24px 30px;font-family:Arial,Helvetica,sans-serif;">
+  <td style="padding:16px 30px 24px 30px;font-family:{FONT_STACK};">
     {_section_header("03", S['score_breakdown'])}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="background-color:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};">
@@ -739,7 +717,7 @@ def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, s
         if output_text:
             parts.append(f"""\
 <tr>
-  <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;">
+  <td style="padding:8px 0;font-family:{FONT_STACK};">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td style="font-size:14px;font-weight:bold;color:{TEXT_DARK};padding-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
@@ -807,7 +785,7 @@ def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, s
 
             parts.append(f"""\
 <tr>
-  <td style="padding:8px 0;font-family:Arial,Helvetica,sans-serif;">
+  <td style="padding:8px 0;font-family:{FONT_STACK};">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
         <td style="font-size:14px;font-weight:bold;color:{TEXT_DARK};padding-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
@@ -832,7 +810,7 @@ def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, s
     return f"""\
 <!-- Data Intelligence -->
 <tr>
-  <td style="padding:16px 30px 24px 30px;font-family:Arial,Helvetica,sans-serif;">
+  <td style="padding:16px 30px 24px 30px;font-family:{FONT_STACK};">
     {_section_header("04", S['data_intelligence'])}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="background-color:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};">
@@ -888,7 +866,7 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
         for bullet in bullets:
             bullet_html_parts.append(f"""\
             <tr>
-              <td style="padding:4px 0;font-family:Arial,Helvetica,sans-serif;">
+              <td style="padding:4px 0;font-family:{FONT_STACK};">
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td style="width:20px;vertical-align:top;padding-top:7px;">
@@ -914,7 +892,7 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
                  style="background-color:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};margin-bottom:16px;">
             <tr>
-              <td style="padding:16px 18px;font-family:Arial,Helvetica,sans-serif;">
+              <td style="padding:16px 18px;font-family:{FONT_STACK};">
                 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td style="font-size:11px;font-weight:bold;text-transform:uppercase;letter-spacing:1.5px;color:{TEXT_SECONDARY};padding-bottom:6px;">
@@ -938,7 +916,7 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
                  style="border-left:4px solid {PRIMARY_BLUE}40;background-color:{PRIMARY_LIGHT};border-radius:0 8px 8px 0;">
             <tr>
-              <td style="padding:16px 18px;font-size:13px;color:{TEXT_DARK};line-height:1.7;font-family:Arial,Helvetica,sans-serif;">
+              <td style="padding:16px 18px;font-size:13px;color:{TEXT_DARK};line-height:1.7;font-family:{FONT_STACK};">
                 {escaped_closing}
               </td>
             </tr>
@@ -948,7 +926,7 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
     return f"""\
 <!-- Kesimpulan -->
 <tr>
-  <td style="padding:16px 30px 24px 30px;font-family:Arial,Helvetica,sans-serif;">
+  <td style="padding:16px 30px 24px 30px;font-family:{FONT_STACK};">
     {_section_header("05", S['kesimpulan'])}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="background-color:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};">
@@ -1003,15 +981,12 @@ def render_email_html(
 
     brand_name: str = evaluation_data["brand_name"]
     period: str = evaluation_data["period"]
-    final_score: float = evaluation_data["final_score"]
-    verdict: str = evaluation_data["verdict"]
-    template: str = evaluation_data["template"]
     categories: list[dict[str, Any]] = evaluation_data.get("score_breakdown", [])
     calculator_results: dict[str, Any] = evaluation_data.get("calculator_results", {})
 
-    header = _render_header(header_src, brand_name, period, verdict, template, S)
+    header = _render_header(header_src, brand_name, period, S)
     note_section = _render_note(note) if note else ""
-    score_overview = _render_score_overview(final_score, verdict, template, categories, S)
+    score_overview = _render_score_overview(categories, S)
     detailed = _render_detailed_evaluation(categories, S, cat_map)
     breakdown = _render_score_breakdown(chart_src, categories, S, cat_map)
     intelligence = _render_data_intelligence(calculator_results, S)
@@ -1027,12 +1002,13 @@ def render_email_html(
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
 <title>{_esc(brand_name)} - {S['brand_report']}</title>
 <style type="text/css">
+@import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap');
 @media only screen and (max-width:620px) {{
   .metric-grid td {{ display:block !important; width:100% !important; }}
 }}
 </style>
 </head>
-<body style="margin:0;padding:0;background-color:{BG_GRAY};font-family:Arial,Helvetica,sans-serif;">
+<body style="margin:0;padding:0;background-color:{BG_GRAY};font-family:{FONT_STACK};">
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
        style="background-color:{BG_GRAY};">
   <tr>

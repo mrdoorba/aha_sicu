@@ -223,25 +223,27 @@ class TestScoreOverview:
     """Score overview section tests."""
 
     def test_final_score_displayed(self, evaluation_data: dict) -> None:
+        """Score overview displays the partner score (pass ratio) not internal final_score."""
         html = render_email_html(
             evaluation_data=evaluation_data,
             chart_src="cid:chart123@domain",
             header_src="cid:header123@domain",
             footer_src="cid:footer123@domain",
         )
-        assert "72.5" in html
+        # Partner score = round(3 checks / 5 total * 100) = 60
+        assert ">60<" in html or ">60 " in html.replace("&nbsp;", " ")
 
     def test_score_color_green(self) -> None:
-        assert _score_color(80.0) == "#4CAF50"
-        assert _score_color(95.0) == "#4CAF50"
+        assert _score_color(80.0) == "#22C55E"
+        assert _score_color(95.0) == "#22C55E"
 
     def test_score_color_blue(self) -> None:
-        assert _score_color(50.0) == "#1976D2"
-        assert _score_color(79.9) == "#1976D2"
+        assert _score_color(50.0) == "#325FEC"
+        assert _score_color(79.9) == "#325FEC"
 
     def test_score_color_orange(self) -> None:
-        assert _score_color(49.9) == "#FF9800"
-        assert _score_color(0.0) == "#FF9800"
+        assert _score_color(49.9) == "#F97316"
+        assert _score_color(0.0) == "#F97316"
 
     def test_progress_bar_present(self, evaluation_data: dict) -> None:
         """Score overview should contain a progress bar (nested table pattern)."""
@@ -266,15 +268,6 @@ class TestScoreOverview:
         )
         assert str(counts["checks"]) in html
         assert str(counts["xs"]) in html
-
-    def test_template_type_displayed(self, evaluation_data: dict) -> None:
-        html = render_email_html(
-            evaluation_data=evaluation_data,
-            chart_src="cid:chart123@domain",
-            header_src="cid:header123@domain",
-            footer_src="cid:footer123@domain",
-        )
-        assert "fashion" in html.lower()
 
     def test_verdict_text_displayed(self, evaluation_data: dict) -> None:
         html = render_email_html(
@@ -303,12 +296,14 @@ class TestVerdictCounting:
         assert counts["checks"] == 3
         assert counts["xs"] == 2
         assert counts["total"] == 5
+        assert counts["score"] == 60  # round(3/5 * 100)
 
     def test_compute_verdict_counts_empty(self) -> None:
         counts = _compute_verdict_counts([])
         assert counts["checks"] == 0
         assert counts["xs"] == 0
         assert counts["total"] == 0
+        assert counts["score"] == 0
 
 
 class TestStringsAndCategoryMap:
