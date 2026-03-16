@@ -74,9 +74,11 @@ async def download_file(
 async def local_download(
     upload_id: str,
     filename: str,
-    current_user: dict = Depends(get_current_user),
 ) -> Response:
-    """Local dev endpoint: serve file bytes for download."""
+    """Local dev endpoint: serve file bytes for download.
+
+    No auth required — mimics GCS signed URL behavior.
+    """
     if settings.gcs_upload_bucket:
         return JSONResponse(
             status_code=404, content={"detail": "Local download not available in production"}
@@ -111,9 +113,12 @@ async def local_upload(
     upload_id: str,
     filename: str,
     request: Request,
-    current_user: dict = Depends(get_current_user),
 ) -> JSONResponse:
     """Local dev endpoint: receive file bytes that would go to GCS in production.
+
+    No auth required — mimics GCS signed URL behavior where the URL itself
+    is the authorization. The signed-url request that generated this URL
+    was already authenticated.
 
     Only available when gcs_upload_bucket is not configured.
     """
