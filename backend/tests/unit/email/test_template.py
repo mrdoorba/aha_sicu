@@ -9,6 +9,7 @@ from app.modules.email.template import (
     STRINGS,
     render_email_html,
     _compute_verdict_counts,
+    _format_display_value,
     _score_color,
 )
 
@@ -304,6 +305,34 @@ class TestVerdictCounting:
         assert counts["xs"] == 0
         assert counts["total"] == 0
         assert counts["score"] == 0
+
+
+class TestDisplayValueFormatting:
+    """_format_display_value matches dashboard's CategoryMetricCard logic."""
+
+    def test_pct_prefix_metric_converts_ratio(self) -> None:
+        assert _format_display_value("% Pengunjung Lama", 0.15) == "15.0%"
+
+    def test_pct_prefix_metric_zero(self) -> None:
+        assert _format_display_value("% Ketersediaan Stok", 0.0) == "0.0%"
+
+    def test_tingkat_appends_pct(self) -> None:
+        assert _format_display_value("Tingkat Pesanan Tidak Terselesaikan", 20) == "20%"
+
+    def test_persentase_appends_pct(self) -> None:
+        assert _format_display_value("Persentase Chat Dibalas", 14) == "14%"
+
+    def test_plain_int_gets_thousands_sep(self) -> None:
+        assert _format_display_value("Penjualan Bulan Feb 2026", 12490428) == "12,490,428"
+
+    def test_plain_float_trimmed(self) -> None:
+        assert _format_display_value("Keseluruhan Penilaian", 4.88) == "4.88"
+
+    def test_none_returns_dash(self) -> None:
+        assert _format_display_value("Anything", None) == "-"
+
+    def test_string_value_passthrough(self) -> None:
+        assert _format_display_value("Anything", "custom") == "custom"
 
 
 class TestStringsAndCategoryMap:

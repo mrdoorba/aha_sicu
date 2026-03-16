@@ -256,6 +256,26 @@ def _format_number(value: Any) -> str:
     return str(value)
 
 
+def _format_display_value(metric: str, value: Any) -> str:
+    """Format a metric value for display, matching the dashboard logic.
+
+    Rules (uses original Indonesian metric name for stable matching):
+      1. Metric starts with '%' → value is a 0-1 ratio → ``f'{value*100:.1f}%'``
+      2. Metric contains 'Tingkat' or 'Persentase' → append '%'
+      3. Numeric → thousand-separated
+      4. Fallback → str()
+    """
+    if value is None:
+        return "-"
+    if isinstance(value, (int, float)):
+        if metric.startswith("%"):
+            return f"{value * 100:.1f}%"
+        if "Tingkat" in metric or "Persentase" in metric:
+            return f"{value}%"
+        return f"{value:,}" if isinstance(value, int) else f"{value:,.2f}".rstrip("0").rstrip(".")
+    return str(value)
+
+
 # ---------------------------------------------------------------------------
 # Section Renderers
 # ---------------------------------------------------------------------------
@@ -414,6 +434,8 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str]) -> str:
     is_pass = row.get("verdict") == "\u2714\ufe0f"
     verdict_color = GREEN if is_pass else ORANGE
     message = _esc(row.get("message", ""))
+    metric_name = row.get("metric", "")
+    display_value = _format_display_value(metric_name, row.get("value"))
 
     return f"""\
 <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
@@ -424,10 +446,10 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str]) -> str:
         <!-- Metric name + value -->
         <tr>
           <td style="font-size:13px;font-weight:600;color:{TEXT_DARK};padding-bottom:10px;">
-            {_esc(row.get('metric', ''))}
+            {_esc(metric_name)}
           </td>
           <td style="text-align:right;font-size:13px;font-weight:bold;color:{TEXT_SECONDARY};padding-bottom:10px;white-space:nowrap;">
-            {_esc(row.get('value', ''))}
+            {_esc(display_value)}
           </td>
         </tr>
         <!-- Separator + benchmark + message -->
