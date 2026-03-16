@@ -487,14 +487,17 @@ def _render_detailed_evaluation(
     sections: list[str] = []
     for cat in categories:
         cat_name = cat_map.get(cat.get("category", ""), cat.get("category", ""))
-        cat_score = cat.get("score", 0)
-        cat_max = cat.get("max_score", 0)
-        cat_pct = int((cat_score / cat_max) * 100) if cat_max > 0 else 0
-        cat_color = _score_color(cat_pct)
 
         rows = cat.get("rows", [])
         if not rows:
             continue
+
+        # Use verdict-based counts to match the dashboard display
+        checks = sum(1 for r in rows if r.get("verdict") == "\u2714\ufe0f")
+        xs = sum(1 for r in rows if r.get("verdict") == "\u274c")
+        total = checks + xs
+        cat_pct = round((checks / total) * 100) if total > 0 else 0
+        cat_color = _score_color(cat_pct)
 
         # Build 2-column grid of metric cards
         grid_rows: list[str] = []
@@ -526,8 +529,10 @@ def _render_detailed_evaluation(
               <td style="font-size:15px;font-weight:bold;color:{TEXT_DARK};">
                 {_esc(cat_name)}
               </td>
-              <td style="text-align:right;font-size:13px;color:{TEXT_SECONDARY};font-weight:bold;">
-                {cat_score} / {cat_max}
+              <td style="text-align:right;font-size:13px;font-weight:bold;">
+                <span style="color:{GREEN};">✔️ {checks}</span>
+                <span style="color:{TEXT_SECONDARY};"> / </span>
+                <span style="color:{ORANGE};">❌ {xs}</span>
               </td>
             </tr>
           </table>
@@ -591,14 +596,13 @@ def _render_score_breakdown(
     cat_bars: list[str] = []
     for cat in categories:
         cat_name = cat_map.get(cat.get("category", ""), cat.get("category", ""))
-        cat_score = cat.get("score", 0)
-        cat_max = cat.get("max_score", 0)
-        cat_pct = int((cat_score / cat_max) * 100) if cat_max > 0 else 0
-        cat_color = _score_color(cat_pct)
 
         # Per-category verdict counts
         checks = sum(1 for r in cat.get("rows", []) if r.get("verdict") == "\u2714\ufe0f")
         xs = sum(1 for r in cat.get("rows", []) if r.get("verdict") == "\u274c")
+        total = checks + xs
+        cat_pct = round((checks / total) * 100) if total > 0 else 0
+        cat_color = _score_color(cat_pct)
 
         cat_bars.append(f"""\
 <tr>
