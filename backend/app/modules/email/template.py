@@ -7,7 +7,6 @@ All images referenced via full src URI (cid: for send, data: for preview).
 from __future__ import annotations
 
 import json
-import re
 from functools import lru_cache
 from pathlib import Path
 from typing import Any
