@@ -55,6 +55,7 @@ class Settings(BaseSettings):
     smtp_password: str = ""
     smtp_from_name: str = "AHA Commerce"
     smtp_from_email: str = ""
+    smtp_use_tls: bool = True
     email_enabled: bool = False
 
     # Google Sheets API - Credentials

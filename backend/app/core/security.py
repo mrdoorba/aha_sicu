@@ -1,6 +1,8 @@
 """Security: Firebase Auth validation."""
 
 import asyncio
+import os
+
 import firebase_admin
 from firebase_admin import auth, credentials
 
@@ -11,12 +13,15 @@ from app.core.exceptions import AuthException
 def init_firebase(settings: Settings) -> None:
     """Initialize Firebase Admin SDK.
 
-    Priority: file path (local dev) → ADC (Cloud Run).
+    Priority: emulator (Docker local dev) → file path → ADC (Cloud Run).
     """
     if firebase_admin._apps:
         return  # Already initialized
 
-    if settings.firebase_credentials_path:
+    if os.environ.get("FIREBASE_AUTH_EMULATOR_HOST"):
+        # Emulator mode — no real credentials needed
+        firebase_admin.initialize_app(options={"projectId": "fbi-dev-484410"})
+    elif settings.firebase_credentials_path:
         cred = credentials.Certificate(settings.firebase_credentials_path)
         firebase_admin.initialize_app(cred)
     else:

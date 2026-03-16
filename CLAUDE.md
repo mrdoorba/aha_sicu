@@ -77,3 +77,19 @@ Prioritize: simplicity, robustness, performance, correctness. Avoid over-enginee
 ### Infrastructure
 
 - Stay consistent with existing patterns unless they're clearly suboptimal — then improve and flag the change
+
+---
+
+## gstack
+
+Use the `/browse` skill from gstack for all web browsing. Never use `mcp__claude-in-chrome__*` tools.
+
+**Available skills:**
+- `/plan-ceo-review` — CEO-level plan review
+- `/plan-eng-review` — Engineering plan review
+- `/review` — Code review
+- `/ship` — Ship workflow
+- `/browse` — Web browsing
+- `/qa` — QA testing
+- `/setup-browser-cookies` — Browser cookie setup
+- `/retro` — Retrospective
