@@ -588,6 +588,18 @@ class TestCategoryDividers:
         html = _render_full(data)
         assert "border-top:1px solid #325FEC4D" not in html
 
+    def test_iklan_check_up_excluded(self) -> None:
+        """'Iklan check up' metric is hidden in email, matching dashboard filter."""
+        data = self._make_eval_data([
+            self._row("Penjualan (iklan)"),
+            self._row("ROI"),
+            self._row("Iklan check up"),
+        ])
+        html = _render_full(data)
+        assert "Iklan check up" not in html
+        # Other metrics still present
+        assert "ROI" in html
+
 
 class TestScoreBreakdown:
     """Score breakdown section tests."""

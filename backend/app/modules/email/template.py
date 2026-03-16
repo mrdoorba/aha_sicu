@@ -1115,6 +1115,12 @@ def render_email_html(
     brand_name: str = evaluation_data["brand_name"]
     period: str = evaluation_data["period"]
     categories: list[dict[str, Any]] = evaluation_data.get("score_breakdown", [])
+    # Filter out "Iklan check up" metric to match dashboard display
+    # (dashboard: PresentationDashboard.tsx filters this metric from rows).
+    categories = [
+        {**cat, "rows": [r for r in cat.get("rows", []) if r.get("metric") != "Iklan check up"]}
+        for cat in categories
+    ]
     calculator_results: dict[str, Any] = evaluation_data.get("calculator_results", {})
 
     header = _render_header(header_src, brand_name, period, S)
