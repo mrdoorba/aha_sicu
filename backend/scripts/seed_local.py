@@ -123,6 +123,25 @@ async def seed_minimal(conn: asyncpg.Connection) -> None:
     print(f"Seed complete (minimal): {brand_count} brands, {rule_count} scoring rule templates")
 
 
+# Local dev role assignments — applied after every seed
+# so admin@local.dev always gets admin role regardless of rebuild
+LOCAL_ROLE_OVERRIDES = {
+    "admin@local.dev": "admin",
+    "leader@local.dev": "leader",
+}
+
+
+async def apply_role_overrides(conn: asyncpg.Connection) -> None:
+    """Ensure local dev users have the right roles."""
+    for email, role in LOCAL_ROLE_OVERRIDES.items():
+        result = await conn.execute(
+            "UPDATE users SET role = $1 WHERE email = $2",
+            role, email,
+        )
+        if result != "UPDATE 0":
+            print(f"  Role override: {email} → {role}")
+
+
 async def seed() -> None:
     conn = await asyncpg.connect(DATABASE_URL)
     try:
@@ -131,6 +150,9 @@ async def seed() -> None:
         else:
             print(f"No prod dump found at {PROD_DUMP}, using minimal seed data")
             await seed_minimal(conn)
+
+        # Always apply role overrides for local dev users
+        await apply_role_overrides(conn)
     finally:
         await conn.close()
 
