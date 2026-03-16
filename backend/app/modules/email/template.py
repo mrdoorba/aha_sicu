@@ -570,18 +570,58 @@ def _render_detailed_evaluation(
         cat_pct = round((checks / total) * 100) if total > 0 else 0
         cat_color = _score_color(cat_pct)
 
-        # Build 2-column grid of metric cards
+        # Metrics that trigger a full-width divider after their card
+        # (matches dashboard DetailedEvaluation.tsx logic).
+        _DIVIDER_AFTER = {"Program Afiliasi", "ROI"}
+
+        def _needs_divider(row: dict[str, Any]) -> bool:
+            m = row.get("metric", "")
+            return m in _DIVIDER_AFTER or m.startswith("Rata² Penjualan")
+
+        _DIVIDER_HTML = (
+            '<tr>\n'
+            f'  <td colspan="2" style="padding:8px 4px;">'
+            f'<div style="border-top:1px solid {PRIMARY_BLUE}4D;"></div>'
+            f'</td>\n'
+            '</tr>'
+        )
+
+        # Build 2-column grid of metric cards with optional dividers.
         grid_rows: list[str] = []
-        for i in range(0, len(rows), 2):
-            left = _render_metric_card(rows[i], S, lang)
-            if i + 1 < len(rows):
-                right = _render_metric_card(rows[i + 1], S, lang)
+        pending_left: str | None = None
+        for row in rows:
+            card = _render_metric_card(row, S, lang)
+            if pending_left is None:
+                # First card in a pair.
+                if _needs_divider(row):
+                    # Render alone on left, pad right, then divider.
+                    grid_rows.append(
+                        f'<tr>\n'
+                        f'  <td style="width:50%;padding:4px;vertical-align:top;">{card}</td>\n'
+                        f'  <td style="width:50%;padding:4px;vertical-align:top;">&nbsp;</td>\n'
+                        f'</tr>'
+                    )
+                    grid_rows.append(_DIVIDER_HTML)
+                else:
+                    pending_left = card
             else:
-                right = "&nbsp;"
+                # Second card in the pair — complete the row.
+                grid_rows.append(
+                    f'<tr>\n'
+                    f'  <td style="width:50%;padding:4px;vertical-align:top;">{pending_left}</td>\n'
+                    f'  <td style="width:50%;padding:4px;vertical-align:top;">{card}</td>\n'
+                    f'</tr>'
+                )
+                pending_left = None
+                if _needs_divider(row):
+                    grid_rows.append(_DIVIDER_HTML)
+
+        # Flush any unpaired left card.
+        if pending_left is not None:
             grid_rows.append(
                 f'<tr>\n'
-                f'  <td style="width:50%;padding:4px;vertical-align:top;">{left}</td>\n'
-                f'  <td style="width:50%;padding:4px;vertical-align:top;">{right}</td>\n'
+                f'  <td style="width:50%;padding:4px;vertical-align:top;">{pending_left}</td>\n'
+                f'  <td style="width:50%;padding:4px;vertical-align:top;">&nbsp;</td>\n'
                 f'</tr>'
             )
 

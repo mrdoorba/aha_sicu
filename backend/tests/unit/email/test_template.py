@@ -519,6 +519,76 @@ class TestBenchmarkVisibility:
         assert "Benchmark:" not in html
 
 
+class TestCategoryDividers:
+    """Divider lines appear between metric sub-groups matching the dashboard."""
+
+    def _make_eval_data(self, rows: list[dict]) -> dict:
+        """Build minimal evaluation_data dict matching EvaluationDetailResponse shape."""
+        return {
+            "id": 1,
+            "brand_id": 1,
+            "brand_name": "Test",
+            "final_score": 50.0,
+            "verdict": "✔️",
+            "template": "non_fashion",
+            "score_breakdown": [
+                {
+                    "category": "Bisnis Analisis",
+                    "score": 5,
+                    "max_score": 10,
+                    "rows": rows,
+                }
+            ],
+            "calculator_results": {},
+            "period": "Jan 2026",
+        }
+
+    def _row(self, metric: str) -> dict:
+        return {
+            "metric": metric,
+            "value": 100,
+            "benchmark": "-",
+            "verdict": "✔️",
+            "message": "",
+            "score": 5,
+        }
+
+    def test_divider_after_rata_penjualan(self) -> None:
+        data = self._make_eval_data([
+            self._row("Penjualan Bulan Feb 2026"),
+            self._row("Rata² Penjualan 6 bulan terakhir"),
+            self._row("Tingkat Konversi"),
+        ])
+        html = _render_full(data)
+        assert "border-top:1px solid #325FEC4D" in html
+
+    def test_divider_after_program_afiliasi(self) -> None:
+        data = self._make_eval_data([
+            self._row("Program Afiliasi"),
+            self._row("% Penggunaan alat promosi"),
+        ])
+        html = _render_full(data)
+        assert "border-top:1px solid #325FEC4D" in html
+
+    def test_divider_after_roi(self) -> None:
+        data = self._make_eval_data([
+            self._row("Penjualan (iklan)"),
+            self._row("Biaya (iklan)"),
+            self._row("ROI"),
+            self._row("% GMV Iklan / GMV Toko"),
+        ])
+        html = _render_full(data)
+        assert "border-top:1px solid #325FEC4D" in html
+
+    def test_no_divider_for_normal_metrics(self) -> None:
+        data = self._make_eval_data([
+            self._row("Penjualan Bulan Feb 2026"),
+            self._row("Penjualan Bulan Jan 2026"),
+        ])
+        html = _render_full(data)
+        assert "border-top:1px solid #325FEC4D" not in html
+
+
 class TestScoreBreakdown:
     """Score breakdown section tests."""
 
