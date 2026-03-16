@@ -488,8 +488,8 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any
     # Language-variant thresholds:
     #   Indonesian: Cost > 100000, fallback ROAS cap min(round(AM10*2), 5)
     #   English:    Cost > 50000,  fallback ROAS cap min(round(AM10*2), 4)
-    min_cost = 50000 if language == "en" else 100000
-    fallback_roas_cap_limit = 4 if language == "en" else 5
+    min_cost = 100000
+    fallback_roas_cap_limit = 5
 
     bottom_primary = sorted(
         [
@@ -559,7 +559,7 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any
     # --- AL6-AL9: Bottom Flags (substring checks on AL5 text) ---
     # AL6: Indonesian checks "Otomatis", English checks "Bidding Otomatis"
     al6 = ""
-    al6_substring = "Bidding Otomatis" if language == "en" else "Otomatis"
+    al6_substring = "Otomatis"
     if al5.count(al6_substring) >= 1:
         al6 = (
             "📌 Terdapat iklan dengan pengaturan otomatis yang tidak "

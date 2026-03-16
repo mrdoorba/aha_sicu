@@ -47,6 +47,11 @@ _VALUE_MAPS: dict[str, dict[str, str]] = {
         "Search": "Halaman Pencarian",
         "Recommendation": "Halaman Rekomendasi",
     },
+    "Mode Bidding": {
+        "Auto Bidding": "Bidding Otomatis",
+        "Manual Bidding": "Bidding Manual",
+        "GMV Max Custom ROAS": "GMV Max ROAS",
+    },
 }
 
 
