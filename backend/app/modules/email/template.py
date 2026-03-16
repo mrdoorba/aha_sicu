@@ -6,6 +6,10 @@ All images referenced via full src URI (cid: for send, data: for preview).
 
 from __future__ import annotations
 
+import json
+import re
+from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 # ---------------------------------------------------------------------------
@@ -174,6 +178,49 @@ def _get_strings(language: str = "id") -> dict[str, str]:
 def _get_category_map(language: str = "id") -> dict[str, str]:
     """Get category label map for the given language, falling back to Indonesian."""
     return CATEGORY_MAP.get(language, CATEGORY_MAP["id"])
+
+
+# ---------------------------------------------------------------------------
+# i18n — metric name translation (shared locale files with frontend)
+# ---------------------------------------------------------------------------
+
+# Local dev: resolve relative to source tree.  Docker: /app/locales mount.
+_LOCALES_CANDIDATES = [
+    Path(__file__).resolve().parent.parent.parent.parent.parent / "frontend" / "src" / "locales",
+    Path("/app/locales"),
+]
+_LOCALES_DIR = next((p for p in _LOCALES_CANDIDATES if p.is_dir()), _LOCALES_CANDIDATES[0])
+
+
+@lru_cache(maxsize=4)
+def _load_locale(lang: str) -> dict[str, str]:
+    """Load a frontend locale JSON, returning a flat key→value dict."""
+    path = _LOCALES_DIR / f"{lang}.json"
+    if path.is_file():
+        return json.loads(path.read_text(encoding="utf-8"))
+    return {}
+
+
+def _translate(key: str, vars_: dict[str, str] | None, lang: str) -> str | None:
+    """Resolve an i18n key with {{var}} interpolation, like the frontend's t()."""
+    locale = _load_locale(lang) or _load_locale("id")
+    template = locale.get(key)
+    if template is None:
+        return None
+    if vars_:
+        for var_name, var_value in vars_.items():
+            template = template.replace(f"{{{{{var_name}}}}}", str(var_value))
+    return template
+
+
+def _resolve_metric_name(row: dict[str, Any], lang: str) -> str:
+    """Get the display name for a metric row, using metric_i18n when available."""
+    i18n = row.get("metric_i18n")
+    if i18n and isinstance(i18n, dict) and i18n.get("key"):
+        translated = _translate(i18n["key"], i18n.get("vars"), lang)
+        if translated:
+            return translated
+    return row.get("metric", "")
 
 
 # ---------------------------------------------------------------------------
@@ -422,7 +469,7 @@ def _render_footer(footer_src: str) -> str:
 # ---------------------------------------------------------------------------
 
 
-def _render_metric_card(row: dict[str, Any], S: dict[str, str]) -> str:
+def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id") -> str:
     """Render a single metric card matching the dashboard CategoryMetricCard style.
 
     Layout:
@@ -434,12 +481,15 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str]) -> str:
     is_pass = row.get("verdict") == "\u2714\ufe0f"
     verdict_color = GREEN if is_pass else ORANGE
     message = _esc(row.get("message", ""))
-    metric_name = row.get("metric", "")
-    display_value = _format_display_value(metric_name, row.get("value"))
+    # Use original metric name for format logic (stable Indonesian keys)
+    raw_metric = row.get("metric", "")
+    # Resolve translated display name via metric_i18n
+    display_metric = _resolve_metric_name(row, lang)
+    display_value = _format_display_value(raw_metric, row.get("value"))
 
     # Match dashboard: override Biaya (iklan) benchmark to '-'
     benchmark = row.get("benchmark", "")
-    if metric_name == "Biaya (iklan)":
+    if raw_metric == "Biaya (iklan)":
         benchmark = "-"
     has_benchmark = bool(benchmark) and benchmark != "-"
     has_detail = has_benchmark or bool(message)
@@ -482,7 +532,7 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str]) -> str:
         <!-- Metric name + value -->
         <tr>
           <td style="font-size:13px;font-weight:600;color:{TEXT_DARK};padding-bottom:{10 if has_detail else 0}px;">
-            {_esc(metric_name)}
+            {_esc(display_metric)}
           </td>
           <td style="text-align:right;font-size:13px;font-weight:bold;color:{TEXT_SECONDARY};padding-bottom:{10 if has_detail else 0}px;white-space:nowrap;">
             {_esc(display_value)}
@@ -499,6 +549,7 @@ def _render_detailed_evaluation(
     categories: list[dict[str, Any]],
     S: dict[str, str],
     cat_map: dict[str, str],
+    lang: str = "id",
 ) -> str:
     """Render detailed evaluation section with all categories and metric cards."""
     if not categories:
@@ -522,9 +573,9 @@ def _render_detailed_evaluation(
         # Build 2-column grid of metric cards
         grid_rows: list[str] = []
         for i in range(0, len(rows), 2):
-            left = _render_metric_card(rows[i], S)
+            left = _render_metric_card(rows[i], S, lang)
             if i + 1 < len(rows):
-                right = _render_metric_card(rows[i + 1], S)
+                right = _render_metric_card(rows[i + 1], S, lang)
             else:
                 right = "&nbsp;"
             grid_rows.append(
@@ -1029,7 +1080,7 @@ def render_email_html(
     header = _render_header(header_src, brand_name, period, S)
     note_section = _render_note(note) if note else ""
     score_overview = _render_score_overview(categories, S)
-    detailed = _render_detailed_evaluation(categories, S, cat_map)
+    detailed = _render_detailed_evaluation(categories, S, cat_map, language)
     breakdown = _render_score_breakdown(chart_src, categories, S, cat_map)
     intelligence = _render_data_intelligence(calculator_results, S)
     kesimpulan = _render_kesimpulan(calculator_results, S)

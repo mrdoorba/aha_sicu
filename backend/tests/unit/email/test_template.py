@@ -10,6 +10,7 @@ from app.modules.email.template import (
     render_email_html,
     _compute_verdict_counts,
     _format_display_value,
+    _resolve_metric_name,
     _score_color,
 )
 
@@ -333,6 +334,30 @@ class TestDisplayValueFormatting:
 
     def test_string_value_passthrough(self) -> None:
         assert _format_display_value("Anything", "custom") == "custom"
+
+
+class TestMetricNameTranslation:
+    """_resolve_metric_name uses metric_i18n to translate metric names."""
+
+    def test_translates_ad_cost_to_biaya_iklan(self) -> None:
+        row = {"metric": "Biaya (iklan)", "metric_i18n": {"key": "scoring.adCost", "vars": {}}}
+        assert _resolve_metric_name(row, "id") == "Biaya Iklan"
+
+    def test_translates_ad_sales_to_penjualan_iklan(self) -> None:
+        row = {"metric": "Penjualan (iklan)", "metric_i18n": {"key": "scoring.adSales", "vars": {}}}
+        assert _resolve_metric_name(row, "id") == "Penjualan Iklan"
+
+    def test_interpolates_month_var(self) -> None:
+        row = {"metric": "Penjualan Bulan Feb 2026", "metric_i18n": {"key": "scoring.monthlySales", "vars": {"month": "Feb 2026"}}}
+        assert _resolve_metric_name(row, "id") == "Penjualan Bulan Feb 2026"
+
+    def test_falls_back_to_raw_metric_when_no_i18n(self) -> None:
+        row = {"metric": "Some Custom Metric", "metric_i18n": None}
+        assert _resolve_metric_name(row, "id") == "Some Custom Metric"
+
+    def test_falls_back_when_key_missing_from_locale(self) -> None:
+        row = {"metric": "Fallback Name", "metric_i18n": {"key": "nonexistent.key", "vars": {}}}
+        assert _resolve_metric_name(row, "id") == "Fallback Name"
 
 
 class TestStringsAndCategoryMap:

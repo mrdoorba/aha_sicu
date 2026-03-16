@@ -78,6 +78,7 @@ services:
       CLOUD_RUN_URL: ""
     volumes:
       - ./backend/app:/app/app
+      - ./frontend/src/locales:/app/locales:ro
       - local-uploads:/tmp/aha_sicu_uploads
     depends_on:
       postgres:
