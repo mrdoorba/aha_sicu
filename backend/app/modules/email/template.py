@@ -437,7 +437,7 @@ def _render_score_overview(
                        style="background-color:{PRIMARY_LIGHT};border:1px solid {PRIMARY_BLUE}30;border-radius:6px;">
                   <tr>
                     <td style="padding:8px 16px;font-size:13px;font-weight:bold;color:{PRIMARY_BLUE};letter-spacing:0.3px;">
-                      〰️ {S['performance_verdict']}
+                      ↗ {S['performance_verdict']}
                     </td>
                   </tr>
                 </table>
