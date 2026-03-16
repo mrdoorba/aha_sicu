@@ -392,6 +392,15 @@ class TestDetailedEvaluation:
         assert "Baik" in html
         assert "Perlu ditingkatkan" in html
 
+    def test_metric_card_no_score_line(self, evaluation_data: dict) -> None:
+        """Metric cards should NOT render a per-metric score line."""
+        html = _render_full(evaluation_data)
+        # The Indonesian label "Skor:" should not appear as a metric-card field.
+        # The word "Skor" may appear in section headers (e.g. "Ringkasan Skor"),
+        # so we check specifically for the pattern used in metric cards.
+        assert "Skor: <strong" not in html
+        assert "Score: <strong" not in html
+
     def test_two_column_grid(self, evaluation_data: dict) -> None:
         """Metric cards should be in a 2-column table grid."""
         html = _render_full(evaluation_data)

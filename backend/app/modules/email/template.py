@@ -465,11 +465,6 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str]) -> str:
           </td>
         </tr>
         <tr>
-          <td style="font-size:12px;color:{TEXT_SECONDARY};padding-bottom:4px;">
-            {S['score']}: <strong style="color:{verdict_color};">{row.get('score', 0)}</strong>
-          </td>
-        </tr>
-        <tr>
           <td style="font-size:11px;color:{TEXT_SECONDARY};font-style:italic;line-height:1.4;">
             {_esc(row.get('message', ''))}
           </td>
