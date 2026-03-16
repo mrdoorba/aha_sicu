@@ -94,6 +94,7 @@ infrastructure/GITHUB_ENVIRONMENT_VARS.md
 scripts/users-config.yaml
 
 # Local development
+backend/scripts/seed_data/
 docker-compose.override.yml
 *.local.yaml
 *.local.json
