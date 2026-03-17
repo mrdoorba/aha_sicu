@@ -21,25 +21,7 @@ Evaluation stores marketplace selection (ID or TH) chosen by user at evaluation 
 
 All revenue-related thresholds in scoring use marketplace-specific values
 
-### CSV-01 — Price parsing handles THB number format (`.` as decimal, `,` as thousands) without corruption
 
-- Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: S03
-- Notes: T01 creates shared _parse_price with marketplace-aware parsing. T02 wires marketplace from evaluation_inputs through calculator_service.
-
-Price parsing handles THB number format (`.` as decimal, `,` as thousands) without corruption
-
-### CSV-02 — Existing IDR parsing continues to work unchanged
-
-- Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: S03
-- Notes: Backward compat via default marketplace="ID" on all new params. All existing tests must pass unchanged.
-
-Existing IDR parsing continues to work unchanged
 
 ### RULES-01 — Rules page has marketplace tabs (IDR / THB) for admins/leaders
 
@@ -128,6 +110,26 @@ Scoring rules table supports marketplace dimension (IDR rules and THB rules coex
 - Validation: Migration 026 seeds TH row with six_month_avg_threshold=190,000 (100M IDR × 0.0019); PUT /api/v1/rules/default?marketplace=TH enables admin editing; verified by migration structure tests and API integration tests
 
 THB scoring rule thresholds seeded from IDR conversion (admin-editable after)
+
+### CSV-01 — Price parsing handles THB number format (`.` as decimal, `,` as thousands) without corruption
+
+- Status: validated
+- Class: core-capability
+- Source: inferred
+- Primary Slice: S03
+- Validation: 21 unit tests in test_price_parser.py prove THB format (comma thousands, dot decimal) parses correctly. 4 wiring tests prove marketplace flows from evaluation_inputs through calculator_service to calculate_discount and calculate_top_sku. REPL-verified: _parse_price("1,250.50", "TH") → 1250.5
+
+Price parsing handles THB number format (`.` as decimal, `,` as thousands) without corruption
+
+### CSV-02 — Existing IDR parsing continues to work unchanged
+
+- Status: validated
+- Class: core-capability
+- Source: inferred
+- Primary Slice: S03
+- Validation: 69 test_discount.py tests + 56 test_top_sku.py tests pass unchanged with default marketplace="ID". No existing caller modified. Backward compat confirmed by all 457 calculator tests passing.
+
+Existing IDR parsing continues to work unchanged
 
 ## Deferred
 

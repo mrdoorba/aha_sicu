@@ -25,7 +25,7 @@ Thai marketplace brands can be evaluated using THB-appropriate thresholds, with 
 - [ ] Rules page with marketplace tabs (IDR / THB) for admin/leader threshold management
 - [ ] Evaluation page marketplace selector to filter/display correct currency context
 - [ ] All revenue-related calculators respect marketplace-specific thresholds
-- [ ] CSV parser handles THB-formatted values from Shopee Thailand
+- [x] CSV parser handles THB-formatted values from Shopee Thailand
 - [ ] Currency formatting throughout UI (THB/IDR code prefix, proper decimal/grouping conventions)
 
 ### Out of Scope
@@ -64,5 +64,9 @@ Thai marketplace brands can be evaluated using THB-appropriate thresholds, with 
 | marketplace as keyword-only param, dict.get fallback | Prevents positional confusion; unknown marketplace → IDR | Implemented (D008) |
 | THB raw numbers, IDR /1M juta scaling in conclusions | THB values are 3 OOM smaller; juta scaling is unreadable for THB | Implemented (D009) |
 
+| Centralized price parsing in price_parser.py | DRY — replaces duplicate _clean_price; single extension point | Implemented (D011) |
+| Read marketplace from evaluation_inputs in calculator_service | eval_inputs has marketplace column; brand_vp_data does not | Implemented (D012) |
+| Calculator marketplace param is keyword-only with default "ID" | No positional confusion; full backward compatibility | Implemented (D013) |
+
 ---
-*Last updated: 2026-03-17 after S02 completion*
+*Last updated: 2026-03-17 after S03 completion*

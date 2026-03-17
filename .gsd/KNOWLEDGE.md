@@ -34,3 +34,7 @@ Git worktrees (`.gsd/worktrees/M001/`) are separate checkouts on their own branc
 ## S01 Wiring Test Assertion Style
 
 The service.py `generate_score` function passes `marketplace` as a **positional** arg (not keyword) to `get_rules_by_template_and_marketplace`. Mock `assert_called_once_with` must match the calling convention exactly — `(conn, "default", "TH")` not `(conn, "default", marketplace="TH")`.
+
+## Price Parsing Architecture (S03)
+
+Price parsing is centralized in `app/calculators/price_parser.py`. The `_parse_price(value, marketplace="ID")` function is the single entry point — do NOT create per-calculator parsing functions. Both `calculate_discount` and `calculate_top_sku` accept `marketplace` as a keyword-only parameter and pass it through to `_parse_price`. The `calculator_service.py` reads marketplace from `evaluation_inputs` (not `brand_vp_data`).
