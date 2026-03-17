@@ -143,3 +143,11 @@ Thread a `marketplace: str = "ID"` parameter through the entire pure scoring cal
 - `backend/app/calculators/scoring/_calculator.py` — `calculate_score` accepts `marketplace`, passes to 5 sub-functions
 - `backend/app/modules/evaluations/service.py` — `marketplace=marketplace` added to `calculate_score()` call
 - `backend/app/db/migrations/versions/027_update_message_templates_currency_placeholder.py` — migration patching 4 message templates from `IDR` to `{currency}`
+
+## Observability Impact
+
+- **New signal:** `calculate_score(marketplace='TH')` produces `ScoringResult` where `category_scores[*].rows[*].message` contains `THB` instead of `IDR`. Inspectable at runtime by checking the scoring result JSON.
+- **Template placeholder visibility:** If the `{currency}` kwarg is ever missing from `_format_message_template`, `_SafeDict` renders it literally as `{currency}` in the output — visually obvious, non-crashing.
+- **Migration drift detection:** `TestMigrationTemplatesDrift` replays migrations 012→019→020→021→027 and compares against `DEFAULT_RULES`. Any DB↔code divergence fails this test.
+- **Standalone formatting check:** `_fmt_currency(value, marketplace)` can be called directly to verify number formatting. Unknown marketplaces fall back to IDR formatting via `_fmt_idr`.
+- **Failure state:** An unknown marketplace code (e.g., `'XX'`) gracefully defaults to `'IDR'` currency throughout all sub-functions via `MARKETPLACE_CURRENCY.get(marketplace, "IDR")`.

@@ -30,6 +30,7 @@
 - `backend/.venv/bin/python -m pytest backend/tests/unit/test_generate_score_marketplace.py -x` — marketplace wiring tests pass
 - `backend/.venv/bin/python -m pytest backend/tests/ -x --timeout=60` — full test suite passes
 - New tests assert: THB business messages contain `"THB"` not `"IDR"`, THB competition messages contain `"THB"` not `"IDR"`, THB competition benchmark contains `"THB"`, THB conclusion text does NOT contain `juta`, ID marketplace output unchanged from current behavior
+- Failure-path diagnostic: calling `calculate_score(marketplace='XX')` (unknown marketplace) uses IDR fallback via `MARKETPLACE_CURRENCY.get(marketplace, "IDR")` — verified by test that unknown marketplace defaults to IDR output
 
 ## Observability / Diagnostics
 
@@ -45,7 +46,7 @@
 
 ## Tasks
 
-- [ ] **T01: Thread marketplace through scoring engine and create migration 027** `est:45m`
+- [x] **T01: Thread marketplace through scoring engine and create migration 027** `est:45m`
   - Why: All 10 IDR-hardcoded locations must be updated atomically — the formatting helper, message templates, benchmark string, conclusion scaling, and function signatures must change together to avoid broken intermediate states. Migration 027 keeps DB templates in sync.
   - Files: `backend/app/calculators/scoring/helpers.py`, `backend/app/calculators/scoring/_calculator.py`, `backend/app/calculators/scoring/messages.py`, `backend/app/calculators/scoring/categories.py`, `backend/app/calculators/scoring/computations.py`, `backend/app/calculators/scoring/rules.py`, `backend/app/modules/evaluations/service.py`, `backend/app/db/migrations/versions/027_update_message_templates_currency_placeholder.py`
   - Do: (1) Add `_fmt_currency(value, marketplace)` to helpers.py — returns comma-formatted number (same as `_fmt_idr`), keeping `_fmt_idr` as backward compat. (2) Update 4 DEFAULT_RULES templates in rules.py: replace `IDR {idr_val}` → `{currency} {idr_val}`, `IDR {idr_avg}` → `{currency} {idr_avg}`, `IDR {selling_price}` → `{currency} {selling_price}`, `IDR {market_price}` → `{currency} {market_price}`. (3) Update 4 inline default templates in messages.py to match. (4) Add `marketplace` param to `_generate_business_messages`, `_generate_competition_messages`; pass `currency=currency_code` to all `_format_message_template` calls that format currency values; replace `_fmt_idr` with `_fmt_currency` in those functions. (5) Add `marketplace` param to `_score_competition` in categories.py; replace `f"IDR {_fmt_idr(market_price)}"` with `f"{currency_code} {_fmt_currency(market_price, marketplace)}"`. (6) Add `marketplace` param to `_compute_g66` and `_compute_g66_i18n` in computations.py; for THB, use raw number formatting instead of `/ 1_000_000` with `juta`. (7) Add `marketplace: str = "ID"` to `calculate_score()` signature; pass it to `_score_competition`, `_generate_business_messages`, `_generate_competition_messages`, `_compute_g66`, `_compute_g66_i18n`. (8) Pass `marketplace=marketplace` in `generate_score()` call to `calculate_score()` in service.py. (9) Create migration 027 that patches all scoring_rules rows' message templates to replace `IDR` with `{currency}` in the 4 affected template strings.
