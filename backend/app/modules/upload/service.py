@@ -6,6 +6,8 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
+import polars as pl
+
 from app.calculators.engine import clear_dependent_results, run_calculators_for_upload
 from app.core.exceptions import AppException, UploadException
 from app.db.connection import db
@@ -69,6 +71,13 @@ def _parse_file(
         df, was_thai = _normalise_thai_columns(df)
         if was_thai:
             source_language = "th"
+
+    # Drop blank rows in mass_update files (trailing empties from Excel)
+    if file_type == "mass_update" and "Kode Produk" in df.columns:
+        df = df.filter(
+            pl.col("Kode Produk").is_not_null()
+            & (pl.col("Kode Produk").cast(pl.Utf8) != "")
+        )
 
     return df, source_language
 
