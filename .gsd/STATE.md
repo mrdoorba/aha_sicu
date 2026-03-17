@@ -20,6 +20,7 @@
 |---|---|---|---|---|
 | 1 | Localize Shopee Seller Centre links by marketplace (co.id ↔ co.th) | 2026-03-17 | 7c2ede2 | [1-in-the-evaluation-page-there-is-a-link-l](./quick/1-in-the-evaluation-page-there-is-a-link-l/) |
 | 2 | Accept comma-separated numbers in count fields (e.g. 18,219 → 18219) | 2026-03-17 | 4e6a003 | [2-in-teh-evaluation-page-field-tinjauan-pe](./quick/2-in-teh-evaluation-page-field-tinjauan-pe/) |
+| 3 | Thai order export header mapping + synthetic Jumlah Produk di Pesan column | 2026-03-17 | 0e676d2 | [3-here-are-the-mapping-for-thailand-header](./quick/3-here-are-the-mapping-for-thailand-header/) |
 
 ## Next Action
 All milestones complete.
