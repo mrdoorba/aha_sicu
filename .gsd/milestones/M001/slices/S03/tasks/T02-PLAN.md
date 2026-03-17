@@ -87,3 +87,10 @@ Wire the runtime path so that `run_discount_calculator` and `run_top_sku_calcula
 
 - `backend/app/modules/evaluations/calculator_service.py` — both `run_discount_calculator` and `run_top_sku_calculator` read marketplace from eval_inputs and pass to calculator functions
 - `backend/tests/unit/calculators/test_calculator_service_marketplace.py` — 4+ tests proving marketplace flows through both calculator paths
+
+## Observability Impact
+
+- **Signal change:** `calculate_discount` and `calculate_top_sku` now receive a `marketplace` parameter at runtime, controlling price parsing behavior. Previously they always used IDR parsing.
+- **Inspection:** To verify marketplace is flowing correctly, mock or log the `calculate_discount` / `calculate_top_sku` calls and check that `marketplace` kwarg matches the brand's `evaluation_inputs.marketplace` value.
+- **Failure shape:** If `evaluation_inputs` is None or missing for a brand, marketplace silently defaults to `"ID"` — no error raised. Thai brands with missing eval_inputs will parse prices as IDR (dots-as-thousands), producing inflated or zero values in calculator output.
+- **Diagnostic:** Run `await eval_queries.get_evaluation_inputs(conn, brand_id)` in a REPL to check if marketplace is set for a given brand. Compare calculator output values against raw CSV prices to detect parsing mismatches.
