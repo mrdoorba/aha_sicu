@@ -38,14 +38,14 @@
 
 ## Tasks
 
-- [x] **T01: Add marketplace to evaluation detail API response** `est:20m`
+- [x] **T01: Add marketplace to evaluation detail API response** `est:20m` `actual:10m`
   - Why: Frontend needs `marketplace` to determine currency code for formatting. The column already exists on the `evaluations` table (M001 migration 026) but isn't selected in the detail query. Satisfies R018.
   - Files: `backend/app/db/queries/evaluations.py`, `backend/app/modules/evaluations/schemas.py`, `backend/app/modules/evaluations/service.py`
   - Do: Add `e.marketplace` to the SELECT list in `get_evaluation_by_id`. Add `marketplace: str` to `EvaluationDetailRow` TypedDict. Add `marketplace: str = "ID"` to `EvaluationDetailResponse` schema. Pass `marketplace=row.get("marketplace", "ID")` in the service constructor call.
   - Verify: `cd /Users/mac/HT/Project/aha_sicu/.gsd/worktrees/M002 && PYTHONPATH=backend /Users/mac/HT/Project/aha_sicu/backend/.venv/bin/python -c "from app.db.queries.evaluations import EvaluationDetailRow; print('marketplace' in EvaluationDetailRow.__annotations__)"` prints `True`. Existing evaluation detail tests pass.
   - Done when: `EvaluationDetailRow` has `marketplace` field, SQL query selects it, schema exposes it with default `"ID"`, and no backend test regressions.
 
-- [x] **T02: Add _i18n fields to TS types and translate category names in ScoreBreakdownTable** `est:40m`
+- [x] **T02: Add _i18n fields to TS types and translate category names in ScoreBreakdownTable** `est:40m` `actual:15m`
   - Why: Core i18n rendering for the evaluation detail page. Adds type declarations (R021), translates category names (R014), and verifies pre-i18n fallback (R019). Skill: load `frontend-design` for UI component patterns.
   - Files: `frontend/src/hooks/useScoring.ts`, `frontend/src/pages/EvaluationDetailPage.tsx`, `frontend/src/pages/EvaluationDetailPage.test.tsx`
   - Do: (1) Add `_i18n` optional fields to `RowScore` and `CategoryScore` in `useScoring.ts` — `metric_i18n`, `value_i18n`, `message_i18n`, `benchmark_i18n` on `RowScore`; `category_i18n` on `CategoryScore`. `TranslatableText` is already imported. (2) In `EvaluationDetailPage.tsx`, import `CATEGORY_MAP` from `../../lib/categoryMap` and `useTranslation`. Update `ScoreBreakdownTable` to look up category via `CATEGORY_MAP.find(m => m.backend === String(cat.category))` and render `t(mapped.labelKey)` when found, raw `String(cat.category)` when not. (3) Add test with Indonesian category names (`Kesehatan Operasional Toko`) verifying English translation appears. Add test with unknown category names verifying raw fallback. Existing tests use English mock names that won't match CATEGORY_MAP — they should pass unchanged via fallback.
