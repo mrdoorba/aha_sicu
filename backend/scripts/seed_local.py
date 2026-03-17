@@ -172,6 +172,23 @@ async def apply_role_overrides(conn: asyncpg.Connection) -> None:
             print(f"  Role override: {email} → {role}")
 
 
+# Local dev test brands — inserted after every seed so they survive rebuilds
+LOCAL_TEST_BRANDS = [
+    (328994, "Kisubo Thailand", '{"Nama Brand": "Kisubo Thailand", "Kategori": "Mom & Baby", "marketplace": "TH"}'),
+]
+
+
+async def ensure_test_brands(conn: asyncpg.Connection) -> None:
+    """Insert local test brands that aren't in the prod dump."""
+    for brand_id, name, raw in LOCAL_TEST_BRANDS:
+        await conn.execute(
+            "INSERT INTO brand_vp_data (id, brand_name, raw_data) "
+            "VALUES ($1, $2, $3::jsonb) ON CONFLICT (id) DO NOTHING",
+            brand_id, name, raw,
+        )
+    print(f"  Ensured {len(LOCAL_TEST_BRANDS)} test brand(s)")
+
+
 async def seed() -> None:
     conn = await asyncpg.connect(DATABASE_URL)
     try:
@@ -183,6 +200,9 @@ async def seed() -> None:
 
         # Always apply role overrides for local dev users
         await apply_role_overrides(conn)
+
+        # Always ensure test brands exist
+        await ensure_test_brands(conn)
     finally:
         await conn.close()
 
