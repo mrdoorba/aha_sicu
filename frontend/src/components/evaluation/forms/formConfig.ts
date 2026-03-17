@@ -34,7 +34,10 @@ export {
 } from './fields';
 export {
   computeSectionProgress,
+  formatCurrency,
   formatIDR,
   generateMonthLabels,
+  getCurrencyCode,
+  parseCurrency,
   parseIDR,
 } from './formUtils';

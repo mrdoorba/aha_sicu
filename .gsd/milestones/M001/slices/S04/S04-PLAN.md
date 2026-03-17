@@ -43,7 +43,7 @@
 
 ## Tasks
 
-- [ ] **T01: Add shared currency utilities and extend CurrencyField** `est:30m`
+- [x] **T01: Add shared currency utilities and extend CurrencyField** `est:30m`
   - Why: Every downstream task needs `formatCurrency`/`parseCurrency` and a currency-aware `CurrencyField`. This is the foundation layer.
   - Files: `frontend/src/components/evaluation/forms/formUtils.ts`, `frontend/src/components/evaluation/forms/formConfig.ts`, `frontend/src/components/evaluation/forms/CurrencyField.tsx`, `frontend/src/components/evaluation/forms/CurrencyField.test.tsx`, `frontend/src/components/evaluation/forms/formUtils.test.ts`
   - Do: (1) Add `formatCurrency(value, marketplace)` and `parseCurrency(formatted, marketplace)` to `formUtils.ts` — both delegate to the same `Intl.NumberFormat` logic; marketplace only determines the currency code label. (2) Keep `formatIDR`/`parseIDR` as deprecated re-exports. (3) Add `currency?: 'IDR' | 'THB'` prop to `CurrencyField` (default `'IDR'`) — change hardcoded `(IDR)` label to dynamic `({currency})`, replace `formatIDR`/`parseIDR` with `formatCurrency`/`parseCurrency`. (4) Add `currency` to barrel exports in `formConfig.ts`. (5) Create `formUtils.test.ts` with tests for both formatters. (6) Add THB variant test to `CurrencyField.test.tsx` + unknown currency fallback test.

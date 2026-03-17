@@ -77,3 +77,10 @@ Both IDR and THB use identical number formatting (comma-separated thousands via 
 - `frontend/src/components/evaluation/forms/formConfig.ts` — gains `formatCurrency`, `parseCurrency`, `getCurrencyCode` exports
 - `frontend/src/components/evaluation/forms/CurrencyField.tsx` — gains `currency` prop, uses `formatCurrency`/`parseCurrency`
 - `frontend/src/components/evaluation/forms/CurrencyField.test.tsx` — gains 2 new tests (THB variant, unknown currency fallback)
+
+## Observability Impact
+
+- **Signals changed**: `CurrencyField` now renders a dynamic `(currency)` label instead of hardcoded `(IDR)`. Inspect via React DevTools: the `currency` prop is visible on any `CurrencyField` instance. If omitted, defaults to `'IDR'` — existing behavior preserved.
+- **Inspection surface**: `getCurrencyCode(marketplace)` is a pure function — test coverage is the primary inspection surface. Run `npx vitest run src/components/evaluation/forms/formUtils.test.ts` to verify mapping correctness.
+- **Failure visibility**: If a downstream task passes an invalid marketplace code to `getCurrencyCode`, it returns the code uppercased (graceful fallback, not a crash). The `CurrencyField` renders whatever currency string it receives — visually obvious if wrong (e.g. `(XX)` instead of `(THB)`). No silent failures.
+- **Deprecation tracking**: `formatIDR`/`parseIDR` are marked `@deprecated` in JSDoc. IDE tooling surfaces deprecation warnings at call sites. Grep for remaining usage: `grep -rn "formatIDR\|parseIDR" frontend/src --include="*.ts" --include="*.tsx" | grep -v test | grep -v "deprecated"`.
