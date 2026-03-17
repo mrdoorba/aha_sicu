@@ -687,6 +687,11 @@ interface paths {
   };
   '/api/v1/rules': {
     get: {
+      parameters: {
+        query?: {
+          marketplace?: string;
+        };
+      };
       responses: {
         200: {
           content: {
@@ -708,6 +713,9 @@ interface paths {
       parameters: {
         path: {
           template: 'fashion' | 'non_fashion' | 'default';
+        };
+        query?: {
+          marketplace?: string;
         };
       };
       requestBody: {

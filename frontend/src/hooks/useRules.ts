@@ -105,11 +105,13 @@ export interface ScoringRule {
   updated_at: string;
 }
 
-export function useRules() {
+export function useRules(marketplace?: string) {
   const query = useQuery<ScoringRule[]>({
-    queryKey: ['rules'],
+    queryKey: ['rules', marketplace ?? 'ID'],
     queryFn: async () => {
-      const { data, error } = await client.GET('/api/v1/rules');
+      const { data, error } = await client.GET('/api/v1/rules', {
+        params: { query: { marketplace } },
+      });
       if (error) throw new Error('Failed to fetch scoring rules');
       return data.map(toScoringRule);
     },

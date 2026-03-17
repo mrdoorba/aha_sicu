@@ -50,7 +50,7 @@
   - Verify: `cd frontend && npx vitest run src/components/evaluation/forms/ --reporter=verbose`
   - Done when: All CurrencyField tests pass including THB variant, formUtils tests pass for both marketplaces, and `CurrencyField` renders `(THB)` when `currency="THB"` is passed.
 
-- [ ] **T02: Add marketplace tabs to Rules page** `est:45m`
+- [x] **T02: Add marketplace tabs to Rules page** `est:45m`
   - Why: Admins need to view and edit THB thresholds independently from IDR. Covers requirements RULES-01 and RULES-02.
   - Files: `frontend/src/services/apiClient.ts`, `frontend/src/hooks/useRules.ts`, `frontend/src/hooks/useUpdateRule.ts`, `frontend/src/pages/RulesPage.tsx`, `frontend/src/components/rules/RulesPage.test.tsx`
   - Do: (1) Update `apiClient.ts` — add `query?: { marketplace?: string }` to `GET /api/v1/rules` and `PUT /api/v1/rules/{template}`. (2) Add `marketplace` param to `useRules` hook — include in queryKey `['rules', marketplace]` and pass as query param. (3) Add `marketplace` param to `useUpdateRule` — append `?marketplace=TH` to PUT URL when marketplace is not 'ID'. (4) Add marketplace tab state to `RulesPage` using existing shadcn `Tabs`/`TabsList`/`TabsTrigger` — tabs labeled "🇮🇩 Indonesia (IDR)" and "🇹🇭 Thailand (THB)", default to "ID". Pass marketplace to `useRules` and `useUpdateRule`. (5) Add marketplace tab test to `RulesPage.test.tsx`.

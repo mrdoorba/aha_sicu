@@ -15,7 +15,7 @@ const mockUseCurrentUser = vi.fn();
 const mockUpdateRuleMutateAsync = vi.fn();
 
 vi.mock('../../hooks/useRules', () => ({
-  useRules: () => mockUseRules(),
+  useRules: (marketplace?: string) => mockUseRules(marketplace),
 }));
 
 vi.mock('../../hooks/useUpdateRule', () => ({
@@ -292,6 +292,81 @@ describe('RulesPage', () => {
 
     await userEvent.click(retryButton);
     expect(mockRefetch).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe('Marketplace tabs', () => {
+  it('renders Indonesia and Thailand tab triggers', () => {
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    expect(screen.getByRole('tab', { name: /indonesia/i })).toBeInTheDocument();
+    expect(screen.getByRole('tab', { name: /thailand/i })).toBeInTheDocument();
+  });
+
+  it('defaults to ID marketplace and calls useRules with ID', () => {
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Default marketplace is ID
+    expect(mockUseRules).toHaveBeenCalledWith('ID');
+  });
+
+  it('switches to TH marketplace when Thailand tab is clicked', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Click Thailand tab
+    await user.click(screen.getByRole('tab', { name: /thailand/i }));
+
+    // useRules should be called with 'TH'
+    expect(mockUseRules).toHaveBeenCalledWith('TH');
+  });
+
+  it('cancels edit mode when marketplace tab changes', async () => {
+    const user = userEvent.setup();
+    mockUseRules.mockReturnValue({
+      rules: SAMPLE_RULES,
+      isLoading: false,
+      isError: false,
+      error: null,
+      refetch: vi.fn(),
+    });
+
+    renderRulesPage();
+
+    // Enter edit mode
+    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
+    expect(screen.getByRole('button', { name: /batal/i })).toBeInTheDocument();
+
+    // Switch marketplace
+    await user.click(screen.getByRole('tab', { name: /thailand/i }));
+
+    // Should exit edit mode — Edit Rules button should reappear
+    expect(screen.getByRole('button', { name: /edit aturan/i })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: /batal/i })).not.toBeInTheDocument();
   });
 });
 

@@ -91,3 +91,10 @@ The backend already fully supports `GET /api/v1/rules?marketplace=TH` and `PUT /
 - `frontend/src/hooks/useUpdateRule.ts` — accepts marketplace in params, passes as query param
 - `frontend/src/pages/RulesPage.tsx` — renders marketplace tabs, manages marketplace state, threads to hooks
 - `frontend/src/components/rules/RulesPage.test.tsx` — gains marketplace tab switching test
+
+## Observability Impact
+
+- **React Query cache keys**: `queryKey` changes from `['rules']` to `['rules', marketplace]`. Stale cross-marketplace data is now impossible — inspect via React Query devtools to see separate cache entries per marketplace.
+- **Network requests**: `GET /api/v1/rules` now includes `?marketplace=TH` query param when Thailand tab is active. `PUT /api/v1/rules/{template}` also includes `?marketplace=TH`. Verify in browser Network tab that the param is present.
+- **Tab state inspection**: The active marketplace tab is visible in the UI (`🇮🇩 Indonesia (IDR)` / `🇹🇭 Thailand (THB)`). React DevTools shows `marketplace` state on the `RulesPage` component.
+- **Failure visibility**: If marketplace is not passed on PUT, THB rules would silently overwrite IDR rules (backend defaults to ID). Detectable by inspecting the PUT request URL in network tab for presence of `?marketplace=TH`. The `onSuccess` invalidation uses `queryKey: ['rules']` (prefix match) to refresh all marketplace variants after any edit.
