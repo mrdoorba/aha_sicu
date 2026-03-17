@@ -21,6 +21,7 @@
 - Backend: `cd /Users/mac/HT/Project/aha_sicu/.gsd/worktrees/M002 && PYTHONPATH=backend /Users/mac/HT/Project/aha_sicu/backend/.venv/bin/python -m pytest backend/tests/ -x -k "evaluation_detail" --no-header -q`
 - Frontend: `cd /Users/mac/HT/Project/aha_sicu/.gsd/worktrees/M002/frontend && npx vitest run src/pages/EvaluationDetailPage.test.tsx --no-color`
 - Full frontend regression: `cd /Users/mac/HT/Project/aha_sicu/.gsd/worktrees/M002/frontend && npx vitest run --no-color`
+- Diagnostic failure-path: `cd /Users/mac/HT/Project/aha_sicu/.gsd/worktrees/M002 && PYTHONPATH=backend /Users/mac/HT/Project/aha_sicu/backend/.venv/bin/python -c "from app.modules.evaluations.schemas import EvaluationDetailResponse; r = EvaluationDetailResponse(id=1, brand_id=1, brand_name='test', final_score=0.0, verdict='x', template='default', score_breakdown=[], calculator_results={}, manual_inputs={}, evaluator_email='a@b.c', created_at='2025-01-01T00:00:00', rule_version=1); assert r.marketplace == 'ID', f'Default marketplace wrong: {r.marketplace}'; print('OK: default marketplace fallback works')"` — verifies marketplace default fallback for pre-marketplace evaluations.
 
 ## Observability / Diagnostics
 
@@ -44,7 +45,7 @@
   - Verify: `cd /Users/mac/HT/Project/aha_sicu/.gsd/worktrees/M002 && PYTHONPATH=backend /Users/mac/HT/Project/aha_sicu/backend/.venv/bin/python -c "from app.db.queries.evaluations import EvaluationDetailRow; print('marketplace' in EvaluationDetailRow.__annotations__)"` prints `True`. Existing evaluation detail tests pass.
   - Done when: `EvaluationDetailRow` has `marketplace` field, SQL query selects it, schema exposes it with default `"ID"`, and no backend test regressions.
 
-- [ ] **T02: Add _i18n fields to TS types and translate category names in ScoreBreakdownTable** `est:40m`
+- [x] **T02: Add _i18n fields to TS types and translate category names in ScoreBreakdownTable** `est:40m`
   - Why: Core i18n rendering for the evaluation detail page. Adds type declarations (R021), translates category names (R014), and verifies pre-i18n fallback (R019). Skill: load `frontend-design` for UI component patterns.
   - Files: `frontend/src/hooks/useScoring.ts`, `frontend/src/pages/EvaluationDetailPage.tsx`, `frontend/src/pages/EvaluationDetailPage.test.tsx`
   - Do: (1) Add `_i18n` optional fields to `RowScore` and `CategoryScore` in `useScoring.ts` — `metric_i18n`, `value_i18n`, `message_i18n`, `benchmark_i18n` on `RowScore`; `category_i18n` on `CategoryScore`. `TranslatableText` is already imported. (2) In `EvaluationDetailPage.tsx`, import `CATEGORY_MAP` from `../../lib/categoryMap` and `useTranslation`. Update `ScoreBreakdownTable` to look up category via `CATEGORY_MAP.find(m => m.backend === String(cat.category))` and render `t(mapped.labelKey)` when found, raw `String(cat.category)` when not. (3) Add test with Indonesian category names (`Kesehatan Operasional Toko`) verifying English translation appears. Add test with unknown category names verifying raw fallback. Existing tests use English mock names that won't match CATEGORY_MAP — they should pass unchanged via fallback.

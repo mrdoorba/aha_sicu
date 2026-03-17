@@ -63,3 +63,10 @@ The dashboard components already translate category names and render i18n text �
 - `frontend/src/hooks/useScoring.ts` — `RowScore` and `CategoryScore` interfaces with explicit `_i18n` fields
 - `frontend/src/pages/EvaluationDetailPage.tsx` — `ScoreBreakdownTable` translates categories via `CATEGORY_MAP` + `t()` with fallback
 - `frontend/src/pages/EvaluationDetailPage.test.tsx` — 2 new tests (i18n translation, fallback) passing alongside existing tests
+
+## Observability Impact
+
+- **Category translation visibility:** When a category name from `CATEGORY_MAP` appears in the score breakdown, it renders the i18n-translated label instead of the raw Indonesian string. If translation is broken (missing locale key, wrong `CATEGORY_MAP` entry), the category renders as the raw backend string — visually distinguishable but not an error.
+- **Fallback inspection:** Categories NOT in `CATEGORY_MAP` pass through unchanged. A future agent can verify this by checking any evaluation whose `score_breakdown` contains non-standard category names — they should appear as-is in the rendered table.
+- **Type safety signal:** If a backend response includes `_i18n` fields that don't match the `TranslatableText` type shape, TypeScript compilation will fail — no runtime silent corruption.
+- **No new failure modes:** This change adds display-only translation with fallback. No API calls, no new error paths, no state mutations.
