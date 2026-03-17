@@ -56,8 +56,10 @@ Thai marketplace brands can be evaluated using THB-appropriate thresholds, with 
 |----------|-----------|---------|
 | Evaluation-level marketplace (not per-brand) | User knows which marketplace a brand belongs to; selects at evaluation time | — Pending |
 | Rules page marketplace tabs | Keeps all threshold management in one place; admins can compare IDR vs THB | — Pending |
-| Initial THB thresholds from IDR conversion | Provides reasonable starting values; admins can adjust manually after | — Pending |
+| Initial THB thresholds from IDR conversion | Provides reasonable starting values; admins can adjust manually after | Implemented (D002) |
 | User selects marketplace on evaluation page | Explicit selection prevents accidental cross-currency evaluation | — Pending |
+| VARCHAR(2) + CHECK constraint for marketplace | Matches existing pattern; compact; enforces at DB level | Implemented (D001) |
+| All functions default marketplace='ID' | Zero breaking changes for existing callers | Implemented (D004) |
 
 ---
-*Last updated: 2026-03-16 after initialization*
+*Last updated: 2026-03-17 after S01 completion*

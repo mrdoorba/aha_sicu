@@ -7,34 +7,18 @@
 - Status: active
 - Class: core-capability
 - Source: inferred
-- Primary Slice: none yet
+- Primary Slice: S01
+- Notes: Schema and query layer ready (marketplace column, upsert, insert all accept marketplace). Frontend integration pending (S04).
 
 Evaluation stores marketplace selection (ID or TH) chosen by user at evaluation time
-
-### DATA-02 — Scoring rules table supports marketplace dimension (IDR rules and THB rules coexist)
-
-- Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Scoring rules table supports marketplace dimension (IDR rules and THB rules coexist)
-
-### DATA-03 — THB scoring rule thresholds seeded from IDR conversion (admin-editable after)
-
-- Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-THB scoring rule thresholds seeded from IDR conversion (admin-editable after)
 
 ### SCORE-01 — `generate_score()` selects rules based on evaluation's marketplace
 
 - Status: active
 - Class: core-capability
 - Source: inferred
-- Primary Slice: none yet
+- Primary Slice: S01
+- Notes: Wiring complete — generate_score reads marketplace from eval_inputs and fetches correct rules row. Needs end-to-end verification with live THB data in S02.
 
 `generate_score()` selects rules based on evaluation's marketplace
 
@@ -89,6 +73,7 @@ Rules page has marketplace tabs (IDR / THB) for admins/leaders
 - Class: core-capability
 - Source: inferred
 - Primary Slice: none yet
+- Notes: Backend API ready (PUT /api/v1/rules/default?marketplace=TH). Frontend UI pending (S04).
 
 Admin can edit THB thresholds independently from IDR thresholds
 
@@ -120,6 +105,26 @@ Currency formatting shows code prefix (THB / IDR) based on selected marketplace
 Evaluation results display currency values in the correct format for the selected marketplace
 
 ## Validated
+
+### DATA-02 — Scoring rules table supports marketplace dimension (IDR rules and THB rules coexist)
+
+- Status: validated
+- Class: core-capability
+- Source: inferred
+- Primary Slice: S01
+- Validation: Migration 026 adds marketplace column with CHECK constraint; UNIQUE(template, marketplace) enables coexistence; query layer filters by marketplace; 40+ unit tests + 20 integration tests pass
+
+Scoring rules table supports marketplace dimension (IDR rules and THB rules coexist)
+
+### DATA-03 — THB scoring rule thresholds seeded from IDR conversion (admin-editable after)
+
+- Status: validated
+- Class: core-capability
+- Source: inferred
+- Primary Slice: S01
+- Validation: Migration 026 seeds TH row with six_month_avg_threshold=190,000 (100M IDR × 0.0019); PUT /api/v1/rules/default?marketplace=TH enables admin editing; verified by migration structure tests and API integration tests
+
+THB scoring rule thresholds seeded from IDR conversion (admin-editable after)
 
 ## Deferred
 

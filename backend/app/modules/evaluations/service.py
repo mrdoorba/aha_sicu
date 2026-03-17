@@ -336,7 +336,11 @@ async def generate_score(
     calc_rows = await calc_queries.get_results_by_brand(conn, brand_id)
 
     # Load scoring rules — always use the unified "default" template
-    rule_row = await rules_queries.get_rules_by_template(conn, "default")
+    # Read marketplace from eval_inputs to fetch the correct rules row
+    marketplace = (eval_inputs or {}).get("marketplace", "ID")
+    rule_row = await rules_queries.get_rules_by_template_and_marketplace(
+        conn, "default", marketplace=marketplace
+    )
 
     rules_jsonb = rule_row["rules"] if rule_row else None
     rule_version = rule_row["version"] if rule_row else 1
@@ -431,6 +435,7 @@ async def save_evaluation(
     email_output: str | None = None,
     evaluator_email: str = "",
     period: str = "",
+    marketplace: str = "ID",
 ) -> SaveEvaluationResponse:
     """Save a completed evaluation as a permanent, immutable record.
 
@@ -459,6 +464,7 @@ async def save_evaluation(
             rule_version=rule_version,
             email_output=email_output,
             period=period,
+            marketplace=marketplace,
         )
 
     # Fire-and-forget: sync brand to eval sheet
@@ -531,6 +537,7 @@ async def save_evaluation_inputs(
     last_edited_by: int,
     category_type: str | None,
     manual_data: dict[str, Any] | None,
+    marketplace: str = "ID",
 ) -> EvaluationStateResponse:
     """Upsert evaluation inputs for a brand (shared).
 
@@ -552,6 +559,7 @@ async def save_evaluation_inputs(
             last_edited_by=last_edited_by,
             category_type=category_type,
             manual_data=manual_data,
+            marketplace=marketplace,
         )
 
     return EvaluationStateResponse(

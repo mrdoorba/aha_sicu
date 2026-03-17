@@ -36,6 +36,7 @@ class EvaluationInputsUpdate(BaseModel):
 
     category_type: CategoryType | None = None
     manual_data: dict[str, Any] | None = None
+    marketplace: str = "ID"
 
 
 class CalculatorResultResponse(BaseModel):
@@ -303,6 +304,7 @@ class SaveEvaluationRequest(BaseModel):
     rule_version: int = 1
     email_output: str | None = None
     period: str = ""
+    marketplace: str = "ID"
 
 
 class SaveEvaluationResponse(BaseModel):

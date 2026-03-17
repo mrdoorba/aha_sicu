@@ -14,6 +14,7 @@ class EvaluationInputsRow(TypedDict):
     last_edited_by: int
     category_type: str | None
     manual_data: dict[str, Any] | None
+    marketplace: str
     created_at: datetime
     updated_at: datetime
 
@@ -85,7 +86,7 @@ async def get_evaluation_inputs(
         conn,
         """
         SELECT id, brand_id, last_edited_by, category_type, manual_data,
-               created_at, updated_at
+               marketplace, created_at, updated_at
         FROM evaluation_inputs
         WHERE brand_id = $1
         """,
@@ -99,6 +100,7 @@ async def upsert_evaluation_inputs(
     last_edited_by: int,
     category_type: str | None,
     manual_data: dict[str, Any] | None,
+    marketplace: str = "ID",
 ) -> EvaluationInputsRow:
     """Insert or update evaluation inputs for a brand (shared).
 
@@ -108,19 +110,21 @@ async def upsert_evaluation_inputs(
     return await fetch_one(
         conn,
         """
-        INSERT INTO evaluation_inputs (brand_id, last_edited_by, category_type, manual_data, updated_at)
-        VALUES ($1, $2, $3, $4, NOW())
+        INSERT INTO evaluation_inputs (brand_id, last_edited_by, category_type, manual_data, marketplace, updated_at)
+        VALUES ($1, $2, $3, $4, $5, NOW())
         ON CONFLICT (brand_id) DO UPDATE SET
             last_edited_by = EXCLUDED.last_edited_by,
             category_type = COALESCE(EXCLUDED.category_type, evaluation_inputs.category_type),
             manual_data = COALESCE(EXCLUDED.manual_data, evaluation_inputs.manual_data),
+            marketplace = EXCLUDED.marketplace,
             updated_at = NOW()
-        RETURNING id, brand_id, last_edited_by, category_type, manual_data, created_at, updated_at
+        RETURNING id, brand_id, last_edited_by, category_type, manual_data, marketplace, created_at, updated_at
         """,
         brand_id,
         last_edited_by,
         category_type,
         manual_data,
+        marketplace,
     )
 
 
@@ -137,6 +141,7 @@ async def insert_evaluation(
     rule_version: int = 1,
     email_output: str | None = None,
     period: str = "",
+    marketplace: str = "ID",
 ) -> InsertedEvaluationRow:
     """Insert a new evaluation record (immutable snapshot).
 
@@ -149,9 +154,9 @@ async def insert_evaluation(
         INSERT INTO evaluations (
             brand_id, user_id, template, final_score, verdict,
             score_breakdown, calculator_results, manual_inputs,
-            rule_version, email_output, period
+            rule_version, email_output, period, marketplace
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING id, brand_id, final_score, verdict, template, created_at, period
         """,
         brand_id,
@@ -165,6 +170,7 @@ async def insert_evaluation(
         rule_version,
         email_output,
         period,
+        marketplace,
     )
 
 

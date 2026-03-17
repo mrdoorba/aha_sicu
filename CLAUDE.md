@@ -74,6 +74,11 @@ Prioritize: simplicity, robustness, performance, correctness. Avoid over-enginee
 - Stay consistent with existing patterns unless they're clearly suboptimal — then improve and flag the change
 - Test files colocated with source (`*.test.tsx`)
 
+### Python Tooling
+
+- Use **`uv`** for all Python-related tasks: dependency management, virtual environments, running scripts, and installing packages
+- `uv run` to execute scripts, `uv add` / `uv remove` for dependencies, `uv sync` to install, `uv venv` for environments
+
 ### Infrastructure
 
 - Stay consistent with existing patterns unless they're clearly suboptimal — then improve and flag the change

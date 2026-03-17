@@ -30,6 +30,7 @@ class ScoringRuleResponse(BaseModel):
 
     id: int
     template: str
+    marketplace: str = "ID"
     rules: dict[str, Any]
     version: int
     updated_by: int | None = None
