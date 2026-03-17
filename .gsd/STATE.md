@@ -1,19 +1,18 @@
 # GSD State
 
-**Active Milestone:** M001: THB Marketplace Expansion
-**Active Slice:** S02: Scoring Engine Marketplace Awareness
-**Phase:** executing
-**Requirements Status:** 11 active · 2 validated · 0 deferred · 0 out of scope
+## Current Position
+- **Milestone:** M001
+- **Slice:** S03 (CSV THB Parsing)
+- **Task:** Planning complete, ready for T01 execution
+- **Status:** S03 planned with 2 tasks
 
-## Milestone Registry
-- 🔄 **M001:** THB Marketplace Expansion
+## What Just Happened
+S03 planned. Two tasks: T01 extracts shared _parse_price module and updates calculator signatures. T02 wires marketplace from evaluation_inputs through calculator_service. Research correction applied — marketplace comes from evaluation_inputs, not brand_vp_data (D010).
 
-## Recent Decisions
-- D005: Migration 027 patches DB templates from IDR to {currency} placeholder
-- D006: THB conclusion text uses raw comma-formatted numbers, IDR keeps juta scaling
+## Completed Slices
+- [x] S01: Data Model Foundation
+- [x] S02: Scoring Engine Marketplace Awareness
 
-## Blockers
-- None
-
-## Next Action
-Execute T01: Thread marketplace through scoring engine and create migration 027
+## Current Slice Tasks
+- [ ] T01: Extract shared _parse_price module and update calculator signatures (est: 45m)
+- [ ] T02: Wire marketplace from evaluation_inputs through calculator_service (est: 30m)

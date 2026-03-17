@@ -26,7 +26,8 @@ All revenue-related thresholds in scoring use marketplace-specific values
 - Status: active
 - Class: core-capability
 - Source: inferred
-- Primary Slice: none yet
+- Primary Slice: S03
+- Notes: T01 creates shared _parse_price with marketplace-aware parsing. T02 wires marketplace from evaluation_inputs through calculator_service.
 
 Price parsing handles THB number format (`.` as decimal, `,` as thousands) without corruption
 
@@ -35,7 +36,8 @@ Price parsing handles THB number format (`.` as decimal, `,` as thousands) witho
 - Status: active
 - Class: core-capability
 - Source: inferred
-- Primary Slice: none yet
+- Primary Slice: S03
+- Notes: Backward compat via default marketplace="ID" on all new params. All existing tests must pass unchanged.
 
 Existing IDR parsing continues to work unchanged
 
