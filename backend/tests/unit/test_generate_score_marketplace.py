@@ -84,7 +84,7 @@ async def test_generate_score_reads_marketplace_from_eval_inputs():
 
         # Verify rules query was called with marketplace='TH'
         mock_rq.get_rules_by_template_and_marketplace.assert_called_once_with(
-            conn, "default", "TH"
+            conn, "default", marketplace="TH"
         )
 
 
@@ -121,7 +121,7 @@ async def test_generate_score_defaults_marketplace_to_id():
 
         # Verify fallback to 'ID' marketplace
         mock_rq.get_rules_by_template_and_marketplace.assert_called_once_with(
-            conn, "default", "ID"
+            conn, "default", marketplace="ID"
         )
 
 

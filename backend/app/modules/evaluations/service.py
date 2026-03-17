@@ -339,7 +339,7 @@ async def generate_score(
     # Marketplace comes from eval_inputs — determines which rules row to use
     marketplace = (eval_inputs or {}).get("marketplace", "ID")
     rule_row = await rules_queries.get_rules_by_template_and_marketplace(
-        conn, "default", marketplace
+        conn, "default", marketplace=marketplace
     )
 
     rules_jsonb = rule_row["rules"] if rule_row else None
