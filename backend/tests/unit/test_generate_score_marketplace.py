@@ -45,7 +45,7 @@ async def test_generate_score_reads_marketplace_from_eval_inputs():
             pass
 
         mock_rules_q.get_rules_by_template_and_marketplace.assert_called_once_with(
-            mock_conn, "default", marketplace="TH"
+            mock_conn, "default", "TH"
         )
 
 
@@ -84,7 +84,65 @@ async def test_generate_score_defaults_marketplace_to_id_when_missing():
             pass
 
         mock_rules_q.get_rules_by_template_and_marketplace.assert_called_once_with(
-            mock_conn, "default", marketplace="ID"
+            mock_conn, "default", "ID"
+        )
+
+
+@pytest.mark.asyncio
+async def test_generate_score_passes_marketplace_to_calculate_score():
+    """generate_score passes the marketplace kwarg to calculate_score."""
+    from app.modules.evaluations.service import generate_score
+
+    mock_conn = AsyncMock()
+    mock_brand = {"id": 1, "brand_name": "TestBrand"}
+    mock_eval_inputs = {
+        "manual_data": {
+            "products": {"productCount": 10},
+            "business": {"salesMonth0": 100_000},
+            "operational": {},
+            "visitors": {},
+            "promoTools": {},
+            "ads": {},
+            "campaign": {},
+            "competition": {},
+        },
+        "marketplace": "TH",
+    }
+    mock_calc_rows: list = []
+    mock_rule_row = {
+        "rules": {"business": {}},
+        "version": 1,
+    }
+
+    with (
+        patch("app.modules.evaluations.service.brand_queries") as mock_brand_q,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eval_q,
+        patch("app.modules.evaluations.service.calc_queries") as mock_calc_q,
+        patch("app.modules.evaluations.service.rules_queries") as mock_rules_q,
+        patch("app.modules.evaluations.service.calculate_score") as mock_calc,
+    ):
+        mock_brand_q.get_brand_by_id = AsyncMock(return_value=mock_brand)
+        mock_eval_q.get_evaluation_inputs = AsyncMock(return_value=mock_eval_inputs)
+        mock_calc_q.get_results_by_brand = AsyncMock(return_value=mock_calc_rows)
+        mock_rules_q.get_rules_by_template_and_marketplace = AsyncMock(return_value=mock_rule_row)
+        # Let calculate_score raise so we can inspect the call without
+        # needing to mock the full response conversion downstream.
+        mock_calc.side_effect = Exception("stop after calculate_score call")
+
+        try:
+            await generate_score(
+                mock_conn, brand_id=1, user_id=1, template="fashion",
+                verdict="great", store_name="store", period="Jan",
+                brand_name="TestBrand",
+            )
+        except Exception:
+            pass
+
+        # Verify calculate_score was called with marketplace='TH'
+        mock_calc.assert_called_once()
+        call_kwargs = mock_calc.call_args.kwargs
+        assert call_kwargs.get("marketplace") == "TH", (
+            f"Expected marketplace='TH', got {call_kwargs.get('marketplace')}"
         )
 
 

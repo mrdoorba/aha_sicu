@@ -42,8 +42,8 @@ DEFAULT_RULES: dict = {
     "business": {
         "monthly_sales_trend": {
             "threshold_pct": 90.0, "points": 10, "comparison": "gte",
-            "message_pass": "✔️ Penjualan = IDR {idr_val} [Meningkat {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: IDR {idr_avg}]",
-            "message_fail": "❌ Penjualan = IDR {idr_val} [Menurun {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: IDR {idr_avg}]",
+            "message_pass": "✔️ Penjualan = {currency} {idr_val} [Meningkat {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: {currency} {idr_avg}]",
+            "message_fail": "❌ Penjualan = {currency} {idr_val} [Menurun {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: {currency} {idr_avg}]",
             "message_fail_severe": "\n❗️ Potensi peningkatan harga jual signifikan atau terdapat event abnormal.",
         },
         "six_month_avg_threshold": {"threshold": 100000000, "points": 10, "comparison": "gte"},
@@ -144,8 +144,8 @@ DEFAULT_RULES: dict = {
         "display_min": {"value": 0.10},
     },
     "competition": {
-        "message_pass": "{name} (IDR {selling_price}) = ✅[kompetitif]",
-        "message_fail": "{name} (IDR {selling_price}) = ❌[tidak kompetitif (harga kisaran pasaran: IDR {market_price})]",
+        "message_pass": "{name} ({currency} {selling_price}) = ✅[kompetitif]",
+        "message_fail": "{name} ({currency} {selling_price}) = ❌[tidak kompetitif (harga kisaran pasaran: {currency} {market_price})]",
     },
     "interpretation": {
         "closing_messages": {

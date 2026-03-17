@@ -336,10 +336,10 @@ async def generate_score(
     calc_rows = await calc_queries.get_results_by_brand(conn, brand_id)
 
     # Load scoring rules — always use the unified "default" template
-    # Read marketplace from eval_inputs to fetch the correct rules row
+    # Marketplace comes from eval_inputs — determines which rules row to use
     marketplace = (eval_inputs or {}).get("marketplace", "ID")
     rule_row = await rules_queries.get_rules_by_template_and_marketplace(
-        conn, "default", marketplace=marketplace
+        conn, "default", marketplace
     )
 
     rules_jsonb = rule_row["rules"] if rule_row else None
@@ -365,6 +365,7 @@ async def generate_score(
             email=email,
             rules=rules_jsonb,
             rule_version=rule_version,
+            marketplace=marketplace,
         )
     except Exception as e:
         raise CalculatorException(

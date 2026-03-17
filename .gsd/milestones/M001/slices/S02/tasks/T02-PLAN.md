@@ -119,3 +119,10 @@ Write comprehensive unit tests proving the marketplace threading works correctly
 
 - `backend/tests/unit/calculators/test_scoring_marketplace.py` — ≥12 new tests covering THB formatting, messages, benchmarks, conclusion, and backward compat
 - `backend/tests/unit/test_generate_score_marketplace.py` — updated with `calculate_score` marketplace wiring assertion
+
+## Observability Impact
+
+- **New test signals:** 24 unit tests in `test_scoring_marketplace.py` cover all marketplace-aware code paths. Any future breakage in currency formatting, template rendering, or marketplace threading will be caught here.
+- **Inspection:** Run `pytest backend/tests/unit/calculators/test_scoring_marketplace.py -v` to see per-test pass/fail for each marketplace dimension (formatting, business messages, competition messages, benchmarks, conclusion, e2e, backward compat).
+- **Failure visibility:** Test names encode the dimension being tested (e.g., `test_thb_business_pass_message_contains_thb`) — failures immediately indicate which marketplace surface broke. The `TestBackwardCompatibility` class ensures that default (no marketplace param) behavior remains identical to explicit `marketplace='ID'`.
+- **Wiring verification:** `test_generate_score_passes_marketplace_to_calculate_score` in `test_generate_score_marketplace.py` verifies the service layer passes marketplace through to the calculator — if the kwarg is dropped, this test fails.

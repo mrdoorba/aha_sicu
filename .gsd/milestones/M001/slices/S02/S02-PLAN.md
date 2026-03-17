@@ -53,7 +53,7 @@
   - Verify: `backend/.venv/bin/python -m pytest backend/tests/unit/calculators/test_scoring.py -x` — all existing tests still pass
   - Done when: All 10 IDR-hardcoded locations replaced, `calculate_score` accepts `marketplace` param, migration 027 exists, existing test suite passes without modification
 
-- [ ] **T02: Add comprehensive THB marketplace scoring tests** `est:30m`
+- [x] **T02: Add comprehensive THB marketplace scoring tests** `est:30m`
   - Why: Unit tests must prove that the marketplace threading produces correct THB output — business messages show `THB`, competition messages show `THB`, benchmarks show `THB`, and conclusion text uses appropriate scaling. This is the slice's verification gate.
   - Files: `backend/tests/unit/calculators/test_scoring_marketplace.py`, `backend/tests/unit/test_generate_score_marketplace.py`
   - Do: (1) Create `test_scoring_marketplace.py` with tests for: `_fmt_currency` returns formatted number for both ID and TH; `calculate_score(marketplace='TH')` with THB-scale data produces messages containing `THB`; `calculate_score(marketplace='ID')` produces messages containing `IDR` (backward compat); competition benchmark string contains `THB` for TH marketplace; `_compute_g66` with TH marketplace does NOT contain `juta`; `_compute_g66` with ID marketplace still contains `juta`; `test_default_rules_produce_identical_messages` still works with marketplace='ID'; `TestMigrationTemplatesDrift` still passes (DB templates use `{currency}`, DEFAULT_RULES uses `{currency}`). (2) Add a test to `test_generate_score_marketplace.py` verifying `calculate_score` is called with `marketplace` kwarg from `generate_score`.

@@ -2408,7 +2408,7 @@ class TestMigrationTemplatesDrift:
 
     @staticmethod
     def _build_effective_db_templates() -> dict:
-        """Replay migration 012 + 019 + 020 patches to get the effective DB state."""
+        """Replay migration 012 + 019 + 020 + 021 + 027 patches to get the effective DB state."""
         import importlib
 
         m012 = importlib.import_module(
@@ -2422,6 +2422,9 @@ class TestMigrationTemplatesDrift:
         )
         m021 = importlib.import_module(
             "app.db.migrations.versions.021_internationalize_currency_rp_to_idr"
+        )
+        m027 = importlib.import_module(
+            "app.db.migrations.versions.027_update_message_templates_currency_placeholder"
         )
 
         db: dict = {}
@@ -2442,6 +2445,9 @@ class TestMigrationTemplatesDrift:
 
         # Apply 021 patches
         m021._apply_patches(db, forward=True)
+
+        # Apply 027 patches
+        m027._apply_patches(db, forward=True)
 
         return db
 

@@ -61,6 +61,7 @@ def calculate_score(
     email: str | None = None,
     rules: dict | None = None,
     rule_version: int = 1,
+    marketplace: str = "ID",
 ) -> ScoringResult:
     """Compute the full scoring system.
 
@@ -92,7 +93,7 @@ def calculate_score(
     cat_products = _score_products(manual_data, rules)
     cat_ads = _score_ads(manual_data, template, rules)
     cat_campaign = _score_campaign(manual_data, rules)
-    cat_competition = _score_competition(manual_data, calculator_results)
+    cat_competition = _score_competition(manual_data, calculator_results, marketplace=marketplace)
     cat_stock = _score_stock(calculator_results, rules)
     cat_discount = _score_discount_row(calculator_results, rules)
 
@@ -115,13 +116,13 @@ def calculate_score(
 
     # --- G-column messages ---
     _generate_operational_messages(cat_operational, manual_data, rules)
-    _generate_business_messages(cat_business, manual_data, rules)
+    _generate_business_messages(cat_business, manual_data, rules, marketplace=marketplace)
     _generate_visitors_messages(cat_visitors, rules)
     _generate_promo_messages(cat_promo, manual_data, rules)
     _generate_products_messages(cat_products, rules)
     _generate_ads_messages(cat_ads, manual_data, calculator_results, rules)
     _generate_campaign_messages(cat_campaign, rules)
-    _generate_competition_messages(cat_competition, manual_data, rules)
+    _generate_competition_messages(cat_competition, manual_data, rules, marketplace=marketplace)
 
     # --- Derived formulas ---
     d13 = _safe_num(_get_nested(manual_data, "business", "salesMonth0"))
@@ -136,11 +137,11 @@ def calculate_score(
 
     marketing_label = f"📌 Estimasi persentase biaya marketing {brand_name} sekarang:"
 
-    g66 = _compute_g66(all_categories, manual_data, g68)
+    g66 = _compute_g66(all_categories, manual_data, g68, marketplace=marketplace)
     g75 = _compute_g75(verdict, store_name, rules)
 
     # --- i18n companions ---
-    g66_i18n = _compute_g66_i18n(all_categories, manual_data, g68)
+    g66_i18n = _compute_g66_i18n(all_categories, manual_data, g68, marketplace=marketplace)
     g73_i18n = _compute_g73_i18n(verdict, g72, d13, rules)
     g75_i18n = _compute_g75_i18n(verdict, store_name, rules)
     email_subject_i18n = TranslatableText(
