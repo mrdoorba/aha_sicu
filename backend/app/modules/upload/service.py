@@ -17,6 +17,7 @@ from app.modules.upload.parser import (
     parse_csv,
     parse_excel,
     validate_columns,
+    _normalise_thai_columns,
 )
 from app.modules.upload.schemas import (
     AutoCalculatedItem,
@@ -37,7 +38,8 @@ def _parse_file(
     """Parse file bytes into a DataFrame based on extension.
 
     Returns (df, source_language). Delegates to the appropriate parser
-    based on file extension.
+    based on file extension.  Thai column headers are normalised to
+    Indonesian after parsing so the calculator layer stays unchanged.
     """
     source_language = "id"
 
@@ -53,6 +55,11 @@ def _parse_file(
             code="UPLOAD_INVALID_FORMAT",
             detail=f"Unsupported file extension: {filename_lower}",
         )
+
+    # Normalise Thai columns → Indonesian (order_export only for now)
+    df, was_thai = _normalise_thai_columns(df)
+    if was_thai:
+        source_language = "th"
 
     return df, source_language
 

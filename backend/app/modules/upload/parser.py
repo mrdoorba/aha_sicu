@@ -76,6 +76,55 @@ def _normalise_english_columns(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
     return df, True
 
 
+# ---------------------------------------------------------------------------
+# Thai → Indonesian normalisation for Shopee Thailand order exports
+# ---------------------------------------------------------------------------
+
+_ORDER_EXPORT_COLUMN_RENAME_TH: dict[str, str] = {
+    "หมายเลขคำสั่งซื้อ": "No. Pesanan",
+    "ชื่อสินค้า": "Nama Produk",
+    "ราคาตั้งต้น": "Harga Awal",
+    "ราคาขาย": "Harga Setelah Diskon",
+    "จำนวน": "Jumlah",
+    "โค้ดส่วนลดชำระโดยผู้ขาย": "Voucher Ditanggung Penjual",
+    "ส่วนลด bundle deal ชำระโดยผู้ขาย": "Paket Diskon (Diskon dari Penjual)",
+    "เลขอ้างอิง SKU (SKU Reference No.)": "Nomor Referensi SKU",
+    "ชื่อตัวเลือก": "Nama Variasi",
+    "โค้ด Coins Cashback ชำระโดยผู้ขาย": "Cashback Koin",
+    "ส่วนลดจาก Shopee": "Diskon Dari Shopee",
+}
+
+
+def _normalise_thai_columns(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
+    """Rename Thai Shopee order-export columns to Indonesian.
+
+    Also computes the synthetic ``Jumlah Produk di Pesan`` column which
+    does not exist in Thai exports.  It equals the count of rows sharing
+    the same ``No. Pesanan`` (order number).
+
+    Returns:
+        Tuple of (normalised DataFrame, was_thai) where was_thai is True
+        if Thai column renames were applied.
+    """
+    actual = set(df.columns)
+    rename_map = {th: id_ for th, id_ in _ORDER_EXPORT_COLUMN_RENAME_TH.items() if th in actual}
+    if not rename_map:
+        return df, False
+
+    df = df.rename(rename_map)
+
+    # Compute synthetic "Jumlah Produk di Pesan" — count of rows per order
+    if "No. Pesanan" in df.columns and "Jumlah Produk di Pesan" not in df.columns:
+        df = df.with_columns(
+            pl.col("No. Pesanan")
+            .count()
+            .over("No. Pesanan")
+            .alias("Jumlah Produk di Pesan")
+        )
+
+    return df, True
+
+
 # Required columns per file type — matched against actual Shopee exports.
 REQUIRED_COLUMNS: dict[str, list[str]] = {
     "cpc_ad_report": [
