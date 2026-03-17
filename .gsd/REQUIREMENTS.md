@@ -2,72 +2,15 @@
 
 ## Active
 
-### DATA-01 — Evaluation stores marketplace selection (ID or TH) chosen by user at evaluation time
-
-- Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: S01
-- Notes: Schema and query layer ready (marketplace column, upsert, insert all accept marketplace). Frontend integration pending (S04).
-
-Evaluation stores marketplace selection (ID or TH) chosen by user at evaluation time
-
 ### SCORE-03 — All revenue-related thresholds in scoring use marketplace-specific values
 
 - Status: active
 - Class: core-capability
 - Source: inferred
-- Primary Slice: none yet
+- Primary Slice: S02
+- Notes: Backend scoring engine selects rules by marketplace (S02). Frontend useRules hook passes marketplace to rules API (S04). Full end-to-end validation requires live runtime test with TH brand evaluation.
 
 All revenue-related thresholds in scoring use marketplace-specific values
-
-
-
-### RULES-01 — Rules page has marketplace tabs (IDR / THB) for admins/leaders
-
-- Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Rules page has marketplace tabs (IDR / THB) for admins/leaders
-
-### RULES-02 — Admin can edit THB thresholds independently from IDR thresholds
-
-- Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-- Notes: Backend API ready (PUT /api/v1/rules/default?marketplace=TH). Frontend UI pending (S04).
-
-Admin can edit THB thresholds independently from IDR thresholds
-
-### EVAL-01 — User can select marketplace (Indonesia / Thailand) on the evaluation page before evaluating
-
-- Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-User can select marketplace (Indonesia / Thailand) on the evaluation page before evaluating
-
-### EVAL-02 — Currency formatting shows code prefix (THB / IDR) based on selected marketplace
-
-- Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Currency formatting shows code prefix (THB / IDR) based on selected marketplace
-
-### EVAL-03 — Evaluation results display currency values in the correct format for the selected marketplace
-
-- Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Evaluation results display currency values in the correct format for the selected marketplace
 
 ## Validated
 
@@ -130,6 +73,68 @@ Price parsing handles THB number format (`.` as decimal, `,` as thousands) witho
 - Validation: 69 test_discount.py tests + 56 test_top_sku.py tests pass unchanged with default marketplace="ID". No existing caller modified. Backward compat confirmed by all 457 calculator tests passing.
 
 Existing IDR parsing continues to work unchanged
+
+### DATA-01 — Evaluation stores marketplace selection (ID or TH) chosen by user at evaluation time
+
+- Status: validated
+- Class: core-capability
+- Source: inferred
+- Primary Slice: S01
+- Supporting Slices: S04
+- Validation: Backend schema ready (S01). Frontend useEvaluationOrchestrator manages marketplace state, auto-save includes marketplace in PUT body, save evaluation includes marketplace in POST body. 536 frontend tests pass. Network requests verified to include marketplace field.
+
+Evaluation stores marketplace selection (ID or TH) chosen by user at evaluation time
+
+### RULES-01 — Rules page has marketplace tabs (IDR / THB) for admins/leaders
+
+- Status: validated
+- Class: core-capability
+- Source: inferred
+- Primary Slice: S04
+- Validation: RulesPage renders ID/TH marketplace tabs using shadcn Tabs; switching tabs triggers re-fetch with ?marketplace=TH query param; React Query queryKey ['rules', marketplace] ensures cache isolation. 4 new tests in RulesPage.test.tsx verify tab rendering, default state, switching, and edit cancellation on tab change. 38/38 rules tests pass.
+
+Rules page has marketplace tabs (IDR / THB) for admins/leaders
+
+### RULES-02 — Admin can edit THB thresholds independently from IDR thresholds
+
+- Status: validated
+- Class: core-capability
+- Source: inferred
+- Primary Slice: S04
+- Supporting Slices: S01
+- Validation: Backend PUT /api/v1/rules/default?marketplace=TH ready (S01). Frontend useUpdateRule sends marketplace as query param on PUT. Edit state resets on marketplace tab switch to prevent cross-marketplace overwrites. Tested in RulesPage.test.tsx.
+
+Admin can edit THB thresholds independently from IDR thresholds
+
+### EVAL-01 — User can select marketplace (Indonesia / Thailand) on the evaluation page before evaluating
+
+- Status: validated
+- Class: core-capability
+- Source: inferred
+- Primary Slice: S04
+- Validation: EvaluationSections renders marketplace radio selector (ID/TH) above category selector. useEvaluationOrchestrator exposes marketplace/setMarketplace. Marketplace threaded to useAutoSaveForm and useSaveEvaluation. 536 frontend tests pass with zero regressions.
+
+User can select marketplace (Indonesia / Thailand) on the evaluation page before evaluating
+
+### EVAL-02 — Currency formatting shows code prefix (THB / IDR) based on selected marketplace
+
+- Status: validated
+- Class: core-capability
+- Source: inferred
+- Primary Slice: S04
+- Validation: getCurrencyCode maps marketplace→currency code. CurrencyField renders dynamic ({currency}) label. 9 CurrencyField tests pass including THB variant and unknown currency fallback. All display components (TopSkuResults, DataIntelligence, EvaluationDetailPage, BusinessForm) use marketplace-aware getCurrencyCode prefix.
+
+Currency formatting shows code prefix (THB / IDR) based on selected marketplace
+
+### EVAL-03 — Evaluation results display currency values in the correct format for the selected marketplace
+
+- Status: validated
+- Class: core-capability
+- Source: inferred
+- Primary Slice: S04
+- Validation: All local formatIDR/formatCurrencyDisplay functions removed. Single shared formatCurrency in formUtils.ts handles all formatting. marketplace prop threaded through TopSkuResults, DataIntelligence, EvaluationDetailPage, BusinessForm. 19 formUtils tests verify both marketplace formats. grep audit confirms zero local formatting copies remain.
+
+Evaluation results display currency values in the correct format for the selected marketplace
 
 ## Deferred
 

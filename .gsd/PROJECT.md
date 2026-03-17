@@ -20,13 +20,13 @@ Thai marketplace brands can be evaluated using THB-appropriate thresholds, with 
 
 ### Active
 
-- [ ] Marketplace selection per evaluation (user chooses ID or TH at evaluation time)
-- [ ] THB thresholds derived from IDR values (initial conversion, then independently editable)
-- [ ] Rules page with marketplace tabs (IDR / THB) for admin/leader threshold management
-- [ ] Evaluation page marketplace selector to filter/display correct currency context
-- [ ] All revenue-related calculators respect marketplace-specific thresholds
 - [x] CSV parser handles THB-formatted values from Shopee Thailand
-- [ ] Currency formatting throughout UI (THB/IDR code prefix, proper decimal/grouping conventions)
+- [x] Currency formatting throughout UI (THB/IDR code prefix, proper decimal/grouping conventions)
+- [x] Marketplace selection per evaluation (user chooses ID or TH at evaluation time)
+- [x] THB thresholds derived from IDR values (initial conversion, then independently editable)
+- [x] Rules page with marketplace tabs (IDR / THB) for admin/leader threshold management
+- [x] Evaluation page marketplace selector to filter/display correct currency context
+- [x] All revenue-related calculators respect marketplace-specific thresholds
 
 ### Out of Scope
 
@@ -54,10 +54,13 @@ Thai marketplace brands can be evaluated using THB-appropriate thresholds, with 
 
 | Decision | Rationale | Outcome |
 |----------|-----------|---------|
-| Evaluation-level marketplace (not per-brand) | User knows which marketplace a brand belongs to; selects at evaluation time | — Pending |
-| Rules page marketplace tabs | Keeps all threshold management in one place; admins can compare IDR vs THB | — Pending |
+| Evaluation-level marketplace (not per-brand) | User knows which marketplace a brand belongs to; selects at evaluation time | Implemented (D018) |
+| Rules page marketplace tabs | Keeps all threshold management in one place; admins can compare IDR vs THB | Implemented (D017) |
 | Initial THB thresholds from IDR conversion | Provides reasonable starting values; admins can adjust manually after | Implemented (D002) |
-| User selects marketplace on evaluation page | Explicit selection prevents accidental cross-currency evaluation | — Pending |
+| Marketplace default 'ID' everywhere | Explicit selection prevents accidental cross-currency evaluation | Implemented (D018) |
+| Currency formatting centralized in formUtils.ts | Eliminates duplication; single breakpoint; deprecated re-exports for migration | Implemented (D016) |
+| React Query queryKey includes marketplace | Prevents stale cross-marketplace cache hits | Implemented (D017) |
+| User selects marketplace on evaluation page | Explicit selection prevents accidental cross-currency evaluation | Implemented (D018) |
 | VARCHAR(2) + CHECK constraint for marketplace | Matches existing pattern; compact; enforces at DB level | Implemented (D001) |
 | All functions default marketplace='ID' | Zero breaking changes for existing callers | Implemented (D004) |
 | Currency formatting delegates to _fmt_idr | IDR/THB use same comma-thousands format; code injection via templates | Implemented (D007) |
@@ -69,4 +72,4 @@ Thai marketplace brands can be evaluated using THB-appropriate thresholds, with 
 | Calculator marketplace param is keyword-only with default "ID" | No positional confusion; full backward compatibility | Implemented (D013) |
 
 ---
-*Last updated: 2026-03-17 after S03 completion*
+*Last updated: 2026-03-17 after S04 completion — M001 complete*

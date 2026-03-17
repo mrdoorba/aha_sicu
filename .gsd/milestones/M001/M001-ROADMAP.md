@@ -13,5 +13,5 @@
   > After this: unit tests prove Scoring Engine Marketplace Awareness works
 - [x] **S03: CSV THB Parsing** `risk:medium` `depends:[S01]`
   > After this: unit tests prove CSV THB Parsing works
-- [ ] **S04: Frontend Currency and Marketplace UI** `risk:medium` `depends:[S02]`
+- [x] **S04: Frontend Currency and Marketplace UI** `risk:medium` `depends:[S02]`
   > After this: unit tests prove Frontend Currency and Marketplace UI works
