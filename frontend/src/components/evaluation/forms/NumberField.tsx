@@ -11,10 +11,10 @@ interface NumberFieldProps {
   onBlur?: () => void;
 }
 
-/** Strip Indonesian thousand separators (periods) and parse as integer. */
+/** Strip thousand separators (periods and commas) and parse as integer. */
 function parseCount(raw: string): number | null {
   if (raw === '') return null;
-  const stripped = raw.replace(/\./g, '');
+  const stripped = raw.replace(/[.,]/g, '');
   const n = Number(stripped);
   return Number.isNaN(n) ? null : Math.round(n);
 }
