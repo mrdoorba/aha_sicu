@@ -12,25 +12,6 @@
 
 Evaluation stores marketplace selection (ID or TH) chosen by user at evaluation time
 
-### SCORE-01 — `generate_score()` selects rules based on evaluation's marketplace
-
-- Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: S01
-- Notes: Wiring complete — generate_score reads marketplace from eval_inputs and fetches correct rules row. Needs end-to-end verification with live THB data in S02.
-
-`generate_score()` selects rules based on evaluation's marketplace
-
-### SCORE-02 — Scoring message templates display correct currency (THB/IDR) based on marketplace
-
-- Status: active
-- Class: core-capability
-- Source: inferred
-- Primary Slice: none yet
-
-Scoring message templates display correct currency (THB/IDR) based on marketplace
-
 ### SCORE-03 — All revenue-related thresholds in scoring use marketplace-specific values
 
 - Status: active
@@ -105,6 +86,26 @@ Currency formatting shows code prefix (THB / IDR) based on selected marketplace
 Evaluation results display currency values in the correct format for the selected marketplace
 
 ## Validated
+
+### SCORE-01 — `generate_score()` selects rules based on evaluation's marketplace
+
+- Status: validated
+- Class: core-capability
+- Source: inferred
+- Primary Slice: S02
+- Validation: generate_score reads marketplace from eval_inputs, passes to calculate_score as keyword arg. 4 wiring tests in test_generate_score_marketplace.py verify positional and keyword passthrough.
+
+`generate_score()` selects rules based on evaluation's marketplace
+
+### SCORE-02 — Scoring message templates display correct currency (THB/IDR) based on marketplace
+
+- Status: validated
+- Class: core-capability
+- Source: inferred
+- Primary Slice: S02
+- Validation: 24 unit tests prove THB messages show "THB" not "IDR", IDR messages unchanged, competition benchmarks use correct currency code, {currency} placeholder resolves in all 8 template locations. TestMigrationTemplatesDrift confirms DB↔code sync.
+
+Scoring message templates display correct currency (THB/IDR) based on marketplace
 
 ### DATA-02 — Scoring rules table supports marketplace dimension (IDR rules and THB rules coexist)
 

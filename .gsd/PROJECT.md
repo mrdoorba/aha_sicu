@@ -60,6 +60,9 @@ Thai marketplace brands can be evaluated using THB-appropriate thresholds, with 
 | User selects marketplace on evaluation page | Explicit selection prevents accidental cross-currency evaluation | — Pending |
 | VARCHAR(2) + CHECK constraint for marketplace | Matches existing pattern; compact; enforces at DB level | Implemented (D001) |
 | All functions default marketplace='ID' | Zero breaking changes for existing callers | Implemented (D004) |
+| Currency formatting delegates to _fmt_idr | IDR/THB use same comma-thousands format; code injection via templates | Implemented (D007) |
+| marketplace as keyword-only param, dict.get fallback | Prevents positional confusion; unknown marketplace → IDR | Implemented (D008) |
+| THB raw numbers, IDR /1M juta scaling in conclusions | THB values are 3 OOM smaller; juta scaling is unreadable for THB | Implemented (D009) |
 
 ---
-*Last updated: 2026-03-17 after S01 completion*
+*Last updated: 2026-03-17 after S02 completion*
