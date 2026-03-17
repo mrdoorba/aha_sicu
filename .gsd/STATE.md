@@ -19,6 +19,7 @@
 | # | Description | Date | Commit | Directory |
 |---|---|---|---|---|
 | 1 | Localize Shopee Seller Centre links by marketplace (co.id ↔ co.th) | 2026-03-17 | 7c2ede2 | [1-in-the-evaluation-page-there-is-a-link-l](./quick/1-in-the-evaluation-page-there-is-a-link-l/) |
+| 2 | Accept comma-separated numbers in count fields (e.g. 18,219 → 18219) | 2026-03-17 | 4e6a003 | [2-in-teh-evaluation-page-field-tinjauan-pe](./quick/2-in-teh-evaluation-page-field-tinjauan-pe/) |
 
 ## Next Action
 All milestones complete.
