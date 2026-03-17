@@ -379,10 +379,11 @@ def test_run_discount_calculator_success(client):
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
-        # Service DB: brand → order_upload → upsert
+        # Service DB: brand → order_upload → eval_inputs → upsert
         mock_calc_conn = _make_transactional_conn([
             SAMPLE_BRAND,           # get_brand_by_id
             SAMPLE_ORDER_UPLOAD,    # get_upload_by_type (order_export)
+            SAMPLE_EVAL_INPUTS,     # get_evaluation_inputs
             SAMPLE_DISCOUNT_RESULT, # upsert_result
         ])
         mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
@@ -439,7 +440,7 @@ def test_run_discount_upsert_on_recalculation(client):
 
         # First run
         mock_calc_conn = _make_transactional_conn([
-            SAMPLE_BRAND, SAMPLE_ORDER_UPLOAD, SAMPLE_DISCOUNT_RESULT,
+            SAMPLE_BRAND, SAMPLE_ORDER_UPLOAD, SAMPLE_EVAL_INPUTS, SAMPLE_DISCOUNT_RESULT,
         ])
         mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
 
@@ -455,7 +456,7 @@ def test_run_discount_upsert_on_recalculation(client):
             "calculated_at": datetime(2026, 2, 11, 11, 0, 0, tzinfo=timezone.utc),
         }
         mock_calc_conn2 = _make_transactional_conn([
-            SAMPLE_BRAND, SAMPLE_ORDER_UPLOAD, updated_result,
+            SAMPLE_BRAND, SAMPLE_ORDER_UPLOAD, SAMPLE_EVAL_INPUTS, updated_result,
         ])
         mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn2
 
@@ -570,6 +571,7 @@ def test_run_discount_missing_columns(client):
         mock_calc_conn = _make_transactional_conn([
             SAMPLE_BRAND,           # get_brand_by_id
             upload_missing_cols,    # get_upload_by_type (order_export)
+            SAMPLE_EVAL_INPUTS,     # get_evaluation_inputs
         ])
         mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
 
@@ -607,6 +609,7 @@ def test_run_discount_string_parsed_data(client):
         mock_calc_conn = _make_transactional_conn([
             SAMPLE_BRAND,               # get_brand_by_id
             upload_string_parsed,       # get_upload_by_type (order_export) — string parsed_data
+            SAMPLE_EVAL_INPUTS,         # get_evaluation_inputs
             SAMPLE_DISCOUNT_RESULT,     # upsert_result
         ])
         mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
@@ -642,11 +645,12 @@ def test_run_top_sku_calculator_success(client):
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
-        # Service DB: brand → order_upload → mass_update_upload → upsert
+        # Service DB: brand → order_upload → mass_update_upload → eval_inputs → upsert
         mock_calc_conn = _make_transactional_conn([
             SAMPLE_BRAND,                 # get_brand_by_id
             SAMPLE_ORDER_UPLOAD_TOP_SKU,  # get_upload_by_type (order_export)
             SAMPLE_MASS_UPDATE_UPLOAD,    # get_upload_by_type (mass_update)
+            SAMPLE_EVAL_INPUTS,           # get_evaluation_inputs
             SAMPLE_TOP_SKU_RESULT,        # upsert_result
         ])
         mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
@@ -807,7 +811,7 @@ def test_run_top_sku_upsert_on_recalculation(client):
         # First run
         mock_calc_conn = _make_transactional_conn([
             SAMPLE_BRAND, SAMPLE_ORDER_UPLOAD_TOP_SKU,
-            SAMPLE_MASS_UPDATE_UPLOAD, SAMPLE_TOP_SKU_RESULT,
+            SAMPLE_MASS_UPDATE_UPLOAD, SAMPLE_EVAL_INPUTS, SAMPLE_TOP_SKU_RESULT,
         ])
         mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn
 
@@ -824,7 +828,7 @@ def test_run_top_sku_upsert_on_recalculation(client):
         }
         mock_calc_conn2 = _make_transactional_conn([
             SAMPLE_BRAND, SAMPLE_ORDER_UPLOAD_TOP_SKU,
-            SAMPLE_MASS_UPDATE_UPLOAD, updated_result,
+            SAMPLE_MASS_UPDATE_UPLOAD, SAMPLE_EVAL_INPUTS, updated_result,
         ])
         mock_calc_db.connection.return_value.__aenter__.return_value = mock_calc_conn2
 

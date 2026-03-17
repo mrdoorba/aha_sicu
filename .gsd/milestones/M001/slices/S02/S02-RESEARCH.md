@@ -92,4 +92,8 @@ The `generate_score()` service function (S01 output) already reads `marketplace`
 - **Updating DEFAULT_RULES but not messages.py inline defaults** — `test_default_rules_produce_identical_messages` will catch this, but only if run. Both files must be updated atomically.
 - **Forgetting to pass `currency` kwarg to `_format_message_template`** — templates with `{currency}` would render as literal `{currency}` thanks to `_SafeDict`, which looks like a bug in output but doesn't crash. Tests must assert the formatted output contains the expected currency code.
 - **The `juta` scaling in `_compute_g66`** — `min_sales / 1_000_000` with `juta` label is IDR-specific. THB values at 190K scale divided by 1M gives `0 juta`. Either skip the `juta` label for THB or use appropriate scale factor. THB amounts are typically in hundreds of thousands, not hundreds of millions.
+<<<<<<< Updated upstream
 - **`_score_competition` benchmark string** — hardcodes `f"IDR {_fmt_idr(market_price)}"` at line 531 in categories.py. This is the E-column benchmark (not a message template), so it's not covered by the migration drift test. Must be updated manually.
+=======
+- **`_score_competition` benchmark string** — hardcodes `f"IDR {_fmt_idr(market_price)}"` at line 531 in categories.py. This is the E-column benchmark (not a message template), so it's not covered by the migration drift test. Must be updated manually.
+>>>>>>> Stashed changes

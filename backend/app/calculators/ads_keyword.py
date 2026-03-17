@@ -485,9 +485,8 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any
         al3_i18n = {"key": "ads.topRecommendation.manual", "vars": {}}
 
     # --- AL5: BOTTOM Ads ---
-    # Language-variant thresholds:
-    #   Indonesian: Cost > 100000, fallback ROAS cap min(round(AM10*2), 5)
-    #   English:    Cost > 50000,  fallback ROAS cap min(round(AM10*2), 4)
+    # Thresholds (same for all languages):
+    #   Cost > 100000, fallback ROAS cap min(round(AM10*2), 5)
     min_cost = 100000
     fallback_roas_cap_limit = 5
 
@@ -557,7 +556,7 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id") -> dict[str, Any
         al5_i18n = None
 
     # --- AL6-AL9: Bottom Flags (substring checks on AL5 text) ---
-    # AL6: Indonesian checks "Otomatis", English checks "Bidding Otomatis"
+    # AL6: checks "Otomatis" substring (all languages)
     al6 = ""
     al6_substring = "Otomatis"
     if al5.count(al6_substring) >= 1:

@@ -312,7 +312,7 @@ async def run_discount_calculator(
             eval_inputs = await eval_queries.get_evaluation_inputs(
                 conn, brand_id
             )
-            marketplace = eval_inputs["marketplace"] if eval_inputs else "ID"
+            marketplace = eval_inputs.get("marketplace", "ID") if eval_inputs else "ID"
 
             # Extract and validate parsed data structure + required columns
             _validate_columns(order_upload.get("parsed_data", {}), "order_export")
@@ -397,7 +397,7 @@ async def run_top_sku_calculator(
             eval_inputs = await eval_queries.get_evaluation_inputs(
                 conn, brand_id
             )
-            marketplace = eval_inputs["marketplace"] if eval_inputs else "ID"
+            marketplace = eval_inputs.get("marketplace", "ID") if eval_inputs else "ID"
 
             # Extract parsed data
             order_data = _extract_parsed_data(order_upload, "order_export")

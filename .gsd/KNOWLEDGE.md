@@ -1,5 +1,6 @@
 # Knowledge Base
 
+<<<<<<< Updated upstream
 ## Worktree Testing Setup
 
 When running tests from a git worktree (`.gsd/worktrees/M001/`), the backend venv lives in the main repo at `/Users/mac/HT/Project/aha_sicu/backend/.venv/`. Run tests from the worktree directory with `PYTHONPATH=backend` and the main repo's Python:
@@ -34,7 +35,19 @@ Git worktrees (`.gsd/worktrees/M001/`) are separate checkouts on their own branc
 ## S01 Wiring Test Assertion Style
 
 The service.py `generate_score` function passes `marketplace` as a **positional** arg (not keyword) to `get_rules_by_template_and_marketplace`. Mock `assert_called_once_with` must match the calling convention exactly — `(conn, "default", "TH")` not `(conn, "default", marketplace="TH")`.
+=======
+## Worktree venv path
+The worktree at `.gsd/worktrees/M001` does NOT have its own `.venv`. Use the main repo's venv:
+```
+/Users/mac/HT/Project/aha_sicu/backend/.venv/bin/python -m pytest ...
+```
 
-## Price Parsing Architecture (S03)
+## Renamed rules query function
+`get_rules_by_template` was renamed to `get_rules_by_template_and_marketplace` in T02. Any test or code mocking this function must use the new name. Affected test files include `test_scoring.py`.
 
-Price parsing is centralized in `app/calculators/price_parser.py`. The `_parse_price(value, marketplace="ID")` function is the single entry point — do NOT create per-calculator parsing functions. Both `calculate_discount` and `calculate_top_sku` accept `marketplace` as a keyword-only parameter and pass it through to `_parse_price`. The `calculator_service.py` reads marketplace from `evaluation_inputs` (not `brand_vp_data`).
+## ScoringResponse required string fields
+`ScoringResponse` schema has required string fields (`marketing_estimation`, `marketing_percentage`, `marketing_budget`, `closing_message`, `email_subject`, `email_body`). When mocking `calculate_score` results, set these to `""` not `None`.
+
+## Pre-existing test failures
+3 tests in `tests/unit/calculators/test_ads_keyword.py` consistently fail — unrelated to marketplace work. Don't try to fix them in marketplace tasks.
+>>>>>>> Stashed changes

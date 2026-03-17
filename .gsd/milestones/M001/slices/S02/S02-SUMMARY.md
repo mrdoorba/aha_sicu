@@ -1,3 +1,4 @@
+<<<<<<< Updated upstream
 ---
 id: S02
 parent: M001
@@ -136,3 +137,6 @@ The scoring engine had 10 locations hardcoding `IDR` — 4 DEFAULT_RULES templat
 ### What assumptions changed
 - **Original assumption**: `_fmt_idr` was the only formatting function needed. **What happened**: `_fmt_currency` was added but delegates to `_fmt_idr` — formatting is identical. The separation exists for semantic clarity and future extensibility.
 - **Original assumption**: T01 code would be available in the main repo after T01 completed. **What happened**: worktree divergence meant T02 had to copy files manually. The KNOWLEDGE.md now documents this pattern.
+=======
+Threaded marketplace parameter through the entire scoring calculator, replaced all IDR-hardcoded template locations with {currency} placeholders, created migration 027 for DB template sync, and proved correctness with 28 new tests covering THB output, backward compatibility, and unknown marketplace fallback. SCORE-01 and SCORE-02 validated.
+>>>>>>> Stashed changes
