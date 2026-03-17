@@ -48,7 +48,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: EvaluationDetailPage i18n rendering** `risk:medium` `depends:[]`
+- [x] **S01: EvaluationDetailPage i18n rendering** `risk:medium` `depends:[]`
   > After this: switch language to EN → open any evaluation in history → all scoring messages, category names, conclusions, closing messages render in English. Old evaluations without i18n keys show Indonesian text.
 
 - [ ] **S02: Email language selector & i18n body rebuild** `risk:medium` `depends:[S01]`
