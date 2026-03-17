@@ -13,7 +13,7 @@
 
 Purpose: Establishes the data foundation for multi-marketplace support. Without this migration, no downstream query or service changes can reference the marketplace dimension.
 Output: `app/core/marketplace.py` constants, migration `026_add_marketplace_to_schema.py`, unit tests for constants and conversion correctness.
-- [ ] **T02: 01-data-model-foundation 02**
+- [x] **T02: 01-data-model-foundation 02**
   - Update all query functions, service layer, and API endpoints to accept and filter by marketplace. Wire generate_score to read marketplace from evaluation_inputs and fetch the correct rules row.
 
 Purpose: Without these changes, the migration data (marketplace column, THB rules) is unused. This plan makes the application code marketplace-aware while maintaining backward compatibility (all endpoints default to 'ID').
