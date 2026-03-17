@@ -65,6 +65,9 @@ async def run_ads_keyword_calculator(
             )
             total_products = _extract_total_products(eval_inputs)
 
+            # Load marketplace from evaluation_inputs (defaults to "ID")
+            marketplace = eval_inputs.get("marketplace", "ID") if eval_inputs else "ID"
+
             # Extract and validate parsed data structure
             cpc_data = _extract_parsed_data(cpc_upload, "cpc_ad_report")
             keyword_data = _extract_parsed_data(keyword_upload, "keyword_report")
@@ -86,7 +89,7 @@ async def run_ads_keyword_calculator(
             # Run pure calculator
             try:
                 result = calculate_ads_keyword(
-                    cpc_data, keyword_data, total_products, language=language
+                    cpc_data, keyword_data, total_products, language=language, marketplace=marketplace
                 )
             except Exception as e:
                 raise CalculatorException(
