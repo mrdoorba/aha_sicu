@@ -100,6 +100,31 @@ async def seed_from_dump(conn: asyncpg.Connection) -> None:
         except Exception:
             pass  # Table might not have a serial ID
 
+    # Seed THB marketplace rules row if it doesn't exist
+    # (prod dump only has the ID row; migration 026 seeds TH but TRUNCATE wipes it)
+    th_exists = await conn.fetchval(
+        "SELECT 1 FROM scoring_rules WHERE template = 'default' AND marketplace = 'TH'"
+    )
+    if not th_exists:
+        id_rules = await conn.fetchval(
+            "SELECT rules FROM scoring_rules WHERE template = 'default' AND marketplace = 'ID'"
+        )
+        if id_rules:
+            import json
+            rules = json.loads(id_rules) if isinstance(id_rules, str) else id_rules
+            # Convert six_month_avg_threshold from IDR to THB (fixed rate 0.0019)
+            try:
+                idr_threshold = rules["business"]["six_month_avg_threshold"]["threshold"]
+                rules["business"]["six_month_avg_threshold"]["threshold"] = round(idr_threshold * 0.0019)
+            except (KeyError, TypeError):
+                pass
+            await conn.execute(
+                """INSERT INTO scoring_rules (template, marketplace, rules, version)
+                   VALUES ('default', 'TH', $1::jsonb, 1)""",
+                json.dumps(rules),
+            )
+            print("  Seeded THB marketplace scoring rules")
+
     # Summary
     brand_count = await conn.fetchval("SELECT COUNT(*) FROM brand_vp_data")
     eval_count = await conn.fetchval("SELECT COUNT(*) FROM evaluations")
