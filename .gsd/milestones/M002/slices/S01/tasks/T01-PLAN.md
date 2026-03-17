@@ -46,3 +46,9 @@ The `evaluations` table already has a `marketplace` column (added in M001 migrat
 - `backend/app/db/queries/evaluations.py` — `EvaluationDetailRow` has `marketplace: str` field; SQL query selects `e.marketplace`
 - `backend/app/modules/evaluations/schemas.py` — `EvaluationDetailResponse` has `marketplace: str = "ID"` field
 - `backend/app/modules/evaluations/service.py` — marketplace flows from query row to response (may need explicit wiring or may flow via spread)
+
+## Observability Impact
+
+- **New signal:** `marketplace` field appears in `GET /api/evaluations/{id}` JSON response. Previously absent.
+- **Inspection:** `curl` the endpoint or check browser network tab — `marketplace` should be `"ID"`, `"TH"`, or another valid marketplace code. If absent, the SQL SELECT or schema wiring is broken.
+- **Failure state:** Pre-marketplace evaluations (NULL in DB) produce `"ID"` via SQL `COALESCE` + Pydantic default. No new error paths introduced — both layers independently guarantee a fallback.

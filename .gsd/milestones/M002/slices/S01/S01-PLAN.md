@@ -22,6 +22,13 @@
 - Frontend: `cd /Users/mac/HT/Project/aha_sicu/.gsd/worktrees/M002/frontend && npx vitest run src/pages/EvaluationDetailPage.test.tsx --no-color`
 - Full frontend regression: `cd /Users/mac/HT/Project/aha_sicu/.gsd/worktrees/M002/frontend && npx vitest run --no-color`
 
+## Observability / Diagnostics
+
+- **API response inspection:** `GET /api/evaluations/{id}` response JSON includes `marketplace` field — agents can `curl` or inspect network logs to verify the field is present and non-null.
+- **Failure visibility:** If `marketplace` is NULL in the DB (pre-M001 rows), the SQL COALESCE and Pydantic default both fall back to `"ID"` — no 500 errors. A missing `marketplace` in the JSON response indicates the backend schema or SQL wiring is broken.
+- **Diagnostic failure-path check:** `cd /Users/mac/HT/Project/aha_sicu/.gsd/worktrees/M002 && PYTHONPATH=backend /Users/mac/HT/Project/aha_sicu/backend/.venv/bin/python -c "from app.modules.evaluations.schemas import EvaluationDetailResponse; r = EvaluationDetailResponse(id=1, brand_id=1, brand_name='test', final_score=0.0, verdict='x', template='default', score_breakdown=[], calculator_results={}, manual_inputs={}, evaluator_email='a@b.c', created_at='2025-01-01T00:00:00', rule_version=1); assert r.marketplace == 'ID', f'Default marketplace wrong: {r.marketplace}'; print('OK: default marketplace fallback works')"` — verifies default fallback for rows without marketplace.
+- **Redaction:** No sensitive data involved — `marketplace` is a two-letter country code.
+
 ## Integration Closure
 
 - Upstream surfaces consumed: `renderTranslatable()` from `utils/renderTranslatable.ts`, `CATEGORY_MAP` from `lib/categoryMap.ts`, `TranslatableText` type from `types/i18n.ts`
@@ -30,7 +37,7 @@
 
 ## Tasks
 
-- [ ] **T01: Add marketplace to evaluation detail API response** `est:20m`
+- [x] **T01: Add marketplace to evaluation detail API response** `est:20m`
   - Why: Frontend needs `marketplace` to determine currency code for formatting. The column already exists on the `evaluations` table (M001 migration 026) but isn't selected in the detail query. Satisfies R018.
   - Files: `backend/app/db/queries/evaluations.py`, `backend/app/modules/evaluations/schemas.py`, `backend/app/modules/evaluations/service.py`
   - Do: Add `e.marketplace` to the SELECT list in `get_evaluation_by_id`. Add `marketplace: str` to `EvaluationDetailRow` TypedDict. Add `marketplace: str = "ID"` to `EvaluationDetailResponse` schema. Pass `marketplace=row.get("marketplace", "ID")` in the service constructor call.
