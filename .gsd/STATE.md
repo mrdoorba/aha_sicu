@@ -1,18 +1,19 @@
 # GSD State
 
-## Current Position
-- **Milestone:** M001
-- **Slice:** S03 (CSV THB Parsing)
-- **Task:** Planning complete, ready for T01 execution
-- **Status:** S03 planned with 2 tasks
+**Active Milestone:** M001: THB Marketplace Expansion
+**Active Slice:** S04: Frontend Currency and Marketplace UI
+**Phase:** executing
+**Requirements Status:** 7 active · 6 validated · 0 deferred · 0 out of scope
 
-## What Just Happened
-S03 planned. Two tasks: T01 extracts shared _parse_price module and updates calculator signatures. T02 wires marketplace from evaluation_inputs through calculator_service. Research correction applied — marketplace comes from evaluation_inputs, not brand_vp_data (D010).
+## Milestone Registry
+- 🔄 **M001:** THB Marketplace Expansion
 
-## Completed Slices
-- [x] S01: Data Model Foundation
-- [x] S02: Scoring Engine Marketplace Awareness
+## Recent Decisions
+- D014: Marketplace selection UX — user-selectable per evaluation via RadioGroup, state in useEvaluationOrchestrator, default 'ID'
+- D015: fields.ts unit: 'IDR' left as static config — render layer overrides via currency prop
 
-## Current Slice Tasks
-- [ ] T01: Extract shared _parse_price module and update calculator signatures (est: 45m)
-- [ ] T02: Wire marketplace from evaluation_inputs through calculator_service (est: 30m)
+## Blockers
+- None
+
+## Next Action
+Execute S04/T01: Add shared currency utilities and extend CurrencyField
