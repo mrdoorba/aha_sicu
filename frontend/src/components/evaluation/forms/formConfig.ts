@@ -31,6 +31,9 @@ export {
   SECTION_LINKS,
   STORE_STATUS_OPTIONS,
   VISITORS_FIELDS,
+  getSectionLinks,
+  getSellerBaseUrl,
+  localizeSellerLink,
 } from './fields';
 export {
   computeSectionProgress,

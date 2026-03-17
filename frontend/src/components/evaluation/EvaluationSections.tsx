@@ -187,6 +187,7 @@ export const EvaluationSections = ({
         <OperationalForm
           data={manualData.operational}
           rules={rules}
+          marketplace={marketplace}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
@@ -201,6 +202,7 @@ export const EvaluationSections = ({
           data={manualData.business}
           rules={rules}
           currency={currency}
+          marketplace={marketplace}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
@@ -208,6 +210,7 @@ export const EvaluationSections = ({
           data={manualData.visitors}
           storeLink={storeLink}
           rules={rules}
+          marketplace={marketplace}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
@@ -222,6 +225,7 @@ export const EvaluationSections = ({
           data={manualData.promoTools}
           salesMonth0={salesMonth0}
           currency={currency}
+          marketplace={marketplace}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
@@ -239,7 +243,7 @@ export const EvaluationSections = ({
         <h3 className="mb-4 text-lg font-semibold text-foreground">
           {t('evaluationSections.step4')}
         </h3>
-        <FileUploadSection brandId={brandId} />
+        <FileUploadSection brandId={brandId} marketplace={marketplace} />
 
         {/* Section 4b: File Downloads */}
         <FileDownloadSection
@@ -256,11 +260,13 @@ export const EvaluationSections = ({
         <AdsForm
           data={manualData.ads}
           salesMonth0={salesMonth0}
+          marketplace={marketplace}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
         <CampaignForm
           data={manualData.campaign}
+          marketplace={marketplace}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />

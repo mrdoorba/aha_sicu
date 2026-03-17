@@ -5,7 +5,7 @@ import { CurrencyField } from './CurrencyField';
 import { NumberField } from './NumberField';
 import { ExternalLink } from 'lucide-react';
 import type { BusinessData } from './formConfig';
-import { BUSINESS_FIELDS, SECTION_LINKS, generateMonthLabels, formatCurrency } from './formConfig';
+import { BUSINESS_FIELDS, getSectionLinks, generateMonthLabels, formatCurrency } from './formConfig';
 import type { ScoringRules } from '../../../hooks/useRules';
 import { getBenchmarkFromRules, FORM_TO_RULES_MAP } from './benchmarkUtils';
 
@@ -13,12 +13,14 @@ interface BusinessFormProps {
   data: BusinessData;
   rules?: ScoringRules;
   currency?: string;
+  marketplace?: string;
   onChange: (category: 'business', key: string, value: number | string | null) => void;
   onBlur: () => void;
 }
 
-export function BusinessForm({ data, rules, currency = 'IDR', onChange, onBlur }: BusinessFormProps) {
+export function BusinessForm({ data, rules, currency = 'IDR', marketplace = 'ID', onChange, onBlur }: BusinessFormProps) {
   const { t } = useTranslation();
+  const links = getSectionLinks(marketplace);
   const monthLabels = useMemo(() => generateMonthLabels(data.salesStartMonth), [data.salesStartMonth]);
 
   // Generate month options for the selector (last 12 months from now)
@@ -55,7 +57,7 @@ export function BusinessForm({ data, rules, currency = 'IDR', onChange, onBlur }
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
           {t('forms.business.title')}
-          <a href={SECTION_LINKS.business} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
+          <a href={links.business} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
             <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>

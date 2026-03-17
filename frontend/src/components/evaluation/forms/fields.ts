@@ -11,6 +11,22 @@ export const STORE_STATUS_OPTIONS: SelectOption[] = [
 
 // ── Section reference links ────────────────────────────────────────────────
 
+/** Returns the Shopee Seller Centre base URL for the given marketplace. */
+export function getSellerBaseUrl(marketplace: string = 'ID'): string {
+  return marketplace === 'TH'
+    ? 'https://seller.shopee.co.th'
+    : 'https://seller.shopee.co.id';
+}
+
+/** Rewrites a seller.shopee.co.id URL to the correct marketplace domain. */
+export function localizeSellerLink(link: string, marketplace: string = 'ID'): string {
+  if (marketplace === 'TH') {
+    return link.replace('seller.shopee.co.id', 'seller.shopee.co.th');
+  }
+  return link;
+}
+
+/** @deprecated Use getSectionLinks(marketplace) instead. */
 export const SECTION_LINKS = {
   operational: 'https://seller.shopee.co.id/portal/accounthealth/home',
   business: 'https://seller.shopee.co.id/datacenter/dashboard',
@@ -19,6 +35,18 @@ export const SECTION_LINKS = {
   ads: 'https://seller.shopee.co.id/portal/marketing/pas/assembly?&type=all&group=last-thirty-days',
   campaign: 'https://seller.shopee.co.id/portal/marketing/cmt-product/campaign?tab=AllCampaign',
 } as const;
+
+export function getSectionLinks(marketplace: string = 'ID') {
+  const base = getSellerBaseUrl(marketplace);
+  return {
+    operational: `${base}/portal/accounthealth/home`,
+    business: `${base}/datacenter/dashboard`,
+    visitors: `${base}/datacenter/traffic/overview`,
+    promoTools: `${base}/datacenter/marketing/tools/discount`,
+    ads: `${base}/portal/marketing/pas/assembly?&type=all&group=last-thirty-days`,
+    campaign: `${base}/portal/marketing/cmt-product/campaign?tab=AllCampaign`,
+  };
+}
 
 // ── Month label constants ─────────────────────────────────────────────────
 

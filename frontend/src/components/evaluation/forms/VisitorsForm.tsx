@@ -3,7 +3,7 @@ import { Card, CardContent } from '../../ui/card';
 import { NumberField } from './NumberField';
 import { ExternalLink } from 'lucide-react';
 import type { VisitorsData } from './formConfig';
-import { VISITORS_FIELDS, SECTION_LINKS } from './formConfig';
+import { VISITORS_FIELDS, getSectionLinks } from './formConfig';
 import type { ScoringRules } from '../../../hooks/useRules';
 import { getBenchmarkFromRules, FORM_TO_RULES_MAP } from './benchmarkUtils';
 
@@ -11,12 +11,14 @@ interface VisitorsFormProps {
   data: VisitorsData;
   storeLink: string | null;
   rules?: ScoringRules;
+  marketplace?: string;
   onChange: (category: 'visitors', key: string, value: number | null) => void;
   onBlur: () => void;
 }
 
-export function VisitorsForm({ data, storeLink, rules, onChange, onBlur }: VisitorsFormProps) {
+export function VisitorsForm({ data, storeLink, rules, marketplace = 'ID', onChange, onBlur }: VisitorsFormProps) {
   const { t } = useTranslation();
+  const links = getSectionLinks(marketplace);
   const totalVisitors = data.totalVisitors ?? 0;
   const returningVisitors = data.returningVisitors ?? 0;
   const rawPct = totalVisitors > 0 ? (returningVisitors / totalVisitors) * 100 : null;
@@ -27,7 +29,7 @@ export function VisitorsForm({ data, storeLink, rules, onChange, onBlur }: Visit
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
           {t('forms.visitors.title')}
-          <a href={SECTION_LINKS.visitors} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
+          <a href={links.visitors} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
             <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>

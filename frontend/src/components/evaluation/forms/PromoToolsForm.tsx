@@ -3,18 +3,20 @@ import { Card, CardContent } from '../../ui/card';
 import { CurrencyField } from './CurrencyField';
 import { ExternalLink } from 'lucide-react';
 import type { PromoToolsData } from './formConfig';
-import { PROMO_TOOLS_FIELDS, SECTION_LINKS } from './formConfig';
+import { PROMO_TOOLS_FIELDS, getSectionLinks, localizeSellerLink } from './formConfig';
 
 interface PromoToolsFormProps {
   data: PromoToolsData;
   salesMonth0: number;
   currency?: string;
+  marketplace?: string;
   onChange: (category: 'promoTools', key: string, value: number | null) => void;
   onBlur: () => void;
 }
 
-export function PromoToolsForm({ data, salesMonth0, currency = 'IDR', onChange, onBlur }: PromoToolsFormProps) {
+export function PromoToolsForm({ data, salesMonth0, currency = 'IDR', marketplace = 'ID', onChange, onBlur }: PromoToolsFormProps) {
   const { t } = useTranslation();
+  const links = getSectionLinks(marketplace);
   // % Penggunaan: count of tools with value > 0 / 11
   const usageCount = PROMO_TOOLS_FIELDS.filter((f) => {
     const val = data[f.key as keyof PromoToolsData];
@@ -44,7 +46,7 @@ export function PromoToolsForm({ data, salesMonth0, currency = 'IDR', onChange, 
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
           {t('forms.promoTools.title')}
-          <a href={SECTION_LINKS.promoTools} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
+          <a href={links.promoTools} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
             <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
@@ -62,7 +64,7 @@ export function PromoToolsForm({ data, salesMonth0, currency = 'IDR', onChange, 
                   onBlur={onBlur}
                 />
                 {field.link && (
-                  <a href={field.link} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openShopeeRef')} className="mt-5 shrink-0">
+                  <a href={localizeSellerLink(field.link, marketplace)} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openShopeeRef')} className="mt-5 shrink-0">
                     <ExternalLink className="size-3.5 text-muted-foreground" aria-hidden="true" />
                   </a>
                 )}

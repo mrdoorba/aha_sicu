@@ -3,17 +3,19 @@ import { Card, CardContent } from '../../ui/card';
 import { CurrencyField } from './CurrencyField';
 import { ExternalLink } from 'lucide-react';
 import type { AdsData } from './formConfig';
-import { ADS_FIELDS, SECTION_LINKS } from './formConfig';
+import { ADS_FIELDS, getSectionLinks } from './formConfig';
 
 interface AdsFormProps {
   data: AdsData;
   salesMonth0: number;
+  marketplace?: string;
   onChange: (category: 'ads', key: string, value: number | null) => void;
   onBlur: () => void;
 }
 
-export function AdsForm({ data, salesMonth0, onChange, onBlur }: AdsFormProps) {
+export function AdsForm({ data, salesMonth0, marketplace = 'ID', onChange, onBlur }: AdsFormProps) {
   const { t } = useTranslation();
+  const links = getSectionLinks(marketplace);
   const adSales = data.adSales ?? 0;
   const adCost = data.adCost ?? 0;
 
@@ -26,7 +28,7 @@ export function AdsForm({ data, salesMonth0, onChange, onBlur }: AdsFormProps) {
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
           {t('forms.ads.title')}
-          <a href={SECTION_LINKS.ads} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
+          <a href={links.ads} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
             <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>

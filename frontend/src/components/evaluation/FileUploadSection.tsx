@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { useBrandUploads, useDownloadFile, useUploadFile, type UploadInfo } from '../../hooks/useUpload';
 import { FileUploadSlot, type FileSlotConfig } from './FileUploadSlot';
 import { toast } from 'sonner';
+import { localizeSellerLink } from './forms/formConfig';
 
 const SLOTS: FileSlotConfig[] = [
   {
@@ -41,9 +42,10 @@ const SLOTS: FileSlotConfig[] = [
 
 interface FileUploadSectionProps {
   brandId: number;
+  marketplace?: string;
 }
 
-export function FileUploadSection({ brandId }: FileUploadSectionProps) {
+export function FileUploadSection({ brandId, marketplace = 'ID' }: FileUploadSectionProps) {
   const { data: brandUploads } = useBrandUploads(brandId);
 
   return (
@@ -51,7 +53,7 @@ export function FileUploadSection({ brandId }: FileUploadSectionProps) {
       {SLOTS.map((slot) => (
         <SlotWrapper
           key={slot.fileType}
-          config={slot}
+          config={{ ...slot, link: slot.link ? localizeSellerLink(slot.link, marketplace) : slot.link }}
           brandId={brandId}
           uploadInfo={
             brandUploads?.uploads.find((u) => u.file_type === slot.fileType) ?? null
