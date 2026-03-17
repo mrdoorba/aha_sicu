@@ -47,6 +47,9 @@ export const EvaluationPage = () => {
     saveError,
     storeName,
     brandName,
+    marketplace,
+    setMarketplace,
+    currency,
   } = useEvaluationOrchestrator(safeBrandId);
 
   return (
@@ -70,6 +73,7 @@ export const EvaluationPage = () => {
               brand={brand}
               isLoading={brandLoading}
               isError={brandError}
+              marketplace={marketplace}
             />
 
             <div className="mt-6 flex gap-6">
@@ -90,6 +94,9 @@ export const EvaluationPage = () => {
                   brandId={safeBrandId}
                   categoryType={categoryType}
                   rules={activeRules}
+                  marketplace={marketplace}
+                  currency={currency}
+                  onMarketplaceChange={setMarketplace}
                   onCategoryChange={handleCategoryChange}
                   onActiveSection={setActiveSection}
                   manualData={manualData}

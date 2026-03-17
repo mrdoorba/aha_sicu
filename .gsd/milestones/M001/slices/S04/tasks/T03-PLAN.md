@@ -126,3 +126,11 @@ The backend API already accepts `marketplace` in the PUT body (evaluation_inputs
 - `frontend/src/components/evaluation/forms/BusinessForm.tsx` — accepts `currency` prop, threads to CurrencyField
 - `frontend/src/components/evaluation/forms/PromoToolsForm.tsx` — accepts `currency` prop, threads to CurrencyField
 - `frontend/src/components/evaluation/forms/CompetitionForm.tsx` — accepts `currency` prop, threads to CurrencyField
+
+## Observability Impact
+
+- **New runtime signal**: `marketplace` field now present in PUT `/api/v1/evaluations/brands/{brand_id}` body and POST `/api/v1/evaluations/brands/{brand_id}/save` body — inspect via browser Network tab
+- **Inspection surface**: `useEvaluationOrchestrator` return value includes `marketplace`, `setMarketplace`, and `currency` — visible in React DevTools on any component consuming the orchestrator
+- **Rules query dimension**: `useRules(marketplace)` now scopes rules by marketplace — React Query devtools show cache key `['rules', 'ID']` or `['rules', 'TH']`
+- **Failure visibility**: If marketplace is not sent in auto-save or final save, backend defaults to `'ID'` — a TH evaluation scored with ID rules produces incorrect results. Verify by inspecting PUT/POST request bodies in Network tab for presence of `marketplace` field
+- **Visual indicator**: Marketplace badge in `EvaluationHeader` and marketplace radio selector in `EvaluationSections` provide immediate visual feedback of active marketplace

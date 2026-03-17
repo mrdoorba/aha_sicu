@@ -34,9 +34,10 @@ interface UseAutoSaveFormOptions {
   brandId: number;
   categoryType: string | null;
   initialData: Record<string, unknown> | null;
+  marketplace?: string;
 }
 
-export function useAutoSaveForm({ brandId, categoryType, initialData }: UseAutoSaveFormOptions) {
+export function useAutoSaveForm({ brandId, categoryType, initialData, marketplace }: UseAutoSaveFormOptions) {
   const saveMutation = useSaveEvaluationInputs(brandId);
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle');
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
@@ -68,6 +69,7 @@ export function useAutoSaveForm({ brandId, categoryType, initialData }: UseAutoS
         {
           category_type: isCategoryType(categoryType) ? categoryType : null,
           manual_data: toRecord(dataToSave),
+          marketplace,
         },
         {
           onSuccess: () => {
@@ -81,7 +83,7 @@ export function useAutoSaveForm({ brandId, categoryType, initialData }: UseAutoS
         },
       );
     },
-    [saveMutation, categoryType],
+    [saveMutation, categoryType, marketplace],
   );
 
   const scheduleSave = useCallback(

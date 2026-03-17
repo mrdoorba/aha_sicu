@@ -8,6 +8,7 @@ import type { CompetitionData, CompetitionProduct } from './formConfig';
 
 interface CompetitionFormProps {
   data: CompetitionData;
+  currency?: string;
   onChange: (category: 'competition', key: string, value: string | number | null) => void;
   onBlur: () => void;
 }
@@ -43,7 +44,7 @@ function CompetitivenessResult({ product }: { product: CompetitionProduct }) {
   );
 }
 
-export function CompetitionForm({ data, onChange, onBlur }: CompetitionFormProps) {
+export function CompetitionForm({ data, currency = 'IDR', onChange, onBlur }: CompetitionFormProps) {
   const { t } = useTranslation();
 
   return (
@@ -79,6 +80,7 @@ export function CompetitionForm({ data, onChange, onBlur }: CompetitionFormProps
                   <CurrencyField
                     name={`competition.${product.key}.sellingPrice`}
                     label={t('forms.competition.sellingPrice')}
+                    currency={currency}
                     value={productData?.sellingPrice ?? null}
                     onChange={(v) => {
                       onChange('competition', `${product.key}.sellingPrice`, v);
@@ -128,6 +130,7 @@ export function CompetitionForm({ data, onChange, onBlur }: CompetitionFormProps
                   <CurrencyField
                     name={`competition.${product.key}.marketPrice`}
                     label={t('forms.competition.marketPrice')}
+                    currency={currency}
                     value={productData?.marketPrice ?? null}
                     onChange={(v) => onChange('competition', `${product.key}.marketPrice`, v)}
                     onBlur={onBlur}

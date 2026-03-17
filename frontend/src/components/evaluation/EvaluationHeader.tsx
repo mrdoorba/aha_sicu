@@ -9,6 +9,7 @@ interface EvaluationHeaderProps {
   brand: BrandDetail | null;
   isLoading: boolean;
   isError: boolean;
+  marketplace?: string;
 }
 
 const VP_DISPLAY_FIELDS = [
@@ -34,7 +35,7 @@ function getDisplayFields(rawData: Record<string, unknown>): Array<[string, stri
     .map(([key, value]) => [key, String(value ?? '')]);
 }
 
-export const EvaluationHeader = ({ brand, isLoading, isError }: EvaluationHeaderProps) => {
+export const EvaluationHeader = ({ brand, isLoading, isError, marketplace }: EvaluationHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
 
@@ -93,6 +94,7 @@ export const EvaluationHeader = ({ brand, isLoading, isError }: EvaluationHeader
 
       <div className="flex items-center gap-3">
         <h2 className="text-2xl font-bold text-foreground">{brand.brand_name}</h2>
+        <Badge variant="outline">{marketplace === 'TH' ? '🇹🇭 TH' : '🇮🇩 ID'}</Badge>
         {brand.meeting_raw_data ? (
           <Badge className="bg-green-500 text-white hover:bg-green-500/90">
             {t('evaluationHeader.meetingData')}

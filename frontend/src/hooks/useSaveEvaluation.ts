@@ -11,6 +11,7 @@ export interface SaveEvaluationRequest {
   manual_inputs: Record<string, unknown>;
   rule_version?: number;
   email_output?: string | null;
+  marketplace?: string;
   period?: string;
 }
 

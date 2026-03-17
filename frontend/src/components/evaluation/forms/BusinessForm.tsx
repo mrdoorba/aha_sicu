@@ -12,6 +12,7 @@ import { getBenchmarkFromRules, FORM_TO_RULES_MAP } from './benchmarkUtils';
 interface BusinessFormProps {
   data: BusinessData;
   rules?: ScoringRules;
+  currency?: string;
   onChange: (category: 'business', key: string, value: number | string | null) => void;
   onBlur: () => void;
 }
@@ -20,7 +21,7 @@ function formatCurrencyDisplay(value: number): string {
   return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 }
 
-export function BusinessForm({ data, rules, onChange, onBlur }: BusinessFormProps) {
+export function BusinessForm({ data, rules, currency = 'IDR', onChange, onBlur }: BusinessFormProps) {
   const { t } = useTranslation();
   const monthLabels = useMemo(() => generateMonthLabels(data.salesStartMonth), [data.salesStartMonth]);
 
@@ -99,6 +100,7 @@ export function BusinessForm({ data, rules, onChange, onBlur }: BusinessFormProp
                   name={`business.${field.key}`}
                   label={label}
                   benchmark={benchmark}
+                  currency={currency}
                   value={data[field.key as keyof BusinessData] as number | null}
                   onChange={(v) => onChange('business', field.key, v)}
                   onBlur={onBlur}

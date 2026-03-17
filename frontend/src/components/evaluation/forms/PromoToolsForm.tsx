@@ -8,11 +8,12 @@ import { PROMO_TOOLS_FIELDS, SECTION_LINKS } from './formConfig';
 interface PromoToolsFormProps {
   data: PromoToolsData;
   salesMonth0: number;
+  currency?: string;
   onChange: (category: 'promoTools', key: string, value: number | null) => void;
   onBlur: () => void;
 }
 
-export function PromoToolsForm({ data, salesMonth0, onChange, onBlur }: PromoToolsFormProps) {
+export function PromoToolsForm({ data, salesMonth0, currency = 'IDR', onChange, onBlur }: PromoToolsFormProps) {
   const { t } = useTranslation();
   // % Penggunaan: count of tools with value > 0 / 11
   const usageCount = PROMO_TOOLS_FIELDS.filter((f) => {
@@ -55,6 +56,7 @@ export function PromoToolsForm({ data, salesMonth0, onChange, onBlur }: PromoToo
                   name={`promoTools.${field.key}`}
                   label={field.label}
                   benchmark={field.benchmark}
+                  currency={currency}
                   value={data[field.key as keyof PromoToolsData] as number | null}
                   onChange={(v) => onChange('promoTools', field.key, v)}
                   onBlur={onBlur}

@@ -28,6 +28,9 @@ interface FormProps {
   brandId: number;
   categoryType: string | null;
   rules?: ScoringRules;
+  marketplace: string;
+  currency: string;
+  onMarketplaceChange: (value: string) => void;
   onCategoryChange: (value: string) => void;
   onActiveSection: (sectionId: string) => void;
   manualData: ManualData;
@@ -73,6 +76,9 @@ export const EvaluationSections = ({
   brandId,
   categoryType,
   rules,
+  marketplace,
+  currency,
+  onMarketplaceChange,
   onCategoryChange,
   onActiveSection,
   manualData,
@@ -140,6 +146,23 @@ export const EvaluationSections = ({
           {t('evaluationSections.step1')}
         </h3>
 
+        {/* Marketplace Selector */}
+        <Card className="mb-4">
+          <CardContent className="pt-4">
+            <p className="mb-3 text-sm font-medium">Marketplace</p>
+            <RadioGroup value={marketplace} onValueChange={onMarketplaceChange} className="flex gap-6">
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="ID" id="mp-id" />
+                <Label htmlFor="mp-id">🇮🇩 Indonesia (IDR)</Label>
+              </div>
+              <div className="flex items-center gap-2">
+                <RadioGroupItem value="TH" id="mp-th" />
+                <Label htmlFor="mp-th">🇹🇭 Thailand (THB)</Label>
+              </div>
+            </RadioGroup>
+          </CardContent>
+        </Card>
+
         {/* Fashion/Non-Fashion Selector */}
         <Card className="mb-4">
           <CardContent className="pt-4">
@@ -177,6 +200,7 @@ export const EvaluationSections = ({
         <BusinessForm
           data={manualData.business}
           rules={rules}
+          currency={currency}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
@@ -197,6 +221,7 @@ export const EvaluationSections = ({
         <PromoToolsForm
           data={manualData.promoTools}
           salesMonth0={salesMonth0}
+          currency={currency}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
@@ -241,6 +266,7 @@ export const EvaluationSections = ({
         />
         <CompetitionForm
           data={manualData.competition}
+          currency={currency}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />

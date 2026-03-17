@@ -454,6 +454,7 @@ interface paths {
           'application/json': {
             category_type?: string | null;
             manual_data?: Record<string, unknown> | null;
+            marketplace?: string;
           };
         };
       };
@@ -666,6 +667,8 @@ interface paths {
             manual_inputs: Record<string, unknown>;
             rule_version?: number;
             email_output?: string | null;
+            marketplace?: string;
+            period?: string;
           };
         };
       };

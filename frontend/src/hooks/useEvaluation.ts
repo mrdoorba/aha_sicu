@@ -13,6 +13,7 @@ export interface EvaluationState {
 export interface EvaluationInputsUpdate {
   category_type?: CategoryType | null;
   manual_data?: Record<string, unknown> | null;
+  marketplace?: string;
 }
 
 export function useEvaluationState(brandId: number) {
