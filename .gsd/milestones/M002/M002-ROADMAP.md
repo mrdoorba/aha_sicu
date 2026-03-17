@@ -17,8 +17,9 @@
 
 ## Proof Strategy
 
-- mailto email body assembly → retire in S02 by proving the frontend can rebuild a complete email body from stored i18n keys matching the backend's `_assemble_email_body` output
-- Pre-i18n fallback → retire in S01 by proving evaluations without _i18n fields render correctly with raw Indonesian text
+- renderTranslatable() on EvaluationDetailPage → retire in S02 by proving all scoring text (messages, conclusions, closing, marketing budget) renders through i18n with language reactivity
+- mailto email body assembly → retire in S03 by proving the frontend can rebuild a complete email body from stored i18n keys matching the backend's `_assemble_email_body` output
+- Pre-i18n fallback → retired in S01 — evaluations without _i18n fields render raw Indonesian category names via CATEGORY_MAP fallback; renderTranslatable() fallback pattern (proven in dashboard) handles message-level fallback
 
 ## Verification Classes
 
@@ -48,13 +49,16 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [x] **S01: EvaluationDetailPage i18n rendering** `risk:medium` `depends:[]`
-  > After this: switch language to EN → open any evaluation in history → all scoring messages, category names, conclusions, closing messages render in English. Old evaluations without i18n keys show Indonesian text.
+- [x] **S01: Backend marketplace field & frontend type declarations** `risk:medium` `depends:[]`
+  > After this: evaluation detail API returns marketplace; TypeScript types declare _i18n fields; ScoreBreakdownTable translates category names via CATEGORY_MAP + t(). Old evaluations without i18n keys show raw Indonesian category names.
 
-- [ ] **S02: Email language selector & i18n body rebuild** `risk:medium` `depends:[S01]`
+- [ ] **S02: EvaluationDetailPage renderTranslatable() wiring** `risk:low` `depends:[S01]`
+  > After this: switch language to EN/TH → open any evaluation in history → all scoring messages, conclusions, closing messages, and marketing budget text render in the selected language. Old evaluations without _i18n fields show raw Indonesian text.
+
+- [ ] **S03: Email language selector & i18n body rebuild** `risk:medium` `depends:[S02]`
   > After this: open any email send dialog (history, dashboard, evaluation page) → pick TH from language dropdown → email body preview renders in Thai while UI stays in current language.
 
-- [ ] **S03: Locale hardcode cleanup & future-proofing** `risk:low` `depends:[S01]`
+- [ ] **S04: Locale hardcode cleanup & future-proofing** `risk:low` `depends:[S01]`
   > After this: all locale files use {{currency}} variable; a documented checklist confirms adding a 4th language requires only locale JSON + config changes; no hardcoded language assumptions remain.
 
 ## Boundary Map
@@ -62,36 +66,48 @@ This milestone is complete only when all are true:
 ### S01 → S02
 
 Produces:
-- `renderTranslatable()` usage pattern established in EvaluationDetailPage — all scoring text renders through i18n
-- Frontend types (`RowScore`, `CategoryScore`, `EvaluationDetail`) with explicit `_i18n` fields
-- Backend evaluation detail API returning `marketplace` field
-- Proven fallback behavior for pre-i18n evaluations
+- Frontend types (`RowScore`, `CategoryScore`) with explicit `_i18n` fields
+- Backend evaluation detail API returning `marketplace` field with dual-layer fallback
+- CATEGORY_MAP + t() pattern in ScoreBreakdownTable — proven category translation with raw fallback
+- `renderTranslatable()` utility already exists in codebase (used by dashboard components)
 
 Consumes:
 - nothing (first slice)
 
-### S01 → S03
+### S02 → S03
 
 Produces:
-- EvaluationDetailPage using `renderTranslatable()` — depends on locale keys being correct
+- `renderTranslatable()` wiring complete in EvaluationDetailPage — all scoring text renders through i18n
+- Proven fallback for pre-i18n evaluations across all text fields (messages, conclusions, closing, marketing budget)
+- Established pattern for consuming `_i18n` fields from score_breakdown data
+
+Consumes from S01:
+- Frontend types with `_i18n` fields
+- `marketplace` field in evaluation detail response
+- CATEGORY_MAP + t() pattern (already wired for categories)
+
+### S01 → S04
+
+Produces:
+- EvaluationDetailPage using i18n rendering — depends on locale keys being correct
 - Frontend types with i18n fields
 
 Consumes:
 - nothing (first slice)
 
-### S02
+### S03
 
 Produces:
 - `EmailLanguageSelector` component (reusable language dropdown for email dialogs)
 - `buildI18nEmailBody(scoringData, t)` function that assembles email body from i18n keys
 - Language selector integrated into SendMailDialog (history), SendEmailDialog (dashboard), EmailOutput (evaluation page)
 
-Consumes from S01:
+Consumes from S02:
+- Full renderTranslatable() pattern for rendering i18n text on EvaluationDetailPage
 - Frontend types with explicit `_i18n` fields
-- `renderTranslatable()` pattern for rendering i18n text
 - `marketplace` field available in evaluation detail data
 
-### S03
+### S04
 
 Produces:
 - Fixed locale files (6 keys updated from hardcoded IDR to {{currency}})
