@@ -272,7 +272,7 @@ export const EvaluationSections = ({
         />
 
         {/* Calculator Results */}
-        <CalculatorResultsSection brandId={brandId} />
+        <CalculatorResultsSection brandId={brandId} marketplace={marketplace} />
 
         {/* Final Score */}
         <section id="section-6" ref={setSectionRef('section-6')} className="mt-4">

@@ -92,3 +92,10 @@ Replace all remaining local `formatIDR` functions and hardcoded `IDR` string lit
 - `frontend/src/pages/EvaluationDetailPage.tsx` — local `formatIDR` removed, uses imported `formatCurrency` with marketplace
 - `frontend/src/components/evaluation/forms/BusinessForm.tsx` — local `formatCurrencyDisplay` removed, uses imported `formatCurrency`/`getCurrencyCode`
 - Grep audit clean: only acceptable survivors remain
+
+## Observability Impact
+
+- **Currency display signals**: All currency-formatted values now flow through `formatCurrency(value, marketplace)` — a single breakpoint or log in `formUtils.ts:formatCurrency` captures every currency format call site-wide.
+- **Marketplace threading verification**: In React DevTools, inspect any `TopSkuResults`, `DataIntelligence`, or `BusinessForm` component props — `marketplace` / `currency` should be present and reflect the selected marketplace.
+- **EvaluationDetailPage marketplace**: The detail page extracts `marketplace` from the saved evaluation record (`evaluation.marketplace`). If absent (older evaluations), it defaults to `undefined` → `formatCurrency` uses default formatting. Inspect the network response for `/api/v1/evaluations/{id}` to verify the `marketplace` field presence.
+- **Regression detection**: `grep -rn "formatIDR\|formatCurrencyDisplay" frontend/src --include="*.tsx" --include="*.ts" | grep -v test | grep -v deprecated` — any new hits indicate regression from this cleanup pass.

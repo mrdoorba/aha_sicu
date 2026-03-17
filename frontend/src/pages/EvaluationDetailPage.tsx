@@ -24,6 +24,7 @@ import { FinalScoreDisplay } from '../components/evaluation/scoring/FinalScoreDi
 import {
   MANUAL_DATA_FIELDS,
   generateMonthLabels,
+  formatCurrency,
   type FieldDefinition,
 } from '../components/evaluation/forms/formConfig';
 import { isRecord, isRecordArray } from '../lib/typeGuards';
@@ -55,24 +56,24 @@ function formatDate(dateStr: string): string {
   });
 }
 
-function formatIDR(value: unknown): string {
+function formatNumber(value: unknown, marketplace?: string): string {
   if (typeof value !== 'number') return String(value ?? '-');
-  return value.toLocaleString('en-US');
+  return formatCurrency(value, marketplace);
 }
 
-function formatValue(value: unknown, key: string, fieldDef?: FieldDefinition): string {
+function formatValue(value: unknown, key: string, fieldDef?: FieldDefinition, marketplace?: string): string {
   if (value === null || value === undefined) return '-';
-  if (Array.isArray(value)) return value.map((v) => formatIDR(v)).join(', ');
+  if (Array.isArray(value)) return value.map((v) => formatNumber(v, marketplace)).join(', ');
 
   // Metadata-based formatting when field definition is available
   if (fieldDef && typeof value === 'number') {
     if (fieldDef.inputType === 'currency') {
-      return value.toLocaleString('en-US');
+      return formatCurrency(value, marketplace);
     }
     if (fieldDef.inputType === 'number' && fieldDef.unit === '%') {
       return `${value}%`;
     }
-    return value.toLocaleString('en-US');
+    return formatCurrency(value, marketplace);
   }
 
   // Fallback heuristics for fields not in config
@@ -81,7 +82,7 @@ function formatValue(value: unknown, key: string, fieldDef?: FieldDefinition): s
       return `${value}%`;
     }
     if (key.includes('sales') || key.includes('omzet') || key.includes('budget') || key.includes('revenue')) {
-      return formatIDR(value);
+      return formatNumber(value, marketplace);
     }
     return String(value);
   }
@@ -135,7 +136,7 @@ function AdsKeywordSection({ data, t }: { data: Record<string, unknown>; t: (key
   return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
 }
 
-function TopSkuSection({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
+function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>; t: (key: string) => string; marketplace?: string }) {
   const details = isRecord(data.details) ? data.details : undefined;
   const output1 = (isRecordArray(details?.output_1) ? details.output_1 : []).slice(0, 5);
   const output2 = (isRecordArray(details?.output_2) ? details.output_2 : []).slice(0, 5);
@@ -185,8 +186,8 @@ function TopSkuSection({ data, t }: { data: Record<string, unknown>; t: (key: st
                     <TableRow key={String(row.kode_variasi ?? i)}>
                       <TableCell>{String(row.kode_variasi ?? '-')}</TableCell>
                       <TableCell>{String(row.product_name ?? row.nama_produk ?? '-')}</TableCell>
-                      <TableCell className="text-right">{formatIDR(row.total_omzet)}</TableCell>
-                      <TableCell className="text-right">{formatIDR(row.rata2_harga_jual)}</TableCell>
+                      <TableCell className="text-right">{formatNumber(row.total_omzet, marketplace)}</TableCell>
+                      <TableCell className="text-right">{formatNumber(row.rata2_harga_jual, marketplace)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -211,7 +212,7 @@ function TopSkuSection({ data, t }: { data: Record<string, unknown>; t: (key: st
                       <TableCell>{String(row.kode_variasi ?? '-')}</TableCell>
                       <TableCell>{String(row.nama_produk ?? '-')}</TableCell>
                       <TableCell>{String(row.varian ?? '-')}</TableCell>
-                      <TableCell className="text-right">{formatIDR(row.stok)}</TableCell>
+                      <TableCell className="text-right">{formatNumber(row.stok, marketplace)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -243,9 +244,11 @@ function resolveNestedValue(obj: Record<string, unknown>, dotKey: string): unkno
 function ManualInputsSection({
   inputs,
   t,
+  marketplace,
 }: {
   inputs: Record<string, unknown>;
   t: (key: string) => string;
+  marketplace?: string;
 }) {
   const categories = Object.entries(inputs);
   if (categories.length === 0) {
@@ -324,7 +327,7 @@ function ManualInputsSection({
                       <div className="space-y-1 text-sm">
                         {productEntries.map(([key, val, fieldDef]) => {
                           const isLink = key.endsWith('.link');
-                          const formatted = formatValue(val, key, fieldDef);
+                          const formatted = formatValue(val, key, fieldDef, marketplace);
                           return (
                             <div key={key} className="border-b border-border/50 py-1">
                               <span className="text-muted-foreground">
@@ -368,7 +371,7 @@ function ManualInputsSection({
                     {dynamicLabel ?? fieldDef?.label ?? key.replace(/_/g, ' ')}
                   </span>
                   <div className="font-medium break-words">
-                    {formatValue(val, key, fieldDef)}
+                    {formatValue(val, key, fieldDef, marketplace)}
                     {fieldDef?.benchmark && (
                       <span className="ml-1 text-xs text-muted-foreground">({fieldDef.benchmark})</span>
                     )}
@@ -588,6 +591,7 @@ export function EvaluationDetailPage() {
                     <TopSkuSection
                       data={evaluation.calculator_results.top_sku}
                       t={t}
+                      marketplace={evaluation.marketplace}
                     />
                   ) : (
                     <p className="text-muted-foreground">{t('common.noData')}</p>
@@ -614,7 +618,7 @@ export function EvaluationDetailPage() {
                 <CardTitle className="text-lg">{t('evaluationDetail.manualInputs')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ManualInputsSection inputs={evaluation.manual_inputs} t={t} />
+                <ManualInputsSection inputs={evaluation.manual_inputs} t={t} marketplace={evaluation.marketplace} />
               </CardContent>
             </Card>
 

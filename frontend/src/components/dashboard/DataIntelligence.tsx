@@ -8,14 +8,16 @@ import type { AdsKeywordDetails, TranslatableI18n } from '../../hooks/useCalcula
 import { renderTranslatable, renderAdList, renderFlagList } from '../../utils/renderTranslatable';
 import { isRecord, isRecordArray } from '../../lib/typeGuards';
 import { isAdsKeywordDetails } from '../../lib/calculatorGuards';
+import { formatCurrency } from '../evaluation/forms/formConfig';
 
 interface DataIntelligenceProps {
   calculatorResults: Record<string, unknown>;
+  marketplace?: string;
 }
 
-function formatIDR(value: unknown): string {
+function formatValue(value: unknown, marketplace?: string): string {
   if (typeof value !== 'number') return String(value ?? '-');
-  return value.toLocaleString('en-US');
+  return formatCurrency(value, marketplace);
 }
 
 function AdsContent({ data, t }: { data: Record<string, unknown>; t: TFunction }) {
@@ -60,7 +62,7 @@ function AdsContent({ data, t }: { data: Record<string, unknown>; t: TFunction }
   );
 }
 
-function TopSkuContent({ data, t }: { data: Record<string, unknown>; t: TFunction }) {
+function TopSkuContent({ data, t, marketplace }: { data: Record<string, unknown>; t: TFunction; marketplace?: string }) {
   const details = isRecord(data.details) ? data.details : undefined;
   const output1 = isRecordArray(details?.output_1) ? details.output_1 : [];
   const output2 = isRecordArray(details?.output_2) ? details.output_2 : [];
@@ -75,7 +77,7 @@ function TopSkuContent({ data, t }: { data: Record<string, unknown>; t: TFunctio
       {avgStock !== undefined && avgStock !== null && (
         <div className="inline-flex items-center rounded-lg bg-primary/5 px-4 py-2 border border-primary/10">
           <p className="text-sm font-semibold">
-            {t('evaluationDetail.averageStock')}: <span className="text-primary ml-1">{formatIDR(avgStock)}</span>
+            {t('evaluationDetail.averageStock')}: <span className="text-primary ml-1">{formatValue(avgStock, marketplace)}</span>
           </p>
         </div>
       )}
@@ -96,7 +98,7 @@ function TopSkuContent({ data, t }: { data: Record<string, unknown>; t: TFunctio
                   <TableRow key={String(row.kode_variasi ?? i)} className="hover:bg-muted/30">
                     <TableCell className="font-medium">{String(row.kode_variasi ?? '-')}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{String(row.product_name ?? row.nama_produk ?? '-')}</TableCell>
-                    <TableCell className="text-right font-bold text-primary">{formatIDR(row.total_omzet)}</TableCell>
+                    <TableCell className="text-right font-bold text-primary">{formatValue(row.total_omzet, marketplace)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -121,7 +123,7 @@ function TopSkuContent({ data, t }: { data: Record<string, unknown>; t: TFunctio
                   <TableRow key={String(row.kode_variasi ?? i)} className="hover:bg-muted/30">
                     <TableCell className="font-medium">{String(row.kode_variasi ?? '-')}</TableCell>
                     <TableCell className="max-w-[200px] truncate">{String(row.nama_produk ?? '-')}</TableCell>
-                    <TableCell className="text-right font-bold text-orange-500">{formatIDR(row.stok)}</TableCell>
+                    <TableCell className="text-right font-bold text-orange-500">{formatValue(row.stok, marketplace)}</TableCell>
                   </TableRow>
                 ))}
               </TableBody>
@@ -134,7 +136,7 @@ function TopSkuContent({ data, t }: { data: Record<string, unknown>; t: TFunctio
 }
 
 
-export const DataIntelligence = ({ calculatorResults }: DataIntelligenceProps) => {
+export const DataIntelligence = ({ calculatorResults, marketplace }: DataIntelligenceProps) => {
   const { t } = useTranslation();
   const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set(['ads']));
 
@@ -163,7 +165,7 @@ export const DataIntelligence = ({ calculatorResults }: DataIntelligenceProps) =
             {visitedTabs.has('ads') && <AdsContent data={adsData} t={t} />}
           </TabsContent>
           <TabsContent value="sku">
-            {visitedTabs.has('sku') && <TopSkuContent data={skuData} t={t} />}
+            {visitedTabs.has('sku') && <TopSkuContent data={skuData} t={t} marketplace={marketplace} />}
           </TabsContent>
         </Tabs>
       </CardContent>

@@ -5,7 +5,7 @@ import { CurrencyField } from './CurrencyField';
 import { NumberField } from './NumberField';
 import { ExternalLink } from 'lucide-react';
 import type { BusinessData } from './formConfig';
-import { BUSINESS_FIELDS, SECTION_LINKS, generateMonthLabels } from './formConfig';
+import { BUSINESS_FIELDS, SECTION_LINKS, generateMonthLabels, formatCurrency } from './formConfig';
 import type { ScoringRules } from '../../../hooks/useRules';
 import { getBenchmarkFromRules, FORM_TO_RULES_MAP } from './benchmarkUtils';
 
@@ -15,10 +15,6 @@ interface BusinessFormProps {
   currency?: string;
   onChange: (category: 'business', key: string, value: number | string | null) => void;
   onBlur: () => void;
-}
-
-function formatCurrencyDisplay(value: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
 }
 
 export function BusinessForm({ data, rules, currency = 'IDR', onChange, onBlur }: BusinessFormProps) {
@@ -127,7 +123,7 @@ export function BusinessForm({ data, rules, currency = 'IDR', onChange, onBlur }
         <div className="mt-4">
           <p className="mb-1 text-sm font-medium">{t('forms.business.averageSales')}</p>
           <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
-            {average == null ? '—' : formatCurrencyDisplay(average)}
+            {average == null ? '—' : `${currency} ${formatCurrency(average)}`}
           </div>
         </div>
       </CardContent>

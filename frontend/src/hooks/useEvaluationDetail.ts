@@ -25,6 +25,7 @@ export interface EvaluationDetail {
   rule_version: number;
   period: string;
   brand_raw_data: BrandRawData;
+  marketplace?: string;
 }
 
 class ApiError extends Error {
