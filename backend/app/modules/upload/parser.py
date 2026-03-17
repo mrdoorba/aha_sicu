@@ -19,6 +19,7 @@ SHOPEE_CSV_SKIP_ROWS = 7
 # settings.  We normalise to Indonesian so the calculator layer stays unchanged.
 
 _COLUMN_RENAME: dict[str, str] = {
+    # CPC / Keyword report columns
     "Ad Name": "Nama Iklan",
     "Ads Type": "Jenis Iklan",
     "Product ID": "Kode Produk",
@@ -29,6 +30,11 @@ _COLUMN_RENAME: dict[str, str] = {
     "GMV": "Omzet Penjualan",
     "ROAS": "Efektifitas Iklan",
     "Match Type": "Tipe Pencarian",
+    # Mass Update columns
+    "Product Name": "Nama Produk",
+    "Variation ID": "Kode Variasi",
+    "Variation Name": "Nama Variasi",
+    "Price": "Harga",
 }
 
 _VALUE_MAPS: dict[str, dict[str, str]] = {
@@ -58,12 +64,23 @@ _VALUE_MAPS: dict[str, dict[str, str]] = {
 def _normalise_english_columns(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
     """Rename English Shopee columns to Indonesian and translate cell values.
 
+    Also renames ``Stock*`` columns to ``Stok*`` so the calculator's
+    ``startswith("Stok")`` lookup works for multi-warehouse files.
+
     Returns:
         Tuple of (normalised DataFrame, was_english) where was_english is True
         if English column renames were applied.
     """
     actual = set(df.columns)
     rename_map = {en: id_ for en, id_ in _COLUMN_RENAME.items() if en in actual}
+
+    # Rename "Stock", "Stock 2", "Stock 3", … → "Stok", "Stok 2", "Stok 3", …
+    for col in actual:
+        if col == "Stock":
+            rename_map[col] = "Stok"
+        elif col.startswith("Stock "):
+            rename_map[col] = "Stok " + col[len("Stock "):]
+
     if not rename_map:
         return df, False  # already Indonesian or unrelated
 

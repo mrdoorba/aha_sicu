@@ -7,6 +7,7 @@ from app.core.exceptions import UploadException
 from app.modules.upload.parser import (
     REQUIRED_COLUMNS,
     SHOPEE_CSV_SKIP_ROWS,
+    _normalise_english_columns,
     _normalise_thai_columns,
     dataframe_to_json,
     parse_csv,
@@ -349,3 +350,94 @@ class TestThaiOrderExportNormalisation:
         result, _ = _normalise_thai_columns(df)
         rows = result.to_dicts()
         assert all(r["Jumlah Produk di Pesan"] == 5 for r in rows)
+
+
+# ---------------------------------------------------------------------------
+# English mass update normalisation
+# ---------------------------------------------------------------------------
+
+class TestEnglishMassUpdateNormalisation:
+    """Tests for _normalise_english_columns with mass update headers."""
+
+    def test_renames_mass_update_columns(self):
+        df = pl.DataFrame({
+            "Product ID": ["P1"],
+            "Product Name": ["Widget"],
+            "Variation ID": ["V1"],
+            "Variation Name": ["Red"],
+            "SKU": ["SKU1"],
+            "Price": [100],
+            "Stock": [50],
+        })
+        result, was_english = _normalise_english_columns(df)
+
+        assert was_english is True
+        assert "Kode Produk" in result.columns
+        assert "Nama Produk" in result.columns
+        assert "Kode Variasi" in result.columns
+        assert "Nama Variasi" in result.columns
+        assert "SKU" in result.columns  # unchanged
+        assert "Harga" in result.columns
+        assert "Stok" in result.columns
+
+    def test_validates_after_normalisation(self):
+        df = pl.DataFrame({
+            "Product ID": ["P1"],
+            "Product Name": ["Widget"],
+            "Variation ID": ["V1"],
+            "Variation Name": ["Red"],
+            "SKU": ["SKU1"],
+            "Price": [100],
+        })
+        result, _ = _normalise_english_columns(df)
+        validate_columns(result, "mass_update")  # should not raise
+
+    def test_stock_prefix_rename_single(self):
+        """'Stock' → 'Stok'."""
+        df = pl.DataFrame({"Stock": [10], "Product ID": ["P1"]})
+        result, was_english = _normalise_english_columns(df)
+        assert was_english is True
+        assert "Stok" in result.columns
+        assert "Stock" not in result.columns
+
+    def test_stock_prefix_rename_multi_warehouse(self):
+        """'Stock', 'Stock 2', 'Stock 3' → 'Stok', 'Stok 2', 'Stok 3'."""
+        df = pl.DataFrame({
+            "Product ID": ["P1"],
+            "Stock": [10],
+            "Stock 2": [20],
+            "Stock 3": [30],
+        })
+        result, _ = _normalise_english_columns(df)
+        assert "Stok" in result.columns
+        assert "Stok 2" in result.columns
+        assert "Stok 3" in result.columns
+        assert "Stock" not in result.columns
+        assert "Stock 2" not in result.columns
+        assert "Stock 3" not in result.columns
+
+    def test_indonesian_mass_update_passthrough(self):
+        """Indonesian mass update headers pass through unchanged."""
+        df = pl.DataFrame({
+            "Kode Produk": ["P1"],
+            "Nama Produk": ["Widget"],
+            "Kode Variasi": ["V1"],
+            "Nama Variasi": ["Red"],
+            "SKU": ["SKU1"],
+            "Harga": [100],
+            "Stok": [50],
+        })
+        result, was_english = _normalise_english_columns(df)
+        assert was_english is False
+
+    def test_stok_columns_work_with_startswith(self):
+        """After rename, all stock columns match startswith('Stok')."""
+        df = pl.DataFrame({
+            "Product ID": ["P1"],
+            "Stock": [10],
+            "Stock 2": [20],
+            "Stock 3": [30],
+        })
+        result, _ = _normalise_english_columns(df)
+        stok_cols = [c for c in result.columns if c.startswith("Stok")]
+        assert len(stok_cols) == 3

@@ -13,11 +13,12 @@ from app.db.queries import brands as brand_queries
 from app.db.queries import uploads as upload_queries
 from app.modules.upload.gcs_client import get_storage_client, make_object_name
 from app.modules.upload.parser import (
+    _normalise_english_columns,
+    _normalise_thai_columns,
     dataframe_to_json,
     parse_csv,
     parse_excel,
     validate_columns,
-    _normalise_thai_columns,
 )
 from app.modules.upload.schemas import (
     AutoCalculatedItem,
@@ -38,8 +39,8 @@ def _parse_file(
     """Parse file bytes into a DataFrame based on extension.
 
     Returns (df, source_language). Delegates to the appropriate parser
-    based on file extension.  Thai column headers are normalised to
-    Indonesian after parsing so the calculator layer stays unchanged.
+    based on file extension.  English and Thai column headers are
+    normalised to Indonesian so the calculator layer stays unchanged.
     """
     source_language = "id"
 
@@ -56,10 +57,18 @@ def _parse_file(
             detail=f"Unsupported file extension: {filename_lower}",
         )
 
+    # Normalise English columns → Indonesian (CSV already does this in
+    # parse_csv, but Excel/ZIP files need it here)
+    if source_language == "id":  # skip if parse_csv already detected English
+        df, was_english = _normalise_english_columns(df)
+        if was_english:
+            source_language = "en"
+
     # Normalise Thai columns → Indonesian (order_export only for now)
-    df, was_thai = _normalise_thai_columns(df)
-    if was_thai:
-        source_language = "th"
+    if source_language != "en":  # Thai and English are mutually exclusive
+        df, was_thai = _normalise_thai_columns(df)
+        if was_thai:
+            source_language = "th"
 
     return df, source_language
 
