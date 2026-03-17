@@ -93,6 +93,12 @@ Extract a shared `_parse_price(value, marketplace)` function into a new `price_p
 - `PYTHONPATH=backend /Users/mac/HT/Project/aha_sicu/backend/.venv/bin/python -m pytest backend/tests/unit/calculators/test_top_sku.py -x -v` — all existing top_sku tests pass
 - `grep -rn '_clean_price' backend/app/ --include='*.py'` — returns nothing
 
+## Observability Impact
+
+- **Signals changed:** No new runtime logs or metrics. The behavioral change is purely in price-parsing output values — THB prices that previously returned 0.0 or wildly wrong numbers now parse correctly.
+- **Inspection surface:** `_parse_price(value, marketplace)` is a pure function — testable in isolation via REPL or unit tests. The `marketplace` parameter on `calculate_discount` and `calculate_top_sku` is inspectable in function signatures and test assertions.
+- **Failure visibility:** Parsing failures silently return 0.0 (same as before). If a THB price is parsed with ID marketplace, the `.` decimal will be stripped, producing a value 100x too large — visible in calculator output as inflated prices. Unit tests guard against this regression.
+
 ## Inputs
 
 - `backend/app/calculators/discount.py` — contains `_clean_price` (lines 49–67), `calculate_discount` (line 320). The `_clean_price` function strips `.` and calls `float()`. 6 call sites in `_calculate_line_items`.

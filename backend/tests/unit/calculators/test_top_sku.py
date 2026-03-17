@@ -5,6 +5,7 @@ with KYPSO and MND sample data patterns.
 """
 
 
+from app.calculators.price_parser import _parse_price
 from app.calculators.top_sku import (
     AggregatedProduct,
     EnrichedProduct,
@@ -13,7 +14,6 @@ from app.calculators.top_sku import (
     _build_mass_update_lookup,
     _build_output_tables,
     _calculate_average_stock,
-    _clean_price,
     _enrich_with_mass_update,
     _extract_per_line,
     _rank_top_products,
@@ -23,34 +23,34 @@ from app.calculators.top_sku import (
 
 
 # ---------------------------------------------------------------------------
-# _clean_price tests
+# _parse_price tests (via shared price_parser module)
 # ---------------------------------------------------------------------------
 
 
-class TestCleanPrice:
+class TestParsePrice:
     def test_removes_dots(self):
-        assert _clean_price("529.000") == 529000.0
+        assert _parse_price("529.000") == 529000.0
 
     def test_multiple_dots(self):
-        assert _clean_price("1.250.000") == 1250000.0
+        assert _parse_price("1.250.000") == 1250000.0
 
     def test_empty_string(self):
-        assert _clean_price("") == 0.0
+        assert _parse_price("") == 0.0
 
     def test_none(self):
-        assert _clean_price(None) == 0.0
+        assert _parse_price(None) == 0.0
 
     def test_zero_string(self):
-        assert _clean_price("0") == 0.0
+        assert _parse_price("0") == 0.0
 
     def test_integer_passthrough(self):
-        assert _clean_price(100000) == 100000.0
+        assert _parse_price(100000) == 100000.0
 
     def test_float_passthrough(self):
-        assert _clean_price(99.5) == 99.5
+        assert _parse_price(99.5) == 99.5
 
     def test_non_numeric_string(self):
-        assert _clean_price("abc") == 0.0
+        assert _parse_price("abc") == 0.0
 
 
 # ---------------------------------------------------------------------------

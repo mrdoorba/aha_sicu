@@ -26,6 +26,13 @@
 - `PYTHONPATH=backend /Users/mac/HT/Project/aha_sicu/backend/.venv/bin/python -m pytest backend/tests/unit/calculators/test_calculator_service_marketplace.py -x -v` — all pass (wiring)
 - `PYTHONPATH=backend /Users/mac/HT/Project/aha_sicu/backend/.venv/bin/python -m pytest backend/tests/unit/calculators/ -x` — full calculator suite passes (3 pre-existing failures in test_ads_keyword.py excluded)
 
+## Observability / Diagnostics
+
+- **Runtime signals:** `_parse_price` returns 0.0 for any unparseable value — downstream calculators will show zero-value line items rather than crash. Watch for unexpected 0.0 aggregations in calculator output as a sign of parsing issues.
+- **Inspection surfaces:** Run `_parse_price(sample_value, marketplace)` in a REPL to verify parsing for any currency format. Calculator test suites exercise both IDR and THB formats.
+- **Failure visibility:** If marketplace param is missing or wrong, price parsing silently falls back to IDR behavior (default `"ID"`). No explicit error is raised — this is by design for backward compatibility. Incorrect marketplace will show in calculator output (e.g., THB prices parsed as IDR will be 1000x too large or return 0.0).
+- **Redaction constraints:** None — price values are not PII.
+
 ## Integration Closure
 
 - Upstream surfaces consumed: `app/core/marketplace.py` (VALID_MARKETPLACES), `app/db/queries/evaluations.py` (get_evaluation_inputs returns marketplace)
@@ -34,7 +41,7 @@
 
 ## Tasks
 
-- [ ] **T01: Extract shared _parse_price module and update calculator signatures** `est:45m`
+- [x] **T01: Extract shared _parse_price module and update calculator signatures** `est:45m`
   - Why: The core parsing logic — two identical `_clean_price` functions in discount.py and top_sku.py unconditionally strip `.` which destroys THB prices. Must extract into a shared module with marketplace-aware parsing, update both calculator public functions to accept `marketplace`, and write comprehensive tests. This is the highest-risk task — get parsing right first.
   - Files: `backend/app/calculators/price_parser.py` (new), `backend/app/calculators/discount.py`, `backend/app/calculators/top_sku.py`, `backend/tests/unit/calculators/test_price_parser.py` (new), `backend/tests/unit/calculators/test_discount.py`, `backend/tests/unit/calculators/test_top_sku.py`
   - Do: (1) Create `price_parser.py` with `_parse_price(value, marketplace="ID")` — for ID: strip `.`, for TH: strip `,`, keep `.` as decimal. Handle None, int, float, empty string, non-numeric. (2) In discount.py: remove `_clean_price`, import `_parse_price` from price_parser, add `marketplace="ID"` param to `calculate_discount`, pass to all `_parse_price` calls. (3) Same for top_sku.py: remove `_clean_price`, import, add `marketplace="ID"` to `calculate_top_sku`, pass through. (4) Create `test_price_parser.py` with tests for both formats. (5) Update existing test imports in test_discount.py and test_top_sku.py — change `_clean_price` imports to `_parse_price` from price_parser, adjust test assertions to pass `marketplace` where needed. All existing test assertions must still pass.
