@@ -39,6 +39,22 @@ The service.py `generate_score` function passes `marketplace` as a **positional*
 
 `ScoringResponse` schema has required string fields (`marketing_estimation`, `marketing_percentage`, `marketing_budget`, `closing_message`, `email_subject`, `email_body`). When mocking `calculate_score` results, set these to `""` not `None`.
 
+## Worktree Milestone Merge: Must Run From Main Repo
+
+Auto-mode's milestone merge fails in worktree mode because it tries `git checkout develop` inside the worktree, but `develop` is already checked out in the main repo — git forbids two worktrees on the same branch. The fix is to merge from the main repo side:
+
+```bash
+cd /Users/mac/HT/Project/aha_sicu
+git add .gsd/milestones/M00X/    # track any untracked .gsd artifacts first
+git commit -m "chore: track M00X artifacts before merge"
+git merge --squash milestone/M00X
+git commit -m "M00X: <title>"
+git worktree remove --force .gsd/worktrees/M00X
+git branch -D milestone/M00X
+```
+
+The `git add` step is necessary because `.gsd/` artifacts created by auto-mode in the main repo may be untracked, and `git merge --squash` refuses to overwrite untracked files.
+
 ## Bottom Ads Test Data: am10 Round() Gotcha
 
 When writing tests for bottom ads in `calculate_sheet2`, the BOTTOM query requires `roas < am10`. The `am10` threshold is `min(round(avg_roas), 3)`. If test data uses fractional ROAS values < 0.5 (e.g., 0.1, 0.2), `round()` produces 0 and no ads can satisfy `roas < 0`. Use integer ROAS values (1, 2) to get a meaningful am10 threshold.
