@@ -30,30 +30,24 @@ Author: Mr. Door
 
 ## Test-Driven Development
 
-**Cycle:** Red → Green → Refactor
-
-**Three Rules of TDD:**
-1. No production code except to pass a failing test
-2. No more test code than sufficient to fail
-3. No more production code than sufficient to pass
-
-**Test structure — AAA:** Arrange (setup) → Act (execute) → Assert (verify). One assert per test.
+**Cycle:** Red → Green → Refactor. AAA structure: Arrange → Act → Assert. One assert per test.
 
 **Naming:** `test_<expected>_when_<condition>` (backend) / `should <expected> when <condition>` (frontend)
+
+**Runners & tools:**
+- Backend: **pytest** + pytest-asyncio. Tests in `backend/tests/`.
+- Frontend: **vitest** + Testing Library + jsdom. Test files colocated (`*.test.tsx`).
+
+**Known gotchas:**
+- Rules query function is `get_rules_by_template_and_marketplace` (renamed from `get_rules_by_template`) — mocks must use the new name
+- `generate_score` passes `marketplace` as a **positional** arg — mock assertions must match: `(conn, "default", "TH")` not `(conn, "default", marketplace="TH")`
+- `ScoringResponse` required string fields (`marketing_estimation`, `marketing_percentage`, `marketing_budget`, `closing_message`, `email_subject`, `email_body`) must be `""` not `None` when mocking
 
 ---
 
 ## SOLID Principles
 
-Apply SOLID where it reduces complexity — not as ritual.
-
-- **S — Single Responsibility:** Each class/module has one reason to change. If a class handles both business logic and persistence, split it.
-- **O — Open/Closed:** Extend behavior through new code (new classes, strategies, handlers), not by modifying existing working code. Use abstractions (protocols, interfaces) as extension points.
-- **L — Liskov Substitution:** Subtypes must be substitutable for their base types without breaking behavior. If overriding changes the contract, the hierarchy is wrong.
-- **I — Interface Segregation:** Prefer small, focused interfaces over fat ones. Clients should not depend on methods they don't use.
-- **D — Dependency Inversion:** High-level modules depend on abstractions, not concrete implementations. Inject dependencies; don't instantiate them internally.
-
-**When to apply:** Classes with multiple responsibilities, modules that change for unrelated reasons, or code that's hard to test due to tight coupling. **When to skip:** Simple scripts, one-off utilities, or code that's unlikely to change.
+Apply SOLID where it reduces complexity — not as ritual. Prefer composition over inheritance.
 
 ---
 
@@ -61,24 +55,55 @@ Apply SOLID where it reduces complexity — not as ritual.
 
 ### General Principles
 
-Prioritize: simplicity, robustness, performance, correctness. Avoid over-engineering.
+Prioritize: simplicity, robustness, performance, correctness. Avoid over-engineering. Stay consistent with existing patterns unless they're clearly suboptimal — then improve and flag the change.
 
 ### Backend
 
 - Type hints on all function signatures
-- Stay consistent with existing patterns unless they're clearly suboptimal — then improve and flag the change
 
 ### Frontend
 
 - TypeScript strict mode
-- Stay consistent with existing patterns unless they're clearly suboptimal — then improve and flag the change
-- Test files colocated with source (`*.test.tsx`)
 
 ### Python Tooling
 
 - Use **`uv`** for all Python-related tasks: dependency management, virtual environments, running scripts, and installing packages
 - `uv run` to execute scripts, `uv add` / `uv remove` for dependencies, `uv sync` to install, `uv venv` for environments
 
-### Infrastructure
+---
 
-- Stay consistent with existing patterns unless they're clearly suboptimal — then improve and flag the change
+## Key Paths
+
+- Scoring engine: `backend/app/calculators/scoring/`
+- Marketplace constants: `backend/app/core/marketplace.py`
+- Email templates: `backend/app/modules/email/template.py`
+- DB migrations: `backend/alembic/versions/`
+- i18n locales: `frontend/src/locales/{id,en,th}.json`
+- Translation utility: `frontend/src/utils/renderTranslatable.ts`
+- Category mapping: `frontend/src/lib/categoryMap.ts`
+
+---
+
+## Running
+
+- Backend tests: `cd backend && uv run pytest tests/ -x`
+- Frontend tests: `cd frontend && npm test` (vitest in watch mode) / `npm run test:run` (single run)
+- Dev stack: `docker-compose up`
+- Backend lint: `cd backend && uv run ruff check .`
+- Frontend lint: `cd frontend && npm run lint`
+
+---
+
+## Error Handling
+
+### Backend
+
+- Custom `AppException(code, detail, status_code)` in `app/core/exceptions.py` — caught by global handler in `app/core/middleware.py`, returns structured JSON: `{ code, detail, timestamp }`
+- Use `raise AppException(...)` for domain/business errors, not raw `HTTPException`
+- Pydantic `ValueError` in schemas for validation — FastAPI converts to 422 automatically
+
+### Frontend
+
+- Sonner toasts (`toast.success()` / `toast.error()`) for user-facing feedback on mutations
+- React Query `onError` callbacks for API mutation failures
+- No global ErrorBoundary — errors are handled per-component/per-hook
