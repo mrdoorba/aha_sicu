@@ -140,3 +140,6 @@ backend/locales/
 
 # ── GSD baseline (auto-generated) ──
 .gsd/forensics/
+
+# ── GSD baseline (auto-generated) ──
+.gsd/parallel/

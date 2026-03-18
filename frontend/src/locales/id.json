@@ -177,8 +177,8 @@
   "forms.competition.linkPlaceholder": "Isi harga jual & kata kunci",
   "forms.competition.linkText": "Lihat di Shopee",
   "forms.competition.marketPrice": "Harga rata-rata pasaran",
-  "forms.competition.notCompetitive": "• {{name}} (IDR {{price}}) = ❌tidak kompetitif (harga kisaran pasaran: IDR {{marketPrice}})",
-  "forms.competition.competitive": "• {{name}} (IDR {{price}}) = ✅kompetitif",
+  "forms.competition.notCompetitive": "• {{name}} ({{currency}} {{price}}) = ❌tidak kompetitif (harga kisaran pasaran: {{currency}} {{marketPrice}})",
+  "forms.competition.competitive": "• {{name}} ({{currency}} {{price}}) = ✅kompetitif",
   "forms.products.title": "Products / Status",
   "fileUpload.slot.cpcAdReport": "Iklan Check Up V2A (Keseluruhan Iklan)",
   "fileUpload.slot.cpcAdReportCalc": "Calculator 1 (Ads Keyword — Sheet 1)",
@@ -433,7 +433,6 @@
   "sendMailUtils.subject": "🏥 AHA Store Internal Check Up (Store ICU) - {{brandName}} {{period}}",
   "sendMailUtils.salutation": "Kepada Pimpinan {{brandName}} (Bapak/Ibu {{picName}}) yang terhormat,",
   "sendMailUtils.intro": "Berikut adalah *hasil AHA Store-Health Check-Up {{brandName}} di Marketplace* [{{storeLink}}] dengan kategori {{kategori}}",
-
   "category.operational": "Kesehatan Operasional Toko",
   "category.business": "Analisa Bisnis",
   "category.visitors": "Overview Pengunjung",
@@ -444,7 +443,6 @@
   "category.competition": "Analisa Kompetisi",
   "category.stock": "Manajemen Stok",
   "category.discount": "Checkup Diskon",
-
   "scoring.unfulfilledOrderRate": "Tingkat Pesanan Tidak Terselesaikan",
   "scoring.lateShipmentRate": "Tingkat Keterlambatan Pengiriman",
   "scoring.preparationTime": "Waktu Persiapan",
@@ -472,12 +470,11 @@
   "scoring.availableSessions": "Sesi Tersedia",
   "scoring.campaignParticipation": "Partisipasi Campaign",
   "scoring.competitionProduct": "Produk Kompetisi",
-  "scoring.competitionProduct.pass": "{{name}} (IDR {{sellingPrice}}) = ✅[kompetitif]",
-  "scoring.competitionProduct.fail": "{{name}} (IDR {{sellingPrice}}) = ❌[tidak kompetitif (harga kisaran pasaran: IDR {{marketPrice}})]",
+  "scoring.competitionProduct.pass": "{{name}} ({{currency}} {{sellingPrice}}) = ✅[kompetitif]",
+  "scoring.competitionProduct.fail": "{{name}} ({{currency}} {{sellingPrice}}) = ❌[tidak kompetitif (harga kisaran pasaran: {{currency}} {{marketPrice}})]",
   "scoring.avgStockTop20": "Rata-rata Stok Top 20% SKU",
   "scoring.stockAvailability": "Ketersediaan Stok",
   "scoring.discountCheckup": "Checkup Diskon",
-
   "scoring.promo.promoToko": "Promo Toko",
   "scoring.promo.paketDiskon": "Paket Diskon",
   "scoring.promo.komboHemat": "Kombo Hemat",
@@ -489,7 +486,6 @@
   "scoring.promo.gratisOngkir": "Gratis Ongkir XTRA",
   "scoring.promo.chatBroadcast": "Chat Broadcast",
   "scoring.promo.programAfiliasi": "Program Afiliasi",
-
   "scoring.unfulfilledOrderRate.pass": "✔️ Tingkat Pesanan Tidak Terselesaikan = {{value}} [Sudah Baik]",
   "scoring.unfulfilledOrderRate.fail": "❌ Tingkat Pesanan Tidak Terselesaikan = {{value}} [Kurang Baik, nilai disarankan: <{{threshold}}%]",
   "scoring.lateShipmentRate.pass": "✔️ Tingkat Keterlambatan Pengiriman = {{value}} [Sudah Baik]",
@@ -500,8 +496,8 @@
   "scoring.chatResponseRate.fail": "❌ Persentase Chat Dibalas = {{value}} [Kurang Baik, nilai disarankan: >{{threshold}}%]",
   "scoring.overallRating.pass": "✔️ Keseluruhan Penilaian = {{value}} [Sudah Baik]",
   "scoring.overallRating.fail": "❌ Keseluruhan Penilaian = {{value}} [Kurang Baik, nilai disarankan: >{{threshold}}]",
-  "scoring.monthlySales.pass": "✔️ Penjualan = IDR {{value}} [Meningkat {{changePct}}% dibandingkan dengan rata² 6 bulan terakhir: IDR {{avg}}]",
-  "scoring.monthlySales.fail": "❌ Penjualan = IDR {{value}} [Menurun {{changePct}}% dibandingkan dengan rata² 6 bulan terakhir: IDR {{avg}}]",
+  "scoring.monthlySales.pass": "✔️ Penjualan = {{currency}} {{value}} [Meningkat {{changePct}}% dibandingkan dengan rata² 6 bulan terakhir: {{currency}} {{avg}}]",
+  "scoring.monthlySales.fail": "❌ Penjualan = {{currency}} {{value}} [Menurun {{changePct}}% dibandingkan dengan rata² 6 bulan terakhir: {{currency}} {{avg}}]",
   "scoring.monthlySales.failSevere": "\n❗️ Potensi peningkatan harga jual signifikan atau terdapat event abnormal.",
   "scoring.conversionRate.pass": "✔️ Tingkat Konversi = {{value}} [Sudah Baik]",
   "scoring.conversionRate.fail": "❌ Tingkat Konversi = {{value}} [Kurang Baik, nilai disarankan: {{benchmark}}]",
@@ -542,7 +538,6 @@
   "scoring.stockAvailability.benchmark": "≤{{threshold}}% stok habis",
   "scoring.discountCheckup.pass": "% Diskon TOP SKU: {{discountPct}}\nRange: {{rangeMin}} ~ {{rangeMax}}\nVoucher {{voucherPct}}\nPaket Diskon {{paketPct}}",
   "scoring.discountCheckup.fail": "% Diskon TOP SKU: {{discountPct}}\nRange: {{rangeMin}} ~ {{rangeMax}}\nVoucher {{voucherPct}}\nPaket Diskon {{paketPct}}\n📌 Berpotensi menggunakan 'fake discount'",
-
   "conclusion.salesRange": "Pendapatan toko dalam range {{min}} juta - {{max}} juta per bulan selama 6 bulan terakhir",
   "conclusion.operationalGood": "Kesehatan operasional toko dalam kondisi baik",
   "conclusion.operationalChatIssue": "Persentase chat dibalas perlu ditingkatkan",
@@ -554,15 +549,12 @@
   "conclusion.unsoldProducts": "Tinjau dan optimalkan produk yang kurang laku",
   "conclusion.discountRange": "Range diskon yang disarankan: {{range}}",
   "conclusion.fakeDiscount": "📌 Berpotensi menggunakan 'fake discount'",
-
   "marketing.budgetRecommendation": "💡 Minimum budget marketing yang dibutuhkan AHA untuk meningkatkan performa penjualan toko = {{pct}}",
-
   "closing.potential": "Kami melihat bahwa potensi dari Toko {{store_name}} masih belum maksimal. Silahkan klik di link berikut ini untuk menjadwalkan sesi konsultasi yang lebih mendalam untuk menemukan solusi yang tepat bagi bisnis Anda.\n\ncal-bd2.ahacommerce.net\n\nSemoga apa yang kami bagikan dapat bermanfaat.",
   "closing.valueAdd": "Kami sangat yakin bahwa sistem AHA dapat memberikan nilai tambah kepada toko {{store_name}} secara langsung, namun kami perlu mempertimbangkan potensi keuntungan bagi kedua pihak untuk kerja-sama ini.\n\nMelalui pengalaman kami dengan ratusan toko online, kami mengkhawatirkan pihak brand tidak dapat mencapai level keuntungan yang diinginkan bila ditambahkan dengan biaya jasa AHA.\nOleh karena itu, dengan berat hati, kami belum dapat bekerja-sama dengan {{store_name}} di tahap sekarang ini.\n\nNamun, kami memiliki skema kerjasama yang lain dimana AHA dapat menjadi partner dari brand dan memberikan pendanaan dengan timbal balik saham dari brand. Program ini bernama AHA Coventures. Untuk info lebih lanjut dapat dilihat di form pendaftaran berikut: bit.ly/AHACoventures",
   "closing.directAnalysis": "Kami telah melakukan analisa pada toko {{store_name}} secara langsung. Berdasarkan pengalaman kami, toko-toko yang berhasil dikelola oleh AHA Commerce umumnya adalah toko-toko yang telah berstatus Mall, karena status tersebut menunjukkan tingkat kepercayaan dan potensi pertumbuhan yang lebih stabil.\n\nNamun, karena saat ini toko {{store_name}} belum berstatus Mall, kami belum dapat memastikan bahwa sistem AHA dapat memberikan dampak peningkatan omzet yang signifikan.\n\nMeski demikian, kami dapat membantu proses pengajuan Mall apabila BRAND berencana untuk meningkat ke tahap tersebut. Terdapat beberapa persyaratan (terms) yang perlu dipenuhi, di antaranya:\nBrand sudah memiliki sertifikat merek HAKI untuk kelas produk\nSertifikat HAKI kelas 35 (jasa penjualan), dan\nEmboss logo brand pada produk\n\nApabila brand bersedia dan telah melengkapi persyaratan di atas, kami dengan senang hati untuk berdiskusi lebih lanjut dan akan membantu proses pengajuan status Mallnya dengan menjadwalkan meeting selanjutnya pada link calendly berikut: https://calendly.com/meeting-with-ahacommerce/2ndmeeting\n\nKami berharap hasil evaluasi ini dapat menjadi masukan yang berguna bagi tim {{store_name}} dalam pengembangan toko ke depannya.",
   "closing.noBrand": "Kami telah melakukan analisa pada toko {{store_name}} secara langsung, namun berdasarkan pengalaman kami toko toko yang sukses dikelola AHA adalah toko toko yang memiliki brand sendiri dan brandnya sudah mulai dikenal di pasaran\n\nOleh karena melihat toko {{store_name}} bukan merupakan toko yang memiliki brand sendiri, maka kami belum yakin apabila sistem AHA dapat memberikan dampak peningkatan omset yang signifikan.\n\nOleh karena itu, dengan berat hati, kami belum dapat bekerja-sama dengan {{store_name}} di tahap sekarang ini.\n\nBagaimanapun juga, semoga hasil evaluasi kami bermanfaat bagi tim {{store_name}} untuk mengidentifikasi bagian² yang perlu diperbaiki.\n\nNamun, tidak menutup kemungkinan bagi peluang kerjasama {{store_name}} dengan AHA Commerce di kemudian hari.",
   "closing.experience": "Melalui pengalaman kami dengan ratusan toko online, omzet suatu toko online sangat bergantung pada tingkat performa operasional toko tersebut (pengiriman tepat waktu >90%, tingkat pembatalan <1%, dll.).\n\nKami sangat yakin bahwa sistem AHA dapat memberikan nilai tambah kepada toko {{store_name}} dari menambah jumlah orderan masuk lebih tinggi dan meningkatkan omsetnya jauh dari angka saat ini. Tetapi kami melihat tingkat keterlambatan yang cukup tinggi sehingga kekhawatiran kami cukup besar apabila jumlah orderan bertambah dan tingkat keterlambatan meningkat akan berpotensi membuat toko terkena penalti dan berpengaruh pada performa toko.\n\nSehingga apabila dari pihak brand bisa memaksimalkan kecepatan pengiriman dan membuat tingkat keterlambatan <2% dan masa pengemasan dibawah satu hari, kami sangat open untuk berdiskusi lebih lanjut untuk kerjasama dengan {{store_name}}.",
-
   "ads.summary": "• Total Iklan: {{active}} Aktif, {{paused}} Dijeda dan {{ended}} Berakhir.\n• Melibatkan {{unique_count}} ({{product_pct}}) produk dari total jumlah produk: {{total_products}}.",
   "ads.typeBreakdown": "• Jenis Iklan yang aktif digunakan:\n  {{semua_total}} Iklan Produk Otomatis Semua Halaman.\n  {{toko_total}} Iklan Toko ({{toko_auto}} Otomatis & {{toko_manual}} Manual).",
   "ads.recommendations": "Rekomendasi Iklan",
@@ -594,6 +586,20 @@
   "ads.value.biddingManual": "Bidding Manual",
   "ads.value.gmvMaxAuto": "GMV Max Auto",
   "ads.value.gmvMaxRoas": "GMV Max ROAS",
-
-  "email.subject": "Laporan Scoring - {{store}} - {{period}}"
+  "email.subject": "Laporan Scoring - {{store}} - {{period}}",
+  "emailLanguageSelector.label": "Bahasa Email",
+  "emailBody": {
+    "section": {
+      "operational": "Performa Operasional Toko:",
+      "business": "Performa Penjualan Toko:",
+      "visitors": "Tinjauan Pengunjung:",
+      "promoTools": "Tingkat Penggunaan Alat Promosi:",
+      "productsStatus": "Jumlah Produk & Status Toko:",
+      "ads": "Performa Iklan:",
+      "campaign": "Partisipasi Campaign:",
+      "competition": "Kompetisi TOP Produk:",
+      "conclusion": "Kesimpulan:",
+      "marketingEstimation": "Estimasi Marketing:"
+    }
+  }
 }

@@ -28,6 +28,35 @@ import {
   type FieldDefinition,
 } from '../components/evaluation/forms/formConfig';
 import { isRecord, isRecordArray } from '../lib/typeGuards';
+import { CATEGORY_MAP } from '../lib/categoryMap';
+import { renderTranslatable, type TranslatableText } from '../utils/renderTranslatable';
+
+interface ScoringSummary {
+  conclusion?: string;
+  conclusion_i18n?: TranslatableText[];
+  marketing_estimation?: string;
+  marketing_budget?: string;
+  marketing_budget_i18n?: TranslatableText;
+  closing_message?: string;
+  closing_message_i18n?: TranslatableText;
+}
+
+function isScoringSummary(value: unknown): value is ScoringSummary {
+  if (!isRecord(value)) return false;
+  const hasContent =
+    typeof value.conclusion === 'string' ||
+    Array.isArray(value.conclusion_i18n) ||
+    typeof value.marketing_budget === 'string' ||
+    typeof value.closing_message === 'string';
+  return hasContent;
+}
+
+function parseBulletPoints(text: string): string[] {
+  return text
+    .split('\n')
+    .map((line) => line.replace(/^[-•]\s*/, '').trim())
+    .filter(Boolean);
+}
 
 // Build module-level lookup: category key → { displayName, fieldMap }
 const CATEGORY_LOOKUP = new Map(
@@ -116,15 +145,18 @@ function ScoreBreakdownTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {breakdown.map((cat) => (
-          <TableRow key={String(cat.category)}>
-            <TableCell>{String(cat.category)}</TableCell>
-            <TableCell className="text-right">
-              {Number(cat.score).toFixed(1)}
-              {Number(cat.max_score) > 0 ? `/${Number(cat.max_score).toFixed(0)}` : ''}
-            </TableCell>
-          </TableRow>
-        ))}
+        {breakdown.map((cat) => {
+          const mapped = CATEGORY_MAP.find(m => m.backend === String(cat.category));
+          return (
+            <TableRow key={String(cat.category)}>
+              <TableCell>{mapped ? t(mapped.labelKey) : String(cat.category)}</TableCell>
+              <TableCell className="text-right">
+                {Number(cat.score).toFixed(1)}
+                {Number(cat.max_score) > 0 ? `/${Number(cat.max_score).toFixed(0)}` : ''}
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );
@@ -229,6 +261,62 @@ function DiscountSection({ data, t }: { data: Record<string, unknown>; t: (key: 
   const text = typeof data.output_text === 'string' ? data.output_text : '';
   if (!text) return <p className="text-muted-foreground">{t('common.noData')}</p>;
   return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
+}
+
+function ScoringConclusionSection({
+  calculatorResults,
+  t,
+}: {
+  calculatorResults: Record<string, unknown>;
+  t: (key: string, vars?: Record<string, string>) => string;
+}) {
+  const summary = isScoringSummary(calculatorResults.scoring_summary)
+    ? calculatorResults.scoring_summary
+    : undefined;
+
+  if (!summary) return null;
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-base font-semibold">{t('presentation.section.kesimpulan')}</h3>
+
+      {/* Conclusion bullet list */}
+      {summary.conclusion_i18n ? (
+        <ul className="list-disc pl-5 space-y-1">
+          {summary.conclusion_i18n.map((item, i) => (
+            <li key={i} className="text-sm">{t(item.key, item.vars)}</li>
+          ))}
+        </ul>
+      ) : summary.conclusion ? (
+        <ul className="list-disc pl-5 space-y-1">
+          {parseBulletPoints(summary.conclusion).map((point, i) => (
+            <li key={i} className="text-sm">{point}</li>
+          ))}
+        </ul>
+      ) : null}
+
+      {/* Marketing budget */}
+      {(summary.marketing_budget || summary.marketing_budget_i18n) && (
+        <div className="rounded-lg border bg-muted/30 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+            {t('presentation.kesimpulan.marketingBudget')}
+          </p>
+          <p className="text-sm font-bold text-primary">
+            {renderTranslatable(summary.marketing_budget || '', summary.marketing_budget_i18n, t)}
+          </p>
+        </div>
+      )}
+
+      {/* Closing message */}
+      {(summary.closing_message || summary.closing_message_i18n) && (
+        <div className="rounded-lg border-l-4 border-primary/30 bg-primary/5 p-4">
+          <p className="text-sm whitespace-pre-line">
+            {renderTranslatable(summary.closing_message || '', summary.closing_message_i18n, t)}
+          </p>
+        </div>
+      )}
+    </div>
+  );
 }
 
 function resolveNestedValue(obj: Record<string, unknown>, dotKey: string): unknown {
@@ -609,6 +697,11 @@ export function EvaluationDetailPage() {
                     <p className="text-muted-foreground">{t('common.noData')}</p>
                   )}
                 </div>
+
+                <ScoringConclusionSection
+                  calculatorResults={evaluation.calculator_results}
+                  t={t}
+                />
               </CardContent>
             </Card>
 
@@ -633,6 +726,8 @@ export function EvaluationDetailPage() {
                   period={evaluation.period}
                   emailOutput={evaluation.email_output}
                   brandRawData={evaluation.brand_raw_data}
+                  scoreBreakdown={evaluation.score_breakdown}
+                  calculatorResults={evaluation.calculator_results}
                 />
               </>
             )}

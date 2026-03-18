@@ -1,7 +1,9 @@
+import type { TFunction } from 'i18next';
 import i18n from '../../i18n';
 
-export function buildSubject(brandName: string, period: string): string {
-  return i18n.t('sendMailUtils.subject', { brandName, period });
+export function buildSubject(brandName: string, period: string, t?: TFunction): string {
+  const translate = t ?? i18n.t;
+  return translate('sendMailUtils.subject', { brandName, period });
 }
 
 export function buildBody(
@@ -11,9 +13,13 @@ export function buildBody(
   storeLink: string,
   kategori: string,
   emailOutput: string,
+  t?: TFunction,
+  emailBodyOverride?: string,
 ): string {
-  const salutation = i18n.t('sendMailUtils.salutation', { brandName, picName });
-  const intro = i18n.t('sendMailUtils.intro', { brandName, storeLink, kategori });
+  const translate = t ?? i18n.t;
+  const salutation = translate('sendMailUtils.salutation', { brandName, picName });
+  const intro = translate('sendMailUtils.intro', { brandName, storeLink, kategori });
+  const bodyContent = emailBodyOverride ?? emailOutput;
 
   return `[EMAIL TO: ${picEmail}]
 
@@ -21,5 +27,5 @@ ${salutation}
 
 ${intro}
 
-${emailOutput}`;
+${bodyContent}`;
 }

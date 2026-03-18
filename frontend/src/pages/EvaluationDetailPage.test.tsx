@@ -452,4 +452,126 @@ describe('EvaluationDetailPage', () => {
       expect(screen.getByText(/permanen dan tidak dapat dibatalkan/)).toBeInTheDocument();
     });
   });
+
+  // --- Category translation tests (CATEGORY_MAP + t()) ---
+
+  it('translates Indonesian backend category names via CATEGORY_MAP', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: {
+        ...MOCK_EVALUATION,
+        score_breakdown: [
+          { category: 'Kesehatan Operasional Toko', score: 10.0, max_score: 10.0, rows: [], available: true },
+          { category: 'Bisnis Analisis', score: 18.0, max_score: 20.0, rows: [], available: true },
+          { category: 'Promo Toko', score: 5.0, max_score: 10.0, rows: [], available: true },
+        ],
+      },
+    };
+    renderPage();
+
+    // Default test locale is 'id', so t('rules.category.operational') → 'Operasional'
+    expect(screen.getByText('Operasional')).toBeInTheDocument();
+    expect(screen.getByText('Bisnis')).toBeInTheDocument();
+    expect(screen.getByText('Alat Promo')).toBeInTheDocument();
+  });
+
+  it('renders unknown category names as-is (raw fallback)', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: {
+        ...MOCK_EVALUATION,
+        score_breakdown: [
+          { category: 'Custom Category XYZ', score: 7.0, max_score: 10.0, rows: [], available: true },
+          { category: 'Operational', score: 10.0, max_score: 10.0, rows: [], available: true },
+        ],
+      },
+    };
+    renderPage();
+
+    // Unknown category renders as-is
+    expect(screen.getByText('Custom Category XYZ')).toBeInTheDocument();
+    // 'Operational' is not in CATEGORY_MAP (map uses Indonesian names), so also renders as-is
+    expect(screen.getByText('Operational')).toBeInTheDocument();
+  });
+
+  // --- ScoringConclusionSection tests ---
+
+  it('renders scoring conclusion section with i18n fields when scoring_summary present', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: {
+        ...MOCK_EVALUATION,
+        calculator_results: {
+          ...MOCK_EVALUATION.calculator_results,
+          scoring_summary: {
+            conclusion: 'Toko Anda memiliki performa yang baik',
+            conclusion_i18n: [
+              { key: 'scoring.conclusion.good', vars: { score: '78.5' } },
+              { key: 'scoring.conclusion.improvement', vars: { area: 'ads' } },
+            ],
+            marketing_budget: 'Rp 5,000,000',
+            marketing_budget_i18n: { key: 'scoring.marketingBudget', vars: { amount: '5,000,000', currency: 'IDR' } },
+            closing_message: 'Terima kasih atas kerjasamanya',
+            closing_message_i18n: { key: 'scoring.closingMessage.standard', vars: { brand: 'Nike' } },
+          },
+        },
+      },
+    };
+    renderPage();
+
+    // Section heading (id locale: "Kesimpulan")
+    expect(screen.getByText('Kesimpulan')).toBeInTheDocument();
+
+    // conclusion_i18n items render via t() — keys not in locale file return the key itself
+    expect(screen.getByText('scoring.conclusion.good')).toBeInTheDocument();
+    expect(screen.getByText('scoring.conclusion.improvement')).toBeInTheDocument();
+
+    // Marketing budget label and value via renderTranslatable (i18n key returned as-is)
+    expect(screen.getByText('Min. Anggaran Marketing')).toBeInTheDocument();
+    expect(screen.getByText('scoring.marketingBudget')).toBeInTheDocument();
+
+    // Closing message via renderTranslatable (i18n key returned as-is)
+    expect(screen.getByText('scoring.closingMessage.standard')).toBeInTheDocument();
+  });
+
+  it('renders scoring conclusion with raw fallback when i18n fields are absent', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: {
+        ...MOCK_EVALUATION,
+        calculator_results: {
+          ...MOCK_EVALUATION.calculator_results,
+          scoring_summary: {
+            conclusion: '- Toko bagus\n- Perlu perbaikan iklan',
+            marketing_budget: 'Rp 5,000,000',
+            closing_message: 'Terima kasih',
+          },
+        },
+      },
+    };
+    renderPage();
+
+    // Section heading
+    expect(screen.getByText('Kesimpulan')).toBeInTheDocument();
+
+    // Raw conclusion parsed into bullet points
+    expect(screen.getByText('Toko bagus')).toBeInTheDocument();
+    expect(screen.getByText('Perlu perbaikan iklan')).toBeInTheDocument();
+
+    // Marketing budget label and raw value
+    expect(screen.getByText('Min. Anggaran Marketing')).toBeInTheDocument();
+    expect(screen.getByText('Rp 5,000,000')).toBeInTheDocument();
+
+    // Closing message raw text
+    expect(screen.getByText('Terima kasih')).toBeInTheDocument();
+  });
+
+  it('renders nothing for scoring conclusion when scoring_summary is missing', () => {
+    // MOCK_EVALUATION.calculator_results has no scoring_summary by default
+    renderPage();
+
+    // The section heading "Kesimpulan" should not appear in the calculator results area
+    // (it would only appear if ScoringConclusionSection rendered)
+    expect(screen.queryByText('Kesimpulan')).not.toBeInTheDocument();
+  });
 });

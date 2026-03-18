@@ -268,6 +268,7 @@ async def get_evaluation_detail(conn: Connection, evaluation_id: int) -> Evaluat
         created_at=row["created_at"],
         rule_version=row["rule_version"],
         period=row.get("period", ""),
+        marketplace=row.get("marketplace", "ID"),
         brand_raw_data=brand_raw_data,
     )
 

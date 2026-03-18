@@ -11,6 +11,10 @@ export interface RowScore {
   verdict: string;
   message: string;
   score: number;
+  metric_i18n?: TranslatableText;
+  value_i18n?: TranslatableText;
+  message_i18n?: TranslatableText;
+  benchmark_i18n?: TranslatableText;
 }
 
 export interface CategoryScore {
@@ -19,6 +23,7 @@ export interface CategoryScore {
   max_score: number;
   rows: RowScore[];
   available: boolean;
+  category_i18n?: TranslatableText;
 }
 
 export interface ScoringResult {

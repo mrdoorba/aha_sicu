@@ -60,11 +60,14 @@ async def preview_email_endpoint(
     current_user: dict = Depends(get_current_user),
     conn: Connection = Depends(get_db_connection),
     note: str | None = Query(default=None, max_length=500),
+    language: str | None = Query(default=None),
 ) -> HTMLResponse:
     """Preview the evaluation email as rendered HTML.
 
     Returns the HTML that would be sent, with data URI images for browser
     rendering. Protected by authentication (no debug guard needed).
+    Accepts an optional `language` query param to override the user's
+    default language for the preview.
     """
     evaluation = await get_evaluation_detail(conn=conn, evaluation_id=evaluation_id)
     eval_dict = evaluation.model_dump()
@@ -73,14 +76,14 @@ async def preview_email_endpoint(
     header_src = asset_to_data_uri("aha-e-mail-header-2026.png")
     footer_src = asset_to_data_uri("aha-e-mail-footer-2026.png")
 
-    language = current_user.get("language", "id")
+    lang = language or current_user.get("language", "id")
     html = render_email_html(
         evaluation_data=eval_dict,
-        chart_src=_chart_placeholder_svg(language),
+        chart_src=_chart_placeholder_svg(lang),
         header_src=header_src,
         footer_src=footer_src,
         note=note,
-        language=language,
+        language=lang,
     )
 
     return HTMLResponse(content=html)

@@ -2,6 +2,7 @@ import createClient, { type Middleware } from 'openapi-fetch';
 import type { AuthService } from './authService';
 import { firebaseAuthService } from './firebaseAuthService';
 import { API_BASE_URL } from '../config';
+import type { LanguageCode } from '../lib/languages';
 
 const baseUrl = API_BASE_URL;
 
@@ -31,7 +32,7 @@ interface paths {
       requestBody: {
         content: {
           'application/json': {
-            language: 'id' | 'en' | 'th';
+            language: LanguageCode;
           };
         };
       };
@@ -960,7 +961,7 @@ export const getCurrentUser = async () => {
   return data;
 };
 
-export const updateLanguage = async (language: 'id' | 'en' | 'th') => {
+export const updateLanguage = async (language: LanguageCode) => {
   const { data, error } = await client.PATCH('/api/v1/me/language', {
     body: { language },
   });

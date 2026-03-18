@@ -177,8 +177,8 @@
   "forms.competition.linkPlaceholder": "กรอกราคาขายและคำค้นหา",
   "forms.competition.linkText": "ดูบน Shopee",
   "forms.competition.marketPrice": "ราคาเฉลี่ยในตลาด",
-  "forms.competition.notCompetitive": "• {{name}} (IDR {{price}}) = ❌ไม่แข่งขันได้ (ราคาตลาดโดยประมาณ: IDR {{marketPrice}})",
-  "forms.competition.competitive": "• {{name}} (IDR {{price}}) = ✅แข่งขันได้",
+  "forms.competition.notCompetitive": "• {{name}} ({{currency}} {{price}}) = ❌ไม่แข่งขันได้ (ราคาตลาดโดยประมาณ: {{currency}} {{marketPrice}})",
+  "forms.competition.competitive": "• {{name}} ({{currency}} {{price}}) = ✅แข่งขันได้",
   "forms.products.title": "Products / Status",
   "fileUpload.slot.cpcAdReport": "โฆษณา Check Up V2A (โฆษณาทั้งหมด)",
   "fileUpload.slot.cpcAdReportCalc": "Calculator 1 (Ads Keyword — Sheet 1)",
@@ -433,7 +433,6 @@
   "sendMailUtils.subject": "🏥 AHA Store Internal Check Up (Store ICU) - {{brandName}} {{period}}",
   "sendMailUtils.salutation": "เรียน ผู้บริหาร {{brandName}} (คุณ {{picName}}) ที่เคารพ,",
   "sendMailUtils.intro": "นี่คือ *ผลการตรวจสุขภาพ AHA Store สำหรับ {{brandName}} บน Marketplace* [{{storeLink}}] หมวดหมู่ {{kategori}}",
-
   "category.operational": "สุขภาพการดำเนินงานร้านค้า",
   "category.business": "การวิเคราะห์ธุรกิจ",
   "category.visitors": "ภาพรวมผู้เยี่ยมชม",
@@ -444,7 +443,6 @@
   "category.competition": "การวิเคราะห์การแข่งขัน",
   "category.stock": "การจัดการสต็อก",
   "category.discount": "การตรวจสอบส่วนลด",
-
   "scoring.unfulfilledOrderRate": "อัตราคำสั่งซื้อที่ไม่สำเร็จ",
   "scoring.lateShipmentRate": "อัตราการจัดส่งล่าช้า",
   "scoring.preparationTime": "เวลาเตรียมสินค้า",
@@ -472,12 +470,11 @@
   "scoring.availableSessions": "เซสชันที่พร้อมใช้งาน",
   "scoring.campaignParticipation": "การเข้าร่วมแคมเปญ",
   "scoring.competitionProduct": "สินค้าแข่งขัน",
-  "scoring.competitionProduct.pass": "{{name}} (IDR {{sellingPrice}}) = ✅[แข่งขันได้]",
-  "scoring.competitionProduct.fail": "{{name}} (IDR {{sellingPrice}}) = ❌[ไม่แข่งขัน (ช่วงราคาตลาด: IDR {{marketPrice}})]",
+  "scoring.competitionProduct.pass": "{{name}} ({{currency}} {{sellingPrice}}) = ✅[แข่งขันได้]",
+  "scoring.competitionProduct.fail": "{{name}} ({{currency}} {{sellingPrice}}) = ❌[ไม่แข่งขัน (ช่วงราคาตลาด: {{currency}} {{marketPrice}})]",
   "scoring.avgStockTop20": "สต็อกเฉลี่ย Top 20% SKU",
   "scoring.stockAvailability": "ความพร้อมของสต็อก",
   "scoring.discountCheckup": "การตรวจสอบส่วนลด",
-
   "scoring.promo.promoToko": "โปรโมชั่นร้านค้า",
   "scoring.promo.paketDiskon": "แพ็คเกจส่วนลด",
   "scoring.promo.komboHemat": "คอมโบประหยัด",
@@ -489,7 +486,6 @@
   "scoring.promo.gratisOngkir": "ส่งฟรี XTRA",
   "scoring.promo.chatBroadcast": "แชทบรอดแคสต์",
   "scoring.promo.programAfiliasi": "โปรแกรมพันธมิตร",
-
   "scoring.unfulfilledOrderRate.pass": "✔️ อัตราคำสั่งซื้อที่ไม่สำเร็จ = {{value}} [ดี]",
   "scoring.unfulfilledOrderRate.fail": "❌ อัตราคำสั่งซื้อที่ไม่สำเร็จ = {{value}} [ต้องปรับปรุง, เป้าหมาย: <{{threshold}}%]",
   "scoring.lateShipmentRate.pass": "✔️ อัตราการจัดส่งล่าช้า = {{value}} [ดี]",
@@ -500,8 +496,8 @@
   "scoring.chatResponseRate.fail": "❌ อัตราการตอบแชท = {{value}} [ต้องปรับปรุง, เป้าหมาย: >{{threshold}}%]",
   "scoring.overallRating.pass": "✔️ คะแนนรีวิวโดยรวม = {{value}} [ดี]",
   "scoring.overallRating.fail": "❌ คะแนนรีวิวโดยรวม = {{value}} [ต้องปรับปรุง, เป้าหมาย: >{{threshold}}]",
-  "scoring.monthlySales.pass": "✔️ ยอดขาย = IDR {{value}} [เพิ่มขึ้น {{changePct}}% เทียบกับค่าเฉลี่ย 6 เดือน: IDR {{avg}}]",
-  "scoring.monthlySales.fail": "❌ ยอดขาย = IDR {{value}} [ลดลง {{changePct}}% เทียบกับค่าเฉลี่ย 6 เดือน: IDR {{avg}}]",
+  "scoring.monthlySales.pass": "✔️ ยอดขาย = {{currency}} {{value}} [เพิ่มขึ้น {{changePct}}% เทียบกับค่าเฉลี่ย 6 เดือน: {{currency}} {{avg}}]",
+  "scoring.monthlySales.fail": "❌ ยอดขาย = {{currency}} {{value}} [ลดลง {{changePct}}% เทียบกับค่าเฉลี่ย 6 เดือน: {{currency}} {{avg}}]",
   "scoring.monthlySales.failSevere": "\n❗️ มีแนวโน้มการเพิ่มราคาขายอย่างมีนัยสำคัญหรือมีเหตุการณ์ผิดปกติ",
   "scoring.conversionRate.pass": "✔️ อัตราการแปลง = {{value}} [ดี]",
   "scoring.conversionRate.fail": "❌ อัตราการแปลง = {{value}} [ต้องปรับปรุง, เป้าหมาย: {{benchmark}}]",
@@ -542,7 +538,6 @@
   "scoring.stockAvailability.benchmark": "≤{{threshold}}% หมดสต็อก",
   "scoring.discountCheckup.pass": "% ส่วนลด TOP SKU: {{discountPct}}\nช่วง: {{rangeMin}} ~ {{rangeMax}}\nคูปอง {{voucherPct}}\nแพ็คเกจส่วนลด {{paketPct}}",
   "scoring.discountCheckup.fail": "% ส่วนลด TOP SKU: {{discountPct}}\nช่วง: {{rangeMin}} ~ {{rangeMax}}\nคูปอง {{voucherPct}}\nแพ็คเกจส่วนลด {{paketPct}}\n📌 อาจมีการใช้ 'fake discount'",
-
   "conclusion.salesRange": "รายได้ร้านค้าอยู่ในช่วง {{min}} ล้าน - {{max}} ล้านต่อเดือนในช่วง 6 เดือนที่ผ่านมา",
   "conclusion.operationalGood": "สุขภาพการดำเนินงานร้านค้าอยู่ในเกณฑ์ดี",
   "conclusion.operationalChatIssue": "อัตราการตอบแชทต้องปรับปรุง",
@@ -554,15 +549,12 @@
   "conclusion.unsoldProducts": "ตรวจสอบและปรับปรุงสินค้าที่ขายช้า",
   "conclusion.discountRange": "ช่วงส่วนลดที่แนะนำ: {{range}}",
   "conclusion.fakeDiscount": "📌 อาจใช้ 'ส่วนลดปลอม'",
-
   "marketing.budgetRecommendation": "💡 งบการตลาดขั้นต่ำที่ AHA ต้องการเพื่อปรับปรุงยอดขาย = {{pct}}",
-
   "closing.potential": "เราเห็นว่าศักยภาพของร้าน {{store_name}} ยังไม่ได้ถูกใช้อย่างเต็มที่ กรุณาคลิกลิงก์ต่อไปนี้เพื่อนัดหมายเซสชันปรึกษาเชิงลึกเพื่อหาทางออกที่เหมาะสมสำหรับธุรกิจของคุณ\n\ncal-bd2.ahacommerce.net\n\nเราหวังว่าสิ่งที่เราแบ่งปันจะเป็นประโยชน์",
   "closing.valueAdd": "เรามั่นใจอย่างยิ่งว่าระบบ AHA สามารถเพิ่มมูลค่าให้กับร้าน {{store_name}} ได้โดยตรง แต่เราจำเป็นต้องพิจารณาศักยภาพในการทำกำไรของทั้งสองฝ่ายสำหรับความร่วมมือนี้\n\nจากประสบการณ์ของเรากับร้านค้าออนไลน์หลายร้อยร้าน เรากังวลว่าแบรนด์อาจไม่สามารถบรรลุระดับกำไรที่ต้องการได้เมื่อเพิ่มค่าบริการ AHA เข้าไป\nดังนั้น ด้วยความเสียใจ เรายังไม่สามารถร่วมมือกับ {{store_name}} ได้ในขั้นตอนนี้\n\nอย่างไรก็ตาม เรามีรูปแบบความร่วมมืออื่นที่ AHA สามารถเป็นพาร์ทเนอร์ของแบรนด์และให้เงินทุนโดยแลกกับหุ้นของแบรนด์ โปรแกรมนี้เรียกว่า AHA Coventures สำหรับข้อมูลเพิ่มเติม สามารถดูได้ที่แบบฟอร์มลงทะเบียน: bit.ly/AHACoventures",
   "closing.directAnalysis": "เราได้ทำการวิเคราะห์ร้าน {{store_name}} โดยตรง จากประสบการณ์ของเรา ร้านค้าที่ประสบความสำเร็จภายใต้การจัดการของ AHA Commerce มักเป็นร้านค้าที่มีสถานะ Mall แล้ว เนื่องจากสถานะดังกล่าวแสดงถึงระดับความน่าเชื่อถือและศักยภาพในการเติบโตที่มั่นคงกว่า\n\nอย่างไรก็ตาม เนื่องจากร้าน {{store_name}} ยังไม่มีสถานะ Mall เราจึงไม่สามารถรับประกันได้ว่าระบบ AHA จะสามารถสร้างผลกระทบในการเพิ่มยอดขายได้อย่างมีนัยสำคัญ\n\nถึงกระนั้น เราสามารถช่วยในกระบวนการยื่นขอสถานะ Mall ได้หากแบรนด์วางแผนที่จะก้าวไปสู่ขั้นตอนนั้น มีข้อกำหนดหลายประการที่ต้องปฏิบัติตาม ได้แก่:\nแบรนด์มีใบรับรองเครื่องหมายการค้า HAKI สำหรับประเภทสินค้า\nใบรับรอง HAKI ประเภท 35 (บริการขาย) และ\nโลโก้แบรนด์ปั๊มนูนบนสินค้า\n\nหากแบรนด์ยินดีและได้ดำเนินการตามข้อกำหนดข้างต้นแล้ว เรายินดีที่จะหารือเพิ่มเติมและช่วยในกระบวนการยื่นขอสถานะ Mall โดยนัดหมายการประชุมครั้งถัดไปผ่านลิงก์ calendly ต่อไปนี้: https://calendly.com/meeting-with-ahacommerce/2ndmeeting\n\nเราหวังว่าผลการประเมินนี้จะเป็นข้อมูลที่เป็นประโยชน์สำหรับทีม {{store_name}} ในการพัฒนาร้านค้าต่อไป",
   "closing.noBrand": "เราได้ทำการวิเคราะห์ร้าน {{store_name}} โดยตรง แต่จากประสบการณ์ของเรา ร้านค้าที่ประสบความสำเร็จภายใต้การจัดการของ AHA คือร้านค้าที่มีแบรนด์เป็นของตัวเองและแบรนด์เริ่มเป็นที่รู้จักในตลาด\n\nเนื่องจากร้าน {{store_name}} ไม่ใช่ร้านค้าที่มีแบรนด์เป็นของตัวเอง เราจึงไม่มั่นใจว่าระบบ AHA จะสามารถสร้างผลกระทบในการเพิ่มยอดขายได้อย่างมีนัยสำคัญ\n\nดังนั้น ด้วยความเสียใจ เรายังไม่สามารถร่วมมือกับ {{store_name}} ได้ในขั้นตอนนี้\n\nอย่างไรก็ตาม เราหวังว่าผลการประเมินของเราจะเป็นประโยชน์สำหรับทีม {{store_name}} ในการระบุจุดที่ต้องปรับปรุง\n\nทั้งนี้ ยังเปิดโอกาสสำหรับความร่วมมือระหว่าง {{store_name}} กับ AHA Commerce ในอนาคต",
   "closing.experience": "จากประสบการณ์ของเรากับร้านค้าออนไลน์หลายร้อยร้าน ยอดขายของร้านค้าออนไลน์ขึ้นอยู่กับระดับประสิทธิภาพการดำเนินงานของร้านเป็นอย่างมาก (จัดส่งตรงเวลา >90%, อัตราการยกเลิก <1% เป็นต้น)\n\nเรามั่นใจอย่างยิ่งว่าระบบ AHA สามารถเพิ่มมูลค่าให้กับร้าน {{store_name}} โดยเพิ่มจำนวนคำสั่งซื้อและเพิ่มยอดขายให้สูงกว่าตัวเลขปัจจุบันอย่างมาก แต่เราสังเกตว่าอัตราความล่าช้าค่อนข้างสูง และเรากังวลว่าหากคำสั่งซื้อเพิ่มขึ้นและอัตราความล่าช้าเพิ่มขึ้น อาจทำให้ร้านถูกลงโทษและส่งผลกระทบต่อประสิทธิภาพของร้าน\n\nดังนั้น หากแบรนด์สามารถเพิ่มความเร็วในการจัดส่งและทำให้อัตราความล่าช้าต่ำกว่า 2% และระยะเวลาแพ็คสินค้าน้อยกว่าหนึ่งวัน เรายินดีที่จะหารือเพิ่มเติมเกี่ยวกับความร่วมมือกับ {{store_name}}",
-
   "ads.summary": "• โฆษณาทั้งหมด: {{active}} กำลังทำงาน, {{paused}} หยุดชั่วคราว และ {{ended}} สิ้นสุด\n• เกี่ยวข้องกับ {{unique_count}} ({{product_pct}}) สินค้าจากทั้งหมด: {{total_products}}",
   "ads.typeBreakdown": "• ประเภทโฆษณาที่ใช้งาน:\n  {{semua_total}} โฆษณาสินค้าอัตโนมัติทุกตำแหน่ง.\n  {{toko_total}} โฆษณาร้านค้า ({{toko_auto}} อัตโนมัติ & {{toko_manual}} ตั้งเอง).",
   "ads.recommendations": "คำแนะนำโฆษณา",
@@ -594,6 +586,20 @@
   "ads.value.biddingManual": "บิดเอง",
   "ads.value.gmvMaxAuto": "GMV Max Auto",
   "ads.value.gmvMaxRoas": "GMV Max ROAS",
-
-  "email.subject": "รายงานคะแนน - {{store}} - {{period}}"
+  "email.subject": "รายงานคะแนน - {{store}} - {{period}}",
+  "emailLanguageSelector.label": "ภาษาอีเมล",
+  "emailBody": {
+    "section": {
+      "operational": "ประสิทธิภาพการดำเนินงานร้านค้า:",
+      "business": "ประสิทธิภาพการขายร้านค้า:",
+      "visitors": "ภาพรวมผู้เยี่ยมชม:",
+      "promoTools": "การใช้เครื่องมือโปรโมชัน:",
+      "productsStatus": "สินค้าและสถานะร้านค้า:",
+      "ads": "ประสิทธิภาพโฆษณา:",
+      "campaign": "การเข้าร่วมแคมเปญ:",
+      "competition": "การแข่งขันสินค้า TOP:",
+      "conclusion": "สรุป:",
+      "marketingEstimation": "ประมาณการทำการตลาด:"
+    }
+  }
 }

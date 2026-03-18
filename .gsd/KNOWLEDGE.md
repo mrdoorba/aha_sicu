@@ -1,20 +1,19 @@
 # Knowledge Base
 
-<<<<<<< Updated upstream
 ## Worktree Testing Setup
 
-When running tests from a git worktree (`.gsd/worktrees/M001/`), the backend venv lives in the main repo at `/Users/mac/HT/Project/aha_sicu/backend/.venv/`. Run tests from the worktree directory with `PYTHONPATH=backend` and the main repo's Python:
+When running tests from a git worktree (`.gsd/worktrees/M00X/`), the backend venv lives in the main repo at `/Users/mac/HT/Project/aha_sicu/backend/.venv/`. Run tests from the worktree directory with `PYTHONPATH=backend` and the main repo's Python:
 
 ```bash
-cd /Users/mac/HT/Project/aha_sicu/.gsd/worktrees/M001
+cd /Users/mac/HT/Project/aha_sicu/.gsd/worktrees/M00X
 PYTHONPATH=backend /Users/mac/HT/Project/aha_sicu/backend/.venv/bin/python -m pytest backend/tests/... -x
 ```
 
 The `--timeout` flag is not available (pytest-timeout not installed).
 
-## Pre-existing Test Failure
+## Pre-existing Test Failures
 
-`backend/tests/unit/calculators/test_ads_keyword.py::TestSheet2BottomThresholdVariants::test_en_bottom_min_cost_50k` — fails with `assert 'Ad Above 50K' in ''`. Unrelated to scoring changes.
+3 tests in `backend/tests/unit/calculators/test_ads_keyword.py` consistently fail — unrelated to scoring or marketplace work. Don't try to fix them in milestone tasks.
 
 ## Migration Template Drift Test
 
@@ -30,24 +29,16 @@ For conclusion text (`_compute_g66`), THB marketplace uses raw formatted numbers
 
 ## Worktree ↔ Main Repo Code Divergence
 
-Git worktrees (`.gsd/worktrees/M001/`) are separate checkouts on their own branches. If a previous task executor makes code changes in the worktree but only commits documentation files, the production code changes will be lost to the main repo (develop branch). Always verify that the auto-commit captured actual code changes, not just `.gsd/` files. If code is only in the worktree as uncommitted modifications, copy it to the main repo before running tests.
+Git worktrees (`.gsd/worktrees/M00X/`) are separate checkouts on their own branches. If a previous task executor makes code changes in the worktree but only commits documentation files, the production code changes will be lost to the main repo (develop branch). Always verify that the auto-commit captured actual code changes, not just `.gsd/` files. If code is only in the worktree as uncommitted modifications, copy it to the main repo before running tests.
+
+## Renamed Rules Query Function
+
+`get_rules_by_template` was renamed to `get_rules_by_template_and_marketplace` in M001/T02. Any test or code mocking this function must use the new name. Affected test files include `test_scoring.py`.
 
 ## S01 Wiring Test Assertion Style
 
 The service.py `generate_score` function passes `marketplace` as a **positional** arg (not keyword) to `get_rules_by_template_and_marketplace`. Mock `assert_called_once_with` must match the calling convention exactly — `(conn, "default", "TH")` not `(conn, "default", marketplace="TH")`.
-=======
-## Worktree venv path
-The worktree at `.gsd/worktrees/M001` does NOT have its own `.venv`. Use the main repo's venv:
-```
-/Users/mac/HT/Project/aha_sicu/backend/.venv/bin/python -m pytest ...
-```
 
-## Renamed rules query function
-`get_rules_by_template` was renamed to `get_rules_by_template_and_marketplace` in T02. Any test or code mocking this function must use the new name. Affected test files include `test_scoring.py`.
+## ScoringResponse Required String Fields
 
-## ScoringResponse required string fields
 `ScoringResponse` schema has required string fields (`marketing_estimation`, `marketing_percentage`, `marketing_budget`, `closing_message`, `email_subject`, `email_body`). When mocking `calculate_score` results, set these to `""` not `None`.
-
-## Pre-existing test failures
-3 tests in `tests/unit/calculators/test_ads_keyword.py` consistently fail — unrelated to marketplace work. Don't try to fix them in marketplace tasks.
->>>>>>> Stashed changes

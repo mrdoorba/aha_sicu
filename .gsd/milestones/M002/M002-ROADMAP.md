@@ -52,13 +52,13 @@ This milestone is complete only when all are true:
 - [x] **S01: Backend marketplace field & frontend type declarations** `risk:medium` `depends:[]`
   > After this: evaluation detail API returns marketplace; TypeScript types declare _i18n fields; ScoreBreakdownTable translates category names via CATEGORY_MAP + t(). Old evaluations without i18n keys show raw Indonesian category names.
 
-- [ ] **S02: EvaluationDetailPage renderTranslatable() wiring** `risk:low` `depends:[S01]`
+- [x] **S02: EvaluationDetailPage renderTranslatable() wiring** `risk:low` `depends:[S01]`
   > After this: switch language to EN/TH → open any evaluation in history → all scoring messages, conclusions, closing messages, and marketing budget text render in the selected language. Old evaluations without _i18n fields show raw Indonesian text.
 
-- [ ] **S03: Email language selector & i18n body rebuild** `risk:medium` `depends:[S02]`
+- [x] **S03: Email language selector & i18n body rebuild** `risk:medium` `depends:[S02]`
   > After this: open any email send dialog (history, dashboard, evaluation page) → pick TH from language dropdown → email body preview renders in Thai while UI stays in current language.
 
-- [ ] **S04: Locale hardcode cleanup & future-proofing** `risk:low` `depends:[S01]`
+- [x] **S04: Locale hardcode cleanup & future-proofing** `risk:low` `depends:[S01]`
   > After this: all locale files use {{currency}} variable; a documented checklist confirms adding a 4th language requires only locale JSON + config changes; no hardcoded language assumptions remain.
 
 ## Boundary Map

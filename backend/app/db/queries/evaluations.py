@@ -65,6 +65,7 @@ class EvaluationDetailRow(TypedDict):
     created_at: datetime
     period: str
     evaluator_email: str
+    marketplace: str
 
 
 class InsertedEvaluationRow(TypedDict):
@@ -259,7 +260,8 @@ async def get_evaluation_by_id(
                e.score_breakdown, e.calculator_results, e.manual_inputs,
                e.email_output, e.rule_version, e.created_at,
                COALESCE(e.period, '') AS period,
-               COALESCE(u.email, 'Pengguna Dihapus') AS evaluator_email
+               COALESCE(u.email, 'Pengguna Dihapus') AS evaluator_email,
+               COALESCE(e.marketplace, 'ID') AS marketplace
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
         LEFT JOIN users u ON e.user_id = u.id

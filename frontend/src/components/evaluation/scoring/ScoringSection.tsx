@@ -151,6 +151,7 @@ export const ScoringSection = ({
           <EmailOutput
             subject={scoringResult.email_subject}
             body={scoringResult.email_body}
+            scoringResult={scoringResult}
           />
         </>
       )}

@@ -284,6 +284,7 @@ class EvaluationDetailResponse(BaseModel):
     created_at: datetime
     rule_version: int
     period: str = ""
+    marketplace: str = "ID"
     brand_raw_data: BrandRawData = Field(default_factory=BrandRawData)
 
     @field_validator("score_breakdown", "calculator_results", "manual_inputs", mode="before")

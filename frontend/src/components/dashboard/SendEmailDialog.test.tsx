@@ -292,4 +292,87 @@ describe('SendEmailDialog', () => {
     fireEvent.click(cancelBtn);
     expect(mockReset).toHaveBeenCalled();
   });
+
+  // ── Language selector integration ────────────────────────────────
+
+  it('renders email language selector in the dialog', () => {
+    renderDialog();
+    expect(screen.getByTestId('email-language-select')).toBeInTheDocument();
+  });
+
+  it('mutation payload includes the selected email language', async () => {
+    mockCaptureChart.mockResolvedValue('abc123');
+    mockMutate.mockImplementation(
+      (_params: Record<string, unknown>, opts?: { onSuccess?: () => void }) => {
+        opts?.onSuccess?.();
+      },
+    );
+
+    renderDialog();
+
+    // Default language should be 'id' (from mock i18n.language)
+    const sendBtn = screen.getByRole('button', { name: /sendEmail\.send/i });
+
+    await act(async () => {
+      fireEvent.click(sendBtn);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalled();
+      const [params] = mockMutate.mock.calls[0];
+      expect(params.language).toBe('id');
+    });
+  });
+
+  it('sends changed language in mutation payload when selector is changed', async () => {
+    mockCaptureChart.mockResolvedValue('abc123');
+    mockMutate.mockImplementation(
+      (_params: Record<string, unknown>, opts?: { onSuccess?: () => void }) => {
+        opts?.onSuccess?.();
+      },
+    );
+
+    renderDialog();
+
+    // Change language to 'th'
+    const langSelect = screen.getByTestId('email-language-select');
+    fireEvent.change(langSelect, { target: { value: 'th' } });
+
+    const sendBtn = screen.getByRole('button', { name: /sendEmail\.send/i });
+
+    await act(async () => {
+      fireEvent.click(sendBtn);
+      await Promise.resolve();
+    });
+
+    await waitFor(() => {
+      expect(mockMutate).toHaveBeenCalled();
+      const [params] = mockMutate.mock.calls[0];
+      expect(params.language).toBe('th');
+    });
+  });
+
+  it('preview URL includes language param when preview is opened', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      text: () => Promise.resolve('<html><body>Preview</body></html>'),
+    });
+    global.fetch = fetchSpy;
+
+    renderDialog();
+
+    // Change language to 'en'
+    const langSelect = screen.getByTestId('email-language-select');
+    fireEvent.change(langSelect, { target: { value: 'en' } });
+
+    // Open preview
+    const toggleBtn = screen.getByRole('button', { name: /sendEmail\.previewToggle/i });
+    fireEvent.click(toggleBtn);
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalled();
+      const fetchUrl: string = fetchSpy.mock.calls[0][0];
+      expect(fetchUrl).toContain('language=en');
+    });
+  });
 });

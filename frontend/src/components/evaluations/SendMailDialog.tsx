@@ -11,8 +11,17 @@ import {
 import { Button } from '../ui/button';
 import { Input } from '../ui/input';
 import { Label } from '../ui/label';
+import { EmailLanguageSelector } from '../shared/EmailLanguageSelector';
+import {
+  buildI18nEmailBody,
+  type ScoringConclusionData,
+} from '../../utils/buildI18nEmailBody';
+import i18n from '../../i18n';
+import type { CategoryScore } from '../../hooks/useScoring';
 import type { BrandRawData } from '../../hooks/useEvaluationDetail';
 import { buildSubject, buildBody } from './sendMailUtils';
+import type { TranslatableText } from '../../utils/renderTranslatable';
+import { isRecord } from '../../lib/typeGuards';
 
 interface SendMailDialogProps {
   open: boolean;
@@ -21,6 +30,22 @@ interface SendMailDialogProps {
   period: string;
   emailOutput: string;
   brandRawData: BrandRawData;
+  scoreBreakdown?: Array<Record<string, unknown>>;
+  calculatorResults?: Record<string, unknown>;
+}
+
+/**
+ * Type guard to check whether calculator_results.scoring_summary has
+ * the shape needed for ScoringConclusionData.
+ */
+function isScoringSummary(value: unknown): value is ScoringConclusionData {
+  if (!isRecord(value)) return false;
+  return (
+    typeof value.conclusion === 'string' ||
+    Array.isArray(value.conclusion_i18n) ||
+    typeof value.marketing_budget === 'string' ||
+    typeof value.closing_message === 'string'
+  );
 }
 
 export function SendMailDialog({
@@ -30,12 +55,54 @@ export function SendMailDialog({
   period,
   emailOutput,
   brandRawData,
+  scoreBreakdown,
+  calculatorResults,
 }: SendMailDialogProps) {
   const { t } = useTranslation();
   const [to, setTo] = useState('bot@ahacommerce.net');
   const [picEmail, setPicEmail] = useState(brandRawData.email ?? '');
+  const [emailLanguage, setEmailLanguage] = useState<string>(i18n.language);
 
-  const subject = useMemo(() => buildSubject(brandName, period), [brandName, period]);
+  // Determine whether we have i18n-capable score data
+  const hasI18nData = useMemo(() => {
+    if (!scoreBreakdown || scoreBreakdown.length === 0) return false;
+    // Check if any row in any category has message_i18n
+    return scoreBreakdown.some((cat) => {
+      const rows = cat.rows;
+      if (!Array.isArray(rows)) return false;
+      return rows.some(
+        (r: Record<string, unknown>) =>
+          r.message_i18n != null && typeof r.message_i18n === 'object',
+      );
+    });
+  }, [scoreBreakdown]);
+
+  // Build i18n email body when score breakdown with i18n data is available
+  const i18nBody = useMemo(() => {
+    if (!hasI18nData || !scoreBreakdown) return null;
+    const fixedT = i18n.getFixedT(emailLanguage);
+    const castScores = scoreBreakdown as unknown as CategoryScore[];
+
+    let scoringSummary: ScoringConclusionData | null = null;
+    if (calculatorResults && isRecord(calculatorResults.scoring_summary)) {
+      const raw = calculatorResults.scoring_summary;
+      if (isScoringSummary(raw)) {
+        scoringSummary = raw;
+      }
+    }
+
+    return buildI18nEmailBody(castScores, scoringSummary, fixedT);
+  }, [hasI18nData, scoreBreakdown, calculatorResults, emailLanguage]);
+
+  const fixedT = useMemo(() => {
+    if (!hasI18nData) return undefined;
+    return i18n.getFixedT(emailLanguage);
+  }, [hasI18nData, emailLanguage]);
+
+  const subject = useMemo(
+    () => buildSubject(brandName, period, fixedT),
+    [brandName, period, fixedT],
+  );
 
   const body = useMemo(
     () =>
@@ -46,14 +113,17 @@ export function SendMailDialog({
         brandRawData.store_link ?? '',
         brandRawData.kategori ?? '',
         emailOutput,
+        fixedT,
+        i18nBody ?? undefined,
       ),
-    [picEmail, brandName, brandRawData, emailOutput],
+    [picEmail, brandName, brandRawData, emailOutput, fixedT, i18nBody],
   );
 
   const handleOpenChange = (nextOpen: boolean) => {
     if (!nextOpen) {
       setTo('bot@ahacommerce.net');
       setPicEmail(brandRawData.email ?? '');
+      setEmailLanguage(i18n.language);
     }
     onOpenChange(nextOpen);
   };
@@ -95,6 +165,9 @@ export function SendMailDialog({
             />
           </div>
 
+          {/* Email Language Selector */}
+          <EmailLanguageSelector value={emailLanguage} onChange={setEmailLanguage} />
+
           <div className="space-y-1.5">
             <Label>{t('sendMail.subject')}</Label>
             <div className="rounded border bg-muted px-3 py-2 text-sm" data-testid="mail-subject">
@@ -126,4 +199,3 @@ export function SendMailDialog({
     </Dialog>
   );
 }
-
