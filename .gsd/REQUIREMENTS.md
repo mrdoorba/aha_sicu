@@ -2,6 +2,74 @@
 
 This file is the explicit capability and coverage contract for the project.
 
+## Active
+
+### R027 — All UI strings in EvaluationHistoryTable, DeleteEvaluationDialog, DowntimeWarningDialog, and SelectField use `t()` instead of hardcoded Indonesian
+- Class: core-capability
+- Status: active
+- Description: All UI strings in EvaluationHistoryTable, DeleteEvaluationDialog, DowntimeWarningDialog, and SelectField use i18n `t()` calls with keys from locale files instead of hardcoded Indonesian text.
+- Why it matters: These 4 components render entirely in Indonesian regardless of language selection — the History page is completely broken for Thai/English users.
+- Source: user
+- Primary owning slice: M004/S01
+- Supporting slices: none
+- Validation: unmapped
+- Notes: ~40 hardcoded strings across 4 components. EvaluationHistoryTable is the largest (~25 strings).
+
+### R028 — All date/time formatting respects the active i18n locale instead of hardcoded id-ID
+- Class: core-capability
+- Status: active
+- Description: All 8 files with hardcoded `Intl.DateTimeFormat('id-ID', ...)` or `toLocaleDateString('id-ID', ...)` use the active i18n language to determine the Intl locale.
+- Why it matters: Dates always display in Indonesian format regardless of language selection. Thai users see Indonesian month names and formatting.
+- Source: user
+- Primary owning slice: M004/S02
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Affected files: EvaluationHistoryTable, AccountsPage, EvaluationDetailPage, DashboardFooter, BusinessForm, DiscountResults, TopSkuResults, AdsKeywordResults. Need a locale mapping util (id→id-ID, en→en-US, th→th-TH).
+
+### R029 — All 51 field labels in fields.ts and GENERIC_LABELS use i18n keys via locale files
+- Class: core-capability
+- Status: active
+- Description: All 51 field labels in fields.ts, the GENERIC_LABELS array, and the 2 hardcoded labels in DiscountResults.tsx use `t()` calls with locale file keys instead of hardcoded Indonesian text.
+- Why it matters: Every evaluation form renders Indonesian field labels regardless of language. This is the largest single batch of untranslated strings.
+- Source: user
+- Primary owning slice: M004/S02
+- Supporting slices: none
+- Validation: unmapped
+- Notes: fields.ts labels are display-only — used for form rendering, not as data keys. Change field.label to field.labelKey (i18n key), resolve with t() at render time. GENERIC_LABELS (Bulan Ini, Bulan -1, etc.) need keys too.
+
+### R030 — INDO_MONTHS replaced with standard English month abbreviations used across all languages
+- Class: quality-attribute
+- Status: active
+- Description: INDO_MONTHS array uses standard English month abbreviations (Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec) instead of Indonesian ones (Mei→May, Agu→Aug, Okt→Oct, Des→Dec). Same across all languages.
+- Why it matters: User explicitly requested English months for all languages — simpler, no per-locale month names needed.
+- Source: user
+- Primary owning slice: M004/S02
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Only 4 values actually change: Mei→May, Agu→Aug, Okt→Oct, Des→Dec. Rename constant from INDO_MONTHS to MONTHS.
+
+### R031 — A translator can fully localize the app by editing only their single {lang}.json file
+- Class: quality-attribute
+- Status: active
+- Description: Zero hardcoded Indonesian UI text remains in .tsx/.ts source files (excluding test files and locale files). A professional translator edits only their one locale JSON file to translate the entire application.
+- Why it matters: User explicitly wants one-file-per-language workflow for professional translators. Currently ~100 strings are buried in source code.
+- Source: user
+- Primary owning slice: M004/S03
+- Supporting slices: M004/S01, M004/S02
+- Validation: unmapped
+- Notes: Verified by grep/rg sweep for Indonesian words in non-test, non-locale source files.
+
+### R032 — All existing frontend tests pass after i18n extraction
+- Class: quality-attribute
+- Status: active
+- Description: All existing frontend tests pass after i18n extraction, with test assertions updated to use translation key patterns where needed.
+- Why it matters: Tests currently assert hardcoded Indonesian strings — they'll break when strings move to locale files. Tests need updating in lockstep.
+- Source: inferred
+- Primary owning slice: M004/S03
+- Supporting slices: M004/S01, M004/S02
+- Validation: unmapped
+- Notes: EvaluationHistoryTable.test.tsx has the most assertions against hardcoded Indonesian text. Other test files may be affected by fields.ts label changes.
+
 ## Validated
 
 ### R014 — When a user views an evaluation in the history detail page, all scoring messages, category names, conclusions, closing messages, and marketing budget text render in the currently selected UI language (ID/EN/TH).
@@ -15,7 +83,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: EvaluationDetailPage renders category names via CATEGORY_MAP + t(), conclusion/marketing_budget/closing_message via renderTranslatable() + ScoringConclusionSection. 25 EvaluationDetailPage tests pass including 5 i18n-specific. ScoreBreakdownTable translates categories with raw-string fallback. Pre-i18n evaluations fall back to raw Indonesian text.
 - Notes: Must use stored i18n keys when present; fall back to raw text for pre-i18n evaluations.
 
-### R015 — All email send dialogs (history detail SendMailDialog, dashboard SendEmailDialog, evaluation page EmailOutput) include a language dropdown that lets the user choose the email language independently of the UI language, defaulting to the current UI language.
+### R015 — All email send dialogs include a language dropdown that lets the user choose the email language independently of the UI language.
 - Class: core-capability
 - Status: validated
 - Description: All email send dialogs (history detail SendMailDialog, dashboard SendEmailDialog, evaluation page EmailOutput) include a language dropdown that lets the user choose the email language independently of the UI language, defaulting to the current UI language.
@@ -23,10 +91,10 @@ This file is the explicit capability and coverage contract for the project.
 - Source: user
 - Primary owning slice: M002/S03
 - Supporting slices: none
-- Validation: All 3 dialogs have EmailLanguageSelector: SendEmailDialog (22 tests, including 4 language-selector-specific), SendMailDialog (21 tests, including 5 language-selector-specific), EmailOutput (11 tests, including 7 language-selector-specific). Selector defaults to i18n.language, onChange updates email body preview without changing global UI language.
+- Validation: validated
 - Notes: Dashboard SendEmailDialog already sends language to backend; needs UI selector. History SendMailDialog uses mailto — needs frontend-side i18n rendering.
 
-### R016 — Email body content is reconstructed from stored i18n structured data at render time in the chosen language, rather than displaying the pre-rendered Indonesian email_output string.
+### R016 — Email body content is reconstructed from stored i18n structured data at render time in the chosen language.
 - Class: core-capability
 - Status: validated
 - Description: Email body content is reconstructed from stored i18n structured data at render time in the chosen language, rather than displaying the pre-rendered Indonesian email_output string.
@@ -34,10 +102,10 @@ This file is the explicit capability and coverage contract for the project.
 - Source: user
 - Primary owning slice: M002/S03
 - Supporting slices: M002/S01
-- Validation: buildI18nEmailBody utility (20 unit tests) assembles email body from stored i18n structured data matching backend _assemble_email_body section ordering. buildI18nEmailSubject constructs translated subject. Both use i18n.getFixedT(selectedLang) for language-specific rendering. Pre-i18n evaluations fall back to raw email_output string. Wired into all 3 dialogs with verified body updates on language change.
+- Validation: validated
 - Notes: The pre-rendered email_output in DB becomes a fallback for old evaluations without i18n data.
 
-### R017 — All locale translation strings that reference currency use the {{currency}} interpolation variable (already provided by the backend) instead of hardcoded "IDR".
+### R017 — All locale translation strings that reference currency use the {{currency}} interpolation variable instead of hardcoded "IDR".
 - Class: quality-attribute
 - Status: validated
 - Description: All locale translation strings that reference currency use the {{currency}} interpolation variable (already provided by the backend) instead of hardcoded "IDR".
@@ -45,8 +113,8 @@ This file is the explicit capability and coverage contract for the project.
 - Source: inferred
 - Primary owning slice: M002/S03
 - Supporting slices: none
-- Validation: All 6 keys across 3 locale files replaced with {{currency}} interpolation. grep -c "IDR" on all locale files returns 0. grep -c "{{currency}}" returns 6 per file. Full regression: 602 tests pass.
-- Notes: 6 keys across all 3 locale files affected: scoring.monthlySales.pass/fail, scoring.competitionProduct.pass/fail, forms.competition.competitive/notCompetitive.
+- Validation: validated
+- Notes: 6 keys across all 3 locale files affected.
 
 ### R018 — The GET evaluation detail API response includes the marketplace field from the evaluations table.
 - Class: integration
@@ -56,10 +124,10 @@ This file is the explicit capability and coverage contract for the project.
 - Source: inferred
 - Primary owning slice: M002/S01
 - Supporting slices: none
-- Validation: Backend test test_get_evaluation_detail_has_marketplace proves API returns marketplace field. Triple-layer fallback (SQL COALESCE → service row.get → Pydantic default) ensures non-null.
-- Notes: Requires adding e.marketplace to the SQL query and EvaluationDetailResponse schema.
+- Validation: validated
+- Notes: Triple-layer fallback (SQL COALESCE → service row.get → Pydantic default) ensures non-null.
 
-### R019 — Evaluations saved before the i18n system was added (which lack _i18n fields in score_breakdown) display their original Indonesian text. Evaluations with i18n keys translate. No evaluation becomes unreadable.
+### R019 — Pre-i18n evaluations display their original Indonesian text; evaluations with i18n keys translate. No evaluation becomes unreadable.
 - Class: continuity
 - Status: validated
 - Description: Evaluations saved before the i18n system was added (which lack _i18n fields in score_breakdown) display their original Indonesian text. Evaluations with i18n keys translate. No evaluation becomes unreadable.
@@ -67,10 +135,10 @@ This file is the explicit capability and coverage contract for the project.
 - Source: user
 - Primary owning slice: M002/S01
 - Supporting slices: none
-- Validation: 602 frontend tests pass with mocks lacking _i18n fields and scoring_summary — no errors or blank fields. ScoringConclusionSection returns null when scoring_summary absent. ScoreBreakdownTable falls back to raw category string for unmapped names. hasI18nData guard in SendMailDialog falls back to original Indonesian body for pre-i18n evaluations.
+- Validation: validated
 - Notes: renderTranslatable() pattern already handles this — falls back to raw text when i18n is null/undefined.
 
-### R020 — After M002 is complete, adding a 4th language to the system requires only: (a) creating a new locale JSON file, (b) adding its import to i18n.ts, (c) adding it to the LanguageToggle LANGUAGES array and backend STRINGS/CATEGORY_MAP. No schema changes, no migrations, no new components.
+### R020 — Adding a 4th language requires only locale JSON file + config additions. No schema changes, no migrations, no new components.
 - Class: quality-attribute
 - Status: validated
 - Description: After M002 is complete, adding a 4th language to the system requires only: (a) creating a new locale JSON file, (b) adding its import to i18n.ts, (c) adding it to the LanguageToggle LANGUAGES array and backend STRINGS/CATEGORY_MAP. No schema changes, no migrations, no new components.
@@ -78,78 +146,78 @@ This file is the explicit capability and coverage contract for the project.
 - Source: user
 - Primary owning slice: M002/S03
 - Supporting slices: M002/S01, M002/S02
-- Validation: docs/adding-a-language.md (267 lines) covers all 7 touch points with file paths, locations, and code snippets. LanguageCode type derives from LANGUAGES array (single source of truth) — zero inline 'id' | 'en' | 'th' unions in non-test source. Process requires: (1) new locale JSON, (2) i18n.ts import, (3) LANGUAGES array entry, (4) backend auth Literal, (5) backend email regex, (6) backend STRINGS/CATEGORY_MAP. No schema changes, migrations, or new components. 602 tests pass.
-- Notes: Validated in S04. Documentation checklist + LanguageCode type centralization together prove that adding a 4th language is locale-file-only + config additions.
+- Validation: validated
+- Notes: Documented in docs/adding-a-language.md.
 
-### R021 — TypeScript interfaces for RowScore, CategoryScore, and ScoringResult in useScoring.ts and useEvaluationDetail.ts explicitly declare _i18n fields (metric_i18n, message_i18n, benchmark_i18n, value_i18n, category_i18n, conclusion_i18n, etc.).
+### R021 — TypeScript interfaces explicitly declare _i18n fields.
 - Class: quality-attribute
 - Status: validated
-- Description: TypeScript interfaces for RowScore, CategoryScore, and ScoringResult in useScoring.ts and useEvaluationDetail.ts explicitly declare _i18n fields (metric_i18n, message_i18n, benchmark_i18n, value_i18n, category_i18n, conclusion_i18n, etc.).
-- Why it matters: Currently i18n fields survive at runtime through untyped JSON passthrough but aren't declared in TypeScript types. Explicit types prevent accidental stripping and enable IDE support.
+- Description: TypeScript interfaces for RowScore, CategoryScore, and ScoringResult in useScoring.ts and useEvaluationDetail.ts explicitly declare _i18n fields.
+- Why it matters: Explicit types prevent accidental stripping and enable IDE support.
 - Source: inferred
 - Primary owning slice: M002/S01
 - Supporting slices: none
-- Validation: useScoring.ts declares 8 optional _i18n fields on RowScore and CategoryScore (metric_i18n, value_i18n, message_i18n, benchmark_i18n, category_i18n, conclusion_i18n, marketing_budget_i18n, closing_message_i18n). TypeScript compilation succeeds. 602 frontend tests pass.
+- Validation: validated
 - Notes: Low risk — additive type changes only.
 
-### R022 — All database schema changes in M002 are additive only (new columns, new fields in JSONB). No existing data is modified, deleted, or migrated destructively. Re-evaluation is acceptable.
+### R022 — All database schema changes in M002 are additive only.
 - Class: constraint
 - Status: validated
-- Description: All database schema changes in M002 are additive only (new columns, new fields in JSONB). No existing data is modified, deleted, or migrated destructively. Re-evaluation is acceptable.
+- Description: All database schema changes in M002 are additive only. No existing data is modified, deleted, or migrated destructively.
 - Why it matters: User explicitly requires zero data loss.
 - Source: user
 - Primary owning slice: M002
 - Supporting slices: none
-- Validation: M002 made zero database schema changes. Only change was adding COALESCE(e.marketplace, 'ID') to the evaluation detail SELECT query — reads an existing column. No migrations, no data modifications, no destructive changes.
-- Notes: The only DB change expected is adding marketplace to the evaluation detail query SELECT list — no schema migration needed.
+- Validation: validated
+- Notes: M002 made zero database schema changes.
 
-### R023 — The follower count threshold display in scoring messages uses international comma convention (>50,000) instead of Indonesian dot convention (>50.000). Applies to DEFAULT_RULES fallback, inline message fallbacks, and DB-stored message templates.
+### R023 — Follower count threshold display uses international comma convention (>50,000).
 - Class: quality-attribute
 - Status: validated
-- Description: The follower count threshold display in scoring messages uses international comma convention (>50,000) instead of Indonesian dot convention (>50.000). Applies to DEFAULT_RULES fallback, inline message fallbacks, and DB-stored message templates.
-- Why it matters: Dot-as-thousands-separator is Indonesian locale-specific. International convention (comma) is consistent with how all other numbers are formatted in the system.
+- Description: The follower count threshold display in scoring messages uses international comma convention (>50,000) instead of Indonesian dot convention (>50.000).
+- Why it matters: Dot-as-thousands-separator is Indonesian locale-specific.
 - Source: user
 - Primary owning slice: M003/S01
 - Supporting slices: none
-- Validation: DEFAULT_RULES followers message_fail uses >50,000 (comma). Inline fallback in messages.py uses >50,000. Migration 028 patches stored DB templates from >50.000 to >50,000. Drift test replays m028 and passes. Tests: test_follower_fail_message_contains_comma_threshold, test_default_rules_followers_message_fail_uses_comma, test_db_templates_match_default_rules. Full suite 1097/1097 green.
-- Notes: Affects rules.py, messages.py inline fallback, and requires a DB migration for stored templates.
+- Validation: validated
+- Notes: Affects rules.py, messages.py inline fallback, and DB migration 028.
 
-### R024 — The follower count value displayed in scoring messages (val_str) uses comma as thousands separator instead of being converted from comma to dot via .replace(",", ".").
+### R024 — Follower count value (val_str) uses comma as thousands separator.
 - Class: quality-attribute
 - Status: validated
-- Description: The follower count value displayed in scoring messages (val_str) uses comma as thousands separator instead of being converted from comma to dot via .replace(",", ".").
-- Why it matters: The .replace(",", ".") on messages.py:164 forces Indonesian number formatting on all marketplaces. International comma convention should be used.
+- Description: The follower count value displayed in scoring messages uses comma as thousands separator instead of being converted from comma to dot.
+- Why it matters: The .replace(",", ".") forced Indonesian number formatting on all marketplaces.
 - Source: user
 - Primary owning slice: M003/S01
 - Supporting slices: none
-- Validation: Removed .replace(",", ".") from val_str formatting in messages.py. Python's :, format now produces 40,000 (comma) instead of 40.000 (dot). Test: test_follower_val_str_uses_comma_when_value_is_40000 asserts comma present and dot absent. Full suite 1097/1097 green.
-- Notes: Single line change in messages.py:164.
+- Validation: validated
+- Notes: Single line change in messages.py.
 
-### R025 — The BOTTOM ads cost floor in ads_keyword.py uses marketplace-appropriate values: 100,000 for IDR, 190 for THB (converted via IDR_TO_THB_RATE 0.0019).
+### R025 — BOTTOM ads cost floor uses marketplace-appropriate values (100,000 IDR / 190 THB).
 - Class: core-capability
 - Status: validated
-- Description: The BOTTOM ads cost floor in ads_keyword.py uses marketplace-appropriate values: 100,000 for IDR, 190 for THB (converted via IDR_TO_THB_RATE 0.0019).
-- Why it matters: 100,000 THB ≈ $2,800 USD — far too high to be a meaningful cost floor for Thai marketplace ads. The threshold must match currency scale.
+- Description: The BOTTOM ads cost floor in ads_keyword.py uses marketplace-appropriate values.
+- Why it matters: 100,000 THB is far too high for Thai marketplace ads.
 - Source: user
 - Primary owning slice: M003/S01
 - Supporting slices: none
-- Validation: ads_keyword.py min_cost = 100000 if marketplace != "TH" else 190. Tests: test_min_cost_190_when_marketplace_is_th (biaya=500 qualifies in TH), test_min_cost_100000_when_marketplace_is_id (biaya=500 excluded in ID), test_th_excludes_ad_below_190 (biaya=100 excluded in TH). Full suite 1097/1097 green.
-- Notes: Use existing IDR_TO_THB_RATE from marketplace.py for conversion.
+- Validation: validated
+- Notes: Uses IDR_TO_THB_RATE from marketplace.py.
 
-### R026 — The sales range conclusion (G66) continues to divide by 1,000,000 and append "juta" for the Indonesian (ID) marketplace. THB marketplace continues to use raw comma-formatted numbers.
+### R026 — Sales range conclusion (G66) uses juta for ID, raw numbers for TH.
 - Class: constraint
 - Status: validated
-- Description: The sales range conclusion (G66) continues to divide by 1,000,000 and append "juta" for the Indonesian (ID) marketplace. THB marketplace continues to use raw comma-formatted numbers.
-- Why it matters: "Juta" is the correct Indonesian-language convention for displaying large IDR amounts. This is intentional, not a bug.
+- Description: The sales range conclusion continues to divide by 1,000,000 and append "juta" for ID. THB uses raw comma-formatted numbers.
+- Why it matters: Juta is the correct Indonesian convention for large IDR amounts.
 - Source: user
 - Primary owning slice: M003/S01
 - Supporting slices: none
-- Validation: No code change needed — existing _compute_g66 marketplace branching is correct. Tests: test_compute_g66_uses_juta_when_marketplace_is_id (ID output contains "juta"), test_compute_g66_uses_raw_numbers_when_marketplace_is_th (TH output has comma-formatted numbers, no "juta"). Full suite 1097/1097 green.
-- Notes: No code change needed — existing marketplace branching in _compute_g66 is correct. Verify it stays correct.
+- Validation: validated
+- Notes: No code change needed — existing branching is correct.
 
 ## Out of Scope
 
-### R030 — No automatic currency conversion. Thresholds are set manually.
+### R033 — No automatic currency conversion. Thresholds are set manually.
 - Class: constraint
 - Status: out-of-scope
 - Description: No automatic currency conversion. Thresholds are set manually.
@@ -164,24 +232,30 @@ This file is the explicit capability and coverage contract for the project.
 
 | ID | Class | Status | Primary owner | Supporting | Proof |
 |---|---|---|---|---|---|
-| R014 | core-capability | validated | M002/S01 | none | EvaluationDetailPage renders category names via CATEGORY_MAP + t(), conclusion/marketing_budget/closing_message via renderTranslatable() + ScoringConclusionSection. 25 EvaluationDetailPage tests pass including 5 i18n-specific. ScoreBreakdownTable translates categories with raw-string fallback. Pre-i18n evaluations fall back to raw Indonesian text. |
-| R015 | core-capability | validated | M002/S03 | none | All 3 dialogs have EmailLanguageSelector: SendEmailDialog (22 tests, including 4 language-selector-specific), SendMailDialog (21 tests, including 5 language-selector-specific), EmailOutput (11 tests, including 7 language-selector-specific). Selector defaults to i18n.language, onChange updates email body preview without changing global UI language. |
-| R016 | core-capability | validated | M002/S03 | M002/S01 | buildI18nEmailBody utility (20 unit tests) assembles email body from stored i18n structured data matching backend _assemble_email_body section ordering. buildI18nEmailSubject constructs translated subject. Both use i18n.getFixedT(selectedLang) for language-specific rendering. Pre-i18n evaluations fall back to raw email_output string. Wired into all 3 dialogs with verified body updates on language change. |
-| R017 | quality-attribute | validated | M002/S03 | none | All 6 keys across 3 locale files replaced with {{currency}} interpolation. grep -c "IDR" on all locale files returns 0. grep -c "{{currency}}" returns 6 per file. Full regression: 602 tests pass. |
-| R018 | integration | validated | M002/S01 | none | Backend test test_get_evaluation_detail_has_marketplace proves API returns marketplace field. Triple-layer fallback (SQL COALESCE → service row.get → Pydantic default) ensures non-null. |
-| R019 | continuity | validated | M002/S01 | none | 602 frontend tests pass with mocks lacking _i18n fields and scoring_summary — no errors or blank fields. ScoringConclusionSection returns null when scoring_summary absent. ScoreBreakdownTable falls back to raw category string for unmapped names. hasI18nData guard in SendMailDialog falls back to original Indonesian body for pre-i18n evaluations. |
-| R020 | quality-attribute | validated | M002/S03 | M002/S01, M002/S02 | docs/adding-a-language.md (267 lines) covers all 7 touch points with file paths, locations, and code snippets. LanguageCode type derives from LANGUAGES array (single source of truth) — zero inline 'id' | 'en' | 'th' unions in non-test source. Process requires: (1) new locale JSON, (2) i18n.ts import, (3) LANGUAGES array entry, (4) backend auth Literal, (5) backend email regex, (6) backend STRINGS/CATEGORY_MAP. No schema changes, migrations, or new components. 602 tests pass. |
-| R021 | quality-attribute | validated | M002/S01 | none | useScoring.ts declares 8 optional _i18n fields on RowScore and CategoryScore (metric_i18n, value_i18n, message_i18n, benchmark_i18n, category_i18n, conclusion_i18n, marketing_budget_i18n, closing_message_i18n). TypeScript compilation succeeds. 602 frontend tests pass. |
-| R022 | constraint | validated | M002 | none | M002 made zero database schema changes. Only change was adding COALESCE(e.marketplace, 'ID') to the evaluation detail SELECT query — reads an existing column. No migrations, no data modifications, no destructive changes. |
-| R023 | quality-attribute | validated | M003/S01 | none | DEFAULT_RULES followers message_fail uses >50,000 (comma). Inline fallback in messages.py uses >50,000. Migration 028 patches stored DB templates from >50.000 to >50,000. Drift test replays m028 and passes. Tests: test_follower_fail_message_contains_comma_threshold, test_default_rules_followers_message_fail_uses_comma, test_db_templates_match_default_rules. Full suite 1097/1097 green. |
-| R024 | quality-attribute | validated | M003/S01 | none | Removed .replace(",", ".") from val_str formatting in messages.py. Python's :, format now produces 40,000 (comma) instead of 40.000 (dot). Test: test_follower_val_str_uses_comma_when_value_is_40000 asserts comma present and dot absent. Full suite 1097/1097 green. |
-| R025 | core-capability | validated | M003/S01 | none | ads_keyword.py min_cost = 100000 if marketplace != "TH" else 190. Tests: test_min_cost_190_when_marketplace_is_th (biaya=500 qualifies in TH), test_min_cost_100000_when_marketplace_is_id (biaya=500 excluded in ID), test_th_excludes_ad_below_190 (biaya=100 excluded in TH). Full suite 1097/1097 green. |
-| R026 | constraint | validated | M003/S01 | none | No code change needed — existing _compute_g66 marketplace branching is correct. Tests: test_compute_g66_uses_juta_when_marketplace_is_id (ID output contains "juta"), test_compute_g66_uses_raw_numbers_when_marketplace_is_th (TH output has comma-formatted numbers, no "juta"). Full suite 1097/1097 green. |
-| R030 | constraint | out-of-scope | none | none | n/a |
+| R027 | core-capability | active | M004/S01 | none | unmapped |
+| R028 | core-capability | active | M004/S02 | none | unmapped |
+| R029 | core-capability | active | M004/S02 | none | unmapped |
+| R030 | quality-attribute | active | M004/S02 | none | unmapped |
+| R031 | quality-attribute | active | M004/S03 | M004/S01, M004/S02 | unmapped |
+| R032 | quality-attribute | active | M004/S03 | M004/S01, M004/S02 | unmapped |
+| R014 | core-capability | validated | M002/S01 | none | validated |
+| R015 | core-capability | validated | M002/S03 | none | validated |
+| R016 | core-capability | validated | M002/S03 | M002/S01 | validated |
+| R017 | quality-attribute | validated | M002/S03 | none | validated |
+| R018 | integration | validated | M002/S01 | none | validated |
+| R019 | continuity | validated | M002/S01 | none | validated |
+| R020 | quality-attribute | validated | M002/S03 | M002/S01, M002/S02 | validated |
+| R021 | quality-attribute | validated | M002/S01 | none | validated |
+| R022 | constraint | validated | M002 | none | validated |
+| R023 | quality-attribute | validated | M003/S01 | none | validated |
+| R024 | quality-attribute | validated | M003/S01 | none | validated |
+| R025 | core-capability | validated | M003/S01 | none | validated |
+| R026 | constraint | validated | M003/S01 | none | validated |
+| R033 | constraint | out-of-scope | none | none | n/a |
 
 ## Coverage Summary
 
-- Active requirements: 0
-- Mapped to slices: 0
-- Validated: 13 (R014, R015, R016, R017, R018, R019, R020, R021, R022, R023, R024, R025, R026)
+- Active requirements: 6 (R027, R028, R029, R030, R031, R032)
+- Mapped to slices: 6
+- Validated: 13 (R014–R026)
 - Unmapped active requirements: 0
