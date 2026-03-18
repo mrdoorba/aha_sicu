@@ -11,10 +11,6 @@ PYTHONPATH=backend /Users/mac/HT/Project/aha_sicu/backend/.venv/bin/python -m py
 
 The `--timeout` flag is not available (pytest-timeout not installed).
 
-## Pre-existing Test Failures
-
-3 tests in `backend/tests/unit/calculators/test_ads_keyword.py` consistently fail — unrelated to scoring or marketplace work. Don't try to fix them in milestone tasks.
-
 ## Migration Template Drift Test
 
 `TestMigrationTemplatesDrift` in `test_scoring.py` replays migrations 012→019→020→021→027 to build effective DB state and compares against DEFAULT_RULES. Any new migration that modifies message templates must:
