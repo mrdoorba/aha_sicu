@@ -2552,7 +2552,6 @@ class TestComputeG66JutaR026:
     def test_compute_g66_uses_juta_when_marketplace_is_id(self):
         """R026: ID marketplace sales range displays in juta."""
         from app.calculators.scoring.computations import _compute_g66
-        from app.calculators.scoring.models import CategoryScore
 
         manual_data = {
             "business": {
@@ -2570,7 +2569,6 @@ class TestComputeG66JutaR026:
     def test_compute_g66_uses_raw_numbers_when_marketplace_is_th(self):
         """R026: TH marketplace sales range displays raw comma-formatted numbers, not juta."""
         from app.calculators.scoring.computations import _compute_g66
-        from app.calculators.scoring.models import CategoryScore
 
         manual_data = {
             "business": {

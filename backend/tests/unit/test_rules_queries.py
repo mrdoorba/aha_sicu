@@ -95,7 +95,7 @@ async def test_get_rules_by_template_and_marketplace_default():
     conn = AsyncMock()
     conn.fetchrow = AsyncMock(return_value=MOCK_ID_RULE)
 
-    result = await get_rules_by_template_and_marketplace(conn, "default")
+    await get_rules_by_template_and_marketplace(conn, "default")
 
     call_args = conn.fetchrow.call_args[0]
     assert call_args[2] == "ID"

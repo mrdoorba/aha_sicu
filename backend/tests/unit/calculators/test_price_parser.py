@@ -4,8 +4,6 @@ Covers IDR (default) and THB marketplace formats,
 edge cases, and type passthrough.
 """
 
-import pytest
-
 from app.calculators.price_parser import _parse_price
 
 

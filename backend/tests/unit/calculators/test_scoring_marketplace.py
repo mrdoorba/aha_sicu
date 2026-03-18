@@ -16,7 +16,7 @@ from app.calculators.scoring.messages import (
     _generate_competition_messages,
 )
 from app.calculators.scoring.categories import _score_competition
-from app.calculators.scoring.models import CategoryScore, RowScore, ScoringResult, TranslatableText
+from app.calculators.scoring.models import CategoryScore, RowScore, ScoringResult
 
 
 # ---------------------------------------------------------------------------

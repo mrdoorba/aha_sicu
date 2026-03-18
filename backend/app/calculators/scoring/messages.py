@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from app.calculators.scoring.helpers import (
     _fmt_currency,
-    _fmt_idr,
     _fmt_pct_0dp,
     _fmt_pct_1dp,
     _format_message_template,

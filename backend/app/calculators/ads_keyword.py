@@ -118,8 +118,6 @@ def calculate_sheet1(
     Returns:
         Dict with keys ``ak2``, ``ak3``, ``ak4`` containing formatted text.
     """
-    currency = MARKETPLACE_CURRENCY.get(marketplace, "IDR")
-
     # --- AK2: Ad Overview Summary (same for both languages) ---
     count_active = 0
     count_paused = 0
