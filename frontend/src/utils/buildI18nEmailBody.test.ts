@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect } from 'vitest';
 import type { TFunction } from 'i18next';
 import type { CategoryScore } from '../hooks/useScoring';
 import type { ScoringConclusionData } from './buildI18nEmailBody';

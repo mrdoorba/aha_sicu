@@ -20,7 +20,6 @@ import i18n from '../../i18n';
 import type { CategoryScore } from '../../hooks/useScoring';
 import type { BrandRawData } from '../../hooks/useEvaluationDetail';
 import { buildSubject, buildBody } from './sendMailUtils';
-import type { TranslatableText } from '../../utils/renderTranslatable';
 import { isRecord } from '../../lib/typeGuards';
 
 interface SendMailDialogProps {

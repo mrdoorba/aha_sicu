@@ -22,8 +22,9 @@ export const EmailOutput = ({ subject, body, scoringResult }: EmailOutputProps) 
   const [copied, setCopied] = useState(false);
   const [emailLanguage, setEmailLanguage] = useState(i18n.language);
 
-  const scoringSummary: ScoringConclusionData | null = scoringResult
-    ? {
+  const displayBody = useMemo(() => {
+    if (scoringResult) {
+      const summary: ScoringConclusionData = {
         conclusion: scoringResult.conclusion,
         conclusion_i18n: scoringResult.conclusion_i18n,
         marketing_budget: scoringResult.marketing_budget,
@@ -31,20 +32,16 @@ export const EmailOutput = ({ subject, body, scoringResult }: EmailOutputProps) 
         closing_message: scoringResult.closing_message,
         closing_message_i18n: scoringResult.closing_message_i18n,
         marketing_estimation: scoringResult.marketing_estimation,
-      }
-    : null;
-
-  const displayBody = useMemo(() => {
-    if (scoringResult) {
+      };
       const fixedT = i18n.getFixedT(emailLanguage);
       return buildI18nEmailBody(
         scoringResult.category_scores,
-        scoringSummary,
+        summary,
         fixedT,
       );
     }
     return body;
-  }, [scoringResult, scoringSummary, emailLanguage, body]);
+  }, [scoringResult, emailLanguage, body]);
 
   const handleCopy = async () => {
     const fullText = `Subject: ${subject}\n\n${displayBody}`;

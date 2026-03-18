@@ -2,7 +2,6 @@ import type { TFunction } from 'i18next';
 import type { CategoryScore } from '../hooks/useScoring';
 import type { TranslatableText } from './renderTranslatable';
 import { renderTranslatable } from './renderTranslatable';
-import { CATEGORY_MAP } from '../lib/categoryMap';
 
 /**
  * Scoring summary data shape used for the conclusion, marketing, and closing

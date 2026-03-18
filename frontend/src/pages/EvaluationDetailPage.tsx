@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Copy, ClipboardCheck, Trash2, ChevronRight, ChevronDown, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -268,7 +269,7 @@ function ScoringConclusionSection({
   t,
 }: {
   calculatorResults: Record<string, unknown>;
-  t: (key: string, vars?: Record<string, string>) => string;
+  t: TFunction;
 }) {
   const summary = isScoringSummary(calculatorResults.scoring_summary)
     ? calculatorResults.scoring_summary
