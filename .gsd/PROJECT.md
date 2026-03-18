@@ -51,6 +51,7 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 
 - [x] M001: THB Marketplace Expansion — Multi-marketplace currency support with THB thresholds
 - [x] M002: Evaluation Results i18n — History page and email output render in selected language; all 9 requirements validated
+- [ ] M003: Hardcoded IDR Cleanup — Fix remaining IDR-specific formatting and thresholds in scoring and ads calculators
 
 ---
-*Last updated: 2026-03-18 — M002 complete (all 4 slices delivered, all requirements validated)*
+*Last updated: 2026-03-18 — M002 complete, M003 planned (hardcoded IDR cleanup)*

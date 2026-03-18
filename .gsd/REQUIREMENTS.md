@@ -2,6 +2,52 @@
 
 This file is the explicit capability and coverage contract for the project.
 
+## Active
+
+### R023 — Follower count threshold in scoring messages uses international comma separator (>50,000 not >50.000)
+- Class: quality-attribute
+- Status: active
+- Description: The follower count threshold display in scoring messages uses international comma convention (>50,000) instead of Indonesian dot convention (>50.000). Applies to DEFAULT_RULES fallback, inline message fallbacks, and DB-stored message templates.
+- Why it matters: Dot-as-thousands-separator is Indonesian locale-specific. International convention (comma) is consistent with how all other numbers are formatted in the system.
+- Source: user
+- Primary owning slice: M003/S01
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Affects rules.py, messages.py inline fallback, and requires a DB migration for stored templates.
+
+### R024 — Follower val_str formatted with comma thousands separator, not dot
+- Class: quality-attribute
+- Status: active
+- Description: The follower count value displayed in scoring messages (val_str) uses comma as thousands separator instead of being converted from comma to dot via .replace(",", ".").
+- Why it matters: The .replace(",", ".") on messages.py:164 forces Indonesian number formatting on all marketplaces. International comma convention should be used.
+- Source: user
+- Primary owning slice: M003/S01
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Single line change in messages.py:164.
+
+### R025 — Ads calculator BOTTOM ads min_cost threshold is marketplace-aware
+- Class: core-capability
+- Status: active
+- Description: The BOTTOM ads cost floor in ads_keyword.py uses marketplace-appropriate values: 100,000 for IDR, 190 for THB (converted via IDR_TO_THB_RATE 0.0019).
+- Why it matters: 100,000 THB ≈ $2,800 USD — far too high to be a meaningful cost floor for Thai marketplace ads. The threshold must match currency scale.
+- Source: user
+- Primary owning slice: M003/S01
+- Supporting slices: none
+- Validation: unmapped
+- Notes: Use existing IDR_TO_THB_RATE from marketplace.py for conversion.
+
+### R026 — Juta display convention preserved for Indonesian marketplace
+- Class: constraint
+- Status: active
+- Description: The sales range conclusion (G66) continues to divide by 1,000,000 and append "juta" for the Indonesian (ID) marketplace. THB marketplace continues to use raw comma-formatted numbers.
+- Why it matters: "Juta" is the correct Indonesian-language convention for displaying large IDR amounts. This is intentional, not a bug.
+- Source: user
+- Primary owning slice: M003/S01
+- Supporting slices: none
+- Validation: unmapped
+- Notes: No code change needed — existing marketplace branching in _compute_g66 is correct. Verify it stays correct.
+
 ## Validated
 
 ### R014 — When a user views an evaluation in the history detail page, all scoring messages, category names, conclusions, closing messages, and marketing budget text render in the currently selected UI language (ID/EN/TH).
@@ -120,6 +166,10 @@ This file is the explicit capability and coverage contract for the project.
 
 | ID | Class | Status | Primary owner | Supporting | Proof |
 |---|---|---|---|---|---|
+| R023 | quality-attribute | active | M003/S01 | none | unmapped |
+| R024 | quality-attribute | active | M003/S01 | none | unmapped |
+| R025 | core-capability | active | M003/S01 | none | unmapped |
+| R026 | constraint | active | M003/S01 | none | unmapped |
 | R014 | core-capability | validated | M002/S01 | none | EvaluationDetailPage renders category names via CATEGORY_MAP + t(), conclusion/marketing_budget/closing_message via renderTranslatable() + ScoringConclusionSection. 25 EvaluationDetailPage tests pass including 5 i18n-specific. ScoreBreakdownTable translates categories with raw-string fallback. Pre-i18n evaluations fall back to raw Indonesian text. |
 | R015 | core-capability | validated | M002/S03 | none | All 3 dialogs have EmailLanguageSelector: SendEmailDialog (22 tests, including 4 language-selector-specific), SendMailDialog (21 tests, including 5 language-selector-specific), EmailOutput (11 tests, including 7 language-selector-specific). Selector defaults to i18n.language, onChange updates email body preview without changing global UI language. |
 | R016 | core-capability | validated | M002/S03 | M002/S01 | buildI18nEmailBody utility (20 unit tests) assembles email body from stored i18n structured data matching backend _assemble_email_body section ordering. buildI18nEmailSubject constructs translated subject. Both use i18n.getFixedT(selectedLang) for language-specific rendering. Pre-i18n evaluations fall back to raw email_output string. Wired into all 3 dialogs with verified body updates on language change. |
@@ -133,7 +183,7 @@ This file is the explicit capability and coverage contract for the project.
 
 ## Coverage Summary
 
-- Active requirements: 0
-- Mapped to slices: 0
-- Validated: 9 (R014, R015, R016, R017, R018, R019, R020, R021, R022)
+- Active requirements: 4
+- Mapped to slices: 4
+- Validated: 9 (R014-R022)
 - Unmapped active requirements: 0
