@@ -56,8 +56,8 @@ export function PromoToolsForm({ data, salesMonth0, currency = 'IDR', marketplac
               <div className="flex items-center gap-1">
                 <CurrencyField
                   name={`promoTools.${field.key}`}
-                  label={field.label}
-                  benchmark={field.benchmark}
+                  label={t(field.labelKey!)}
+                  benchmark={field.benchmarkKey ? t(field.benchmarkKey) : field.benchmark}
                   currency={currency}
                   value={data[field.key as keyof PromoToolsData] as number | null}
                   onChange={(v) => onChange('promoTools', field.key, v)}

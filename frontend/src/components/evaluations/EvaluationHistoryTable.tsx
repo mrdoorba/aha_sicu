@@ -1,5 +1,6 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, AlertCircle, Search, X, CalendarIcon, Loader2 } from 'lucide-react';
 import { format, parseISO } from 'date-fns';
 import {
@@ -17,22 +18,20 @@ import { Calendar } from '../ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { useGroupedEvaluations, type GroupedEvaluationItem } from '../../hooks/useGroupedEvaluations';
 import { useBrandEvaluations } from '../../hooks/useBrandEvaluations';
-
-const dateFormatter = new Intl.DateTimeFormat('id-ID', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-  timeZone: 'Asia/Jakarta',
-});
+import { getIntlLocale } from '../../lib/localeMap';
 
 function SearchInput({
   value,
   onChange,
+  ariaLabel,
+  placeholder,
+  clearLabel,
 }: {
   value: string;
   onChange: (value: string) => void;
+  ariaLabel: string;
+  placeholder: string;
+  clearLabel: string;
 }) {
   return (
     <div className="relative max-w-sm">
@@ -41,8 +40,8 @@ function SearchInput({
         aria-hidden="true"
       />
       <Input
-        aria-label="Cari evaluasi berdasarkan nama brand"
-        placeholder="Cari nama brand..."
+        aria-label={ariaLabel}
+        placeholder={placeholder}
         value={value}
         onChange={(e) => onChange(e.target.value)}
         className="pl-9 pr-9"
@@ -52,7 +51,7 @@ function SearchInput({
           variant="ghost"
           size="sm"
           className="absolute right-1 top-1/2 size-7 -translate-y-1/2 p-0"
-          aria-label="Hapus pencarian"
+          aria-label={clearLabel}
           onClick={() => onChange('')}
         >
           <X className="size-4" aria-hidden="true" />
@@ -133,12 +132,16 @@ function BrandAccordionRow({
   onToggle,
   dateFrom,
   dateTo,
+  dateFormatter,
+  t,
 }: {
   brand: GroupedEvaluationItem;
   isExpanded: boolean;
   onToggle: () => void;
   dateFrom?: string;
   dateTo?: string;
+  dateFormatter: Intl.DateTimeFormat;
+  t: (key: string, params?: Record<string, unknown>) => string;
 }) {
   const navigate = useNavigate();
   const [showAll, setShowAll] = useState(false);
@@ -170,7 +173,7 @@ function BrandAccordionRow({
             {brand.brand_name}
           </div>
         </TableCell>
-        <TableCell>{brand.evaluation_count} evaluasi</TableCell>
+        <TableCell>{t('history.table.evaluationCount', { count: brand.evaluation_count })}</TableCell>
         <TableCell>
           <span className="font-mono">
             {brand.top_score.toFixed(2)} {brand.top_verdict}
@@ -192,7 +195,7 @@ function BrandAccordionRow({
           {isError && (
             <TableRow>
               <TableCell colSpan={4} className="py-4 text-center text-destructive">
-                Gagal memuat evaluasi
+                {t('history.table.failedLoadEvaluations')}
               </TableCell>
             </TableRow>
           )}
@@ -225,7 +228,7 @@ function BrandAccordionRow({
                     setShowAll(true);
                   }}
                 >
-                  Tampilkan semua ({total})
+                  {t('history.table.showAll', { count: total })}
                 </Button>
               </TableCell>
             </TableRow>
@@ -237,8 +240,21 @@ function BrandAccordionRow({
 }
 
 export const EvaluationHistoryTable = () => {
+  const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
   const [expandedBrands, setExpandedBrands] = useState<Set<number>>(new Set());
+
+  const dateFormatter = useMemo(
+    () => new Intl.DateTimeFormat(getIntlLocale(i18n.language), {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+      timeZone: 'Asia/Jakarta',
+    }),
+    [i18n.language],
+  );
 
   const page = Math.max(1, Number(searchParams.get('page')) || 1);
   const limit = 20;
@@ -351,10 +367,10 @@ export const EvaluationHistoryTable = () => {
       <div className="flex flex-col items-center gap-3 py-16 text-center">
         <AlertCircle className="size-10 text-destructive" aria-hidden="true" />
         <p className="text-muted-foreground">
-          {error?.message || 'Gagal memuat riwayat evaluasi'}
+          {error?.message || t('history.table.failedLoadHistory')}
         </p>
         <Button variant="outline" onClick={() => refetch()}>
-          Coba Lagi
+          {t('common.retry')}
         </Button>
       </div>
     );
@@ -365,21 +381,24 @@ export const EvaluationHistoryTable = () => {
       <SearchInput
         value={searchInput}
         onChange={setSearchInput}
+        ariaLabel={t('history.table.aria.searchInput')}
+        placeholder={t('history.table.searchPlaceholder')}
+        clearLabel={t('history.table.aria.clearSearch')}
       />
       <div className="flex items-center gap-2">
         <DatePickerField
-          label="Dari tanggal"
+          label={t('history.table.aria.dateFrom')}
           value={dateFromUrl ? parseISO(dateFromUrl) : undefined}
           onChange={setDateFrom}
-          clearLabel="Hapus dari tanggal"
+          clearLabel={t('history.table.aria.clearDateFrom')}
           disableAfter={dateToUrl ? parseISO(dateToUrl) : undefined}
         />
         <span className="text-muted-foreground text-sm">–</span>
         <DatePickerField
-          label="Sampai tanggal"
+          label={t('history.table.aria.dateTo')}
           value={dateToUrl ? parseISO(dateToUrl) : undefined}
           onChange={setDateTo}
-          clearLabel="Hapus sampai tanggal"
+          clearLabel={t('history.table.aria.clearDateTo')}
           disableBefore={dateFromUrl ? parseISO(dateFromUrl) : undefined}
         />
       </div>
@@ -393,16 +412,16 @@ export const EvaluationHistoryTable = () => {
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <p className="text-muted-foreground">
             {[searchFromUrl, dateFromUrl || dateToUrl].filter(Boolean).length > 1
-              ? 'Tidak ada evaluasi yang cocok dengan filter'
+              ? t('history.table.noMatchFilter')
               : searchFromUrl
-                ? `Tidak ada evaluasi ditemukan untuk '${searchFromUrl}'`
+                ? t('history.table.noMatchSearch', { search: searchFromUrl })
                 : dateFromUrl || dateToUrl
-                  ? 'Tidak ada evaluasi ditemukan untuk rentang tanggal tersebut'
-                  : 'Belum ada riwayat evaluasi'}
+                  ? t('history.table.noMatchDate')
+                  : t('history.table.emptyState')}
           </p>
           {!searchFromUrl && !dateFromUrl && !dateToUrl && (
             <p className="text-sm text-muted-foreground">
-              Mulai evaluasi brand untuk melihat riwayat di sini.
+              {t('history.table.emptyStateHint')}
             </p>
           )}
         </div>
@@ -414,16 +433,16 @@ export const EvaluationHistoryTable = () => {
     <div>
       {filterBar}
       <Table
-        aria-label="Riwayat evaluasi"
+        aria-label={t('history.table.aria.table')}
         aria-busy={isLoading || isPlaceholderData}
         className={isPlaceholderData ? 'opacity-60 transition-opacity' : ''}
       >
         <TableHeader>
           <TableRow>
-            <TableHead className="text-xs uppercase">Brand</TableHead>
-            <TableHead className="text-xs uppercase">Evaluasi</TableHead>
-            <TableHead className="text-xs uppercase">Skor Tertinggi</TableHead>
-            <TableHead className="text-xs uppercase">Terbaru</TableHead>
+            <TableHead className="text-xs uppercase">{t('history.table.brand')}</TableHead>
+            <TableHead className="text-xs uppercase">{t('history.table.evaluations')}</TableHead>
+            <TableHead className="text-xs uppercase">{t('history.table.topScore')}</TableHead>
+            <TableHead className="text-xs uppercase">{t('history.table.latest')}</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
@@ -444,6 +463,8 @@ export const EvaluationHistoryTable = () => {
                   onToggle={() => toggleBrand(brand.brand_id)}
                   dateFrom={dateFromUrl || undefined}
                   dateTo={dateToUrl || undefined}
+                  dateFormatter={dateFormatter}
+                  t={t}
                 />
               ))}
         </TableBody>
@@ -459,11 +480,11 @@ export const EvaluationHistoryTable = () => {
               disabled={page <= 1}
             >
               <ChevronLeft className="size-4" aria-hidden="true" />
-              Sebelumnya
+              {t('common.previous')}
             </Button>
           )}
           <span className="text-sm text-muted-foreground">
-            {pages > 1 ? `Halaman ${page} dari ${pages}` : `${total} brand`}
+            {pages > 1 ? t('common.pageOf', { page, totalPages: pages }) : t('history.table.brandCount', { count: total })}
           </span>
           {pages > 1 && (
             <Button
@@ -472,7 +493,7 @@ export const EvaluationHistoryTable = () => {
               onClick={() => setPage((p) => Math.min(pages, p + 1))}
               disabled={page >= pages}
             >
-              Berikutnya
+              {t('common.next')}
               <ChevronRight className="size-4" aria-hidden="true" />
             </Button>
           )}

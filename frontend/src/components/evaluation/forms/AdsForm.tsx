@@ -37,7 +37,7 @@ export function AdsForm({ data, salesMonth0, marketplace = 'ID', onChange, onBlu
             <CurrencyField
               key={field.key}
               name={`ads.${field.key}`}
-              label={field.label}
+              label={t(field.labelKey!)}
               benchmark={field.benchmark}
               value={data[field.key as keyof AdsData] as number | null}
               onChange={(v) => onChange('ads', field.key, v)}

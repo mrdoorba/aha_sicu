@@ -30,6 +30,7 @@ import {
 } from '../components/evaluation/forms/formConfig';
 import { isRecord, isRecordArray } from '../lib/typeGuards';
 import { CATEGORY_MAP } from '../lib/categoryMap';
+import { getIntlLocale } from '../lib/localeMap';
 import { renderTranslatable, type TranslatableText } from '../utils/renderTranslatable';
 
 interface ScoringSummary {
@@ -65,6 +66,7 @@ const CATEGORY_LOOKUP = new Map(
     cat.key,
     {
       displayName: cat.displayName,
+      displayNameKey: cat.displayNameKey,
       fieldMap: new Map(cat.fields.map((f) => [f.key, f])),
     },
   ]),
@@ -74,9 +76,9 @@ function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, locale: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString('id-ID', {
+  return d.toLocaleDateString(locale, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -348,7 +350,7 @@ function ManualInputsSection({
     <div className="space-y-4">
       {categories.map(([category, values]) => {
         const categoryInfo = CATEGORY_LOOKUP.get(category);
-        const categoryLabel = categoryInfo?.displayName ?? capitalize(category);
+        const categoryLabel = categoryInfo?.displayNameKey ? t(categoryInfo.displayNameKey) : capitalize(category);
 
         if (!isRecord(values)) {
           return (
@@ -389,7 +391,7 @@ function ManualInputsSection({
               if (monthLabels && key.startsWith('salesMonth')) {
                 const idx = parseInt(key.replace('salesMonth', ''), 10);
                 if (!isNaN(idx) && idx >= 0 && idx < monthLabels.length) {
-                  dynamicLabel = `Penjualan ${monthLabels[idx]}`;
+                  dynamicLabel = t('evaluation.salesMonthLabel', { month: t(monthLabels[idx]) });
                 }
               }
 
@@ -400,7 +402,7 @@ function ManualInputsSection({
         // Competition section: group by product for a cleaner layout
         if (category === 'competition') {
           const products = ['product1', 'product2', 'product3'] as const;
-          const productLabels = ['Produk Kompetitor 1', 'Produk Kompetitor 2', 'Produk Kompetitor 3'];
+          const productLabels = [t('evaluation.competitorProduct1'), t('evaluation.competitorProduct2'), t('evaluation.competitorProduct3')];
           // Strip the "Produk Kompetitor N — " prefix from labels for compact display
           const shortLabel = (label: string) => label.replace(/^Produk Kompetitor \d — /, '');
 
@@ -420,7 +422,7 @@ function ManualInputsSection({
                           return (
                             <div key={key} className="border-b border-border/50 py-1">
                               <span className="text-muted-foreground">
-                                {shortLabel(fieldDef?.label ?? key)}
+                                {shortLabel(fieldDef?.labelKey ? t(fieldDef.labelKey) : (fieldDef?.label ?? key))}
                               </span>
                               <div className="font-medium">
                                 {isLink && formatted !== '-' ? (
@@ -430,7 +432,7 @@ function ManualInputsSection({
                                     rel="noopener noreferrer"
                                     className="text-blue-600 underline break-all"
                                   >
-                                    Lihat di Shopee
+                                    {t('evaluation.viewOnShopee')}
                                   </a>
                                 ) : (
                                   <span className="break-words">
@@ -457,7 +459,7 @@ function ManualInputsSection({
               {entries.map(([key, val, fieldDef, dynamicLabel]) => (
                 <div key={key} className="rounded-lg border p-3">
                   <span className="text-xs text-muted-foreground">
-                    {dynamicLabel ?? fieldDef?.label ?? key.replace(/_/g, ' ')}
+                    {dynamicLabel ?? (fieldDef?.labelKey ? t(fieldDef.labelKey) : (fieldDef?.label ?? key.replace(/_/g, ' ')))}
                   </span>
                   <div className="font-medium break-words">
                     {formatValue(val, key, fieldDef, marketplace)}
@@ -520,7 +522,7 @@ function EmailOutputSection({ emailOutput, t, onSendMail }: { emailOutput: strin
 }
 
 export function EvaluationDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
   const id = Number(params.id);
@@ -596,7 +598,7 @@ export function EvaluationDetailPage() {
                   <div>
                     <h1 className="text-2xl font-bold">{evaluation.brand_name}</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {evaluation.evaluator_email} &middot; {formatDate(evaluation.created_at)}
+                      {evaluation.evaluator_email} &middot; {formatDate(evaluation.created_at, getIntlLocale(i18n.language))}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

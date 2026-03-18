@@ -50,13 +50,13 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: Extract hardcoded strings from un-i18n'd components** `risk:medium` `depends:[]`
+- [x] **S01: Extract hardcoded strings from un-i18n'd components** `risk:medium` `depends:[]`
   > After this: Switch to TH → History table, Delete dialog, Downtime dialog, SelectField all render in Thai. Tests updated and passing.
 
-- [ ] **S02: Locale-aware dates, field labels, and month constants** `risk:medium` `depends:[S01]`
+- [x] **S02: Locale-aware dates, field labels, and month constants** `risk:medium` `depends:[S01]`
   > After this: Switch to TH → dates show Thai locale formatting, all evaluation form field labels render in Thai, month abbreviations are English. Tests updated and passing.
 
-- [ ] **S03: Verification sweep and test hardening** `risk:low` `depends:[S01,S02]`
+- [x] **S03: Verification sweep and test hardening** `risk:low` `depends:[S01,S02]`
   > After this: `rg` sweep for Indonesian text in source returns zero. All frontend tests pass. Translator can edit one JSON file per language to fully localize the app.
 
 ## Boundary Map

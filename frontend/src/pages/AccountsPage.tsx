@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Loader2 } from 'lucide-react';
 import { toast } from 'sonner';
@@ -36,19 +36,22 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
+import { getIntlLocale } from '../lib/localeMap';
 
 const ROLES = ['member', 'leader', 'admin'] as const;
 
-const dateFormatter = new Intl.DateTimeFormat('id-ID', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
-
 export const AccountsPage = () => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const dateFormatter = useMemo(
+    () => new Intl.DateTimeFormat(getIntlLocale(i18n.language), {
+      day: 'numeric',
+      month: 'short',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit',
+    }),
+    [i18n.language],
+  );
   const { profile } = useCurrentUser();
   const { accounts, isLoading, isError, refetch } = useAccounts();
   const createAccount = useCreateAccount();

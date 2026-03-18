@@ -1,4 +1,5 @@
 import { useTranslation } from 'react-i18next';
+import { getIntlLocale } from '../../lib/localeMap';
 
 interface DashboardFooterProps {
   evaluatorEmail: string;
@@ -6,7 +7,7 @@ interface DashboardFooterProps {
 }
 
 export const DashboardFooter = ({ evaluatorEmail, createdAt }: DashboardFooterProps) => {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
 
   return (
     <div className="pt-10 border-t border-border/50 text-center flex flex-col items-center gap-1">
@@ -17,7 +18,7 @@ export const DashboardFooter = ({ evaluatorEmail, createdAt }: DashboardFooterPr
         {t('presentation.footer.conductedBy')}{' '}
         <span className="text-foreground/80 font-bold">{evaluatorEmail}</span>{' '}
         {t('presentation.footer.onDate')}{' '}
-        {new Date(createdAt).toLocaleDateString('id-ID', {
+        {new Date(createdAt).toLocaleDateString(getIntlLocale(i18n.language), {
           day: 'numeric',
           month: 'long',
           year: 'numeric',

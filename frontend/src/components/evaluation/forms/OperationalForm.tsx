@@ -39,8 +39,8 @@ export function OperationalForm({ data, rules, marketplace = 'ID', onChange, onB
               <NumberField
                 key={field.key}
                 name={`operational.${field.key}`}
-                label={field.label}
-                unit={field.unit}
+                label={t(field.labelKey!)}
+                unit={field.unitKey ? t(field.unitKey) : field.unit}
                 benchmark={benchmark}
                 value={data[field.key as keyof OperationalData] as number | null}
                 onChange={(v) => onChange('operational', field.key, v)}

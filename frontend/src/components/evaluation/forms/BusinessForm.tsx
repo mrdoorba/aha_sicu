@@ -8,6 +8,7 @@ import type { BusinessData } from './formConfig';
 import { BUSINESS_FIELDS, getSectionLinks, generateMonthLabels, formatCurrency } from './formConfig';
 import type { ScoringRules } from '../../../hooks/useRules';
 import { getBenchmarkFromRules, FORM_TO_RULES_MAP } from './benchmarkUtils';
+import { getIntlLocale } from '../../../lib/localeMap';
 
 interface BusinessFormProps {
   data: BusinessData;
@@ -19,7 +20,7 @@ interface BusinessFormProps {
 }
 
 export function BusinessForm({ data, rules, currency = 'IDR', marketplace = 'ID', onChange, onBlur }: BusinessFormProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const links = getSectionLinks(marketplace);
   const monthLabels = useMemo(() => generateMonthLabels(data.salesStartMonth), [data.salesStartMonth]);
 
@@ -30,21 +31,21 @@ export function BusinessForm({ data, rules, currency = 'IDR', marketplace = 'ID'
     for (let i = 0; i < 12; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const label = d.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+      const label = d.toLocaleDateString(getIntlLocale(i18n.language), { month: 'short', year: 'numeric' });
       options.push({ value: val, label });
     }
     return options;
-  }, []);
+  }, [i18n.language]);
 
   // Dynamic label overrides for sales months and conversion rate
   const getFieldLabel = (field: typeof BUSINESS_FIELDS[number], index: number): string => {
     if (field.key === 'conversionRate') {
-      return t('forms.business.conversionRate', { month: monthLabels[0] });
+      return t('forms.business.conversionRate', { month: t(monthLabels[0]) });
     }
     if (field.key.startsWith('salesMonth')) {
-      return t('forms.business.salesMonth', { month: monthLabels[index] });
+      return t('forms.business.salesMonth', { month: t(monthLabels[index]) });
     }
-    return field.label;
+    return t(field.labelKey!);
   };
 
   // Computed average of 6 months

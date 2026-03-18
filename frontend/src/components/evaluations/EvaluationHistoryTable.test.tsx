@@ -4,6 +4,13 @@ import { MemoryRouter, useLocation } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EvaluationHistoryTable } from './EvaluationHistoryTable';
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'id', changeLanguage: vi.fn() },
+  }),
+}));
+
 const mockRefetch = vi.fn();
 
 const MOCK_BRANDS = [
@@ -113,23 +120,22 @@ describe('EvaluationHistoryTable — Accordion', () => {
 
   // --- Render grouped data ---
 
-  it('renders Indonesian column headers: BRAND, EVALUASI, SKOR TERTINGGI, TERBARU', () => {
+  it('renders i18n column headers: BRAND, EVALUATIONS, TOP SCORE, LATEST', () => {
     renderTable();
 
-    expect(screen.getByText('Brand')).toBeInTheDocument();
-    expect(screen.getByText('Evaluasi')).toBeInTheDocument();
-    expect(screen.getByText('Skor Tertinggi')).toBeInTheDocument();
-    expect(screen.getByText('Terbaru')).toBeInTheDocument();
+    expect(screen.getByText('history.table.brand')).toBeInTheDocument();
+    expect(screen.getByText('history.table.evaluations')).toBeInTheDocument();
+    expect(screen.getByText('history.table.topScore')).toBeInTheDocument();
+    expect(screen.getByText('history.table.latest')).toBeInTheDocument();
   });
 
   it('renders brand summary rows with name, count, score, and date', () => {
     renderTable();
 
     expect(screen.getByText('Nike Indonesia')).toBeInTheDocument();
-    expect(screen.getByText('5 evaluasi')).toBeInTheDocument();
+    expect(screen.getAllByText('history.table.evaluationCount').length).toBeGreaterThan(0);
     expect(screen.getByText(/82\.50/)).toBeInTheDocument();
     expect(screen.getByText('Adidas SEA')).toBeInTheDocument();
-    expect(screen.getByText('3 evaluasi')).toBeInTheDocument();
   });
 
   // --- Expand/Collapse ---
@@ -166,7 +172,7 @@ describe('EvaluationHistoryTable — Accordion', () => {
 
   // --- Limit 5 & "Tampilkan semua" ---
 
-  it('shows "Tampilkan semua (N)" button when total > 5', async () => {
+  it('shows "show all" button when total > 5', async () => {
     mockBrandReturn = {
       evaluations: MOCK_BRAND_EVALS_MANY,
       total: 8,
@@ -181,11 +187,11 @@ describe('EvaluationHistoryTable — Accordion', () => {
     await user.click(nikeRow);
 
     await waitFor(() => {
-      expect(screen.getByText('Tampilkan semua (8)')).toBeInTheDocument();
+      expect(screen.getByText('history.table.showAll')).toBeInTheDocument();
     });
   });
 
-  it('does not show "Tampilkan semua" when total <= 5', async () => {
+  it('does not show "show all" when total <= 5', async () => {
     const user = userEvent.setup();
     renderTable();
 
@@ -195,7 +201,7 @@ describe('EvaluationHistoryTable — Accordion', () => {
     await waitFor(() => {
       expect(screen.getByText('rina@company.com')).toBeInTheDocument();
     });
-    expect(screen.queryByText(/Tampilkan semua/)).not.toBeInTheDocument();
+    expect(screen.queryByText('history.table.showAll')).not.toBeInTheDocument();
   });
 
   // --- Pagination ---
@@ -208,9 +214,9 @@ describe('EvaluationHistoryTable — Accordion', () => {
     };
     renderTable();
 
-    expect(screen.getByText('Halaman 1 dari 3')).toBeInTheDocument();
-    expect(screen.getByText('Sebelumnya')).toBeInTheDocument();
-    expect(screen.getByText('Berikutnya')).toBeInTheDocument();
+    expect(screen.getByText('common.pageOf')).toBeInTheDocument();
+    expect(screen.getByText('common.previous')).toBeInTheDocument();
+    expect(screen.getByText('common.next')).toBeInTheDocument();
   });
 
   it('pagination next button updates URL', async () => {
@@ -222,7 +228,7 @@ describe('EvaluationHistoryTable — Accordion', () => {
     };
     renderTable();
 
-    const nextButton = screen.getByRole('button', { name: /berikutnya/i });
+    const nextButton = screen.getByRole('button', { name: /common\.next/i });
     await user.click(nextButton);
 
     expect(screen.getByTestId('location')).toHaveTextContent('?page=2');
@@ -230,14 +236,14 @@ describe('EvaluationHistoryTable — Accordion', () => {
 
   // --- Search ---
 
-  it('search input has Indonesian placeholder', () => {
+  it('search input has i18n placeholder', () => {
     renderTable();
 
     const searchInput = screen.getByRole('textbox', {
-      name: /cari evaluasi berdasarkan nama brand/i,
+      name: /history\.table\.aria\.searchInput/i,
     });
     expect(searchInput).toBeInTheDocument();
-    expect(searchInput).toHaveAttribute('placeholder', 'Cari nama brand...');
+    expect(searchInput).toHaveAttribute('placeholder', 'history.table.searchPlaceholder');
   });
 
   it('typing in search updates URL with search param after debounce', async () => {
@@ -245,7 +251,7 @@ describe('EvaluationHistoryTable — Accordion', () => {
     renderTable();
 
     const searchInput = screen.getByRole('textbox', {
-      name: /cari evaluasi berdasarkan nama brand/i,
+      name: /history\.table\.aria\.searchInput/i,
     });
     await user.type(searchInput, 'Nike');
 
@@ -256,11 +262,11 @@ describe('EvaluationHistoryTable — Accordion', () => {
 
   // --- Date filters ---
 
-  it('date pickers have Indonesian labels', () => {
+  it('date pickers have i18n labels', () => {
     renderTable();
 
-    const fromPicker = screen.getByRole('button', { name: /dari tanggal/i });
-    const toPicker = screen.getByRole('button', { name: /sampai tanggal/i });
+    const fromPicker = screen.getByRole('button', { name: /history\.table\.aria\.dateFrom/i });
+    const toPicker = screen.getByRole('button', { name: /history\.table\.aria\.dateTo/i });
     expect(fromPicker).toBeInTheDocument();
     expect(toPicker).toBeInTheDocument();
   });
@@ -269,7 +275,7 @@ describe('EvaluationHistoryTable — Accordion', () => {
     const user = userEvent.setup();
     renderTable(['/history?date_from=2026-01-01&date_to=2026-01-31']);
 
-    const clearFromButton = screen.getByRole('button', { name: /hapus dari tanggal/i });
+    const clearFromButton = screen.getByRole('button', { name: /history\.table\.aria\.clearDateFrom/i });
     await user.click(clearFromButton);
 
     await waitFor(() => {
@@ -281,7 +287,7 @@ describe('EvaluationHistoryTable — Accordion', () => {
 
   // --- Empty / Error / Loading states ---
 
-  it('shows Indonesian empty state message when no brands', () => {
+  it('shows empty state message when no brands', () => {
     mockGroupedReturn = {
       ...mockGroupedReturn,
       brands: [],
@@ -289,10 +295,10 @@ describe('EvaluationHistoryTable — Accordion', () => {
     };
     renderTable();
 
-    expect(screen.getByText('Belum ada riwayat evaluasi')).toBeInTheDocument();
+    expect(screen.getByText('history.table.emptyState')).toBeInTheDocument();
   });
 
-  it('shows Indonesian error state with retry button', async () => {
+  it('shows error state with retry button', async () => {
     const user = userEvent.setup();
     mockGroupedReturn = {
       ...mockGroupedReturn,
@@ -304,7 +310,7 @@ describe('EvaluationHistoryTable — Accordion', () => {
     renderTable();
 
     expect(screen.getByText('Network error')).toBeInTheDocument();
-    const retryButton = screen.getByRole('button', { name: /coba lagi/i });
+    const retryButton = screen.getByRole('button', { name: /common\.retry/i });
     await user.click(retryButton);
     expect(mockRefetch).toHaveBeenCalled();
   });
@@ -330,7 +336,7 @@ describe('EvaluationHistoryTable — Accordion', () => {
     };
     renderTable(['/history?search=Nike']);
 
-    expect(screen.getByText("Tidak ada evaluasi ditemukan untuk 'Nike'")).toBeInTheDocument();
+    expect(screen.getByText('history.table.noMatchSearch')).toBeInTheDocument();
   });
 
   it('shows contextual empty message for date filter', () => {
@@ -342,7 +348,7 @@ describe('EvaluationHistoryTable — Accordion', () => {
     renderTable(['/history?date_from=2026-01-01&date_to=2026-01-31']);
 
     expect(
-      screen.getByText('Tidak ada evaluasi ditemukan untuk rentang tanggal tersebut'),
+      screen.getByText('history.table.noMatchDate'),
     ).toBeInTheDocument();
   });
 });

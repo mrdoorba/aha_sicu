@@ -2,74 +2,6 @@
 
 This file is the explicit capability and coverage contract for the project.
 
-## Active
-
-### R027 — All UI strings in EvaluationHistoryTable, DeleteEvaluationDialog, DowntimeWarningDialog, and SelectField use `t()` instead of hardcoded Indonesian
-- Class: core-capability
-- Status: active
-- Description: All UI strings in EvaluationHistoryTable, DeleteEvaluationDialog, DowntimeWarningDialog, and SelectField use i18n `t()` calls with keys from locale files instead of hardcoded Indonesian text.
-- Why it matters: These 4 components render entirely in Indonesian regardless of language selection — the History page is completely broken for Thai/English users.
-- Source: user
-- Primary owning slice: M004/S01
-- Supporting slices: none
-- Validation: unmapped
-- Notes: ~40 hardcoded strings across 4 components. EvaluationHistoryTable is the largest (~25 strings).
-
-### R028 — All date/time formatting respects the active i18n locale instead of hardcoded id-ID
-- Class: core-capability
-- Status: active
-- Description: All 8 files with hardcoded `Intl.DateTimeFormat('id-ID', ...)` or `toLocaleDateString('id-ID', ...)` use the active i18n language to determine the Intl locale.
-- Why it matters: Dates always display in Indonesian format regardless of language selection. Thai users see Indonesian month names and formatting.
-- Source: user
-- Primary owning slice: M004/S02
-- Supporting slices: none
-- Validation: unmapped
-- Notes: Affected files: EvaluationHistoryTable, AccountsPage, EvaluationDetailPage, DashboardFooter, BusinessForm, DiscountResults, TopSkuResults, AdsKeywordResults. Need a locale mapping util (id→id-ID, en→en-US, th→th-TH).
-
-### R029 — All 51 field labels in fields.ts and GENERIC_LABELS use i18n keys via locale files
-- Class: core-capability
-- Status: active
-- Description: All 51 field labels in fields.ts, the GENERIC_LABELS array, and the 2 hardcoded labels in DiscountResults.tsx use `t()` calls with locale file keys instead of hardcoded Indonesian text.
-- Why it matters: Every evaluation form renders Indonesian field labels regardless of language. This is the largest single batch of untranslated strings.
-- Source: user
-- Primary owning slice: M004/S02
-- Supporting slices: none
-- Validation: unmapped
-- Notes: fields.ts labels are display-only — used for form rendering, not as data keys. Change field.label to field.labelKey (i18n key), resolve with t() at render time. GENERIC_LABELS (Bulan Ini, Bulan -1, etc.) need keys too.
-
-### R030 — INDO_MONTHS replaced with standard English month abbreviations used across all languages
-- Class: quality-attribute
-- Status: active
-- Description: INDO_MONTHS array uses standard English month abbreviations (Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec) instead of Indonesian ones (Mei→May, Agu→Aug, Okt→Oct, Des→Dec). Same across all languages.
-- Why it matters: User explicitly requested English months for all languages — simpler, no per-locale month names needed.
-- Source: user
-- Primary owning slice: M004/S02
-- Supporting slices: none
-- Validation: unmapped
-- Notes: Only 4 values actually change: Mei→May, Agu→Aug, Okt→Oct, Des→Dec. Rename constant from INDO_MONTHS to MONTHS.
-
-### R031 — A translator can fully localize the app by editing only their single {lang}.json file
-- Class: quality-attribute
-- Status: active
-- Description: Zero hardcoded Indonesian UI text remains in .tsx/.ts source files (excluding test files and locale files). A professional translator edits only their one locale JSON file to translate the entire application.
-- Why it matters: User explicitly wants one-file-per-language workflow for professional translators. Currently ~100 strings are buried in source code.
-- Source: user
-- Primary owning slice: M004/S03
-- Supporting slices: M004/S01, M004/S02
-- Validation: unmapped
-- Notes: Verified by grep/rg sweep for Indonesian words in non-test, non-locale source files.
-
-### R032 — All existing frontend tests pass after i18n extraction
-- Class: quality-attribute
-- Status: active
-- Description: All existing frontend tests pass after i18n extraction, with test assertions updated to use translation key patterns where needed.
-- Why it matters: Tests currently assert hardcoded Indonesian strings — they'll break when strings move to locale files. Tests need updating in lockstep.
-- Source: inferred
-- Primary owning slice: M004/S03
-- Supporting slices: M004/S01, M004/S02
-- Validation: unmapped
-- Notes: EvaluationHistoryTable.test.tsx has the most assertions against hardcoded Indonesian text. Other test files may be affected by fields.ts label changes.
-
 ## Validated
 
 ### R014 — When a user views an evaluation in the history detail page, all scoring messages, category names, conclusions, closing messages, and marketing budget text render in the currently selected UI language (ID/EN/TH).
@@ -83,7 +15,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: EvaluationDetailPage renders category names via CATEGORY_MAP + t(), conclusion/marketing_budget/closing_message via renderTranslatable() + ScoringConclusionSection. 25 EvaluationDetailPage tests pass including 5 i18n-specific. ScoreBreakdownTable translates categories with raw-string fallback. Pre-i18n evaluations fall back to raw Indonesian text.
 - Notes: Must use stored i18n keys when present; fall back to raw text for pre-i18n evaluations.
 
-### R015 — All email send dialogs include a language dropdown that lets the user choose the email language independently of the UI language.
+### R015 — All email send dialogs (history detail SendMailDialog, dashboard SendEmailDialog, evaluation page EmailOutput) include a language dropdown that lets the user choose the email language independently of the UI language, defaulting to the current UI language.
 - Class: core-capability
 - Status: validated
 - Description: All email send dialogs (history detail SendMailDialog, dashboard SendEmailDialog, evaluation page EmailOutput) include a language dropdown that lets the user choose the email language independently of the UI language, defaulting to the current UI language.
@@ -94,7 +26,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: validated
 - Notes: Dashboard SendEmailDialog already sends language to backend; needs UI selector. History SendMailDialog uses mailto — needs frontend-side i18n rendering.
 
-### R016 — Email body content is reconstructed from stored i18n structured data at render time in the chosen language.
+### R016 — Email body content is reconstructed from stored i18n structured data at render time in the chosen language, rather than displaying the pre-rendered Indonesian email_output string.
 - Class: core-capability
 - Status: validated
 - Description: Email body content is reconstructed from stored i18n structured data at render time in the chosen language, rather than displaying the pre-rendered Indonesian email_output string.
@@ -105,7 +37,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: validated
 - Notes: The pre-rendered email_output in DB becomes a fallback for old evaluations without i18n data.
 
-### R017 — All locale translation strings that reference currency use the {{currency}} interpolation variable instead of hardcoded "IDR".
+### R017 — All locale translation strings that reference currency use the {{currency}} interpolation variable (already provided by the backend) instead of hardcoded "IDR".
 - Class: quality-attribute
 - Status: validated
 - Description: All locale translation strings that reference currency use the {{currency}} interpolation variable (already provided by the backend) instead of hardcoded "IDR".
@@ -127,7 +59,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: validated
 - Notes: Triple-layer fallback (SQL COALESCE → service row.get → Pydantic default) ensures non-null.
 
-### R019 — Pre-i18n evaluations display their original Indonesian text; evaluations with i18n keys translate. No evaluation becomes unreadable.
+### R019 — Evaluations saved before the i18n system was added (which lack _i18n fields in score_breakdown) display their original Indonesian text. Evaluations with i18n keys translate. No evaluation becomes unreadable.
 - Class: continuity
 - Status: validated
 - Description: Evaluations saved before the i18n system was added (which lack _i18n fields in score_breakdown) display their original Indonesian text. Evaluations with i18n keys translate. No evaluation becomes unreadable.
@@ -138,7 +70,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: validated
 - Notes: renderTranslatable() pattern already handles this — falls back to raw text when i18n is null/undefined.
 
-### R020 — Adding a 4th language requires only locale JSON file + config additions. No schema changes, no migrations, no new components.
+### R020 — After M002 is complete, adding a 4th language to the system requires only: (a) creating a new locale JSON file, (b) adding its import to i18n.ts, (c) adding it to the LanguageToggle LANGUAGES array and backend STRINGS/CATEGORY_MAP. No schema changes, no migrations, no new components.
 - Class: quality-attribute
 - Status: validated
 - Description: After M002 is complete, adding a 4th language to the system requires only: (a) creating a new locale JSON file, (b) adding its import to i18n.ts, (c) adding it to the LanguageToggle LANGUAGES array and backend STRINGS/CATEGORY_MAP. No schema changes, no migrations, no new components.
@@ -149,7 +81,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: validated
 - Notes: Documented in docs/adding-a-language.md.
 
-### R021 — TypeScript interfaces explicitly declare _i18n fields.
+### R021 — TypeScript interfaces for RowScore, CategoryScore, and ScoringResult in useScoring.ts and useEvaluationDetail.ts explicitly declare _i18n fields.
 - Class: quality-attribute
 - Status: validated
 - Description: TypeScript interfaces for RowScore, CategoryScore, and ScoringResult in useScoring.ts and useEvaluationDetail.ts explicitly declare _i18n fields.
@@ -160,7 +92,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: validated
 - Notes: Low risk — additive type changes only.
 
-### R022 — All database schema changes in M002 are additive only.
+### R022 — All database schema changes in M002 are additive only. No existing data is modified, deleted, or migrated destructively.
 - Class: constraint
 - Status: validated
 - Description: All database schema changes in M002 are additive only. No existing data is modified, deleted, or migrated destructively.
@@ -171,7 +103,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: validated
 - Notes: M002 made zero database schema changes.
 
-### R023 — Follower count threshold display uses international comma convention (>50,000).
+### R023 — The follower count threshold display in scoring messages uses international comma convention (>50,000) instead of Indonesian dot convention (>50.000).
 - Class: quality-attribute
 - Status: validated
 - Description: The follower count threshold display in scoring messages uses international comma convention (>50,000) instead of Indonesian dot convention (>50.000).
@@ -182,7 +114,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: validated
 - Notes: Affects rules.py, messages.py inline fallback, and DB migration 028.
 
-### R024 — Follower count value (val_str) uses comma as thousands separator.
+### R024 — The follower count value displayed in scoring messages uses comma as thousands separator instead of being converted from comma to dot.
 - Class: quality-attribute
 - Status: validated
 - Description: The follower count value displayed in scoring messages uses comma as thousands separator instead of being converted from comma to dot.
@@ -193,7 +125,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: validated
 - Notes: Single line change in messages.py.
 
-### R025 — BOTTOM ads cost floor uses marketplace-appropriate values (100,000 IDR / 190 THB).
+### R025 — The BOTTOM ads cost floor in ads_keyword.py uses marketplace-appropriate values.
 - Class: core-capability
 - Status: validated
 - Description: The BOTTOM ads cost floor in ads_keyword.py uses marketplace-appropriate values.
@@ -204,7 +136,7 @@ This file is the explicit capability and coverage contract for the project.
 - Validation: validated
 - Notes: Uses IDR_TO_THB_RATE from marketplace.py.
 
-### R026 — Sales range conclusion (G66) uses juta for ID, raw numbers for TH.
+### R026 — The sales range conclusion continues to divide by 1,000,000 and append "juta" for ID. THB uses raw comma-formatted numbers.
 - Class: constraint
 - Status: validated
 - Description: The sales range conclusion continues to divide by 1,000,000 and append "juta" for ID. THB uses raw comma-formatted numbers.
@@ -214,6 +146,72 @@ This file is the explicit capability and coverage contract for the project.
 - Supporting slices: none
 - Validation: validated
 - Notes: No code change needed — existing branching is correct.
+
+### R027 — All UI strings in EvaluationHistoryTable, DeleteEvaluationDialog, DowntimeWarningDialog, and SelectField use i18n `t()` calls with keys from locale files instead of hardcoded Indonesian text.
+- Class: core-capability
+- Status: validated
+- Description: All UI strings in EvaluationHistoryTable, DeleteEvaluationDialog, DowntimeWarningDialog, and SelectField use i18n `t()` calls with keys from locale files instead of hardcoded Indonesian text.
+- Why it matters: These 4 components render entirely in Indonesian regardless of language selection — the History page is completely broken for Thai/English users.
+- Source: user
+- Primary owning slice: M004/S01
+- Supporting slices: none
+- Validation: All 4 target components use t() for every visible string. 34 new locale keys across 3 JSON files. rg for hardcoded Indonesian in all 4 components returns zero hits. 612 frontend tests pass with key-based assertions.
+- Notes: ~40 hardcoded strings across 4 components. EvaluationHistoryTable is the largest (~25 strings).
+
+### R028 — All 8 files with hardcoded `Intl.DateTimeFormat('id-ID', ...)` or `toLocaleDateString('id-ID', ...)` use the active i18n language to determine the Intl locale.
+- Class: core-capability
+- Status: validated
+- Description: All 8 files with hardcoded `Intl.DateTimeFormat('id-ID', ...)` or `toLocaleDateString('id-ID', ...)` use the active i18n language to determine the Intl locale.
+- Why it matters: Dates always display in Indonesian format regardless of language selection. Thai users see Indonesian month names and formatting.
+- Source: user
+- Primary owning slice: M004/S02
+- Supporting slices: none
+- Validation: All 8 affected files (EvaluationHistoryTable, AccountsPage, EvaluationDetailPage, DashboardFooter, BusinessForm, DiscountResults, TopSkuResults, AdsKeywordResults) use getIntlLocale(i18n.language) for date/number formatting. rg "id-ID" frontend/src | grep -v test | grep -v locale | grep -v localeMap returns zero hits. 612 frontend tests pass.
+- Notes: Affected files: EvaluationHistoryTable, AccountsPage, EvaluationDetailPage, DashboardFooter, BusinessForm, DiscountResults, TopSkuResults, AdsKeywordResults. Need a locale mapping util (id→id-ID, en→en-US, th→th-TH).
+
+### R029 — All 51 field labels in fields.ts, the GENERIC_LABELS array, and the 2 hardcoded labels in DiscountResults.tsx use `t()` calls with locale file keys instead of hardcoded Indonesian text.
+- Class: core-capability
+- Status: validated
+- Description: All 51 field labels in fields.ts, the GENERIC_LABELS array, and the 2 hardcoded labels in DiscountResults.tsx use `t()` calls with locale file keys instead of hardcoded Indonesian text.
+- Why it matters: Every evaluation form renders Indonesian field labels regardless of language. This is the largest single batch of untranslated strings.
+- Source: user
+- Primary owning slice: M004/S02
+- Supporting slices: none
+- Validation: All 47 field labels resolve through t(field.labelKey!) in 7 form components + EvaluationDetailPage. GENERIC_LABELS contains i18n keys resolved via t(). DiscountResults uses t() for all visible strings. rg for hardcoded Indonesian labels in form components and EvaluationDetailPage returns zero rendered-string hits. 612 tests pass.
+- Notes: Plan estimated 51 fields; actual codebase has 47. All 47 have labelKey. DiscountResults 2 hardcoded labels extracted to discount.* keys.
+
+### R030 — INDO_MONTHS array uses standard English month abbreviations (Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec) instead of Indonesian ones (Mei→May, Agu→Aug, Okt→Oct, Des→Dec). Same across all languages.
+- Class: quality-attribute
+- Status: validated
+- Description: INDO_MONTHS array uses standard English month abbreviations (Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec) instead of Indonesian ones (Mei→May, Agu→Aug, Okt→Oct, Des→Dec). Same across all languages.
+- Why it matters: User explicitly requested English months for all languages — simpler, no per-locale month names needed.
+- Source: user
+- Primary owning slice: M004/S02
+- Supporting slices: none
+- Validation: INDO_MONTHS renamed to MONTHS with English abbreviations: Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec. rg "INDO_MONTHS" returns zero hits. formConfig.test.ts validates all 12 month abbreviations. 4 corrections applied: Mei→May, Agu→Aug, Okt→Oct, Des→Dec.
+- Notes: Only 4 values actually change: Mei→May, Agu→Aug, Okt→Oct, Des→Dec. Rename constant from INDO_MONTHS to MONTHS.
+
+### R031 — Zero hardcoded Indonesian UI text remains in .tsx/.ts source files (excluding test files and locale files). A professional translator edits only their one locale JSON file to translate the entire application.
+- Class: quality-attribute
+- Status: validated
+- Description: Zero hardcoded Indonesian UI text remains in .tsx/.ts source files (excluding test files and locale files). A professional translator edits only their one locale JSON file to translate the entire application.
+- Why it matters: User explicitly wants one-file-per-language workflow for professional translators. Currently ~100 strings are buried in source code.
+- Source: user
+- Primary owning slice: M004/S03
+- Supporting slices: M004/S01, M004/S02
+- Validation: Full rg sweep for 55 common Indonesian words across all non-test, non-locale .tsx/.ts source files returns zero rendered-string hits. All remaining hits are classified as: (a) inert `label`/`benchmark`/`displayName` properties in fields.ts — dead code, resolved via labelKey/benchmarkKey/displayNameKey at render time; (b) code comments in JSX; (c) backend column name matchers (categoryMap.ts, buildI18nEmailBody.ts, DetailedEvaluation.tsx, PresentationDashboard.tsx, CategoryMetricCard.tsx, EvaluationDetailPage.tsx shortLabel regex); (d) i18n key strings containing Indonesian words (topSku.totalOmzet, topSku.namaProduk, etc.); (e) TypeScript property names (promoToko, paketDiskon, etc.). 720 locale keys across 3 JSON files (id, en, th) in perfect sync. A translator edits only their one locale JSON file to fully localize the app.
+- Notes: Verified by grep/rg sweep for Indonesian words in non-test, non-locale source files.
+
+### R032 — All existing frontend tests pass after i18n extraction, with test assertions updated to use translation key patterns where needed.
+- Class: quality-attribute
+- Status: validated
+- Description: All existing frontend tests pass after i18n extraction, with test assertions updated to use translation key patterns where needed.
+- Why it matters: Tests currently assert hardcoded Indonesian strings — they'll break when strings move to locale files. Tests need updating in lockstep.
+- Source: inferred
+- Primary owning slice: M004/S03
+- Supporting slices: M004/S01, M004/S02
+- Validation: 612/612 frontend tests pass across 68 test files after all i18n extraction. Test assertions updated in lockstep: SectionNav.test.tsx assertions updated from hardcoded Indonesian labels to i18n key strings, PromoToolsForm.test.tsx benchmark assertions updated to key strings, EvaluationHistoryTable.test.tsx assertions updated in S01. All updates use the established vi.mock('react-i18next') pattern where mock t() returns key as-is, making assertions stable against locale changes.
+- Notes: EvaluationHistoryTable.test.tsx has the most assertions against hardcoded Indonesian text. Other test files may be affected by fields.ts label changes.
 
 ## Out of Scope
 
@@ -232,13 +230,7 @@ This file is the explicit capability and coverage contract for the project.
 
 | ID | Class | Status | Primary owner | Supporting | Proof |
 |---|---|---|---|---|---|
-| R027 | core-capability | active | M004/S01 | none | unmapped |
-| R028 | core-capability | active | M004/S02 | none | unmapped |
-| R029 | core-capability | active | M004/S02 | none | unmapped |
-| R030 | quality-attribute | active | M004/S02 | none | unmapped |
-| R031 | quality-attribute | active | M004/S03 | M004/S01, M004/S02 | unmapped |
-| R032 | quality-attribute | active | M004/S03 | M004/S01, M004/S02 | unmapped |
-| R014 | core-capability | validated | M002/S01 | none | validated |
+| R014 | core-capability | validated | M002/S01 | none | EvaluationDetailPage renders category names via CATEGORY_MAP + t(), conclusion/marketing_budget/closing_message via renderTranslatable() + ScoringConclusionSection. 25 EvaluationDetailPage tests pass including 5 i18n-specific. ScoreBreakdownTable translates categories with raw-string fallback. Pre-i18n evaluations fall back to raw Indonesian text. |
 | R015 | core-capability | validated | M002/S03 | none | validated |
 | R016 | core-capability | validated | M002/S03 | M002/S01 | validated |
 | R017 | quality-attribute | validated | M002/S03 | none | validated |
@@ -251,11 +243,17 @@ This file is the explicit capability and coverage contract for the project.
 | R024 | quality-attribute | validated | M003/S01 | none | validated |
 | R025 | core-capability | validated | M003/S01 | none | validated |
 | R026 | constraint | validated | M003/S01 | none | validated |
+| R027 | core-capability | validated | M004/S01 | none | All 4 target components use t() for every visible string. 34 new locale keys across 3 JSON files. rg for hardcoded Indonesian in all 4 components returns zero hits. 612 frontend tests pass with key-based assertions. |
+| R028 | core-capability | validated | M004/S02 | none | All 8 affected files (EvaluationHistoryTable, AccountsPage, EvaluationDetailPage, DashboardFooter, BusinessForm, DiscountResults, TopSkuResults, AdsKeywordResults) use getIntlLocale(i18n.language) for date/number formatting. rg "id-ID" frontend/src | grep -v test | grep -v locale | grep -v localeMap returns zero hits. 612 frontend tests pass. |
+| R029 | core-capability | validated | M004/S02 | none | All 47 field labels resolve through t(field.labelKey!) in 7 form components + EvaluationDetailPage. GENERIC_LABELS contains i18n keys resolved via t(). DiscountResults uses t() for all visible strings. rg for hardcoded Indonesian labels in form components and EvaluationDetailPage returns zero rendered-string hits. 612 tests pass. |
+| R030 | quality-attribute | validated | M004/S02 | none | INDO_MONTHS renamed to MONTHS with English abbreviations: Jan, Feb, Mar, Apr, May, Jun, Jul, Aug, Sep, Oct, Nov, Dec. rg "INDO_MONTHS" returns zero hits. formConfig.test.ts validates all 12 month abbreviations. 4 corrections applied: Mei→May, Agu→Aug, Okt→Oct, Des→Dec. |
+| R031 | quality-attribute | validated | M004/S03 | M004/S01, M004/S02 | Full rg sweep for 55 common Indonesian words across all non-test, non-locale .tsx/.ts source files returns zero rendered-string hits. All remaining hits are classified as: (a) inert `label`/`benchmark`/`displayName` properties in fields.ts — dead code, resolved via labelKey/benchmarkKey/displayNameKey at render time; (b) code comments in JSX; (c) backend column name matchers (categoryMap.ts, buildI18nEmailBody.ts, DetailedEvaluation.tsx, PresentationDashboard.tsx, CategoryMetricCard.tsx, EvaluationDetailPage.tsx shortLabel regex); (d) i18n key strings containing Indonesian words (topSku.totalOmzet, topSku.namaProduk, etc.); (e) TypeScript property names (promoToko, paketDiskon, etc.). 720 locale keys across 3 JSON files (id, en, th) in perfect sync. A translator edits only their one locale JSON file to fully localize the app. |
+| R032 | quality-attribute | validated | M004/S03 | M004/S01, M004/S02 | 612/612 frontend tests pass across 68 test files after all i18n extraction. Test assertions updated in lockstep: SectionNav.test.tsx assertions updated from hardcoded Indonesian labels to i18n key strings, PromoToolsForm.test.tsx benchmark assertions updated to key strings, EvaluationHistoryTable.test.tsx assertions updated in S01. All updates use the established vi.mock('react-i18next') pattern where mock t() returns key as-is, making assertions stable against locale changes. |
 | R033 | constraint | out-of-scope | none | none | n/a |
 
 ## Coverage Summary
 
-- Active requirements: 6 (R027, R028, R029, R030, R031, R032)
-- Mapped to slices: 6
-- Validated: 13 (R014–R026)
+- Active requirements: 0
+- Mapped to slices: 0
+- Validated: 19 (R014, R015, R016, R017, R018, R019, R020, R021, R022, R023, R024, R025, R026, R027, R028, R029, R030, R031, R032)
 - Unmapped active requirements: 0

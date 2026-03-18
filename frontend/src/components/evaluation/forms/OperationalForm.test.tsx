@@ -3,6 +3,17 @@ import { describe, it, expect, vi } from 'vitest';
 import { OperationalForm } from './OperationalForm';
 import type { OperationalData } from './formConfig';
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, opts?: Record<string, string>) => {
+      if (opts) return `${key}::${JSON.stringify(opts)}`;
+      return key;
+    },
+    i18n: { language: 'id' },
+  }),
+  Trans: ({ i18nKey }: { i18nKey: string }) => i18nKey,
+}));
+
 const emptyData: OperationalData = {
   unfulfilledOrderRate: null,
   lateShipmentRate: null,
@@ -15,11 +26,11 @@ describe('OperationalForm', () => {
   it('renders all 5 operational fields', () => {
     render(<OperationalForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />);
 
-    expect(screen.getByLabelText(/Tingkat Pesanan Tidak Terselesaikan/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Tingkat Keterlambatan Pengiriman/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Masa Pengemasan/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Persentase Chat Dibalas/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Keseluruhan Penilaian/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.operational\.unfulfilledOrderRate/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.operational\.lateShipmentRate/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.operational\.preparationTime/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.operational\.chatResponseRate/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.operational\.overallRating/)).toBeInTheDocument();
   });
 
   it('renders benchmarks for each field', () => {
@@ -35,7 +46,7 @@ describe('OperationalForm', () => {
 
   it('renders section title with reference link', () => {
     render(<OperationalForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />);
-    expect(screen.getByText('Kesehatan Operasional Toko')).toBeInTheDocument();
+    expect(screen.getByText('forms.operational.title')).toBeInTheDocument();
   });
 
   it('displays pre-filled values', () => {

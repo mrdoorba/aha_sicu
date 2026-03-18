@@ -1,5 +1,5 @@
 import type { ManualData, SectionProgress } from './types';
-import { GENERIC_LABELS, INDO_MONTHS } from './fields';
+import { GENERIC_LABELS, MONTHS } from './fields';
 
 // ── Month label generation ─────────────────────────────────────────────────
 
@@ -16,7 +16,7 @@ export function generateMonthLabels(startMonth: string | null): string[] {
   for (let i = 0; i < 6; i++) {
     const monthIndex = ((month - 1 - i) % 12 + 12) % 12;
     const yearOffset = Math.floor((month - 1 - i) / 12);
-    labels.push(`${INDO_MONTHS[monthIndex]} ${year + yearOffset}`);
+    labels.push(`${MONTHS[monthIndex]} ${year + yearOffset}`);
   }
   return labels;
 }
