@@ -189,7 +189,7 @@ export const LoginPage = () => {
 
         {/* Bottom Image */}
         <div className="w-full flex justify-center relative z-10 mt-auto">
-          <img src="/images/gopn-banner.webp" alt="Garansi Omzet dan Profit Naik" className="h-20 md:h-28 object-contain drop-shadow-sm" />
+          <img src="/images/gopn-banner.webp" alt={t('login.bannerAlt')} className="h-20 md:h-28 object-contain drop-shadow-sm" />
         </div>
       </main>
     </div>

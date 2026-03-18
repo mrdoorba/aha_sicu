@@ -44,7 +44,7 @@ export function VisitorsForm({ data, storeLink, rules, marketplace = 'ID', onCha
             <div key={field.key} className="relative">
               <NumberField
                 name={`visitors.${field.key}`}
-                label={field.label}
+                label={t(field.labelKey!)}
                 unit={field.unit}
                 benchmark={benchmark}
                 value={data[field.key as keyof VisitorsData] as number | null}

@@ -13,6 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/co
 import { formatCurrency, getCurrencyCode } from '../forms/formConfig';
 import type { CalculatorResult, TopSkuDetails } from '../../../hooks/useCalculator';
 import { isTopSkuDetails } from '../../../lib/calculatorGuards';
+import { getIntlLocale } from '../../../lib/localeMap';
 
 interface TopSkuResultsProps {
   result: CalculatorResult;
@@ -34,7 +35,7 @@ function sortBy<T>(data: T[], field: keyof T, dir: SortDir): T[] {
 }
 
 export function TopSkuResults({ result, marketplace = 'ID' }: TopSkuResultsProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [revSortField, setRevSortField] = useState<keyof TopSkuDetails['output_1'][0]>('total_omzet');
   const [revSortDir, setRevSortDir] = useState<SortDir>('desc');
@@ -82,7 +83,7 @@ export function TopSkuResults({ result, marketplace = 'ID' }: TopSkuResultsProps
       <div className="mb-2 flex items-center justify-between">
         <h4 className="text-sm font-semibold">{t('topSku.title')}</h4>
         <time className="text-xs text-muted-foreground">
-          {new Date(result.calculated_at).toLocaleString('id-ID')}
+          {new Date(result.calculated_at).toLocaleString(getIntlLocale(i18n.language))}
         </time>
       </div>
 

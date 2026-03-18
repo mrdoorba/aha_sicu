@@ -33,7 +33,7 @@ export function CampaignForm({ data, marketplace = 'ID', onChange, onBlur }: Cam
             <NumberField
               key={field.key}
               name={`campaign.${field.key}`}
-              label={field.label}
+              label={t(field.labelKey!)}
               unit={field.unit}
               benchmark={field.benchmark}
               value={data[field.key as keyof CampaignData] as number | null}

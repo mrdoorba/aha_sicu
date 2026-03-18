@@ -86,9 +86,12 @@ export type InputType = 'number' | 'currency' | 'text' | 'select';
 export interface FieldDefinition {
   key: string;
   label: string;
+  labelKey?: string;
   inputType: InputType;
   unit?: string;
+  unitKey?: string;
   benchmark?: string;
+  benchmarkKey?: string;
   threshold?: number;
   link?: string;
 }
@@ -101,6 +104,7 @@ export interface SelectOption {
 export interface CategoryDefinition {
   key: string;
   displayName: string;
+  displayNameKey?: string;
   fields: FieldDefinition[];
 }
 

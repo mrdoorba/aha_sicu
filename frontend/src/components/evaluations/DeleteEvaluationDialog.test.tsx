@@ -3,6 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { DeleteEvaluationDialog } from './DeleteEvaluationDialog';
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'id', changeLanguage: vi.fn() },
+  }),
+}));
+
 vi.mock('sonner', () => ({
   toast: { error: vi.fn(), success: vi.fn() },
 }));
@@ -24,24 +31,24 @@ describe('DeleteEvaluationDialog', () => {
     vi.clearAllMocks();
   });
 
-  it('renders dialog with Indonesian title and warning message', () => {
+  it('renders dialog with title and warning message', () => {
     renderDialog();
 
-    expect(screen.getByText('Hapus Evaluasi')).toBeInTheDocument();
-    expect(screen.getByText(/permanen dan tidak dapat dibatalkan/)).toBeInTheDocument();
+    expect(screen.getByText('deleteDialog.title')).toBeInTheDocument();
+    expect(screen.getByText('deleteDialog.description')).toBeInTheDocument();
   });
 
   it('displays brand name to type for confirmation', () => {
     renderDialog();
 
     expect(screen.getByText('Nike Indonesia')).toBeInTheDocument();
-    expect(screen.getByText(/Ketik nama brand untuk konfirmasi/)).toBeInTheDocument();
+    expect(screen.getByText('deleteDialog.confirmPrompt')).toBeInTheDocument();
   });
 
   it('delete button is disabled until brand name matches', () => {
     renderDialog();
 
-    const deleteButton = screen.getByRole('button', { name: /^hapus$/i });
+    const deleteButton = screen.getByRole('button', { name: 'common.delete' });
     expect(deleteButton).toBeDisabled();
   });
 
@@ -49,10 +56,10 @@ describe('DeleteEvaluationDialog', () => {
     const user = userEvent.setup();
     renderDialog();
 
-    const input = screen.getByRole('textbox', { name: /konfirmasi nama brand/i });
+    const input = screen.getByRole('textbox', { name: 'deleteDialog.aria.confirmInput' });
     await user.type(input, 'nike indonesia');
 
-    const deleteButton = screen.getByRole('button', { name: /^hapus$/i });
+    const deleteButton = screen.getByRole('button', { name: 'common.delete' });
     expect(deleteButton).not.toBeDisabled();
   });
 
@@ -60,10 +67,10 @@ describe('DeleteEvaluationDialog', () => {
     const user = userEvent.setup();
     renderDialog();
 
-    const input = screen.getByRole('textbox', { name: /konfirmasi nama brand/i });
+    const input = screen.getByRole('textbox', { name: 'deleteDialog.aria.confirmInput' });
     await user.type(input, 'wrong name');
 
-    const deleteButton = screen.getByRole('button', { name: /^hapus$/i });
+    const deleteButton = screen.getByRole('button', { name: 'common.delete' });
     expect(deleteButton).toBeDisabled();
   });
 
@@ -72,10 +79,10 @@ describe('DeleteEvaluationDialog', () => {
     const user = userEvent.setup();
     renderDialog({ onConfirm });
 
-    const input = screen.getByRole('textbox', { name: /konfirmasi nama brand/i });
+    const input = screen.getByRole('textbox', { name: 'deleteDialog.aria.confirmInput' });
     await user.type(input, 'Nike Indonesia');
 
-    const deleteButton = screen.getByRole('button', { name: /^hapus$/i });
+    const deleteButton = screen.getByRole('button', { name: 'common.delete' });
     await user.click(deleteButton);
 
     expect(onConfirm).toHaveBeenCalledTimes(1);
@@ -86,7 +93,7 @@ describe('DeleteEvaluationDialog', () => {
     const user = userEvent.setup();
     renderDialog({ onOpenChange });
 
-    const cancelButton = screen.getByRole('button', { name: /batal/i });
+    const cancelButton = screen.getByRole('button', { name: 'common.cancel' });
     await user.click(cancelButton);
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
@@ -105,7 +112,7 @@ describe('DeleteEvaluationDialog', () => {
     const user = userEvent.setup();
     renderDialog();
 
-    const copyButton = screen.getByRole('button', { name: /salin nama brand/i });
+    const copyButton = screen.getByRole('button', { name: 'deleteDialog.aria.copyBrand' });
     await user.click(copyButton);
 
     await waitFor(() => {
@@ -116,10 +123,10 @@ describe('DeleteEvaluationDialog', () => {
   it('shows loading spinner when isDeleting is true', () => {
     renderDialog({ isDeleting: true });
 
-    const deleteButton = screen.getByRole('button', { name: /^hapus$/i });
+    const deleteButton = screen.getByRole('button', { name: 'common.delete' });
     expect(deleteButton).toBeDisabled();
 
-    const cancelButton = screen.getByRole('button', { name: /batal/i });
+    const cancelButton = screen.getByRole('button', { name: 'common.cancel' });
     expect(cancelButton).toBeDisabled();
   });
 });

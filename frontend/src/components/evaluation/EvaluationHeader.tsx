@@ -20,12 +20,6 @@ const VP_DISPLAY_FIELDS = [
   'Link Shopee Mall / LazMall',
 ] as const;
 
-const FIELD_LABELS: Record<string, string> = {
-  'Nama PIC/ Jabatan*': 'Nama PIC',
-  'No WA*': 'No WA',
-  'Link Shopee Mall / LazMall': 'Link Toko',
-};
-
 const META_KEYS = new Set(['id', 'created_at', 'updated_at', 'synced_at']);
 
 function getDisplayFields(rawData: Record<string, unknown>): Array<[string, string]> {
@@ -38,6 +32,15 @@ function getDisplayFields(rawData: Record<string, unknown>): Array<[string, stri
 export const EvaluationHeader = ({ brand, isLoading, isError, marketplace }: EvaluationHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+
+  const getFieldLabel = (key: string): string => {
+    const labelMap: Record<string, string> = {
+      'Nama PIC/ Jabatan*': t('evaluationHeader.fieldLabel.namaPic'),
+      'No WA*': t('evaluationHeader.fieldLabel.noWa'),
+      'Link Shopee Mall / LazMall': t('evaluationHeader.fieldLabel.linkToko'),
+    };
+    return labelMap[key] ?? key;
+  };
 
   if (isLoading) {
     return (
@@ -106,7 +109,7 @@ export const EvaluationHeader = ({ brand, isLoading, isError, marketplace }: Eva
       <div className="flex flex-wrap gap-x-6 gap-y-1 text-sm text-muted-foreground">
         {vpFields.map(([key, value]) => (
           <span key={key}>
-            <span className="font-medium text-foreground">{FIELD_LABELS[key] ?? key}:</span>{' '}
+            <span className="font-medium text-foreground">{getFieldLabel(key)}:</span>{' '}
             {value.startsWith('https://') || value.startsWith('http://') ? (
               <a href={value} target="_blank" rel="noopener noreferrer" className="text-primary underline hover:text-primary/80">
                 {value}

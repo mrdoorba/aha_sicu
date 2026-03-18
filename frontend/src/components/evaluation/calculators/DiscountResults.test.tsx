@@ -1,7 +1,15 @@
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { DiscountResults } from './DiscountResults';
 import type { CalculatorResult } from '../../../hooks/useCalculator';
+
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'id' },
+  }),
+  Trans: ({ i18nKey }: { i18nKey: string }) => i18nKey,
+}));
 
 function makeResult(fakeDiscountFlag: boolean): CalculatorResult {
   return {
@@ -30,18 +38,18 @@ describe('DiscountResults', () => {
     expect(screen.getByText('0.0% ~ 6.7%')).toBeInTheDocument();
     expect(screen.getByText('0.3%')).toBeInTheDocument();
     expect(screen.getByText('0.0%')).toBeInTheDocument();
-    expect(screen.getByText('% Diskon TOP SKU')).toBeInTheDocument();
+    expect(screen.getByText('discount.topSkuDiscount')).toBeInTheDocument();
   });
 
   it('renders fake discount warning when flag true', () => {
     render(<DiscountResults result={makeResult(true)} />);
 
-    expect(screen.getByText('Fake Discount Detected')).toBeInTheDocument();
+    expect(screen.getByText('discount.fakeDiscountDetected')).toBeInTheDocument();
   });
 
   it('hides warning when flag false', () => {
     render(<DiscountResults result={makeResult(false)} />);
 
-    expect(screen.queryByText('Fake Discount Detected')).not.toBeInTheDocument();
+    expect(screen.queryByText('discount.fakeDiscountDetected')).not.toBeInTheDocument();
   });
 });
