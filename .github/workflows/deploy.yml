@@ -1,8 +1,8 @@
-# Store ICU - Frontend Deploy Workflow
-# Runs CI first, then calls the reusable deploy workflow.
+# Store ICU - Deploy Workflow
+# Single orchestrator: runs CI once, then deploys backend + frontend in parallel.
 # Dev: auto-deploys on push to develop.  Prod: requires environment protection approval.
 
-name: Deploy Frontend
+name: Deploy
 
 on:
   workflow_dispatch:
@@ -10,14 +10,23 @@ on:
     branches: [develop, production]
 
 concurrency:
-  group: deploy-frontend-${{ github.ref_name }}
+  group: deploy-${{ github.ref_name }}
   cancel-in-progress: ${{ github.ref_name == 'develop' }}
 
 jobs:
   ci:
     uses: ./.github/workflows/ci.yml
 
-  deploy:
+  deploy-backend:
+    needs: ci
+    uses: ./.github/workflows/_deploy-backend.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: ${{ github.ref == 'refs/heads/production' && 'production' || 'dev' }}
+
+  deploy-frontend:
     needs: ci
     uses: ./.github/workflows/_deploy-frontend.yml
     permissions:
