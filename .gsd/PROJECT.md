@@ -14,6 +14,7 @@ Staff can evaluate brands accurately across marketplaces and share results in th
 - M002 complete: Evaluation results i18n — history detail page and email output render in selected language (ID/EN/TH)
 - M003 complete: Hardcoded IDR cleanup — follower threshold uses international comma convention (>50,000), val_str uses comma separator, ads BOTTOM min_cost is marketplace-aware (190 THB / 100,000 IDR), juta convention preserved for ID
 - M004 complete: Full frontend i18n extraction — all hardcoded Indonesian extracted to locale files, 720 keys in sync across 3 languages (id/en/th), zero rendered Indonesian in source, 612/612 frontend tests pass
+- M005 in progress: Evaluation detail page content i18n — translating calculator output sections and email output from raw Indonesian text to i18n-aware rendering
 - Frontend has 3-language support (ID/EN/TH) for all evaluation content via react-i18next
 - Backend scoring engine generates i18n structured data (`TranslatableText` keys + variables) alongside Indonesian strings
 - All evaluation pages (dashboard, history detail) render scoring text through `renderTranslatable()` with language reactivity
@@ -23,7 +24,7 @@ Staff can evaluate brands accurately across marketplaces and share results in th
 - `LanguageCode` type centralized in `lib/languages.ts`; adding a new language documented in `docs/adding-a-language.md`
 - Number formatting uses international comma convention consistently across all scoring output
 - 1097 backend tests pass; 612 frontend tests pass
-- All 20 tracked requirements validated (R014–R032); no active or deferred requirements remain
+- 19 requirements validated (R014–R032); 5 active requirements for M005 (R034–R038)
 
 ## Architecture / Key Patterns
 
@@ -39,6 +40,7 @@ Staff can evaluate brands accurately across marketplaces and share results in th
 - **Locale mapping**: `lib/localeMap.ts` — `getIntlLocale()` maps i18next codes (id/en/th) to Intl locale codes (id-ID/en-US/th-TH)
 - **Language toggle**: `lib/languages.ts` defines `LANGUAGES` array and `LanguageCode` type
 - **renderTranslatable()**: `utils/renderTranslatable.ts` — resolves i18n keys from backend scoring data with raw-text fallback
+- **buildI18nEmailBody()**: `utils/buildI18nEmailBody.ts` — reconstructs full email body from score_breakdown i18n data in any language
 - **Form system**: `evaluation/forms/fields.ts` defines field metadata with `labelKey` i18n keys; form components render labels via `t(field.labelKey!)`
 - **Currency formatting**: `formUtils.ts` — `formatCurrency()` / `parseCurrency()` with marketplace param
 
@@ -52,3 +54,4 @@ See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement sta
 - [x] M002: Evaluation Results i18n — History detail and email output render in selected language
 - [x] M003: Hardcoded IDR Cleanup — International number convention, marketplace-aware ads thresholds
 - [x] M004: Frontend i18n Completion — Extract all remaining hardcoded Indonesian from source into locale files
+- [ ] M005: Evaluation Detail Page Content i18n — Translate calculator output and email output sections on the detail page
