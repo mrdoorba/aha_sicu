@@ -143,3 +143,4 @@ backend/locales/
 
 # ── GSD baseline (auto-generated) ──
 .gsd/parallel/
+.gitnexus
