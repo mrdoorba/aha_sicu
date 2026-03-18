@@ -55,6 +55,10 @@ git branch -D milestone/M00X
 
 The `git add` step is necessary because `.gsd/` artifacts created by auto-mode in the main repo may be untracked, and `git merge --squash` refuses to overwrite untracked files.
 
+## Frontend Type Check: Use `tsc -b`, Not `tsc --noEmit`
+
+The root `tsconfig.json` has `"files": []` with project references. Running `npx tsc --noEmit` on the root compiles **nothing** and always passes. CI runs `npx tsc -b --noEmit` which follows project references into `tsconfig.app.json` and actually type-checks source files. Always use `tsc -b --noEmit` (or `tsc -p tsconfig.app.json --noEmit`) locally to match CI behavior. This gap allowed a TS2554 error (wrong arg count on a `t()` prop type) to ship undetected through M004.
+
 ## Bottom Ads Test Data: am10 Round() Gotcha
 
 When writing tests for bottom ads in `calculate_sheet2`, the BOTTOM query requires `roas < am10`. The `am10` threshold is `min(round(avg_roas), 3)`. If test data uses fractional ROAS values < 0.5 (e.g., 0.1, 0.2), `round()` produces 0 and no ads can satisfy `roas < 0`. Use integer ROAS values (1, 2) to get a meaningful am10 threshold.
