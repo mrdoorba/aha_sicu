@@ -494,7 +494,7 @@ def calculate_sheet2(rows: list[dict], *, language: str = "id", marketplace: str
     # --- AL5: BOTTOM Ads ---
     # Thresholds (same for all languages):
     #   Cost > 100000, fallback ROAS cap min(round(AM10*2), 5)
-    min_cost = 100000
+    min_cost = 100000 if marketplace != "TH" else 190
     fallback_roas_cap_limit = 5
 
     bottom_primary = sorted(

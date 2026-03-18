@@ -13,7 +13,7 @@ The `--timeout` flag is not available (pytest-timeout not installed).
 
 ## Migration Template Drift Test
 
-`TestMigrationTemplatesDrift` in `test_scoring.py` replays migrations 012→019→020→021→027 to build effective DB state and compares against DEFAULT_RULES. Any new migration that modifies message templates must:
+`TestMigrationTemplatesDrift` in `test_scoring.py` replays migrations 012→019→020→021→027→028 to build effective DB state and compares against DEFAULT_RULES. Any new migration that modifies message templates must:
 1. Be added to the replay chain in `_build_effective_db_templates()`
 2. Expose an `_apply_patches(rules, forward)` function importable from the migration module
 
@@ -38,3 +38,7 @@ The service.py `generate_score` function passes `marketplace` as a **positional*
 ## ScoringResponse Required String Fields
 
 `ScoringResponse` schema has required string fields (`marketing_estimation`, `marketing_percentage`, `marketing_budget`, `closing_message`, `email_subject`, `email_body`). When mocking `calculate_score` results, set these to `""` not `None`.
+
+## Bottom Ads Test Data: am10 Round() Gotcha
+
+When writing tests for bottom ads in `calculate_sheet2`, the BOTTOM query requires `roas < am10`. The `am10` threshold is `min(round(avg_roas), 3)`. If test data uses fractional ROAS values < 0.5 (e.g., 0.1, 0.2), `round()` produces 0 and no ads can satisfy `roas < 0`. Use integer ROAS values (1, 2) to get a meaningful am10 threshold.

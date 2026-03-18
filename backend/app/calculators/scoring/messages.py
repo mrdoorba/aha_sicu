@@ -161,7 +161,7 @@ def _generate_visitors_messages(cat: CategoryScore, rules: dict | None = None) -
                     vars={"value": val_str, "threshold": threshold_str},
                 )
         elif row.row == 29:
-            val_str = f"{int(row.value):,}".replace(",", ".")
+            val_str = f"{int(row.value):,}"
             if row.verdict == "✔️":
                 tmpl = _get_rule_value(vis_rules, "followers", "message_pass",
                     "✔️ Total Pengikut = {val_str} [Sudah Baik]")
@@ -172,7 +172,7 @@ def _generate_visitors_messages(cat: CategoryScore, rules: dict | None = None) -
                 )
             else:
                 tmpl = _get_rule_value(vis_rules, "followers", "message_fail",
-                    "❌ Total Pengikut = {val_str} [Kurang Baik, nilai disarankan: >50.000]")
+                    "❌ Total Pengikut = {val_str} [Kurang Baik, nilai disarankan: >50,000]")
                 row.message = _format_message_template(tmpl, val_str=val_str)
                 row.message_i18n = TranslatableText(
                     key="scoring.totalFollowers.fail",

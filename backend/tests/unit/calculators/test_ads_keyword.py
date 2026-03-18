@@ -930,6 +930,75 @@ class TestSheet2BottomThresholdVariants:
         assert "Ad A" in result["al5"]
 
 
+class TestSheet2BottomMarketplaceMinCost:
+    """R025: Test BOTTOM ads marketplace-aware min_cost threshold.
+
+    The BOTTOM query has four conditions:
+      biaya > min_cost AND biaya > am9 AND roas < am10 AND roas < 5
+
+    To isolate the min_cost effect, we use ads where biaya is between 190
+    and 100,000, so min_cost is the deciding factor between TH and ID.
+    We set roas to integer values (1-2) so am10 rounds properly (> 0).
+    """
+
+    def test_min_cost_190_when_marketplace_is_th(self):
+        """TH marketplace: BOTTOM uses min_cost=190 THB.
+
+        An ad with biaya=500 qualifies for bottom in TH (500 > 190)
+        but would NOT qualify in ID (500 < 100,000).
+        """
+        data = [
+            _kw_row(1, "TH Bad Ad", "Berjalan", "Iklan Produk", "100",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=10, biaya=500, roas=1),
+            _kw_row(2, "TH Worse Ad", "Berjalan", "Iklan Produk", "200",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=20, biaya=400, roas=1),
+        ]
+        result = calculate_sheet2(data, marketplace="TH")
+        # am9 = avg(500, 400) = 450; am10 = min(round(avg(1,1)), 3) = 1
+        # Primary: biaya=500 > 190 ✓, > 450 ✓, roas=1 < 1 ✗ → no primary
+        # Fallback: roas_cap = min(round(1*2), 5) = 2; roas=1 < 2 ✓ → qualifies
+        assert "TH Bad Ad" in result["al5"], (
+            f"Expected 'TH Bad Ad' (biaya=500 > min_cost=190) in TH bottom ads, got: {result['al5']}"
+        )
+
+    def test_min_cost_100000_when_marketplace_is_id(self):
+        """ID marketplace: BOTTOM uses min_cost=100,000 IDR.
+
+        Same data as TH test — biaya=500 does NOT qualify (500 < 100,000).
+        """
+        data = [
+            _kw_row(1, "ID Low Ad", "Berjalan", "Iklan Produk", "100",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=10, biaya=500, roas=1),
+            _kw_row(2, "ID Low Ad 2", "Berjalan", "Iklan Produk", "200",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=20, biaya=400, roas=1),
+        ]
+        result = calculate_sheet2(data, marketplace="ID")
+        # biaya=500 < 100,000 IDR threshold → neither ad qualifies
+        assert "ID Low Ad" not in result["al5"], (
+            f"Expected 'ID Low Ad' (biaya=500 < min_cost=100000) excluded from ID bottom, got: {result['al5']}"
+        )
+
+    def test_th_excludes_ad_below_190(self):
+        """TH marketplace: ad with biaya=100 (< 190) should be excluded from bottom."""
+        data = [
+            _kw_row(1, "Cheap TH Ad", "Berjalan", "Iklan Produk", "100",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=10, biaya=100, roas=1),
+            _kw_row(2, "TH Normal Ad", "Berjalan", "Iklan Produk", "200",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=10, biaya=80, roas=1),
+        ]
+        result = calculate_sheet2(data, marketplace="TH")
+        # am9 = avg(100, 80) = 90; both biaya < 190 → neither qualifies
+        assert "Cheap TH Ad" not in result["al5"], (
+            f"Expected 'Cheap TH Ad' (biaya=100 < min_cost=190) excluded from TH bottom, got: {result['al5']}"
+        )
+
+
 class TestSheet2TopFallbackVariants:
     """Test TOP ads fallback language variants."""
 

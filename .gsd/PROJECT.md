@@ -12,6 +12,7 @@ Staff can evaluate brands accurately across marketplaces and share results in th
 
 - M001 complete: THB marketplace expansion — Thai brands evaluated with THB-appropriate thresholds, currency formatting, marketplace-scoped rules
 - M002 complete: Evaluation results i18n — history detail page and email output render in selected language (ID/EN/TH)
+- M003 complete: Hardcoded IDR cleanup — follower threshold uses international comma convention (>50,000), val_str uses comma separator, ads BOTTOM min_cost is marketplace-aware (190 THB / 100,000 IDR), juta convention preserved for ID
 - Frontend has 3-language support (ID/EN/TH) for all evaluation content via react-i18next
 - Backend scoring engine generates i18n structured data (`TranslatableText` keys + variables) alongside Indonesian strings
 - All evaluation pages (dashboard, history detail) render scoring text through `renderTranslatable()` with language reactivity
@@ -19,39 +20,15 @@ Staff can evaluate brands accurately across marketplaces and share results in th
 - Backend email template system (`template.py`) renders HTML emails in id/en/th; preview endpoint accepts `?language=` param
 - Locale files use `{{currency}}` interpolation — zero hardcoded currency codes
 - `LanguageCode` type centralized in `lib/languages.ts`; adding a new language documented in `docs/adding-a-language.md`
-- 602 frontend tests pass across 66 files; 11 backend evaluation detail tests pass
-- All 9 M002 requirements validated (R014-R022)
+- Number formatting uses international comma convention consistently across all scoring output
+- 1097 backend tests pass; 602 frontend tests pass
+- All 13 tracked requirements validated (R014–R026)
 
 ## Architecture / Key Patterns
 
 ### Backend
 - **Scoring engine**: `app/calculators/scoring/` — generates `ScoringResult` with both raw text and `TranslatableText` i18n structs
-- **Marketplace constants**: `app/core/marketplace.py` — VALID_MARKETPLACES, MARKETPLACE_CURRENCY
+- **Marketplace constants**: `app/core/marketplace.py` — VALID_MARKETPLACES, MARKETPLACE_CURRENCY, IDR_TO_THB_RATE
 - **Email template**: `app/modules/email/template.py` — HTML email renderer with `STRINGS`, `CATEGORY_MAP`, `_translate()` using frontend locale files
-- **Email preview**: `app/modules/email/router.py` — preview endpoint accepts `?language=` query param for language-specific preview
-- **Database**: PostgreSQL with JSONB for score_breakdown, calculator_results, manual_inputs
-- **Evaluation detail API**: `GET /api/v1/evaluations/{id}` — returns marketplace field with triple-layer fallback (SQL COALESCE → service default → Pydantic default)
-
-### Frontend
-- **i18n**: react-i18next with flat key JSON files in `src/locales/{id,en,th}.json` (~600+ keys each)
-- **Translation utility**: `src/utils/renderTranslatable.ts` — `renderTranslatable(fallback, i18n, t)` pattern
-- **Email body assembly**: `src/utils/buildI18nEmailBody.ts` — mirrors backend `_assemble_email_body` section ordering with SECTION_DEFS declarative config
-- **Category mapping**: `src/lib/categoryMap.ts` — maps Indonesian backend category names to i18n label keys
-- **Language constants**: `src/lib/languages.ts` — shared LANGUAGES array and LanguageCode type (single source of truth)
-- **Language toggle**: `src/components/layout/LanguageToggle.tsx` — persists preference to user profile via API
-- **Email language selector**: `src/components/shared/EmailLanguageSelector.tsx` — reusable dropdown for per-email language selection
-- **Scoring conclusion**: `ScoringConclusionSection` in `EvaluationDetailPage.tsx` — renders conclusion/marketing_budget/closing_message via renderTranslatable() with isScoringSummary() guard
-- **Score breakdown**: `ScoreBreakdownTable` in `EvaluationDetailPage.tsx` — translates category names via CATEGORY_MAP + t() with raw-string fallback
-
-## Capability Contract
-
-See `.gsd/REQUIREMENTS.md` for the explicit capability contract, requirement status, and coverage mapping.
-
-## Milestone Sequence
-
-- [x] M001: THB Marketplace Expansion — Multi-marketplace currency support with THB thresholds
-- [x] M002: Evaluation Results i18n — History page and email output render in selected language; all 9 requirements validated
-- [ ] M003: Hardcoded IDR Cleanup — Fix remaining IDR-specific formatting and thresholds in scoring and ads calculators
-
----
-*Last updated: 2026-03-18 — M002 complete, M003 planned (hardcoded IDR cleanup)*
+- **Migration drift test**: `TestMigrationTemplatesDrift` replays migrations 012→019→020→021→027→028 to verify DB templates match DEFAULT_RULES
+- **Ads calculator**: `app/calculators/ads_keyword.py` — marketplace-aware min_cost for BOTTOM ads (190 THB / 100,000 IDR)

@@ -47,7 +47,7 @@ This milestone is complete only when all are true:
 
 ## Slices
 
-- [ ] **S01: International formatting & marketplace-aware ads thresholds** `risk:low` `depends:[]`
+- [x] **S01: International formatting & marketplace-aware ads thresholds** `risk:low` `depends:[]`
   > After this: Scoring output shows `>50,000` with comma separator; follower values formatted with commas; ads calculator uses THB-appropriate cost floor (190) for Thai marketplace. Proven by unit tests and migration drift test.
 
 ## Boundary Map

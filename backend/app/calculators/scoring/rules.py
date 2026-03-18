@@ -62,7 +62,7 @@ DEFAULT_RULES: dict = {
         "followers": {
             "threshold": 50000, "points": 2, "comparison": "gte",
             "message_pass": "✔️ Total Pengikut = {val_str} [Sudah Baik]",
-            "message_fail": "❌ Total Pengikut = {val_str} [Kurang Baik, nilai disarankan: >50.000]",
+            "message_fail": "❌ Total Pengikut = {val_str} [Kurang Baik, nilai disarankan: >50,000]",
         },
     },
     "promo_tools": {
