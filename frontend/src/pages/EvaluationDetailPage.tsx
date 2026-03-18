@@ -338,7 +338,7 @@ function ManualInputsSection({
   marketplace,
 }: {
   inputs: Record<string, unknown>;
-  t: (key: string) => string;
+  t: (key: string, options?: Record<string, unknown>) => string;
   marketplace?: string;
 }) {
   const categories = Object.entries(inputs);
