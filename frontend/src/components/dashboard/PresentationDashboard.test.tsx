@@ -91,7 +91,7 @@ describe('PresentationDashboard BDD', () => {
         expect(screen.getByText('Rata² Penjualan 6 bulan terakhir')).toBeInTheDocument();
     });
 
-    it.skip('clicking "Kirim Email" button opens SendEmailDialog', () => {
+    it('clicking "Kirim Email" button opens SendEmailDialog', () => {
         // Arrange
         const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
         render(
