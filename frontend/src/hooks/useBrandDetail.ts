@@ -17,7 +17,7 @@ export function useBrandDetail(brandId: number) {
         params: { path: { brand_id: brandId } },
       });
       if (error) throw new Error('Failed to fetch brand detail');
-      return data;
+      return data as BrandDetail;
     },
     enabled: brandId > 0,
   });

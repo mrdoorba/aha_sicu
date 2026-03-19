@@ -36,6 +36,13 @@ Business development can quickly assess whether a store/lead is worth pursuing u
 - ✓ Shared auth test fixtures (create_test_token, auth_headers) — Phase 5
 - ✓ Email endpoint integration tests (send + preview, 8 tests) — Phase 5
 - ✓ Async marker cleanup (asyncio_mode=auto as single source of truth) — Phase 5
+- ✓ Transactionally atomic sync pipeline with batch upserts — Phase 6
+- ✓ Database-backed pending uploads with atomic claim pattern — Phase 6
+- ✓ Auto-generated frontend API types from backend OpenAPI schema — Phase 6
+- ✓ Automated deploy rollback on health check failure — Phase 6
+- ✓ WIF branch restriction per environment (dev=develop, prod=main) — Phase 7
+- ✓ Cloud SQL authorized_networks lockdown (empty default = no public IP) — Phase 7
+- ✓ Evaluation schema Literal type enforcement (13 response fields) — Phase 7
 
 ## Constraints
 - [To be identified during planning]
@@ -57,4 +64,4 @@ Quick Reference:
 
 ---
 *Created: 2026-03-19*
-*Last updated: 2026-03-19 after Phase 5*
+*Last updated: 2026-03-19 after Phase 7 — v0.2 AEGIS Security Remediation milestone complete*

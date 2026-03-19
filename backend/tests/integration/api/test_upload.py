@@ -35,6 +35,17 @@ SAMPLE_UPLOAD = {
     "uploaded_at": datetime(2026, 2, 11, 10, 0, 0, tzinfo=timezone.utc),
 }
 
+SAMPLE_PENDING = {
+    "upload_id": "test-uuid-1234",
+    "brand_id": 123,
+    "file_type": "cpc_ad_report",
+    "filename": "report.csv",
+    "content_type": "text/csv",
+    "object_name": "uploads/test-uuid-1234/report.csv",
+    "expires_at": datetime(2099, 1, 1, tzinfo=timezone.utc),
+    "created_at": datetime(2026, 3, 19, tzinfo=timezone.utc),
+}
+
 
 def _make_transactional_conn(fetchrow_side_effect=None, fetch_return=None):
     """Create a mock connection with transaction support."""
@@ -81,6 +92,7 @@ def test_signed_url_valid(client):
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.pending_queries") as mock_pending_queries,
         patch("app.modules.upload.service.get_storage_client") as mock_storage_fn,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
@@ -89,6 +101,10 @@ def test_signed_url_valid(client):
         mock_svc_conn = AsyncMock()
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
         mock_svc_conn.fetchrow = AsyncMock(return_value=SAMPLE_BRAND)
+
+        # Pending queries mocks
+        mock_pending_queries.cleanup_expired_uploads = AsyncMock(return_value=0)
+        mock_pending_queries.create_pending_upload = AsyncMock(return_value=SAMPLE_PENDING)
 
         # Storage mock
         mock_storage = MagicMock()
@@ -107,6 +123,9 @@ def test_signed_url_valid(client):
         assert "upload_url" in data
         assert "upload_id" in data
         assert "expires_at" in data
+
+        # Verify pending upload was persisted to DB
+        mock_pending_queries.create_pending_upload.assert_called_once()
 
 
 def test_signed_url_invalid_file_type(client):
@@ -134,12 +153,15 @@ def test_signed_url_brand_not_found(client):
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.pending_queries") as mock_pending_queries,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
         mock_svc_conn = AsyncMock()
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
         mock_svc_conn.fetchrow = AsyncMock(return_value=None)
+
+        mock_pending_queries.cleanup_expired_uploads = AsyncMock(return_value=0)
 
         response = client.post("/api/v1/upload/signed-url", json={
             "filename": "report.csv",
@@ -182,30 +204,23 @@ def _make_csv_bytes():
 
 def test_process_valid_csv(client):
     """Test processing a valid CSV upload with auto-calculated results."""
-    from app.modules.upload.service import _pending_uploads, PendingUpload
-
     upload_id = "test-uuid-1234"
-    _pending_uploads[upload_id] = PendingUpload(
-        upload_id=upload_id,
-        brand_id=123,
-        file_type="cpc_ad_report",
-        filename="report.csv",
-        content_type="text/csv",
-        object_name=f"uploads/{upload_id}/report.csv",
-        expires_at=datetime(2099, 1, 1, tzinfo=timezone.utc),
-    )
 
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.pending_queries") as mock_pending_queries,
         patch("app.modules.upload.service.brand_queries") as mock_brand_queries,
         patch("app.modules.upload.service.get_storage_client") as mock_storage_fn,
         patch("app.modules.upload.service.clear_dependent_results") as mock_clear,
         patch("app.modules.upload.service.run_calculators_for_upload") as mock_run,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        # Atomic claim returns the pending upload
+        mock_pending_queries.claim_pending_upload = AsyncMock(return_value=SAMPLE_PENDING)
 
         # Brand mock for filename prefix
         mock_brand_queries.get_brand_by_id = AsyncMock(return_value={"id": 123, "brand_name": "TestBrand"})
@@ -240,6 +255,9 @@ def test_process_valid_csv(client):
         assert len(data["auto_calculated"]) == 1
         assert data["auto_calculated"][0]["status"] == "skipped"
 
+        # Verify atomic claim was used (not get + delete)
+        mock_pending_queries.claim_pending_upload.assert_called_once()
+
         # Verify filename was prefixed with brand name before upsert
         upsert_call_args = mock_svc_conn.fetchrow.call_args_list[-1]
         assert "TestBrand_report.csv" in upsert_call_args.args
@@ -250,34 +268,29 @@ def test_process_valid_csv(client):
         # storage_path should be passed to upsert
         assert f"uploads/{upload_id}/report.csv" in upsert_call_args.args
 
-    # Clean up
-    _pending_uploads.pop(upload_id, None)
-
 
 def test_process_missing_columns(client):
     """Test processing a CSV with missing required columns."""
-    from app.modules.upload.service import _pending_uploads, PendingUpload
-
     upload_id = "test-uuid-missing-cols"
-    _pending_uploads[upload_id] = PendingUpload(
-        upload_id=upload_id,
-        brand_id=123,
-        file_type="cpc_ad_report",
-        filename="bad_report.csv",
-        content_type="text/csv",
-        object_name=f"uploads/{upload_id}/bad_report.csv",
-        expires_at=datetime(2099, 1, 1, tzinfo=timezone.utc),
-    )
 
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.pending_queries") as mock_pending_queries,
         patch("app.modules.upload.service.brand_queries") as mock_brand_queries,
         patch("app.modules.upload.service.get_storage_client") as mock_storage_fn,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        # Atomic claim returns the pending upload
+        mock_pending_queries.claim_pending_upload = AsyncMock(return_value={
+            **SAMPLE_PENDING,
+            "upload_id": upload_id,
+            "filename": "bad_report.csv",
+            "object_name": f"uploads/{upload_id}/bad_report.csv",
+        })
 
         # Brand mock for filename prefix
         mock_brand_queries.get_brand_by_id = AsyncMock(return_value={"id": 123, "brand_name": "TestBrand"})
@@ -300,33 +313,26 @@ def test_process_missing_columns(client):
         assert response.status_code == 400
         assert response.json()["code"] == "UPLOAD_MISSING_COLUMNS"
 
-    _pending_uploads.pop(upload_id, None)
 
-
-def test_process_expired_upload(client):
-    """Test processing with expired upload ID."""
-    from app.modules.upload.service import _pending_uploads, PendingUpload
-
-    upload_id = "test-uuid-expired"
-    _pending_uploads[upload_id] = PendingUpload(
-        upload_id=upload_id,
-        brand_id=123,
-        file_type="cpc_ad_report",
-        filename="report.csv",
-        content_type="text/csv",
-        object_name=f"uploads/{upload_id}/report.csv",
-        expires_at=datetime(2020, 1, 1, tzinfo=timezone.utc),  # expired
-    )
-
+def test_expired_error_when_upload_expired(client):
+    """Test processing with expired upload ID — SQL filters expired rows."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.pending_queries") as mock_pending_queries,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+
+        # claim returns None — expired rows are filtered by SQL WHERE expires_at > NOW()
+        mock_pending_queries.claim_pending_upload = AsyncMock(return_value=None)
+
         response = client.post("/api/v1/upload/process", json={
-            "upload_id": upload_id,
+            "upload_id": "test-uuid-expired",
             "brand_id": 123,
             "file_type": "cpc_ad_report",
         }, headers=AUTH_HEADERS)
@@ -334,20 +340,53 @@ def test_process_expired_upload(client):
         assert response.status_code == 400
         assert response.json()["code"] == "UPLOAD_SIGNED_URL_EXPIRED"
 
-    _pending_uploads.pop(upload_id, None)
 
-
-def test_process_unknown_upload_id(client):
+def test_expired_error_when_upload_id_unknown(client):
     """Test processing with unknown upload ID."""
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.pending_queries") as mock_pending_queries,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
 
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+
+        # claim returns None — upload_id not found
+        mock_pending_queries.claim_pending_upload = AsyncMock(return_value=None)
+
         response = client.post("/api/v1/upload/process", json={
             "upload_id": "nonexistent-id",
+            "brand_id": 123,
+            "file_type": "cpc_ad_report",
+        }, headers=AUTH_HEADERS)
+
+        assert response.status_code == 400
+        assert response.json()["code"] == "UPLOAD_SIGNED_URL_EXPIRED"
+
+
+def test_expired_error_when_upload_already_claimed(client):
+    """Test that a second concurrent process_upload fails after the first claims the row."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.pending_queries") as mock_pending_queries,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+
+        # claim returns None — row already claimed by another instance
+        mock_pending_queries.claim_pending_upload = AsyncMock(return_value=None)
+
+        response = client.post("/api/v1/upload/process", json={
+            "upload_id": "already-claimed-uuid",
             "brand_id": 123,
             "file_type": "cpc_ad_report",
         }, headers=AUTH_HEADERS)

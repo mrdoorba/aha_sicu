@@ -34,15 +34,6 @@ Author: Mr. Door
 
 **Naming:** `test_<expected>_when_<condition>` (backend) / `should <expected> when <condition>` (frontend)
 
-**Runners & tools:**
-- Backend: **pytest** + pytest-asyncio. Tests in `backend/tests/`.
-- Frontend: **vitest** + Testing Library + jsdom. Test files colocated (`*.test.tsx`).
-
-**Known gotchas:**
-- Rules query function is `get_rules_by_template_and_marketplace` (renamed from `get_rules_by_template`) — mocks must use the new name
-- `generate_score` passes `marketplace` as a **positional** arg — mock assertions must match: `(conn, "default", "TH")` not `(conn, "default", marketplace="TH")`
-- `ScoringResponse` required string fields (`marketing_estimation`, `marketing_percentage`, `marketing_budget`, `closing_message`, `email_subject`, `email_body`) must be `""` not `None` when mocking
-
 ---
 
 ## SOLID Principles
@@ -72,18 +63,6 @@ Prioritize: simplicity, robustness, performance, correctness. Avoid over-enginee
 
 ---
 
-## Key Paths
-
-- Scoring engine: `backend/app/calculators/scoring/`
-- Marketplace constants: `backend/app/core/marketplace.py`
-- Email templates: `backend/app/modules/email/template.py`
-- DB migrations: `backend/alembic/versions/`
-- i18n locales: `frontend/src/locales/{id,en,th}.json`
-- Translation utility: `frontend/src/utils/renderTranslatable.ts`
-- Category mapping: `frontend/src/lib/categoryMap.ts`
-
----
-
 ## Running
 
 - Backend tests: `cd backend && uv run pytest tests/ -x`
@@ -92,26 +71,10 @@ Prioritize: simplicity, robustness, performance, correctness. Avoid over-enginee
 - Backend lint: `cd backend && uv run ruff check .`
 - Frontend lint: `cd frontend && npm run lint`
 
----
-
-## Error Handling
-
-### Backend
-
-- Custom `AppException(code, detail, status_code)` in `app/core/exceptions.py` — caught by global handler in `app/core/middleware.py`, returns structured JSON: `{ code, detail, timestamp }`
-- Use `raise AppException(...)` for domain/business errors, not raw `HTTPException`
-- Pydantic `ValueError` in schemas for validation — FastAPI converts to 422 automatically
-
-### Frontend
-
-- Sonner toasts (`toast.success()` / `toast.error()`) for user-facing feedback on mutations
-- React Query `onError` callbacks for API mutation failures
-- No global ErrorBoundary — errors are handled per-component/per-hook
-
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **aha_sicu** (3159 symbols, 7554 relationships, 151 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **aha_sicu** (3274 symbols, 7808 relationships, 147 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -209,3 +172,40 @@ To check whether embeddings exist, inspect `.gitnexus/meta.json` — the `stats.
 | Index, status, clean, wiki CLI commands | `.claude/skills/gitnexus/gitnexus-cli/SKILL.md` |
 
 <!-- gitnexus:end -->
+
+<!-- aegis:start -->
+# AEGIS Guardrails
+
+Derived from AEGIS diagnostic audit (2026-03-19). 136 findings, 39 playbooks.
+Full audit: `.aegis/report/AEGIS-REPORT.md` | Playbooks: `.aegis/remediation/playbooks/`
+
+## Security
+
+- When modifying Cloud Run env vars in Terraform, verify `CLOUD_RUN_URL` and `ALLOWED_SCHEDULER_EMAILS` are present. Never remove them without removing the OIDC code path.
+- CORS origins must come from `CORS_ORIGINS` env var via `settings.cors_origin_list`. Never hardcode origin URLs in `main.py`.
+- When a security feature depends on a config value (allowlist, audience, domain restriction), the empty/missing case must **deny**, not permit. No `if not config: return` in security paths.
+- Email recipients must be validated against `EMAIL_ALLOWED_DOMAINS`. Never bypass domain validation.
+
+## Infrastructure
+
+- Terraform backend must be `gcs`, not `local`. Never switch back. If the GCS line is commented out, that is a bug.
+- Each environment module must create its own `random_password` and `google_sql_user`. Never pass the same `db_password` to multiple environment modules.
+- Every Dockerfile must include a non-root `USER` directive. Pattern: `adduser` → `COPY --chown` → `USER appuser`.
+
+## Data Integrity
+
+- Dynamic SQL `ORDER BY` columns must be validated against a `frozenset` allowlist before f-string interpolation, even if the schema layer also validates.
+- Sync functions writing multiple rows must wrap in `async with conn.transaction()`. Never commit rows one-by-one without a wrapping transaction.
+- Upload state must be in the `pending_uploads` database table. Never use module-level dicts or in-memory state — Cloud Run instances are ephemeral.
+
+## Observability
+
+- `/health` must verify DB connectivity (`SELECT 1`) and return 503 when unreachable. Never return static `{"status": "healthy"}`.
+- Deploy verification in CI must hit `/health` and assert `"status": "healthy"`. Never verify against `/docs`.
+- Admin mutations (role changes, deletions, email sends) must call `record_audit_event()`. Never add a mutation endpoint without an audit log call.
+
+## Testing
+
+- Backend tests must run with `--cov`. The `fail_under` threshold in `pyproject.toml` must never decrease — only ratchet upward.
+- Frontend API types in `api.generated.ts` must be auto-generated from backend OpenAPI schema. Never hand-edit generated type files.
+<!-- aegis:end -->

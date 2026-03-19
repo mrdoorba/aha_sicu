@@ -144,3 +144,6 @@ backend/locales/
 # ── GSD baseline (auto-generated) ──
 .gsd/parallel/
 .gitnexus
+
+# AEGIS audit state (generated)
+.aegis/

@@ -5,30 +5,32 @@
 See: .paul/PROJECT.md (updated 2026-03-19)
 
 **Core value:** Business development can quickly assess whether a store/lead is worth pursuing using calculators from input data, and present findings via dashboards.
-**Current focus:** AEGIS Security Remediation — Phase 6 (Data & API Integrity)
+**Current focus:** v0.2 AEGIS Security Remediation — COMPLETE
 
 ## Current Position
 
-Milestone: v0.2 AEGIS Security Remediation
-Phase: 6 of 6 (Data & API Integrity) — Not started
-Plan: Not started
-Status: Phase 5 complete, ready to plan Phase 6
-Last activity: 2026-03-19 — Phase 5 complete, transitioned to Phase 6
+Milestone: v0.2 AEGIS Security Remediation — COMPLETE
+Phase: 7 of 7 (Remaining Hardening) — Complete
+Plan: 07-01 complete
+Status: Milestone complete, all 7 phases finished
+Last activity: 2026-03-19 — Phase 7 complete, milestone closed
 
 Progress:
-- Milestone: [████████░░] 83%
+- Milestone: [██████████] 100%
 - Phase 1: [██████████] 100%
 - Phase 2: [██████████] 100%
 - Phase 3: [██████████] 100%
 - Phase 4: [██████████] 100%
 - Phase 5: [██████████] 100%
+- Phase 6: [██████████] 100%
+- Phase 7: [██████████] 100%
 
 ## Loop Position
 
 Current loop state:
 ```
 PLAN ──▶ APPLY ──▶ UNIFY
-  ✓        ✓        ✓     [Loop complete — ready for next PLAN]
+  ✓        ✓        ✓     [Loop complete — milestone finished]
 ```
 
 ## Accumulated Context
@@ -46,6 +48,12 @@ PLAN ──▶ APPLY ──▶ UNIFY
 - 2026-03-19: Coverage fail_under set to 28% (not 40% as planned) — actual coverage is 90.19% but threshold should reflect regression floor, not aspirational target. Ratchet up as baseline stabilizes.
 - 2026-03-19: Shared auth fixture pattern: auth_headers(role) returns (user, headers, context_manager). Service-boundary mocking: mock router-level imports.
 - 2026-03-19: Email endpoints have no require_role — any authenticated user can send/preview. Documented as known gap, not testing scope.
+- 2026-03-19: Enterprise audit on 06-01-PLAN.md. Applied 2 must-have, 3 strongly-recommended upgrades. Deferred 2. Verdict: conditionally acceptable (accepted after fixes). Critical fix: duplicate brand_name in batch causes PostgreSQL error — must deduplicate before INSERT...ON CONFLICT.
+- 2026-03-19: Enterprise audit on 06-02-PLAN.md. Applied 2 must-have, 4 strongly-recommended upgrades. Deferred 3. Verdict: conditionally acceptable (accepted after fixes). Critical fix: race condition — concurrent process_upload across Cloud Run instances could duplicate processing without atomic claim pattern (DELETE...RETURNING).
+- 2026-03-19: Enterprise audit on 06-03-PLAN.md. Applied 1 must-have, 2 strongly-recommended upgrades. Deferred 2. Verdict: conditionally acceptable (accepted after fixes). Critical fix: first-deploy rollback would route traffic to broken revision instead of skipping (tail -1 on single-entry list).
+- 2026-03-19: Enterprise audit on 07-01-PLAN.md. Applied 1 must-have, 3 strongly-recommended upgrades. Deferred 2. Verdict: conditionally acceptable (accepted after fixes). Critical fix: existing test fixtures use non-Literal values ("Good", "standard", "default") that would break when response schemas enforce Literal types.
+- 2026-03-19: ScoringResponse.template uses CategoryType — scoring engine returns request template, not rule template key "default".
+- 2026-03-19: RowScoreItem.verdict stays str — metric-level verdicts differ from evaluation-level VerdictType.
 
 ### Deferred Issues
 - ~~Per-environment DB credentials (Phase 2)~~ — Done
@@ -64,8 +72,8 @@ None.
 ## Session Continuity
 
 Last session: 2026-03-19
-Stopped at: Phase 5 complete, ready to plan Phase 6
-Next action: Run /paul:plan for Phase 6 (Data & API Integrity)
+Stopped at: v0.2 AEGIS Security Remediation milestone complete
+Next action: /paul:complete-milestone or /paul:milestone for next milestone
 Resume file: .paul/ROADMAP.md
 
 ---

@@ -5,8 +5,8 @@ Fullstack web app enabling business development teams to evaluate store/lead via
 
 ## Current Milestone
 **v0.2 AEGIS Security Remediation** (v0.2.0)
-Status: In progress
-Phases: 5 of 6 complete
+Status: Complete
+Phases: 7 of 7 complete
 
 Based on AEGIS diagnostic audit (2026-03-19): 136 findings (4 critical, 20 high, 45 medium, 30 low). Remediation organized by priority and blast radius.
 
@@ -19,7 +19,8 @@ Based on AEGIS diagnostic audit (2026-03-19): 136 findings (4 critical, 20 high,
 | 3 | Defensive Hardening | 1 | Complete | 2026-03-19 |
 | 4 | Observability & Audit | 2 | Complete | 2026-03-19 |
 | 5 | Testing Infrastructure | 1 | Complete | 2026-03-19 |
-| 6 | Data & API Integrity | TBD | Not started | - |
+| 6 | Data & API Integrity | 3 | Complete | 2026-03-19 |
+| 7 | Remaining Hardening | 1 | Complete | 2026-03-19 |
 
 ## Phase Details
 
@@ -53,6 +54,11 @@ Based on AEGIS diagnostic audit (2026-03-19): 136 findings (4 critical, 20 high,
 **Findings:** F-02-006, F-08-002, F-08-001, F-00-005, F-11-002, F-09-004, F-10-009
 **Key changes:** Sync transactional atomicity, batch upserts, stateful upload to DB, auto-generated API types, deploy rollback.
 
+### Phase 7 — Remaining Hardening
+**Goal:** Address 3 remaining AEGIS planning-level playbooks missed in earlier phases.
+**Playbooks:** PB-04-008, PB-04-004, PB-03-001
+**Key changes:** WIF branch restriction on Workload Identity, Cloud SQL authorized_networks lockdown, evaluation response schema Literal types.
+
 ---
 *Roadmap created: 2026-03-19*
-*Updated: 2026-03-19 — Phase 5 complete*
+*Updated: 2026-03-19 — v0.2 milestone complete, all 7 phases done*

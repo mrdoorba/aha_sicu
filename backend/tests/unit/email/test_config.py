@@ -3,6 +3,8 @@
 import os
 from unittest.mock import patch
 
+
+
 import pytest
 from pydantic import ValidationError
 
@@ -84,7 +86,9 @@ class TestSmtpConfigEnvOverrides:
 class TestSendEmailRequestSchema:
     """Test SendEmailRequest validation."""
 
-    def test_validates_recipients_as_email(self) -> None:
+    @patch("app.modules.email.schemas.settings")
+    def test_validates_recipients_as_email(self, mock_settings) -> None:
+        mock_settings.email_allowed_domains = "example.com"
         req = SendEmailRequest(
             evaluation_id=1,
             recipients=["test@example.com"],
@@ -100,14 +104,18 @@ class TestSendEmailRequestSchema:
                 chart_image="abc123",
             )
 
-    def test_chart_image_defaults_to_empty(self) -> None:
+    @patch("app.modules.email.schemas.settings")
+    def test_chart_image_defaults_to_empty(self, mock_settings) -> None:
+        mock_settings.email_allowed_domains = "example.com"
         req = SendEmailRequest(
             evaluation_id=1,
             recipients=["test@example.com"],
         )
         assert req.chart_image == ""
 
-    def test_subject_optional(self) -> None:
+    @patch("app.modules.email.schemas.settings")
+    def test_subject_optional(self, mock_settings) -> None:
+        mock_settings.email_allowed_domains = "example.com"
         req = SendEmailRequest(
             evaluation_id=1,
             recipients=["test@example.com"],
@@ -115,7 +123,9 @@ class TestSendEmailRequestSchema:
         )
         assert req.subject is None
 
-    def test_subject_max_length(self) -> None:
+    @patch("app.modules.email.schemas.settings")
+    def test_subject_max_length(self, mock_settings) -> None:
+        mock_settings.email_allowed_domains = "example.com"
         with pytest.raises(ValidationError, match="subject"):
             SendEmailRequest(
                 evaluation_id=1,
@@ -124,7 +134,9 @@ class TestSendEmailRequestSchema:
                 subject="x" * 201,
             )
 
-    def test_subject_within_max_length(self) -> None:
+    @patch("app.modules.email.schemas.settings")
+    def test_subject_within_max_length(self, mock_settings) -> None:
+        mock_settings.email_allowed_domains = "example.com"
         req = SendEmailRequest(
             evaluation_id=1,
             recipients=["test@example.com"],
@@ -133,7 +145,9 @@ class TestSendEmailRequestSchema:
         )
         assert len(req.subject) == 200
 
-    def test_cc_bcc_default_empty(self) -> None:
+    @patch("app.modules.email.schemas.settings")
+    def test_cc_bcc_default_empty(self, mock_settings) -> None:
+        mock_settings.email_allowed_domains = "example.com"
         req = SendEmailRequest(
             evaluation_id=1,
             recipients=["test@example.com"],
@@ -142,7 +156,9 @@ class TestSendEmailRequestSchema:
         assert req.cc == []
         assert req.bcc == []
 
-    def test_note_optional(self) -> None:
+    @patch("app.modules.email.schemas.settings")
+    def test_note_optional(self, mock_settings) -> None:
+        mock_settings.email_allowed_domains = "example.com"
         req = SendEmailRequest(
             evaluation_id=1,
             recipients=["test@example.com"],
@@ -150,7 +166,9 @@ class TestSendEmailRequestSchema:
         )
         assert req.note is None
 
-    def test_total_recipients_validation(self) -> None:
+    @patch("app.modules.email.schemas.settings")
+    def test_total_recipients_validation(self, mock_settings) -> None:
+        mock_settings.email_allowed_domains = "example.com"
         with pytest.raises(ValidationError, match="Total recipients"):
             SendEmailRequest(
                 evaluation_id=1,

@@ -33,7 +33,7 @@ export function useSaveEvaluation(brandId: number) {
         '/api/v1/evaluations/brands/{brand_id}/save',
         {
           params: { path: { brand_id: brandId } },
-          body: request,
+          body: request as any,
         },
       );
       if (error) throw error;

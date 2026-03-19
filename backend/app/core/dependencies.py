@@ -49,15 +49,21 @@ async def get_current_user(
                 detail="Token validation failed",
             ) from oidc_exc
 
-        # Validate service account is in allowlist (when configured)
-        if settings.allowed_scheduler_emails:
-            allowed = [e.strip() for e in settings.allowed_scheduler_emails.split(",")]
-            if oidc_claims["email"] not in allowed:
-                logger.warning("OIDC auth rejected: %s not in allowlist", oidc_claims["email"])
-                raise AuthException(
-                    code="AUTH_TOKEN_INVALID",
-                    detail="Service account not authorized",
-                )
+        # Validate service account is in allowlist (fail-closed: deny when unconfigured)
+        allowed_raw = settings.allowed_scheduler_emails
+        if not allowed_raw:
+            logger.warning("OIDC auth rejected: ALLOWED_SCHEDULER_EMAILS not configured")
+            raise AuthException(
+                code="AUTH_TOKEN_INVALID",
+                detail="Service account authorization not configured",
+            )
+        allowed = [e.strip() for e in allowed_raw.split(",")]
+        if oidc_claims["email"] not in allowed:
+            logger.warning("OIDC auth rejected: %s not in allowlist", oidc_claims["email"])
+            raise AuthException(
+                code="AUTH_TOKEN_INVALID",
+                detail="Service account not authorized",
+            )
 
         logger.info("OIDC service account authenticated: %s", oidc_claims["email"])
 

@@ -1,6 +1,7 @@
 """Sync service for orchestrating Google Sheets brand synchronization."""
 
 import logging
+import time
 from datetime import datetime, timezone
 from typing import Any
 
@@ -36,42 +37,93 @@ async def _sync_sheet_to_table(
     Returns:
         SheetSyncResult with counts and errors.
     """
-    synced_count = 0
     skipped_count = 0
     errors: list[SyncError] = []
 
-    async with db.connection() as conn:
-        for row_data in rows:
-            try:
-                brand_name = row_data.get(brand_column, "").strip()
-
-                if not brand_name:
-                    skipped_count += 1
-                    continue
-
-                await brand_queries.upsert_brand_data(
-                    conn,
-                    table=table,
-                    brand_name=brand_name,
-                    raw_data=row_data,
-                )
-                synced_count += 1
-
-            except Exception as e:
-                brand_name = row_data.get(brand_column, "Unknown")
-                errors.append(SyncError(brand=brand_name, error=str(e)))
-                logger.warning(f"Failed to sync {sheet_type} brand '{brand_name}': {e}")
+    # Step 1: Pre-filter rows with empty brand names
+    valid_rows: list[dict[str, Any]] = []
+    for row_data in rows:
+        brand_name = row_data.get(brand_column, "").strip()
+        if not brand_name:
+            skipped_count += 1
+            continue
+        valid_rows.append(row_data)
 
     if skipped_count > 0:
         logger.info(f"Skipped {skipped_count} empty rows in {sheet_type} sheet")
 
-    return SheetSyncResult(
-        sheet_type=sheet_type,
-        rows_synced=synced_count,
-        rows_skipped=skipped_count,
-        errors=errors,
-        success=len(errors) == 0,
-    )
+    if not valid_rows:
+        return SheetSyncResult(
+            sheet_type=sheet_type,
+            rows_synced=0,
+            rows_skipped=skipped_count,
+            errors=[],
+            success=True,
+        )
+
+    # Step 2: Deduplicate by brand_name (last occurrence wins)
+    seen: dict[str, dict[str, Any]] = {}
+    for row_data in valid_rows:
+        brand_name = row_data.get(brand_column, "").strip()
+        seen[brand_name] = row_data
+
+    dedup_count = len(valid_rows) - len(seen)
+    if dedup_count > 0:
+        logger.info(
+            f"Deduplicated {dedup_count} duplicate brand names in {sheet_type} sheet"
+        )
+
+    # Step 3: Build parallel arrays
+    brand_names = list(seen.keys())
+    raw_data_list = list(seen.values())
+
+    # Step 4: Execute batch upsert in transaction
+    start_time = time.monotonic()
+    try:
+        async with db.connection() as conn:
+            async with conn.transaction():
+                synced_count = await brand_queries.batch_upsert_brand_data(
+                    conn,
+                    table=table,
+                    brand_names=brand_names,
+                    raw_data_list=raw_data_list,
+                )
+
+        duration_ms = (time.monotonic() - start_time) * 1000
+        logger.info(
+            "batch_upsert_complete",
+            extra={
+                "table": table,
+                "sheet_type": sheet_type,
+                "batch_size": len(brand_names),
+                "skipped": skipped_count,
+                "deduplicated": dedup_count,
+                "duration_ms": round(duration_ms, 1),
+            },
+        )
+
+        return SheetSyncResult(
+            sheet_type=sheet_type,
+            rows_synced=synced_count,
+            rows_skipped=skipped_count,
+            errors=[],
+            success=True,
+        )
+
+    except Exception as e:
+        duration_ms = (time.monotonic() - start_time) * 1000
+        logger.error(
+            f"Batch upsert failed for {sheet_type} sheet: {e}",
+            extra={"table": table, "duration_ms": round(duration_ms, 1)},
+        )
+        errors.append(SyncError(brand="batch", error=str(e)))
+        return SheetSyncResult(
+            sheet_type=sheet_type,
+            rows_synced=0,
+            rows_skipped=skipped_count,
+            errors=errors,
+            success=False,
+        )
 
 
 async def _sync_vp_sheet(

@@ -98,6 +98,34 @@ variable "prod_email_enabled" {
   default     = false
 }
 
+variable "dev_email_allowed_domains" {
+  description = "Comma-separated allowed email recipient domains for dev"
+  type        = string
+  default     = ""
+}
+
+variable "prod_email_allowed_domains" {
+  description = "Comma-separated allowed email recipient domains for prod"
+  type        = string
+  default     = ""
+}
+
+# =============================================================================
+# Cloud Run URL (per-environment, for OIDC audience validation)
+# =============================================================================
+
+variable "dev_cloud_run_url" {
+  description = "Cloud Run service URL for dev (set after first deploy)"
+  type        = string
+  default     = ""
+}
+
+variable "prod_cloud_run_url" {
+  description = "Cloud Run service URL for prod (set after first deploy)"
+  type        = string
+  default     = ""
+}
+
 # =============================================================================
 # Cloud SQL Variables (shared instance)
 # =============================================================================
@@ -120,8 +148,12 @@ variable "cloud_sql_instance_name" {
   default     = "aha-sicu-db"
 }
 
-variable "db_user" {
-  description = "Cloud SQL database user"
-  type        = string
-  default     = "aha_sicu"
+variable "authorized_networks" {
+  description = "List of authorized networks for Cloud SQL public IP access. Empty = no public access."
+  type = list(object({
+    name  = string
+    value = string
+  }))
+  default = []
 }
+

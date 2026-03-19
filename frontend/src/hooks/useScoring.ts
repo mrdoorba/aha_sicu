@@ -77,14 +77,14 @@ export function useScoring(brandId: number, preStep?: () => Promise<void>) {
         '/api/v1/evaluations/brands/{brand_id}/score',
         {
           params: { path: { brand_id: brandId } },
-          body: request,
+          body: request as any,
         },
       );
       if (error) throw error;
       return data;
     },
     onSuccess: (data) => {
-      setScoringResult(data);
+      setScoringResult(data as ScoringResult);
       setIsStale(false);
       setStep('idle');
       queryClient.setQueryData(['scoring', brandId], data);

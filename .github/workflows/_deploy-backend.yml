@@ -156,12 +156,36 @@ jobs:
 
       - name: Verify deployment
         run: |
-          STATUS=$(curl -s -o /dev/null -w "%{http_code}" "${{ steps.deploy.outputs.url }}/docs" --max-time 30 || true)
-          if [ "$STATUS" -ge 200 ] && [ "$STATUS" -lt 400 ]; then
-            echo "Health check passed (HTTP $STATUS) at ${{ steps.deploy.outputs.url }}"
+          HEALTH_URL="${{ steps.deploy.outputs.url }}/health"
+          RESPONSE=$(curl -s --max-time 30 "$HEALTH_URL" || true)
+          STATUS=$(echo "$RESPONSE" | jq -r '.status // empty')
+          if [ "$STATUS" = "healthy" ]; then
+            echo "Health check passed at $HEALTH_URL"
           else
-            echo "::error::Health check failed (HTTP $STATUS) at ${{ steps.deploy.outputs.url }}/docs"
+            echo "::error::Health check failed at $HEALTH_URL"
+            echo "$RESPONSE"
             exit 1
+          fi
+
+      - name: Rollback on verification failure
+        if: failure() && steps.deploy.outcome == 'success'
+        run: |
+          echo "Verification failed — rolling back to previous revision"
+          REVISIONS=$(gcloud run revisions list \
+            --service=${{ vars.CLOUD_RUN_SERVICE }} \
+            --region=${{ vars.GCP_REGION }} \
+            --format="value(name)" \
+            --sort-by="~createTime" \
+            --limit=2)
+          REVISION_COUNT=$(echo "$REVISIONS" | wc -l | tr -d ' ')
+          if [ "$REVISION_COUNT" -ge 2 ]; then
+            PREV_REVISION=$(echo "$REVISIONS" | tail -1)
+            gcloud run services update-traffic ${{ vars.CLOUD_RUN_SERVICE }} \
+              --region=${{ vars.GCP_REGION }} \
+              --to-revisions="$PREV_REVISION=100"
+            echo "Traffic routed to previous revision: $PREV_REVISION"
+          else
+            echo "No previous revision found — first deploy, skipping rollback"
           fi
 
       - name: Cleanup old Cloud Run revisions

@@ -15,7 +15,7 @@ def _make_evaluation_detail() -> EvaluationDetailResponse:
         brand_id=10,
         brand_name="Test Brand",
         final_score=85.0,
-        verdict="GOOD",
+        verdict="✔️",
         template="fashion",
         score_breakdown=[{"section": "A", "score": 85.0}],
         calculator_results={"total": 85.0},

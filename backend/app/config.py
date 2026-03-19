@@ -12,6 +12,7 @@ class Settings(BaseSettings):
 
     app_name: str = "Store ICU API"
     debug: bool = False
+    log_level: str = "INFO"
 
     # Database (Cloud SQL PostgreSQL)
     # When DATABASE_URL is set (local dev), it takes precedence.
@@ -45,6 +46,14 @@ class Settings(BaseSettings):
     # When empty, any valid OIDC token with correct audience is accepted
     allowed_scheduler_emails: str = ""
 
+    # CORS origins (comma-separated). Defaults cover local dev.
+    cors_origins: str = "http://localhost:5173,http://localhost:4173"
+
+    @property
+    def cors_origin_list(self) -> list[str]:
+        """Parse CORS_ORIGINS into a list, stripping whitespace."""
+        return [o.strip() for o in self.cors_origins.split(",") if o.strip()]
+
     # GCS Upload Bucket (empty = local dev fallback)
     gcs_upload_bucket: str = ""
 
@@ -57,6 +66,7 @@ class Settings(BaseSettings):
     smtp_from_email: str = ""
     smtp_use_tls: bool = True
     email_enabled: bool = False
+    email_allowed_domains: str = ""  # comma-separated: "ahacommerce.co.id,example.com"
 
     # Google Sheets API - Credentials
     gsheets_credentials_path: str | None = None

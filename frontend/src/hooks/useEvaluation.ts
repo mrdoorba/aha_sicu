@@ -39,7 +39,7 @@ export function useSaveEvaluationInputs(brandId: number) {
         '/api/v1/evaluations/brands/{brand_id}',
         {
           params: { path: { brand_id: brandId } },
-          body,
+          body: body as any,
         },
       );
       if (error) throw new Error('Failed to save evaluation inputs');

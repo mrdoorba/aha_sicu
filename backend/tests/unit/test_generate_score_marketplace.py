@@ -47,7 +47,7 @@ def _mock_scoring_result():
     mock_result.closing_message = ""
     mock_result.email_subject = ""
     mock_result.email_body = ""
-    mock_result.template = "default"
+    mock_result.template = "fashion"
     mock_result.rule_version = 1
     mock_result.conclusion_i18n = None
     mock_result.marketing_budget_i18n = None
@@ -75,7 +75,7 @@ async def test_generate_score_reads_marketplace_from_eval_inputs():
         mock_calc.return_value = _mock_scoring_result()
 
         await generate_score(
-            conn, brand_id=1, user_id=1, template="default",
+            conn, brand_id=1, user_id=1, template="fashion",
             verdict="✔️", store_name="Test", period="Q1",
             brand_name="Test Brand",
         )
@@ -112,7 +112,7 @@ async def test_generate_score_defaults_marketplace_to_id():
         mock_calc.return_value = _mock_scoring_result()
 
         await generate_score(
-            conn, brand_id=1, user_id=1, template="default",
+            conn, brand_id=1, user_id=1, template="fashion",
             verdict="✔️", store_name="Test", period="Q1",
             brand_name="Test Brand",
         )
@@ -147,7 +147,7 @@ async def test_generate_score_passes_correct_rules_to_calculator():
         mock_calc.return_value = _mock_scoring_result()
 
         await generate_score(
-            conn, brand_id=1, user_id=1, template="default",
+            conn, brand_id=1, user_id=1, template="fashion",
             verdict="✔️", store_name="Test", period="Q1",
             brand_name="Test Brand",
         )
@@ -176,7 +176,7 @@ async def test_generate_score_passes_marketplace_to_calculate_score():
         mock_calc.return_value = _mock_scoring_result()
 
         await generate_score(
-            conn, brand_id=1, user_id=1, template="default",
+            conn, brand_id=1, user_id=1, template="fashion",
             verdict="✔️", store_name="Test", period="Q1",
             brand_name="Test Brand",
         )

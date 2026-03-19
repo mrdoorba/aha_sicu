@@ -56,7 +56,7 @@ export function useEvaluationDetail(id: number) {
         }
         throw new ApiError('Failed to fetch evaluation detail');
       }
-      return data;
+      return data as EvaluationDetail;
     },
     enabled: id > 0,
   });

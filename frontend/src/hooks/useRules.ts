@@ -7,8 +7,9 @@ interface ApiScoringRule {
   template: string;
   rules: Record<string, unknown>;
   version: number;
-  updated_by: number | null;
+  updated_by?: number | null;
   updated_at: string;
+  marketplace?: string;
 }
 
 /**
@@ -36,7 +37,7 @@ function toScoringRule(apiRule: ApiScoringRule): ScoringRule {
     template: apiRule.template,
     rules: apiRule.rules,
     version: apiRule.version,
-    updated_by: apiRule.updated_by,
+    updated_by: apiRule.updated_by ?? null,
     updated_at: apiRule.updated_at,
   };
 }

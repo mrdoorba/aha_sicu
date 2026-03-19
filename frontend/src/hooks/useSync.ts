@@ -23,7 +23,7 @@ export function useSyncStatus() {
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/sync/status');
       if (error) throw new Error('Failed to fetch sync status');
-      return data ?? null;
+      return (data as SyncStatusData) ?? null;
     },
     refetchInterval: (query) => {
       const status = query.state.data?.status;

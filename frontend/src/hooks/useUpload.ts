@@ -26,7 +26,7 @@ export function useBrandUploads(brandId: number) {
         { params: { path: { brand_id: brandId } } },
       );
       if (error) throw new Error('Failed to fetch brand uploads');
-      return data satisfies BrandUploads;
+      return data as BrandUploads;
     },
     enabled: brandId > 0,
   });
@@ -49,7 +49,7 @@ export function useRequestSignedUrl() {
           isApiErrorWithDetail(err) ? err.detail : 'Failed to get signed URL',
         );
       }
-      return data satisfies { upload_url: string; upload_id: string; expires_at: string };
+      return data as { upload_url: string; upload_id: string; expires_at: string };
     },
   });
 }
@@ -89,7 +89,7 @@ export function useProcessUpload() {
             isApiErrorWithDetail(err) ? err.detail : 'Failed to process upload',
           );
         }
-        return data satisfies ProcessUploadResponse;
+        return data as ProcessUploadResponse;
       } catch (err) {
         if (err instanceof DOMException && err.name === 'AbortError') {
           throw new Error(
@@ -144,7 +144,7 @@ export function useUploadFile(brandId: number) {
             { params: { path: { brand_id: brandId } } },
           );
           if (error) throw new Error('Failed to fetch brand uploads');
-          return data satisfies BrandUploads;
+          return data as BrandUploads;
         },
         staleTime: 0,
       });
@@ -309,7 +309,7 @@ export function useDownloadFile() {
         { params: { path: { brand_id: brandId, file_type: fileType } } },
       );
       if (error) throw new Error('Failed to get download URL');
-      return data satisfies { download_url: string; filename: string };
+      return data as { download_url: string; filename: string };
     },
   });
 }

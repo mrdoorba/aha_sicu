@@ -132,7 +132,7 @@ export function useEvaluationOrchestrator(brandId: number) {
 
       const scoreResponse = await new Promise<ScoringResult>((resolve, reject) => {
         generateScore(scoringRequest, {
-          onSuccess: resolve,
+          onSuccess: (data) => resolve(data as ScoringResult),
           onError: (err: Error) => reject(err),
         });
       });

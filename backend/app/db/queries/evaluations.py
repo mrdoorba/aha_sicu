@@ -7,6 +7,9 @@ from asyncpg import Connection
 
 from app.db.queries.utils import FilterBuilder, escape_like, fetch_all, fetch_one
 
+_VALID_SORT_COLUMNS: frozenset[str] = frozenset({"created_at", "final_score"})
+_VALID_SORT_ORDERS: frozenset[str] = frozenset({"asc", "desc"})
+
 
 class EvaluationInputsRow(TypedDict):
     id: int
@@ -206,8 +209,14 @@ async def list_evaluations(
 
     Returns lightweight rows (no heavy JSONB columns).
     sort_by is validated via Literal type at router level — safe for f-string.
+    Defense-in-depth: frozenset check below catches bypasses of Literal validation.
     Filters conditionally by search (brand_name ILIKE) and date range.
     """
+    if sort_by not in _VALID_SORT_COLUMNS:
+        raise ValueError(f"Invalid sort column: {sort_by}")
+    if sort_order not in _VALID_SORT_ORDERS:
+        raise ValueError(f"Invalid sort order: {sort_order}")
+
     where_clause, params, param_idx = _build_filter_clauses(search, date_from, date_to)
     limit_param = f"${param_idx}"
     offset_param = f"${param_idx + 1}"

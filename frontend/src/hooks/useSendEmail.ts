@@ -23,7 +23,7 @@ export function useSendEmail() {
           ...(bcc && bcc.length > 0 ? { bcc } : {}),
           ...(note ? { note } : {}),
           ...(language ? { language } : {}),
-        },
+        } as any,
       });
       if (error) throw new Error('Failed to send email');
       return data;

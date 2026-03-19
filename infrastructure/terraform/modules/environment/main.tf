@@ -96,6 +96,22 @@ resource "google_project_iam_member" "cloud_run_cloudsql_client" {
 }
 
 # =============================================================================
+# Database Credentials (per-environment)
+# =============================================================================
+
+resource "random_password" "db" {
+  length  = 24
+  special = true
+}
+
+resource "google_sql_user" "app" {
+  name     = "aha_sicu_${var.environment}"
+  instance = var.cloud_sql_instance_name
+  password = random_password.db.result
+  project  = var.project_id
+}
+
+# =============================================================================
 # Secrets
 # =============================================================================
 
@@ -110,7 +126,11 @@ resource "google_secret_manager_secret" "db_password" {
 
 resource "google_secret_manager_secret_version" "db_password" {
   secret      = google_secret_manager_secret.db_password.id
-  secret_data = var.db_password
+  secret_data = random_password.db.result
+
+  lifecycle {
+    create_before_destroy = true
+  }
 }
 
 resource "google_secret_manager_secret" "gsheets_credentials" {
@@ -207,7 +227,7 @@ resource "google_cloud_run_v2_service" "api" {
 
       env {
         name  = "DB_USER"
-        value = var.db_user
+        value = google_sql_user.app.name
       }
 
       env {
@@ -286,6 +306,11 @@ resource "google_cloud_run_v2_service" "api" {
       }
 
       env {
+        name  = "EMAIL_ALLOWED_DOMAINS"
+        value = var.email_allowed_domains
+      }
+
+      env {
         name  = "GSHEETS_VP_SPREADSHEET_ID"
         value = var.gsheets_vp_spreadsheet_id
       }
@@ -298,6 +323,21 @@ resource "google_cloud_run_v2_service" "api" {
       env {
         name  = "GSHEETS_EVAL_SPREADSHEET_ID"
         value = var.gsheets_eval_spreadsheet_id
+      }
+
+      env {
+        name  = "CLOUD_RUN_URL"
+        value = var.cloud_run_url
+      }
+
+      env {
+        name  = "ALLOWED_SCHEDULER_EMAILS"
+        value = google_service_account.scheduler.email
+      }
+
+      env {
+        name  = "CORS_ORIGINS"
+        value = join(",", var.cors_origins)
       }
 
       resources {
@@ -338,6 +378,7 @@ resource "google_cloud_run_v2_service" "api" {
   }
 
   depends_on = [
+    google_sql_user.app,
     google_secret_manager_secret_iam_member.api_sa_db_password,
     google_secret_manager_secret_iam_member.api_sa_gsheets,
     google_secret_manager_secret_iam_member.api_sa_smtp_password,
@@ -413,6 +454,7 @@ resource "google_storage_bucket" "uploads" {
   location                    = var.region
   project                     = var.project_id
   uniform_bucket_level_access = true
+  public_access_prevention    = "enforced"
   force_destroy               = var.environment == "dev" ? true : false
 
   lifecycle_rule {
@@ -459,9 +501,10 @@ resource "google_iam_workload_identity_pool_provider" "github" {
     "google.subject"       = "assertion.sub"
     "attribute.actor"      = "assertion.actor"
     "attribute.repository" = "assertion.repository"
+    "attribute.ref"        = "assertion.ref"
   }
 
-  attribute_condition = "assertion.repository == \"${var.github_repo}\""
+  attribute_condition = "assertion.repository == \"${var.github_repo}\" && assertion.ref == \"refs/heads/${var.wif_allowed_branch}\""
 
   oidc {
     issuer_uri = "https://token.actions.githubusercontent.com"
