@@ -2,8 +2,6 @@
 
 from unittest.mock import AsyncMock, patch
 
-import pytest
-
 from app.modules.sync.eval_sheet_service import (
     EVAL_RANGE,
     HEADER_ROW,
@@ -57,7 +55,6 @@ def test_eval_range_covers_four_columns():
 # --- sync_brand_to_sheet ---
 
 
-@pytest.mark.asyncio
 async def test_sync_brand_to_sheet_skips_when_not_configured():
     """should return early when eval sheet is not configured"""
     with patch(f"{MODULE}._is_configured", return_value=False):
@@ -65,7 +62,6 @@ async def test_sync_brand_to_sheet_skips_when_not_configured():
         # No exception, no side effects
 
 
-@pytest.mark.asyncio
 async def test_sync_brand_to_sheet_appends_new_brand():
     """should append row when brand not in sheet"""
     mock_data = {
@@ -97,7 +93,6 @@ async def test_sync_brand_to_sheet_appends_new_brand():
         assert args[0][2] == [["Jan 2026", "Nike", "Sepatu", "72.5"]]
 
 
-@pytest.mark.asyncio
 async def test_sync_brand_to_sheet_overwrites_existing_brand():
     """should overwrite row when brand already exists in sheet"""
     mock_data = {
@@ -133,7 +128,6 @@ async def test_sync_brand_to_sheet_overwrites_existing_brand():
         mock_client.append_rows.assert_not_awaited()
 
 
-@pytest.mark.asyncio
 async def test_sync_brand_to_sheet_writes_header_when_empty():
     """should write header row when sheet is empty before appending"""
     mock_data = {
@@ -167,7 +161,6 @@ async def test_sync_brand_to_sheet_writes_header_when_empty():
         mock_client.append_rows.assert_awaited_once()
 
 
-@pytest.mark.asyncio
 async def test_sync_brand_to_sheet_skips_when_no_evaluations():
     """should skip when brand has no evaluations in DB"""
     mock_conn = AsyncMock()
@@ -186,7 +179,6 @@ async def test_sync_brand_to_sheet_skips_when_no_evaluations():
 # --- remove_brand_from_sheet ---
 
 
-@pytest.mark.asyncio
 async def test_remove_brand_reads_column_b():
     """should read brand names from column B (not A)"""
     mock_client = AsyncMock()
@@ -208,7 +200,6 @@ async def test_remove_brand_reads_column_b():
 # --- full_sync_eval_sheet ---
 
 
-@pytest.mark.asyncio
 async def test_full_sync_returns_error_when_not_configured():
     """should return error dict when eval sheet not configured"""
     with patch(f"{MODULE}.settings") as mock_settings:
@@ -220,7 +211,6 @@ async def test_full_sync_returns_error_when_not_configured():
         assert result["error"] == "Eval sheet not configured"
 
 
-@pytest.mark.asyncio
 async def test_full_sync_writes_header_and_data():
     """should clear sheet and write header + one row per brand"""
     brand_data = [

@@ -8,11 +8,12 @@ import pytest
 from app.db.queries.evaluations import (
     _build_filter_clauses,
     get_evaluation_inputs,
+    list_evaluations,
     upsert_evaluation_inputs,
 )
 
 
-@pytest.mark.asyncio
+
 async def test_get_evaluation_inputs_found():
     """Test get_evaluation_inputs returns dict when record exists."""
     mock_row = {
@@ -39,7 +40,7 @@ async def test_get_evaluation_inputs_found():
     assert call_args[1] == 1  # brand_id
 
 
-@pytest.mark.asyncio
+
 async def test_get_evaluation_inputs_not_found():
     """Test get_evaluation_inputs returns None when no record exists."""
     conn = AsyncMock()
@@ -50,7 +51,7 @@ async def test_get_evaluation_inputs_not_found():
     assert result is None
 
 
-@pytest.mark.asyncio
+
 async def test_upsert_evaluation_inputs():
     """Test upsert_evaluation_inputs inserts/updates record."""
     mock_row = {
@@ -84,7 +85,7 @@ async def test_upsert_evaluation_inputs():
     assert call_args[4] == {"key": "val"}
 
 
-@pytest.mark.asyncio
+
 async def test_upsert_evaluation_inputs_with_null_manual_data():
     """Test upsert passes None when manual_data is None."""
     mock_row = {
@@ -115,7 +116,7 @@ async def test_upsert_evaluation_inputs_with_null_manual_data():
 # --- Shared model tests ---
 
 
-@pytest.mark.asyncio
+
 async def test_upsert_last_write_wins():
     """Second user saving inputs for same brand overwrites first — last_edited_by reflects second user."""
     first_row = {
@@ -152,7 +153,7 @@ async def test_upsert_last_write_wins():
     assert result2["manual_data"] == {"key": "second"}
 
 
-@pytest.mark.asyncio
+
 async def test_get_evaluation_inputs_returns_data_regardless_of_editor():
     """Fetching evaluation inputs returns data by brand_id only — editor identity is irrelevant."""
     mock_row = {
@@ -250,3 +251,44 @@ def test_build_filter_clauses_search_with_special_chars():
     where, params, idx = _build_filter_clauses(search="brand%_test")
     assert params == ["brand\\%\\_test"]
     assert idx == 2
+
+
+# --- Sort column allowlist tests (PB-02-001) ---
+
+
+
+async def test_list_evaluations_raises_when_invalid_sort_column():
+    """list_evaluations raises ValueError when sort_by is not in allowlist."""
+    conn = AsyncMock()
+    with pytest.raises(ValueError, match="Invalid sort column"):
+        await list_evaluations(
+            conn, limit=10, offset=0,
+            sort_by="malicious",  # type: ignore[arg-type]
+            sort_order="desc",
+        )
+
+
+
+async def test_list_evaluations_raises_when_invalid_sort_order():
+    """list_evaluations raises ValueError when sort_order is not in allowlist."""
+    conn = AsyncMock()
+    with pytest.raises(ValueError, match="Invalid sort order"):
+        await list_evaluations(
+            conn, limit=10, offset=0,
+            sort_by="created_at",
+            sort_order="DROP",  # type: ignore[arg-type]
+        )
+
+
+
+async def test_list_evaluations_succeeds_when_valid_sort():
+    """list_evaluations does not raise when sort_by and sort_order are valid."""
+    conn = AsyncMock()
+    conn.fetch = AsyncMock(return_value=[])
+    result = await list_evaluations(
+        conn, limit=10, offset=0,
+        sort_by="created_at",
+        sort_order="desc",
+    )
+    assert result == []
+    conn.fetch.assert_awaited_once()

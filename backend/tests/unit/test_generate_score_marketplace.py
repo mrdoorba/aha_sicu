@@ -2,8 +2,6 @@
 
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 from app.modules.evaluations.service import generate_score
 
 
@@ -58,7 +56,7 @@ def _mock_scoring_result():
     return mock_result
 
 
-@pytest.mark.asyncio
+
 async def test_generate_score_reads_marketplace_from_eval_inputs():
     """generate_score reads marketplace from eval_inputs and passes to rules query."""
     conn = AsyncMock()
@@ -88,7 +86,7 @@ async def test_generate_score_reads_marketplace_from_eval_inputs():
         )
 
 
-@pytest.mark.asyncio
+
 async def test_generate_score_defaults_marketplace_to_id():
     """generate_score defaults marketplace to 'ID' when eval_inputs has no marketplace field."""
     conn = AsyncMock()
@@ -125,7 +123,7 @@ async def test_generate_score_defaults_marketplace_to_id():
         )
 
 
-@pytest.mark.asyncio
+
 async def test_generate_score_passes_correct_rules_to_calculator():
     """generate_score passes the THB rules (not ID rules) to calculate_score when marketplace=TH."""
     conn = AsyncMock()
@@ -159,7 +157,7 @@ async def test_generate_score_passes_correct_rules_to_calculator():
         assert call_kwargs["rules"] == th_rules
 
 
-@pytest.mark.asyncio
+
 async def test_generate_score_passes_marketplace_to_calculate_score():
     """generate_score passes marketplace='TH' to calculate_score."""
     conn = AsyncMock()

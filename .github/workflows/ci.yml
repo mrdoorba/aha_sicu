@@ -25,6 +25,25 @@ jobs:
       run:
         working-directory: backend
 
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_USER: test
+          POSTGRES_PASSWORD: test
+          POSTGRES_DB: test_aha_sicu
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    env:
+      DATABASE_URL: postgresql://test:test@localhost:5432/test_aha_sicu
+      TESTING: "true"
+
     steps:
       - uses: actions/checkout@v6
 
@@ -43,8 +62,11 @@ jobs:
       - name: Lint
         run: uv run ruff check .
 
+      - name: Run migrations
+        run: uv run alembic upgrade head
+
       - name: Run tests
-        run: uv run pytest -v -n auto
+        run: uv run pytest -v --cov=app --cov-report=term-missing
 
   frontend-lint:
     name: Frontend Lint & Type Check

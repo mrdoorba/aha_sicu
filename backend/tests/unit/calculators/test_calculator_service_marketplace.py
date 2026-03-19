@@ -9,8 +9,6 @@ from contextlib import asynccontextmanager
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, MagicMock, patch
 
-import pytest
-
 MODULE = "app.modules.evaluations.calculator_service"
 
 
@@ -84,7 +82,7 @@ def _mock_db():
 
 
 class TestDiscountCalculatorMarketplace:
-    @pytest.mark.asyncio
+
     async def test_passes_marketplace_th_when_eval_inputs_has_th(self):
         """should pass marketplace='TH' to calculate_discount when eval_inputs has TH"""
         mock_db_obj, _mock_conn = _mock_db()
@@ -120,7 +118,7 @@ class TestDiscountCalculatorMarketplace:
             _, kwargs = mock_calc.call_args
             assert kwargs["marketplace"] == "TH"
 
-    @pytest.mark.asyncio
+
     async def test_defaults_to_id_when_eval_inputs_is_none(self):
         """should pass marketplace='ID' to calculate_discount when eval_inputs is None"""
         mock_db_obj, _mock_conn = _mock_db()
@@ -161,7 +159,7 @@ class TestDiscountCalculatorMarketplace:
 
 
 class TestTopSkuCalculatorMarketplace:
-    @pytest.mark.asyncio
+
     async def test_passes_marketplace_th_when_eval_inputs_has_th(self):
         """should pass marketplace='TH' to calculate_top_sku when eval_inputs has TH"""
         mock_db_obj, _mock_conn = _mock_db()
@@ -203,7 +201,7 @@ class TestTopSkuCalculatorMarketplace:
             _, kwargs = mock_calc.call_args
             assert kwargs["marketplace"] == "TH"
 
-    @pytest.mark.asyncio
+
     async def test_defaults_to_id_when_eval_inputs_is_none(self):
         """should pass marketplace='ID' to calculate_top_sku when eval_inputs is None"""
         mock_db_obj, _mock_conn = _mock_db()

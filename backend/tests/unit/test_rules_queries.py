@@ -3,8 +3,6 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock
 
-import pytest
-
 from app.db.queries.rules import get_all_rules, get_rules_by_template_and_marketplace, update_rules
 
 
@@ -29,7 +27,6 @@ MOCK_TH_RULE = {
 }
 
 
-@pytest.mark.asyncio
 async def test_get_all_rules_defaults_to_id_marketplace():
     """get_all_rules without marketplace arg filters by 'ID'."""
     conn = AsyncMock()
@@ -45,7 +42,6 @@ async def test_get_all_rules_defaults_to_id_marketplace():
     assert call_args[1] == "ID"
 
 
-@pytest.mark.asyncio
 async def test_get_all_rules_th_marketplace():
     """get_all_rules(conn, marketplace='TH') returns only THB rules."""
     conn = AsyncMock()
@@ -59,7 +55,6 @@ async def test_get_all_rules_th_marketplace():
     assert call_args[1] == "TH"
 
 
-@pytest.mark.asyncio
 async def test_get_rules_by_template_and_marketplace_id():
     """get_rules_by_template_and_marketplace returns ID row for default template."""
     conn = AsyncMock()
@@ -76,7 +71,6 @@ async def test_get_rules_by_template_and_marketplace_id():
     assert call_args[2] == "ID"
 
 
-@pytest.mark.asyncio
 async def test_get_rules_by_template_and_marketplace_th():
     """get_rules_by_template_and_marketplace(conn, 'default', 'TH') returns the THB row."""
     conn = AsyncMock()
@@ -89,7 +83,6 @@ async def test_get_rules_by_template_and_marketplace_th():
     assert result["rules"]["business"]["six_month_avg_threshold"]["threshold"] == 190000
 
 
-@pytest.mark.asyncio
 async def test_get_rules_by_template_and_marketplace_default():
     """get_rules_by_template_and_marketplace defaults marketplace to 'ID'."""
     conn = AsyncMock()
@@ -101,7 +94,6 @@ async def test_get_rules_by_template_and_marketplace_default():
     assert call_args[2] == "ID"
 
 
-@pytest.mark.asyncio
 async def test_get_rules_by_template_and_marketplace_not_found():
     """get_rules_by_template_and_marketplace returns None when no match."""
     conn = AsyncMock()
@@ -112,7 +104,6 @@ async def test_get_rules_by_template_and_marketplace_not_found():
     assert result is None
 
 
-@pytest.mark.asyncio
 async def test_update_rules_filters_by_template_and_marketplace():
     """update_rules WHERE clause includes both template AND marketplace."""
     updated_rule = {**MOCK_ID_RULE, "version": 2, "updated_by": 1}
@@ -133,7 +124,6 @@ async def test_update_rules_filters_by_template_and_marketplace():
     assert call_args[4] == "ID"
 
 
-@pytest.mark.asyncio
 async def test_update_rules_th_marketplace():
     """update_rules with marketplace='TH' targets the THB rules row."""
     updated_rule = {**MOCK_TH_RULE, "version": 2, "updated_by": 1}
@@ -148,7 +138,6 @@ async def test_update_rules_th_marketplace():
     assert call_args[4] == "TH"
 
 
-@pytest.mark.asyncio
 async def test_get_all_rules_returns_marketplace_in_select():
     """get_all_rules SELECT clause includes marketplace column."""
     conn = AsyncMock()
