@@ -145,6 +145,8 @@ def _compute_g66(
     categories: list[CategoryScore],
     manual_data: dict,
     g68_text: str,
+    *,
+    marketplace: str = "ID",
 ) -> str:
     """G66: Conclusion summary (multi-line text)."""
     biz = _get_nested(manual_data, "business") or {}
@@ -155,12 +157,20 @@ def _compute_g66(
 
     # Sales range
     if valid_sales:
-        min_sales = min(valid_sales) / 1_000_000
-        max_sales = max(valid_sales) / 1_000_000
-        lines.append(
-            f"- Omset toko di kisaran {min_sales:.0f} juta - {max_sales:.0f} juta "
-            f"per bulan sejak 6 bulan terakhir"
-        )
+        if marketplace == "TH":
+            min_s = f"{min(valid_sales):,.0f}"
+            max_s = f"{max(valid_sales):,.0f}"
+            lines.append(
+                f"- Omset toko di kisaran {min_s} - {max_s} "
+                f"per bulan sejak 6 bulan terakhir"
+            )
+        else:
+            min_sales = min(valid_sales) / 1_000_000
+            max_sales = max(valid_sales) / 1_000_000
+            lines.append(
+                f"- Omset toko di kisaran {min_sales:.0f} juta - {max_sales:.0f} juta "
+                f"per bulan sejak 6 bulan terakhir"
+            )
 
     # Operational quality
     ops_cat = next((c for c in categories if c.category == "Kesehatan Operasional Toko"), None)
@@ -223,6 +233,8 @@ def _compute_g66_i18n(
     categories: list[CategoryScore],
     manual_data: dict,
     g68_text: str,
+    *,
+    marketplace: str = "ID",
 ) -> list[TranslatableText]:
     """G66 i18n: return structured list of conclusion items."""
     items: list[TranslatableText] = []
@@ -231,10 +243,16 @@ def _compute_g66_i18n(
     valid_sales = [s for s in sales_months if s > 0]
 
     if valid_sales:
-        items.append(TranslatableText(
-            key="conclusion.salesRange",
-            vars={"min": f"{min(valid_sales) / 1_000_000:.0f}", "max": f"{max(valid_sales) / 1_000_000:.0f}"},
-        ))
+        if marketplace == "TH":
+            items.append(TranslatableText(
+                key="conclusion.salesRange",
+                vars={"min": f"{min(valid_sales):,.0f}", "max": f"{max(valid_sales):,.0f}"},
+            ))
+        else:
+            items.append(TranslatableText(
+                key="conclusion.salesRange",
+                vars={"min": f"{min(valid_sales) / 1_000_000:.0f}", "max": f"{max(valid_sales) / 1_000_000:.0f}"},
+            ))
 
     ops_cat = next((c for c in categories if c.category == "Kesehatan Operasional Toko"), None)
     if ops_cat:

@@ -187,6 +187,7 @@ async def update_evaluation(
         last_edited_by=current_user["id"],
         category_type=body.category_type,
         manual_data=body.manual_data,
+        marketplace=body.marketplace,
     )
 
 
@@ -344,4 +345,5 @@ async def save_evaluation_endpoint(
         email_output=body.email_output,
         evaluator_email=current_user["email"],
         period=body.period,
+        marketplace=body.marketplace,
     )

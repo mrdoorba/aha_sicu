@@ -19,6 +19,7 @@ SHOPEE_CSV_SKIP_ROWS = 7
 # settings.  We normalise to Indonesian so the calculator layer stays unchanged.
 
 _COLUMN_RENAME: dict[str, str] = {
+    # CPC / Keyword report columns
     "Ad Name": "Nama Iklan",
     "Ads Type": "Jenis Iklan",
     "Product ID": "Kode Produk",
@@ -29,6 +30,11 @@ _COLUMN_RENAME: dict[str, str] = {
     "GMV": "Omzet Penjualan",
     "ROAS": "Efektifitas Iklan",
     "Match Type": "Tipe Pencarian",
+    # Mass Update columns
+    "Product Name": "Nama Produk",
+    "Variation ID": "Kode Variasi",
+    "Variation Name": "Nama Variasi",
+    "Price": "Harga",
 }
 
 _VALUE_MAPS: dict[str, dict[str, str]] = {
@@ -47,11 +53,19 @@ _VALUE_MAPS: dict[str, dict[str, str]] = {
         "Search": "Halaman Pencarian",
         "Recommendation": "Halaman Rekomendasi",
     },
+    "Mode Bidding": {
+        "Auto Bidding": "Bidding Otomatis",
+        "Manual Bidding": "Bidding Manual",
+        "GMV Max Custom ROAS": "GMV Max ROAS",
+    },
 }
 
 
 def _normalise_english_columns(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
     """Rename English Shopee columns to Indonesian and translate cell values.
+
+    Also renames ``Stock*`` columns to ``Stok*`` so the calculator's
+    ``startswith("Stok")`` lookup works for multi-warehouse files.
 
     Returns:
         Tuple of (normalised DataFrame, was_english) where was_english is True
@@ -59,6 +73,14 @@ def _normalise_english_columns(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
     """
     actual = set(df.columns)
     rename_map = {en: id_ for en, id_ in _COLUMN_RENAME.items() if en in actual}
+
+    # Rename "Stock", "Stock 2", "Stock 3", … → "Stok", "Stok 2", "Stok 3", …
+    for col in actual:
+        if col == "Stock":
+            rename_map[col] = "Stok"
+        elif col.startswith("Stock "):
+            rename_map[col] = "Stok " + col[len("Stock "):]
+
     if not rename_map:
         return df, False  # already Indonesian or unrelated
 
@@ -67,6 +89,55 @@ def _normalise_english_columns(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
     for col, vmap in _VALUE_MAPS.items():
         if col in df.columns and df[col].dtype == pl.Utf8:
             df = df.with_columns(pl.col(col).replace(vmap).alias(col))
+
+    return df, True
+
+
+# ---------------------------------------------------------------------------
+# Thai → Indonesian normalisation for Shopee Thailand order exports
+# ---------------------------------------------------------------------------
+
+_ORDER_EXPORT_COLUMN_RENAME_TH: dict[str, str] = {
+    "หมายเลขคำสั่งซื้อ": "No. Pesanan",
+    "ชื่อสินค้า": "Nama Produk",
+    "ราคาตั้งต้น": "Harga Awal",
+    "ราคาขาย": "Harga Setelah Diskon",
+    "จำนวน": "Jumlah",
+    "โค้ดส่วนลดชำระโดยผู้ขาย": "Voucher Ditanggung Penjual",
+    "ส่วนลด bundle deal ชำระโดยผู้ขาย": "Paket Diskon (Diskon dari Penjual)",
+    "เลขอ้างอิง SKU (SKU Reference No.)": "Nomor Referensi SKU",
+    "ชื่อตัวเลือก": "Nama Variasi",
+    "โค้ด Coins Cashback ชำระโดยผู้ขาย": "Cashback Koin",
+    "ส่วนลดจาก Shopee": "Diskon Dari Shopee",
+}
+
+
+def _normalise_thai_columns(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
+    """Rename Thai Shopee order-export columns to Indonesian.
+
+    Also computes the synthetic ``Jumlah Produk di Pesan`` column which
+    does not exist in Thai exports.  It equals the count of rows sharing
+    the same ``No. Pesanan`` (order number).
+
+    Returns:
+        Tuple of (normalised DataFrame, was_thai) where was_thai is True
+        if Thai column renames were applied.
+    """
+    actual = set(df.columns)
+    rename_map = {th: id_ for th, id_ in _ORDER_EXPORT_COLUMN_RENAME_TH.items() if th in actual}
+    if not rename_map:
+        return df, False
+
+    df = df.rename(rename_map)
+
+    # Compute synthetic "Jumlah Produk di Pesan" — count of rows per order
+    if "No. Pesanan" in df.columns and "Jumlah Produk di Pesan" not in df.columns:
+        df = df.with_columns(
+            pl.col("No. Pesanan")
+            .count()
+            .over("No. Pesanan")
+            .alias("Jumlah Produk di Pesan")
+        )
 
     return df, True
 

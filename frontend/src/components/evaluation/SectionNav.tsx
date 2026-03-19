@@ -1,14 +1,15 @@
 import { ClipboardList, BarChart3, Tag, Upload, Calculator, Check, Trophy } from 'lucide-react';
 import type { ReactNode } from 'react';
+import { useTranslation } from 'react-i18next';
 import type { SectionProgress } from './forms/formConfig';
 
-const SECTIONS: Array<{ id: string; label: string; icon: ReactNode }> = [
-  { id: 'section-1', label: 'Brand Info & Kesehatan Operasional', icon: <ClipboardList className="size-4" aria-hidden="true" /> },
-  { id: 'section-2', label: 'Bisnis Analisis & Tinjauan Pengunjung', icon: <BarChart3 className="size-4" aria-hidden="true" /> },
-  { id: 'section-3', label: 'Alat Promosi & Products/Status', icon: <Tag className="size-4" aria-hidden="true" /> },
-  { id: 'section-4', label: 'File Upload', icon: <Upload className="size-4" aria-hidden="true" /> },
-  { id: 'section-5', label: 'Data Iklan, Campaign, Kompetisi & Review', icon: <Calculator className="size-4" aria-hidden="true" /> },
-  { id: 'section-6', label: 'Final Score', icon: <Trophy className="size-4" aria-hidden="true" /> },
+const SECTIONS: Array<{ id: string; labelKey: string; icon: ReactNode }> = [
+  { id: 'section-1', labelKey: 'sectionNav.brandInfoOperational', icon: <ClipboardList className="size-4" aria-hidden="true" /> },
+  { id: 'section-2', labelKey: 'sectionNav.businessVisitors', icon: <BarChart3 className="size-4" aria-hidden="true" /> },
+  { id: 'section-3', labelKey: 'sectionNav.promoProducts', icon: <Tag className="size-4" aria-hidden="true" /> },
+  { id: 'section-4', labelKey: 'sectionNav.fileUpload', icon: <Upload className="size-4" aria-hidden="true" /> },
+  { id: 'section-5', labelKey: 'sectionNav.adsCompetition', icon: <Calculator className="size-4" aria-hidden="true" /> },
+  { id: 'section-6', labelKey: 'sectionNav.finalScore', icon: <Trophy className="size-4" aria-hidden="true" /> },
 ];
 
 interface SectionNavProps {
@@ -18,6 +19,7 @@ interface SectionNavProps {
 }
 
 export const SectionNav = ({ activeSection, onSectionClick, progress }: SectionNavProps) => {
+  const { t } = useTranslation();
   return (
     <nav className="sticky top-6" aria-label="Evaluation sections">
       <ul className="space-y-1">
@@ -39,7 +41,7 @@ export const SectionNav = ({ activeSection, onSectionClick, progress }: SectionN
                 {section.icon}
                 <span className="flex-1">
                   <span className="font-medium">Step {index + 1}.</span>{' '}
-                  {section.label}
+                  {t(section.labelKey)}
                 </span>
                 {sectionProgress && (
                   isComplete ? (

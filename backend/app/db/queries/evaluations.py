@@ -7,6 +7,9 @@ from asyncpg import Connection
 
 from app.db.queries.utils import FilterBuilder, escape_like, fetch_all, fetch_one
 
+_VALID_SORT_COLUMNS: frozenset[str] = frozenset({"created_at", "final_score"})
+_VALID_SORT_ORDERS: frozenset[str] = frozenset({"asc", "desc"})
+
 
 class EvaluationInputsRow(TypedDict):
     id: int
@@ -14,6 +17,7 @@ class EvaluationInputsRow(TypedDict):
     last_edited_by: int
     category_type: str | None
     manual_data: dict[str, Any] | None
+    marketplace: str
     created_at: datetime
     updated_at: datetime
 
@@ -64,6 +68,7 @@ class EvaluationDetailRow(TypedDict):
     created_at: datetime
     period: str
     evaluator_email: str
+    marketplace: str
 
 
 class InsertedEvaluationRow(TypedDict):
@@ -85,7 +90,7 @@ async def get_evaluation_inputs(
         conn,
         """
         SELECT id, brand_id, last_edited_by, category_type, manual_data,
-               created_at, updated_at
+               marketplace, created_at, updated_at
         FROM evaluation_inputs
         WHERE brand_id = $1
         """,
@@ -99,6 +104,7 @@ async def upsert_evaluation_inputs(
     last_edited_by: int,
     category_type: str | None,
     manual_data: dict[str, Any] | None,
+    marketplace: str = "ID",
 ) -> EvaluationInputsRow:
     """Insert or update evaluation inputs for a brand (shared).
 
@@ -108,19 +114,21 @@ async def upsert_evaluation_inputs(
     return await fetch_one(
         conn,
         """
-        INSERT INTO evaluation_inputs (brand_id, last_edited_by, category_type, manual_data, updated_at)
-        VALUES ($1, $2, $3, $4, NOW())
+        INSERT INTO evaluation_inputs (brand_id, last_edited_by, category_type, manual_data, marketplace, updated_at)
+        VALUES ($1, $2, $3, $4, $5, NOW())
         ON CONFLICT (brand_id) DO UPDATE SET
             last_edited_by = EXCLUDED.last_edited_by,
             category_type = COALESCE(EXCLUDED.category_type, evaluation_inputs.category_type),
             manual_data = COALESCE(EXCLUDED.manual_data, evaluation_inputs.manual_data),
+            marketplace = EXCLUDED.marketplace,
             updated_at = NOW()
-        RETURNING id, brand_id, last_edited_by, category_type, manual_data, created_at, updated_at
+        RETURNING id, brand_id, last_edited_by, category_type, manual_data, marketplace, created_at, updated_at
         """,
         brand_id,
         last_edited_by,
         category_type,
         manual_data,
+        marketplace,
     )
 
 
@@ -137,6 +145,7 @@ async def insert_evaluation(
     rule_version: int = 1,
     email_output: str | None = None,
     period: str = "",
+    marketplace: str = "ID",
 ) -> InsertedEvaluationRow:
     """Insert a new evaluation record (immutable snapshot).
 
@@ -149,9 +158,9 @@ async def insert_evaluation(
         INSERT INTO evaluations (
             brand_id, user_id, template, final_score, verdict,
             score_breakdown, calculator_results, manual_inputs,
-            rule_version, email_output, period
+            rule_version, email_output, period, marketplace
         )
-        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11)
+        VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)
         RETURNING id, brand_id, final_score, verdict, template, created_at, period
         """,
         brand_id,
@@ -165,6 +174,7 @@ async def insert_evaluation(
         rule_version,
         email_output,
         period,
+        marketplace,
     )
 
 
@@ -199,8 +209,14 @@ async def list_evaluations(
 
     Returns lightweight rows (no heavy JSONB columns).
     sort_by is validated via Literal type at router level — safe for f-string.
+    Defense-in-depth: frozenset check below catches bypasses of Literal validation.
     Filters conditionally by search (brand_name ILIKE) and date range.
     """
+    if sort_by not in _VALID_SORT_COLUMNS:
+        raise ValueError(f"Invalid sort column: {sort_by}")
+    if sort_order not in _VALID_SORT_ORDERS:
+        raise ValueError(f"Invalid sort order: {sort_order}")
+
     where_clause, params, param_idx = _build_filter_clauses(search, date_from, date_to)
     limit_param = f"${param_idx}"
     offset_param = f"${param_idx + 1}"
@@ -253,7 +269,8 @@ async def get_evaluation_by_id(
                e.score_breakdown, e.calculator_results, e.manual_inputs,
                e.email_output, e.rule_version, e.created_at,
                COALESCE(e.period, '') AS period,
-               COALESCE(u.email, 'Pengguna Dihapus') AS evaluator_email
+               COALESCE(u.email, 'Pengguna Dihapus') AS evaluator_email,
+               COALESCE(e.marketplace, 'ID') AS marketplace
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
         LEFT JOIN users u ON e.user_id = u.id

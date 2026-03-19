@@ -2,13 +2,14 @@ import { useTranslation } from 'react-i18next';
 import type { CalculatorResult, AdsKeywordDetails, TranslatableI18n } from '../../../hooks/useCalculator';
 import { renderTranslatable, renderAdList, renderFlagList } from '../../../utils/renderTranslatable';
 import { isAdsKeywordDetails } from '../../../lib/calculatorGuards';
+import { getIntlLocale } from '../../../lib/localeMap';
 
 interface AdsKeywordResultsProps {
   result: CalculatorResult;
 }
 
 export function AdsKeywordResults({ result }: AdsKeywordResultsProps) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   if (!isAdsKeywordDetails(result.details)) {
     return <p className="text-sm text-muted-foreground">Invalid ads keyword data</p>;
   }
@@ -43,9 +44,9 @@ export function AdsKeywordResults({ result }: AdsKeywordResultsProps) {
   return (
     <div>
       <div className="mb-2 flex items-center justify-between">
-        <h4 className="text-sm font-semibold">Ads Keyword Calculator</h4>
+        <h4 className="text-sm font-semibold">{t('adsKeyword.title')}</h4>
         <time className="text-xs text-muted-foreground">
-          {new Date(result.calculated_at).toLocaleString('id-ID')}
+          {new Date(result.calculated_at).toLocaleString(getIntlLocale(i18n.language))}
         </time>
       </div>
       <pre

@@ -18,7 +18,7 @@ router = APIRouter(prefix="/api/v1/sync", tags=["sync"])
 
 @router.post("", status_code=200, response_model=SyncStatusResponse)
 async def trigger_sync(
-    current_user: dict = Depends(get_current_user),
+    current_user: dict = Depends(require_role("leader", "admin", "scheduler")),
 ) -> SyncStatusResponse:
     """Trigger a manual sync of brand data.
 

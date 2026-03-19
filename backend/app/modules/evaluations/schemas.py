@@ -7,6 +7,8 @@ from typing import Any, Literal
 from pydantic import BaseModel, Field, field_validator
 
 CategoryType = Literal["fashion", "non_fashion"]
+CalculatorStatusType = Literal["ready", "pending"]
+RunStatusType = Literal["success", "skipped", "error"]
 
 
 def _parse_json(v: Any) -> Any:
@@ -36,6 +38,7 @@ class EvaluationInputsUpdate(BaseModel):
 
     category_type: CategoryType | None = None
     manual_data: dict[str, Any] | None = None
+    marketplace: str = "ID"
 
 
 class CalculatorResultResponse(BaseModel):
@@ -55,7 +58,7 @@ class CalculatorResultResponse(BaseModel):
 class SingleCalculatorStatus(BaseModel):
     """Readiness status for a single calculator."""
 
-    status: str  # "ready" or "pending"
+    status: CalculatorStatusType
     has_result: bool
     required_files: list[str]
     required_manual: list[str] = []
@@ -97,7 +100,7 @@ class RunCalculatorItem(BaseModel):
     """Result of running a single calculator."""
 
     calculator_type: str
-    status: str  # "success", "skipped", "error"
+    status: RunStatusType
     result: dict[str, Any] | None = None
     reason: str | None = None
 
@@ -127,7 +130,7 @@ class ScoringRequest(BaseModel):
     """Request body for generating a final score."""
 
     template: CategoryType
-    verdict: VerdictType = ""
+    verdict: VerdictType
     store_name: str = Field(default="", max_length=200)
     period: str = Field(default="", max_length=50)
     brand_name: str = Field(default="", max_length=200)
@@ -173,7 +176,7 @@ class ScoringResponse(BaseModel):
 
     total_score: float
     category_scores: list[CategoryScoreItem]
-    verdict: str
+    verdict: VerdictType
     conclusion: str
     marketing_estimation: str
     marketing_percentage: str
@@ -181,7 +184,7 @@ class ScoringResponse(BaseModel):
     closing_message: str
     email_subject: str
     email_body: str
-    template: str
+    template: CategoryType
     rule_version: int
     conclusion_i18n: list[TranslatableTextSchema] | None = None
     marketing_budget_i18n: TranslatableTextSchema | None = None
@@ -200,8 +203,8 @@ class EvaluationListItem(BaseModel):
     id: int
     brand_name: str
     final_score: float
-    verdict: str
-    template: str
+    verdict: VerdictType
+    template: CategoryType
     evaluator_email: str
     created_at: datetime
     period: str = ""
@@ -224,7 +227,7 @@ class GroupedEvaluationItem(BaseModel):
     brand_name: str
     evaluation_count: int
     top_score: float
-    top_verdict: str
+    top_verdict: VerdictType
     latest_date: datetime
 
 
@@ -243,8 +246,8 @@ class BrandEvaluationItem(BaseModel):
 
     id: int
     final_score: float
-    verdict: str
-    template: str
+    verdict: VerdictType
+    template: CategoryType
     evaluator_email: str
     created_at: datetime
     period: str = ""
@@ -273,8 +276,8 @@ class EvaluationDetailResponse(BaseModel):
     brand_id: int
     brand_name: str
     final_score: float
-    verdict: str
-    template: str
+    verdict: VerdictType
+    template: CategoryType
     score_breakdown: list[dict[str, Any]]
     calculator_results: dict[str, Any]
     manual_inputs: dict[str, Any]
@@ -283,6 +286,7 @@ class EvaluationDetailResponse(BaseModel):
     created_at: datetime
     rule_version: int
     period: str = ""
+    marketplace: str = "ID"
     brand_raw_data: BrandRawData = Field(default_factory=BrandRawData)
 
     @field_validator("score_breakdown", "calculator_results", "manual_inputs", mode="before")
@@ -303,6 +307,7 @@ class SaveEvaluationRequest(BaseModel):
     rule_version: int = 1
     email_output: str | None = None
     period: str = ""
+    marketplace: str = "ID"
 
 
 class SaveEvaluationResponse(BaseModel):
@@ -311,7 +316,7 @@ class SaveEvaluationResponse(BaseModel):
     id: int
     brand_id: int
     final_score: float
-    verdict: str
-    template: str
+    verdict: VerdictType
+    template: CategoryType
     created_at: datetime
     period: str = ""

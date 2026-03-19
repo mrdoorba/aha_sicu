@@ -3,6 +3,13 @@ import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { SelectField } from './SelectField';
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string) => key,
+    i18n: { language: 'id', changeLanguage: vi.fn() },
+  }),
+}));
+
 const options = [
   { value: 'Shopee Mall', label: 'Shopee Mall' },
   { value: 'Star+', label: 'Star+' },
@@ -22,7 +29,7 @@ describe('SelectField', () => {
     render(
       <SelectField name="test" label="Status Toko" options={options} value={null} onChange={vi.fn()} />,
     );
-    expect(screen.getByText('Pilih...')).toBeInTheDocument();
+    expect(screen.getByText('common.select')).toBeInTheDocument();
   });
 
   it('renders selected value', () => {

@@ -42,7 +42,7 @@ export function ProductsStatusForm({ data, storeLink, rules, onChange, onBlur }:
                 <SelectField
                   key={field.key}
                   name={`products.${field.key}`}
-                  label={field.label}
+                  label={t(field.labelKey!)}
                   options={STORE_STATUS_OPTIONS}
                   benchmark={benchmark}
                   value={data.storeStatus}
@@ -58,7 +58,7 @@ export function ProductsStatusForm({ data, storeLink, rules, onChange, onBlur }:
               <NumberField
                 key={field.key}
                 name={`products.${field.key}`}
-                label={field.label}
+                label={t(field.labelKey!)}
                 unit={field.unit}
                 benchmark={benchmark}
                 value={data[field.key as keyof ProductsData] as number | null}

@@ -1,4 +1,5 @@
 import { AlertTriangle } from 'lucide-react';
+import { Trans, useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
@@ -18,6 +19,7 @@ export function DowntimeWarningDialog({
   open,
   onDismiss,
 }: DowntimeWarningDialogProps) {
+  const { t } = useTranslation();
   return (
     <Dialog open={open} onOpenChange={(isOpen) => { if (!isOpen) onDismiss(); }}>
       <DialogContent showCloseButton={false}>
@@ -26,16 +28,17 @@ export function DowntimeWarningDialog({
             <AlertTriangle className="size-10 text-amber-500" />
           </div>
           <DialogTitle className="text-center">
-            Sistem Tidak Tersedia
+            {t('downtime.title')}
           </DialogTitle>
           <DialogDescription className="text-center">
-            Sistem mungkin sedang di luar jam operasional. Jam operasional
-            database adalah <strong className="text-foreground">08:00 – 18:30 WIB</strong>.
-            Silakan coba lagi dalam jam tersebut.
+            <Trans
+              i18nKey="downtime.description"
+              components={{ bold: <strong className="text-foreground" /> }}
+            />
           </DialogDescription>
         </DialogHeader>
         <DialogFooter className="sm:justify-center">
-          <Button onClick={onDismiss}>Mengerti</Button>
+          <Button onClick={onDismiss}>{t('downtime.dismiss')}</Button>
         </DialogFooter>
       </DialogContent>
     </Dialog>

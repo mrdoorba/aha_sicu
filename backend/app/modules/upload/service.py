@@ -6,13 +6,19 @@ import uuid
 from dataclasses import dataclass
 from datetime import datetime, timedelta, timezone
 
+from asyncpg import Connection
+import polars as pl
+
 from app.calculators.engine import clear_dependent_results, run_calculators_for_upload
 from app.core.exceptions import AppException, UploadException
 from app.db.connection import db
 from app.db.queries import brands as brand_queries
+from app.db.queries import pending_uploads as pending_queries
 from app.db.queries import uploads as upload_queries
 from app.modules.upload.gcs_client import get_storage_client, make_object_name
 from app.modules.upload.parser import (
+    _normalise_english_columns,
+    _normalise_thai_columns,
     dataframe_to_json,
     parse_csv,
     parse_excel,
@@ -37,7 +43,8 @@ def _parse_file(
     """Parse file bytes into a DataFrame based on extension.
 
     Returns (df, source_language). Delegates to the appropriate parser
-    based on file extension.
+    based on file extension.  English and Thai column headers are
+    normalised to Indonesian so the calculator layer stays unchanged.
     """
     source_language = "id"
 
@@ -52,6 +59,26 @@ def _parse_file(
         raise UploadException(
             code="UPLOAD_INVALID_FORMAT",
             detail=f"Unsupported file extension: {filename_lower}",
+        )
+
+    # Normalise English columns → Indonesian (CSV already does this in
+    # parse_csv, but Excel/ZIP files need it here)
+    if source_language == "id":  # skip if parse_csv already detected English
+        df, was_english = _normalise_english_columns(df)
+        if was_english:
+            source_language = "en"
+
+    # Normalise Thai columns → Indonesian (order_export only for now)
+    if source_language != "en":  # Thai and English are mutually exclusive
+        df, was_thai = _normalise_thai_columns(df)
+        if was_thai:
+            source_language = "th"
+
+    # Drop blank rows in mass_update files (trailing empties from Excel)
+    if file_type == "mass_update" and "Kode Produk" in df.columns:
+        df = df.filter(
+            pl.col("Kode Produk").is_not_null()
+            & (pl.col("Kode Produk").cast(pl.Utf8) != "")
         )
 
     return df, source_language
@@ -89,18 +116,6 @@ class PendingUpload:
     expires_at: datetime
 
 
-# In-memory store for pending uploads (sufficient for single Cloud Run instance)
-_pending_uploads: dict[str, PendingUpload] = {}
-
-
-def _cleanup_expired_uploads() -> None:
-    """Remove expired entries from _pending_uploads to prevent unbounded growth."""
-    now = datetime.now(timezone.utc)
-    expired = [uid for uid, p in _pending_uploads.items() if now > p.expires_at]
-    for uid in expired:
-        _pending_uploads.pop(uid, None)
-
-
 def _validate_file_type(file_type: str) -> None:
     """Raise if file_type is not one of the allowed values."""
     if file_type not in _VALID_FILE_TYPES:
@@ -128,17 +143,17 @@ async def request_signed_url(
     content_type: str,
 ) -> SignedUrlResponse:
     """Validate inputs, generate a signed upload URL, and track the pending upload."""
-    _cleanup_expired_uploads()
     _validate_file_type(file_type)
     _validate_extension(filename, file_type)
 
-    # Verify brand exists
+    # Verify brand exists and cleanup expired pending uploads
     async with db.connection() as conn:
         brand = await brand_queries.get_brand_by_id(conn, brand_id)
-    if not brand:
-        raise AppException(
-            code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
-        )
+        if not brand:
+            raise AppException(
+                code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
+            )
+        await pending_queries.cleanup_expired_uploads(conn)
 
     upload_id = str(uuid.uuid4())
     object_name = make_object_name(upload_id, filename)
@@ -150,15 +165,17 @@ async def request_signed_url(
         storage.generate_signed_upload_url, object_name, content_type, expiry_minutes
     )
 
-    _pending_uploads[upload_id] = PendingUpload(
-        upload_id=upload_id,
-        brand_id=brand_id,
-        file_type=file_type,
-        filename=filename,
-        content_type=content_type,
-        object_name=object_name,
-        expires_at=expires_at,
-    )
+    async with db.connection() as conn:
+        await pending_queries.create_pending_upload(
+            conn,
+            upload_id=upload_id,
+            brand_id=brand_id,
+            file_type=file_type,
+            filename=filename,
+            content_type=content_type,
+            object_name=object_name,
+            expires_at=expires_at,
+        )
 
     return SignedUrlResponse(
         upload_url=upload_url,
@@ -167,31 +184,30 @@ async def request_signed_url(
     )
 
 
-def _validate_pending_upload(
-    upload_id: str, brand_id: int, file_type: str,
+async def _claim_pending_upload(
+    conn: Connection, upload_id: str,
 ) -> PendingUpload:
-    """Validate that a pending upload exists, matches, and hasn't expired."""
-    pending = _pending_uploads.get(upload_id)
-    if not pending:
+    """Atomically claim a pending upload from the database.
+
+    Uses DELETE...RETURNING to prevent race conditions across Cloud Run
+    instances. The SQL WHERE expires_at > NOW() provides defense-in-depth.
+    """
+    row = await pending_queries.claim_pending_upload(conn, upload_id)
+    if not row:
         raise UploadException(
             code="UPLOAD_SIGNED_URL_EXPIRED",
             detail="Upload ID not found or expired",
         )
 
-    if pending.brand_id != brand_id or pending.file_type != file_type:
-        raise UploadException(
-            code="UPLOAD_PROCESSING_FAILED",
-            detail="Upload ID does not match brand_id/file_type",
-        )
-
-    if datetime.now(timezone.utc) > pending.expires_at:
-        _pending_uploads.pop(upload_id, None)
-        raise UploadException(
-            code="UPLOAD_SIGNED_URL_EXPIRED",
-            detail="Signed URL has expired (15 min window exceeded)",
-        )
-
-    return pending
+    return PendingUpload(
+        upload_id=row["upload_id"],
+        brand_id=row["brand_id"],
+        file_type=row["file_type"],
+        filename=row["filename"],
+        content_type=row["content_type"],
+        object_name=row["object_name"],
+        expires_at=row["expires_at"],
+    )
 
 
 async def _download_and_parse(
@@ -277,10 +293,19 @@ async def process_upload(
     file_type: str,
     user_id: int,
 ) -> ProcessUploadResponse:
-    """Download file from storage, parse, validate, store parsed data, auto-execute calculators, cleanup."""
+    """Download file from storage, parse, validate, store parsed data, auto-execute calculators."""
     _validate_file_type(file_type)
 
-    pending = _validate_pending_upload(upload_id, brand_id, file_type)
+    # Atomically claim the pending upload (DELETE...RETURNING prevents races)
+    async with db.connection() as conn:
+        pending = await _claim_pending_upload(conn, upload_id)
+
+    # Validate brand_id/file_type match after claim
+    if pending.brand_id != brand_id or pending.file_type != file_type:
+        raise UploadException(
+            code="UPLOAD_PROCESSING_FAILED",
+            detail="Upload ID does not match brand_id/file_type",
+        )
 
     # Fetch brand to prefix filename
     async with db.connection() as conn:
@@ -307,8 +332,6 @@ async def process_upload(
         brand_id, file_type, pending, parsed_data, file_size, row_count, user_id,
         storage_path=pending.object_name,
     )
-
-    _pending_uploads.pop(upload_id, None)
 
     upload_resp = UploadResponse(
         id=row["id"],

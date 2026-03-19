@@ -33,7 +33,6 @@ def mock_google_service():
         yield mock_service
 
 
-@pytest.mark.asyncio
 async def test_fetch_sheet_data_returns_empty_list_for_empty_sheet(mock_settings, mock_google_service):
     """Test that empty sheet returns empty list."""
     from app.modules.sync.sheets_client import GoogleSheetsClient
@@ -46,7 +45,6 @@ async def test_fetch_sheet_data_returns_empty_list_for_empty_sheet(mock_settings
     assert data == []
 
 
-@pytest.mark.asyncio
 async def test_fetch_sheet_data_parses_correctly(mock_settings, mock_google_service):
     """Test that sheet data is correctly parsed into dictionaries."""
     from app.modules.sync.sheets_client import GoogleSheetsClient
@@ -69,7 +67,6 @@ async def test_fetch_sheet_data_parses_correctly(mock_settings, mock_google_serv
     assert data[1]["Category"] == "Non-Fashion"
 
 
-@pytest.mark.asyncio
 async def test_fetch_sheet_data_pads_short_rows(mock_settings, mock_google_service):
     """Test that rows shorter than headers are padded with empty strings."""
     from app.modules.sync.sheets_client import GoogleSheetsClient
@@ -91,7 +88,6 @@ async def test_fetch_sheet_data_pads_short_rows(mock_settings, mock_google_servi
     assert data[0]["Col4"] == ""
 
 
-@pytest.mark.asyncio
 async def test_exponential_backoff_on_rate_limit(mock_settings, mock_google_service):
     """Test that rate limit triggers exponential backoff retry."""
     from unittest.mock import AsyncMock
@@ -119,7 +115,6 @@ async def test_exponential_backoff_on_rate_limit(mock_settings, mock_google_serv
     assert data[0]["Brand"] == "Nike"
 
 
-@pytest.mark.asyncio
 async def test_rate_limit_max_retries_exceeded(mock_settings, mock_google_service):
     """Test that max retries exceeded raises SyncException."""
     from unittest.mock import AsyncMock
@@ -149,7 +144,6 @@ async def test_rate_limit_max_retries_exceeded(mock_settings, mock_google_servic
     assert exc_info.value.status_code == 429
 
 
-@pytest.mark.asyncio
 async def test_spreadsheet_not_found_error(mock_settings, mock_google_service):
     """Test that 404 error raises appropriate SyncException."""
     from googleapiclient.errors import HttpError
@@ -172,7 +166,6 @@ async def test_spreadsheet_not_found_error(mock_settings, mock_google_service):
     assert exc_info.value.status_code == 404
 
 
-@pytest.mark.asyncio
 async def test_permission_denied_error(mock_settings, mock_google_service):
     """Test that 403 error raises appropriate SyncException."""
     from googleapiclient.errors import HttpError
@@ -195,7 +188,6 @@ async def test_permission_denied_error(mock_settings, mock_google_service):
     assert exc_info.value.status_code == 403
 
 
-@pytest.mark.asyncio
 async def test_missing_credentials_path_raises_exception():
     """Test that missing credentials path raises SyncException."""
     from app.core.exceptions import SyncException
@@ -213,7 +205,6 @@ async def test_missing_credentials_path_raises_exception():
         assert exc_info.value.code == "SYNC_CREDENTIALS_MISSING"
 
 
-@pytest.mark.asyncio
 async def test_missing_spreadsheet_id_raises_exception(mock_settings, mock_google_service):
     """Test that missing spreadsheet ID raises SyncException."""
     from app.core.exceptions import SyncException
@@ -227,7 +218,6 @@ async def test_missing_spreadsheet_id_raises_exception(mock_settings, mock_googl
     assert exc_info.value.code == "SYNC_CREDENTIALS_MISSING"
 
 
-@pytest.mark.asyncio
 async def test_fetch_vp_data_uses_correct_config(mock_settings, mock_google_service):
     """Test that fetch_vp_data uses VP configuration."""
     from app.modules.sync.sheets_client import GoogleSheetsClient
@@ -245,7 +235,6 @@ async def test_fetch_vp_data_uses_correct_config(mock_settings, mock_google_serv
     assert call_args[1]["range"] == "VP!A:Y"
 
 
-@pytest.mark.asyncio
 async def test_fetch_meeting_data_uses_correct_config(mock_settings, mock_google_service):
     """Test that fetch_meeting_data uses Meeting configuration."""
     from app.modules.sync.sheets_client import GoogleSheetsClient

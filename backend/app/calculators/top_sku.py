@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass, field
 from typing import Any
 
+from app.calculators.price_parser import _parse_price
+
 
 # ---------------------------------------------------------------------------
 # Result type
@@ -45,25 +47,6 @@ def _safe_num(value: Any) -> float:
     return 0.0
 
 
-def _clean_price(value: Any) -> float:
-    """Remove '.' thousands separator and convert to number.
-
-    Indonesian price format: '125.000' → 125000, '1.250.000' → 1250000.
-    """
-    if value is None:
-        return 0.0
-    if isinstance(value, (int, float)):
-        return float(value)
-    s = str(value).strip()
-    if not s:
-        return 0.0
-    s = s.replace(".", "")
-    try:
-        return float(s)
-    except ValueError:
-        return 0.0
-
-
 # ---------------------------------------------------------------------------
 # Processing pipeline
 # ---------------------------------------------------------------------------
@@ -78,7 +61,7 @@ class LineItem:
     revenue: float
 
 
-def _extract_per_line(rows: list[dict]) -> list[LineItem]:
+def _extract_per_line(rows: list[dict], *, marketplace: str = "ID") -> list[LineItem]:
     """Extract per-line data from order export rows.
 
     Revenue = (Harga Setelah Diskon × Jumlah)
@@ -94,12 +77,12 @@ def _extract_per_line(rows: list[dict]) -> list[LineItem]:
         nama_variasi = str(row.get("Nama Variasi", "") or "").strip()
         product_variant_label = f"{nama_produk} - {nama_variasi}"
 
-        harga_setelah_diskon = _clean_price(row.get("Harga Setelah Diskon"))
+        harga_setelah_diskon = _parse_price(row.get("Harga Setelah Diskon"), marketplace)
         jumlah = _safe_num(row.get("Jumlah"))
         jumlah_produk_di_pesan = _safe_num(row.get("Jumlah Produk di Pesan"))
-        voucher = _clean_price(row.get("Voucher Ditanggung Penjual"))
-        cashback = _clean_price(row.get("Cashback Koin"))
-        diskon_shopee = _clean_price(row.get("Diskon Dari Shopee"))
+        voucher = _parse_price(row.get("Voucher Ditanggung Penjual"), marketplace)
+        cashback = _parse_price(row.get("Cashback Koin"), marketplace)
+        diskon_shopee = _parse_price(row.get("Diskon Dari Shopee"), marketplace)
 
         # Avoid division by zero
         items_in_order = jumlah_produk_di_pesan if jumlah_produk_di_pesan > 0 else 1.0
@@ -313,6 +296,8 @@ def _calculate_out_of_stock_pct(enriched_products: list[EnrichedProduct]) -> flo
 def calculate_top_sku(
     order_data: list[dict],
     mass_update_data: list[dict],
+    *,
+    marketplace: str = "ID",
 ) -> TopSkuResult:
     """Execute the Top SKU Calculator.
 
@@ -321,6 +306,7 @@ def calculate_top_sku(
     Args:
         order_data: Parsed rows from order_export (list of dicts).
         mass_update_data: Parsed rows from mass_update (list of dicts).
+        marketplace: ``"ID"`` (Indonesian) or ``"TH"`` (Thai) price format.
 
     Returns:
         TopSkuResult with output_text and details.
@@ -339,7 +325,7 @@ def calculate_top_sku(
         )
 
     # Step 1: Extract per-line data
-    line_items = _extract_per_line(order_data)
+    line_items = _extract_per_line(order_data, marketplace=marketplace)
 
     # Step 2: Aggregate by product+variant
     aggregated = _aggregate_by_product(line_items)

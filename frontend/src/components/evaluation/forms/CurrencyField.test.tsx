@@ -67,4 +67,19 @@ describe('CurrencyField', () => {
     );
     expect(screen.getByRole('textbox')).toHaveValue('');
   });
+
+  it('renders (THB) label when currency="THB" is passed', () => {
+    render(
+      <CurrencyField name="test" label="Sales" value={50000} onChange={vi.fn()} currency="THB" />,
+    );
+    expect(screen.getByText('(THB)')).toBeInTheDocument();
+  });
+
+  it('renders (XX) label for unknown currency without crashing', () => {
+    render(
+      <CurrencyField name="test" label="Sales" value={1000} onChange={vi.fn()} currency="XX" />,
+    );
+    expect(screen.getByText('(XX)')).toBeInTheDocument();
+    expect(screen.getByRole('textbox')).toHaveValue('1,000');
+  });
 });

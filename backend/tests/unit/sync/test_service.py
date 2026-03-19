@@ -8,9 +8,13 @@ import pytest
 
 @pytest.fixture
 def mock_db():
-    """Mock database connection."""
+    """Mock database connection with transaction support."""
     with patch("app.modules.sync.service.db") as mock:
         mock_conn = AsyncMock()
+        mock_txn = MagicMock()
+        mock_txn.__aenter__ = AsyncMock(return_value=None)
+        mock_txn.__aexit__ = AsyncMock(return_value=None)
+        mock_conn.transaction = MagicMock(return_value=mock_txn)
         mock.connection.return_value.__aenter__.return_value = mock_conn
         mock.connection.return_value.__aexit__.return_value = None
         yield mock, mock_conn
@@ -37,6 +41,9 @@ def mock_queries():
         mock_sync.update_sync_status = AsyncMock()
         mock_sync.get_latest_sync_status = AsyncMock()
         mock_brand.upsert_brand_data = AsyncMock()
+        mock_brand.batch_upsert_brand_data = AsyncMock(
+            side_effect=lambda conn, table, brand_names, raw_data_list: len(brand_names)
+        )
         yield mock_sync, mock_brand
 
 
@@ -51,7 +58,6 @@ def mock_settings():
         yield mock
 
 
-@pytest.mark.asyncio
 async def test_run_sync_both_sheets_success(mock_db, mock_sheets_client, mock_queries, mock_settings):
     """Test successful sync of both sheets."""
     from app.modules.sync.service import run_sync
@@ -80,7 +86,6 @@ async def test_run_sync_both_sheets_success(mock_db, mock_sheets_client, mock_qu
     assert result.success is True
 
 
-@pytest.mark.asyncio
 async def test_run_sync_vp_only(mock_db, mock_sheets_client, mock_queries):
     """Test sync with only VP sheet configured."""
     from app.modules.sync.service import run_sync
@@ -104,9 +109,8 @@ async def test_run_sync_vp_only(mock_db, mock_sheets_client, mock_queries):
         assert result.total_synced == 1
 
 
-@pytest.mark.asyncio
-async def test_run_sync_partial_failure(mock_db, mock_sheets_client, mock_queries, mock_settings):
-    """Test sync with partial failures (some rows fail)."""
+async def test_run_sync_atomic_failure_when_batch_upsert_fails(mock_db, mock_sheets_client, mock_queries, mock_settings):
+    """Test sync fails atomically when batch upsert raises."""
     from app.modules.sync.service import run_sync
 
     mock_sync, mock_brand = mock_queries
@@ -117,18 +121,18 @@ async def test_run_sync_partial_failure(mock_db, mock_sheets_client, mock_querie
     ]
     mock_sheets_client.fetch_meeting_data.return_value = []
 
-    # First row succeeds, second fails
-    mock_brand.upsert_brand_data.side_effect = [None, Exception("DB error")]
+    # Batch upsert fails — entire sheet rolls back
+    mock_brand.batch_upsert_brand_data.side_effect = Exception("DB error")
 
     result = await run_sync()
 
-    assert result.vp_result.rows_synced == 1
+    assert result.vp_result.rows_synced == 0
     assert len(result.vp_result.errors) == 1
-    assert result.vp_result.errors[0].brand == "Adidas"
+    assert result.vp_result.errors[0].brand == "batch"
+    assert result.vp_result.success is False
     assert result.success is False
 
 
-@pytest.mark.asyncio
 async def test_run_sync_skips_empty_brand_names(mock_db, mock_sheets_client, mock_queries, mock_settings):
     """Test sync skips rows with empty brand names."""
     from app.modules.sync.service import run_sync
@@ -149,7 +153,6 @@ async def test_run_sync_skips_empty_brand_names(mock_db, mock_sheets_client, moc
     assert len(result.vp_result.errors) == 0  # Not counted as errors
 
 
-@pytest.mark.asyncio
 async def test_run_sync_handles_sheet_fetch_error(mock_db, mock_sheets_client, mock_queries, mock_settings):
     """Test sync handles error fetching from sheet."""
     from app.core.exceptions import SyncException
@@ -172,7 +175,6 @@ async def test_run_sync_handles_sheet_fetch_error(mock_db, mock_sheets_client, m
     assert result.success is False  # Overall failed because VP failed
 
 
-@pytest.mark.asyncio
 async def test_run_sync_empty_sheets(mock_db, mock_sheets_client, mock_queries, mock_settings):
     """Test sync with empty sheets."""
     from app.modules.sync.service import run_sync
@@ -189,7 +191,6 @@ async def test_run_sync_empty_sheets(mock_db, mock_sheets_client, mock_queries, 
     assert result.success is True
 
 
-@pytest.mark.asyncio
 async def test_run_sync_with_pre_created_sync_id(mock_db, mock_sheets_client, mock_queries, mock_settings):
     """Test run_sync with pre-created sync_id skips creating a new sync_status record."""
     from app.modules.sync.service import run_sync
@@ -212,7 +213,6 @@ async def test_run_sync_with_pre_created_sync_id(mock_db, mock_sheets_client, mo
     assert result.success is True
 
 
-@pytest.mark.asyncio
 async def test_run_sync_without_sync_id_creates_record(mock_db, mock_sheets_client, mock_queries, mock_settings):
     """Test run_sync without sync_id still creates a sync_status record (backward compatible)."""
     from app.modules.sync.service import run_sync
@@ -229,7 +229,6 @@ async def test_run_sync_without_sync_id_creates_record(mock_db, mock_sheets_clie
     mock_sync.create_sync_status.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_get_latest_sync_status_returns_status(mock_db, mock_queries):
     """Test get_latest_sync_status returns formatted response."""
     from app.modules.sync.service import get_latest_sync_status
@@ -254,7 +253,6 @@ async def test_get_latest_sync_status_returns_status(mock_db, mock_queries):
     assert result.last_sync is not None
 
 
-@pytest.mark.asyncio
 async def test_get_latest_sync_status_returns_none_when_no_syncs(mock_db, mock_queries):
     """Test get_latest_sync_status returns None when no syncs exist."""
     from app.modules.sync.service import get_latest_sync_status

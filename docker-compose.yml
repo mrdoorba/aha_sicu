@@ -1,0 +1,112 @@
+services:
+  # ─── PostgreSQL ────────────────────────────────────────────────
+  postgres:
+    image: postgres:18
+    environment:
+      POSTGRES_USER: aha_sicu
+      POSTGRES_PASSWORD: localdev
+      POSTGRES_DB: aha_coms_sicu_dev
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U aha_sicu -d aha_coms_sicu_dev"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  # ─── Firebase Auth Emulator ────────────────────────────────────
+  firebase-emulator:
+    build:
+      context: ./docker/firebase-emulator
+      dockerfile: Dockerfile
+    ports:
+      - "9099:9099"   # Auth emulator
+      - "4000:4000"   # Emulator Suite UI
+    environment:
+      FIREBASE_PROJECT_ID: fbi-dev-484410
+    healthcheck:
+      test: ["CMD-SHELL", "curl -sf http://localhost:9099/ || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 10
+
+  # ─── MailHog (SMTP mock + Web UI) ─────────────────────────────
+  mailhog:
+    image: mailhog/mailhog:latest
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    healthcheck:
+      test: ["CMD-SHELL", "wget -q --spider http://localhost:8025/api/v2/messages || exit 1"]
+      interval: 3s
+      timeout: 3s
+      retries: 5
+
+  # ─── Backend (FastAPI) ─────────────────────────────────────────
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "8000:8000"
+    environment:
+      # Database
+      DATABASE_URL: postgresql://aha_sicu:localdev@postgres:5432/aha_coms_sicu_dev
+      DATABASE_POOL_MIN: "1"
+      DATABASE_POOL_MAX: "5"
+      # Firebase — emulator mode (no real credentials needed)
+      FIREBASE_AUTH_EMULATOR_HOST: firebase-emulator:9099
+      FIREBASE_CREDENTIALS_PATH: ""
+      # Email — route to MailHog
+      SMTP_HOST: mailhog
+      SMTP_PORT: "1025"
+      SMTP_USER: ""
+      SMTP_PASSWORD: ""
+      SMTP_FROM_NAME: AHA Commerce
+      SMTP_FROM_EMAIL: noreply@ahacommerce.local
+      SMTP_USE_TLS: "false"
+      EMAIL_ENABLED: "true"
+      # Upload — local filesystem (no GCS)
+      GCS_UPLOAD_BUCKET: ""
+      # Google Sheets — disabled
+      GSHEETS_CREDENTIALS_PATH: ""
+      GSHEETS_CREDENTIALS_JSON: ""
+      # App
+      DEBUG: "true"
+      CLOUD_RUN_URL: ""
+    volumes:
+      - ./backend/app:/app/app
+      - ./frontend/src/locales:/app/locales:ro
+      - local-uploads:/tmp/aha_sicu_uploads
+    depends_on:
+      postgres:
+        condition: service_healthy
+      firebase-emulator:
+        condition: service_healthy
+      mailhog:
+        condition: service_healthy
+
+  # ─── Frontend (Vite dev server) ────────────────────────────────
+  frontend:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile.dev
+    ports:
+      - "5173:5173"
+    environment:
+      VITE_FIREBASE_API_KEY: fake-api-key-for-emulator
+      VITE_FIREBASE_AUTH_DOMAIN: fbi-dev-484410.firebaseapp.com
+      VITE_FIREBASE_PROJECT_ID: fbi-dev-484410
+      VITE_FIREBASE_AUTH_EMULATOR_URL: http://localhost:9099
+      VITE_API_BASE_URL: http://localhost:8000
+    volumes:
+      - ./frontend/src:/app/src
+      - ./frontend/public:/app/public
+    depends_on:
+      - backend
+
+volumes:
+  pgdata:
+  local-uploads:

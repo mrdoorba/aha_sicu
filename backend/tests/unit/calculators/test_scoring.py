@@ -2408,7 +2408,7 @@ class TestMigrationTemplatesDrift:
 
     @staticmethod
     def _build_effective_db_templates() -> dict:
-        """Replay migration 012 + 019 + 020 patches to get the effective DB state."""
+        """Replay migration 012 + 019 + 020 + 021 + 027 + 028 patches to get the effective DB state."""
         import importlib
 
         m012 = importlib.import_module(
@@ -2422,6 +2422,12 @@ class TestMigrationTemplatesDrift:
         )
         m021 = importlib.import_module(
             "app.db.migrations.versions.021_internationalize_currency_rp_to_idr"
+        )
+        m027 = importlib.import_module(
+            "app.db.migrations.versions.027_update_message_templates_currency_placeholder"
+        )
+        m028 = importlib.import_module(
+            "app.db.migrations.versions.028_fix_follower_threshold_comma_separator"
         )
 
         db: dict = {}
@@ -2442,6 +2448,12 @@ class TestMigrationTemplatesDrift:
 
         # Apply 021 patches
         m021._apply_patches(db, forward=True)
+
+        # Apply 027 patches
+        m027._apply_patches(db, forward=True)
+
+        # Apply 028 patches
+        m028._apply_patches(db, forward=True)
 
         return db
 
@@ -2484,3 +2496,90 @@ class TestMigrationTemplatesDrift:
             "Create a new migration to sync them, or update DEFAULT_RULES.\n"
             + "\n".join(mismatches)
         )
+
+
+class TestFollowerFormattingR023R024:
+    """Verify follower val_str uses comma separator and fail message threshold uses >50,000."""
+
+    def test_follower_val_str_uses_comma_when_value_is_40000(self):
+        """R024: val_str for 40000 followers renders as '40,000' not '40.000'."""
+        from app.calculators.scoring.messages import _generate_visitors_messages
+        from app.calculators.scoring.models import CategoryScore, RowScore
+
+        cat = CategoryScore(
+            category="Analisis Pengunjung",
+            score=0.0,
+            max_score=5.0,
+            rows=[
+                RowScore(row=29, metric="Total Pengikut", value=40000,
+                         benchmark=">50,000", verdict="❌", message="", score=0.0),
+            ],
+        )
+        _generate_visitors_messages(cat)
+        msg = cat.rows[0].message
+        assert "40,000" in msg, f"Expected comma-separated '40,000' in message, got: {msg}"
+        assert "40.000" not in msg, f"Dot-separated '40.000' must not appear in message, got: {msg}"
+
+    def test_follower_fail_message_contains_comma_threshold(self):
+        """R023: Follower fail message contains '>50,000' not '>50.000'."""
+        from app.calculators.scoring.messages import _generate_visitors_messages
+        from app.calculators.scoring.models import CategoryScore, RowScore
+
+        cat = CategoryScore(
+            category="Analisis Pengunjung",
+            score=0.0,
+            max_score=5.0,
+            rows=[
+                RowScore(row=29, metric="Total Pengikut", value=40000,
+                         benchmark=">50,000", verdict="❌", message="", score=0.0),
+            ],
+        )
+        _generate_visitors_messages(cat)
+        msg = cat.rows[0].message
+        assert ">50,000" in msg, f"Expected '>50,000' in fail message, got: {msg}"
+        assert ">50.000" not in msg, f"'>50.000' must not appear in fail message, got: {msg}"
+
+    def test_default_rules_followers_message_fail_uses_comma(self):
+        """R023: DEFAULT_RULES followers message_fail contains '>50,000'."""
+        msg = DEFAULT_RULES["visitors"]["followers"]["message_fail"]
+        assert ">50,000" in msg, f"Expected '>50,000' in DEFAULT_RULES, got: {msg}"
+        assert ">50.000" not in msg, f"'>50.000' must not appear in DEFAULT_RULES, got: {msg}"
+
+
+class TestComputeG66JutaR026:
+    """Verify _compute_g66 uses juta for ID marketplace and raw numbers for TH."""
+
+    def test_compute_g66_uses_juta_when_marketplace_is_id(self):
+        """R026: ID marketplace sales range displays in juta."""
+        from app.calculators.scoring.computations import _compute_g66
+
+        manual_data = {
+            "business": {
+                "salesMonth0": 50_000_000,
+                "salesMonth1": 80_000_000,
+                "salesMonth2": 60_000_000,
+                "salesMonth3": 70_000_000,
+                "salesMonth4": 90_000_000,
+                "salesMonth5": 100_000_000,
+            }
+        }
+        result = _compute_g66([], manual_data, "", marketplace="ID")
+        assert "juta" in result, f"Expected 'juta' in ID marketplace g66, got: {result}"
+
+    def test_compute_g66_uses_raw_numbers_when_marketplace_is_th(self):
+        """R026: TH marketplace sales range displays raw comma-formatted numbers, not juta."""
+        from app.calculators.scoring.computations import _compute_g66
+
+        manual_data = {
+            "business": {
+                "salesMonth0": 50_000_000,
+                "salesMonth1": 80_000_000,
+                "salesMonth2": 60_000_000,
+                "salesMonth3": 70_000_000,
+                "salesMonth4": 90_000_000,
+                "salesMonth5": 100_000_000,
+            }
+        }
+        result = _compute_g66([], manual_data, "", marketplace="TH")
+        assert "juta" not in result, f"'juta' must not appear in TH marketplace g66, got: {result}"
+        assert "50,000,000" in result, f"Expected comma-formatted number in TH g66, got: {result}"

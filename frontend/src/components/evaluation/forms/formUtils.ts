@@ -1,5 +1,5 @@
 import type { ManualData, SectionProgress } from './types';
-import { GENERIC_LABELS, INDO_MONTHS } from './fields';
+import { GENERIC_LABELS, MONTHS } from './fields';
 
 // ── Month label generation ─────────────────────────────────────────────────
 
@@ -16,23 +16,60 @@ export function generateMonthLabels(startMonth: string | null): string[] {
   for (let i = 0; i < 6; i++) {
     const monthIndex = ((month - 1 - i) % 12 + 12) % 12;
     const yearOffset = Math.floor((month - 1 - i) / 12);
-    labels.push(`${INDO_MONTHS[monthIndex]} ${year + yearOffset}`);
+    labels.push(`${MONTHS[monthIndex]} ${year + yearOffset}`);
   }
   return labels;
 }
 
-// ── IDR formatting utilities ───────────────────────────────────────────────
+// ── Currency utilities ──────────────────────────────────────────────────────
 
-export function formatIDR(value: number | null | undefined): string {
+/**
+ * Map marketplace code to currency code.
+ * 'TH' → 'THB', 'ID' → 'IDR' (default). Unknown codes are uppercased as-is.
+ */
+export function getCurrencyCode(marketplace?: string): string {
+  if (!marketplace) return 'IDR';
+  const upper = marketplace.toUpperCase();
+  switch (upper) {
+    case 'TH':
+      return 'THB';
+    case 'ID':
+      return 'IDR';
+    default:
+      return upper;
+  }
+}
+
+/**
+ * Format a numeric value as a comma-separated currency string.
+ * Both IDR and THB use identical number formatting (no decimals, comma thousands).
+ * The marketplace parameter is accepted for future use but does not change formatting today.
+ */
+export function formatCurrency(value: number | null | undefined, _marketplace?: string): string {
   if (value == null || isNaN(value)) return '';
   return new Intl.NumberFormat('en-US', { maximumFractionDigits: 0 }).format(Math.round(value));
 }
 
-export function parseIDR(formatted: string): number | null {
+/**
+ * Parse a formatted currency string back to a number.
+ * Strips dots and commas, returns null for empty/non-numeric input.
+ * The marketplace parameter is accepted for future use but does not change parsing today.
+ */
+export function parseCurrency(formatted: string, _marketplace?: string): number | null {
   const stripped = formatted.replace(/\./g, '').replace(/,/g, '').trim();
   if (stripped === '') return null;
   const num = Number(stripped);
   return isNaN(num) ? null : num;
+}
+
+/** @deprecated Use `formatCurrency` instead. Kept for backward compatibility. */
+export function formatIDR(value: number | null | undefined): string {
+  return formatCurrency(value);
+}
+
+/** @deprecated Use `parseCurrency` instead. Kept for backward compatibility. */
+export function parseIDR(formatted: string): number | null {
+  return parseCurrency(formatted);
 }
 
 // ── Section progress computation ──────────────────────────────────────────

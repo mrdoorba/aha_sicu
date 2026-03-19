@@ -3,9 +3,10 @@
 terraform {
   required_version = ">= 1.5"
 
-  # Local backend for initial bootstrap. Migrate to GCS when team collaboration needed:
-  # backend "gcs" { bucket = "aha-coms-sicu-terraform-state" prefix = "terraform/state" }
-  backend "local" {}
+  backend "gcs" {
+    bucket = "aha-coms-sicu-terraform-state"
+    prefix = "terraform/state"
+  }
 
   required_providers {
     google = {
@@ -103,20 +104,22 @@ module "dev" {
 
   cloud_sql_instance_name            = google_sql_database_instance.main.name
   cloud_sql_instance_connection_name = google_sql_database_instance.main.connection_name
-  db_user                            = var.db_user
-  db_password                        = random_password.db.result
 
-  github_repo        = var.github_repo
+  github_repo         = var.github_repo
+  wif_allowed_branch  = "develop"
   firebase_project_id = var.firebase_project_id
-  cloud_run_image    = var.cloud_run_image
+  cloud_run_image     = var.cloud_run_image
 
   cloud_run_min_instances = var.cloud_run_min_instances
   cloud_run_max_instances = var.cloud_run_max_instances
   cloud_run_memory        = var.cloud_run_memory
   cloud_run_cpu           = var.cloud_run_cpu
 
-  smtp_user      = var.smtp_user
-  smtp_from_name = var.smtp_from_name
+  smtp_user             = var.smtp_user
+  smtp_from_name        = var.smtp_from_name
+  email_enabled         = var.dev_email_enabled
+  email_allowed_domains = var.dev_email_allowed_domains
+  cloud_run_url         = var.dev_cloud_run_url
 
   gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
   gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id
@@ -136,20 +139,22 @@ module "prod" {
 
   cloud_sql_instance_name            = google_sql_database_instance.main.name
   cloud_sql_instance_connection_name = google_sql_database_instance.main.connection_name
-  db_user                            = var.db_user
-  db_password                        = random_password.db.result
 
-  github_repo        = var.github_repo
+  github_repo         = var.github_repo
+  wif_allowed_branch  = "main"
   firebase_project_id = var.firebase_project_id
-  cloud_run_image    = var.cloud_run_image
+  cloud_run_image     = var.cloud_run_image
 
   cloud_run_min_instances = var.cloud_run_min_instances
   cloud_run_max_instances = var.cloud_run_max_instances
   cloud_run_memory        = var.cloud_run_memory
   cloud_run_cpu           = var.cloud_run_cpu
 
-  smtp_user      = var.smtp_user
-  smtp_from_name = var.smtp_from_name
+  smtp_user             = var.smtp_user
+  smtp_from_name        = var.smtp_from_name
+  email_enabled         = var.prod_email_enabled
+  email_allowed_domains = var.prod_email_allowed_domains
+  cloud_run_url         = var.prod_cloud_run_url
 
   gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
   gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id

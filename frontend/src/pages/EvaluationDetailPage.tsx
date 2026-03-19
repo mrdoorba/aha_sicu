@@ -2,6 +2,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { ArrowLeft, Copy, ClipboardCheck, Trash2, ChevronRight, ChevronDown, Mail } from 'lucide-react';
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Badge } from '../components/ui/badge';
@@ -24,9 +25,40 @@ import { FinalScoreDisplay } from '../components/evaluation/scoring/FinalScoreDi
 import {
   MANUAL_DATA_FIELDS,
   generateMonthLabels,
+  formatCurrency,
   type FieldDefinition,
 } from '../components/evaluation/forms/formConfig';
 import { isRecord, isRecordArray } from '../lib/typeGuards';
+import { CATEGORY_MAP } from '../lib/categoryMap';
+import { getIntlLocale } from '../lib/localeMap';
+import { renderTranslatable, type TranslatableText } from '../utils/renderTranslatable';
+
+interface ScoringSummary {
+  conclusion?: string;
+  conclusion_i18n?: TranslatableText[];
+  marketing_estimation?: string;
+  marketing_budget?: string;
+  marketing_budget_i18n?: TranslatableText;
+  closing_message?: string;
+  closing_message_i18n?: TranslatableText;
+}
+
+function isScoringSummary(value: unknown): value is ScoringSummary {
+  if (!isRecord(value)) return false;
+  const hasContent =
+    typeof value.conclusion === 'string' ||
+    Array.isArray(value.conclusion_i18n) ||
+    typeof value.marketing_budget === 'string' ||
+    typeof value.closing_message === 'string';
+  return hasContent;
+}
+
+function parseBulletPoints(text: string): string[] {
+  return text
+    .split('\n')
+    .map((line) => line.replace(/^[-•]\s*/, '').trim())
+    .filter(Boolean);
+}
 
 // Build module-level lookup: category key → { displayName, fieldMap }
 const CATEGORY_LOOKUP = new Map(
@@ -34,6 +66,7 @@ const CATEGORY_LOOKUP = new Map(
     cat.key,
     {
       displayName: cat.displayName,
+      displayNameKey: cat.displayNameKey,
       fieldMap: new Map(cat.fields.map((f) => [f.key, f])),
     },
   ]),
@@ -43,9 +76,9 @@ function capitalize(str: string): string {
   return str.charAt(0).toUpperCase() + str.slice(1);
 }
 
-function formatDate(dateStr: string): string {
+function formatDate(dateStr: string, locale: string): string {
   const d = new Date(dateStr);
-  return d.toLocaleDateString('id-ID', {
+  return d.toLocaleDateString(locale, {
     day: 'numeric',
     month: 'short',
     year: 'numeric',
@@ -55,24 +88,24 @@ function formatDate(dateStr: string): string {
   });
 }
 
-function formatIDR(value: unknown): string {
+function formatNumber(value: unknown, marketplace?: string): string {
   if (typeof value !== 'number') return String(value ?? '-');
-  return value.toLocaleString('en-US');
+  return formatCurrency(value, marketplace);
 }
 
-function formatValue(value: unknown, key: string, fieldDef?: FieldDefinition): string {
+function formatValue(value: unknown, key: string, fieldDef?: FieldDefinition, marketplace?: string): string {
   if (value === null || value === undefined) return '-';
-  if (Array.isArray(value)) return value.map((v) => formatIDR(v)).join(', ');
+  if (Array.isArray(value)) return value.map((v) => formatNumber(v, marketplace)).join(', ');
 
   // Metadata-based formatting when field definition is available
   if (fieldDef && typeof value === 'number') {
     if (fieldDef.inputType === 'currency') {
-      return value.toLocaleString('en-US');
+      return formatCurrency(value, marketplace);
     }
     if (fieldDef.inputType === 'number' && fieldDef.unit === '%') {
       return `${value}%`;
     }
-    return value.toLocaleString('en-US');
+    return formatCurrency(value, marketplace);
   }
 
   // Fallback heuristics for fields not in config
@@ -81,7 +114,7 @@ function formatValue(value: unknown, key: string, fieldDef?: FieldDefinition): s
       return `${value}%`;
     }
     if (key.includes('sales') || key.includes('omzet') || key.includes('budget') || key.includes('revenue')) {
-      return formatIDR(value);
+      return formatNumber(value, marketplace);
     }
     return String(value);
   }
@@ -115,15 +148,18 @@ function ScoreBreakdownTable({
         </TableRow>
       </TableHeader>
       <TableBody>
-        {breakdown.map((cat) => (
-          <TableRow key={String(cat.category)}>
-            <TableCell>{String(cat.category)}</TableCell>
-            <TableCell className="text-right">
-              {Number(cat.score).toFixed(1)}
-              {Number(cat.max_score) > 0 ? `/${Number(cat.max_score).toFixed(0)}` : ''}
-            </TableCell>
-          </TableRow>
-        ))}
+        {breakdown.map((cat) => {
+          const mapped = CATEGORY_MAP.find(m => m.backend === String(cat.category));
+          return (
+            <TableRow key={String(cat.category)}>
+              <TableCell>{mapped ? t(mapped.labelKey) : String(cat.category)}</TableCell>
+              <TableCell className="text-right">
+                {Number(cat.score).toFixed(1)}
+                {Number(cat.max_score) > 0 ? `/${Number(cat.max_score).toFixed(0)}` : ''}
+              </TableCell>
+            </TableRow>
+          );
+        })}
       </TableBody>
     </Table>
   );
@@ -135,7 +171,7 @@ function AdsKeywordSection({ data, t }: { data: Record<string, unknown>; t: (key
   return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
 }
 
-function TopSkuSection({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
+function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>; t: (key: string) => string; marketplace?: string }) {
   const details = isRecord(data.details) ? data.details : undefined;
   const output1 = (isRecordArray(details?.output_1) ? details.output_1 : []).slice(0, 5);
   const output2 = (isRecordArray(details?.output_2) ? details.output_2 : []).slice(0, 5);
@@ -185,8 +221,8 @@ function TopSkuSection({ data, t }: { data: Record<string, unknown>; t: (key: st
                     <TableRow key={String(row.kode_variasi ?? i)}>
                       <TableCell>{String(row.kode_variasi ?? '-')}</TableCell>
                       <TableCell>{String(row.product_name ?? row.nama_produk ?? '-')}</TableCell>
-                      <TableCell className="text-right">{formatIDR(row.total_omzet)}</TableCell>
-                      <TableCell className="text-right">{formatIDR(row.rata2_harga_jual)}</TableCell>
+                      <TableCell className="text-right">{formatNumber(row.total_omzet, marketplace)}</TableCell>
+                      <TableCell className="text-right">{formatNumber(row.rata2_harga_jual, marketplace)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -211,7 +247,7 @@ function TopSkuSection({ data, t }: { data: Record<string, unknown>; t: (key: st
                       <TableCell>{String(row.kode_variasi ?? '-')}</TableCell>
                       <TableCell>{String(row.nama_produk ?? '-')}</TableCell>
                       <TableCell>{String(row.varian ?? '-')}</TableCell>
-                      <TableCell className="text-right">{formatIDR(row.stok)}</TableCell>
+                      <TableCell className="text-right">{formatNumber(row.stok, marketplace)}</TableCell>
                     </TableRow>
                   ))}
                 </TableBody>
@@ -230,6 +266,62 @@ function DiscountSection({ data, t }: { data: Record<string, unknown>; t: (key: 
   return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
 }
 
+function ScoringConclusionSection({
+  calculatorResults,
+  t,
+}: {
+  calculatorResults: Record<string, unknown>;
+  t: TFunction;
+}) {
+  const summary = isScoringSummary(calculatorResults.scoring_summary)
+    ? calculatorResults.scoring_summary
+    : undefined;
+
+  if (!summary) return null;
+
+  return (
+    <div className="space-y-4">
+      <h3 className="text-base font-semibold">{t('presentation.section.kesimpulan')}</h3>
+
+      {/* Conclusion bullet list */}
+      {summary.conclusion_i18n ? (
+        <ul className="list-disc pl-5 space-y-1">
+          {summary.conclusion_i18n.map((item, i) => (
+            <li key={i} className="text-sm">{t(item.key, item.vars)}</li>
+          ))}
+        </ul>
+      ) : summary.conclusion ? (
+        <ul className="list-disc pl-5 space-y-1">
+          {parseBulletPoints(summary.conclusion).map((point, i) => (
+            <li key={i} className="text-sm">{point}</li>
+          ))}
+        </ul>
+      ) : null}
+
+      {/* Marketing budget */}
+      {(summary.marketing_budget || summary.marketing_budget_i18n) && (
+        <div className="rounded-lg border bg-muted/30 p-4">
+          <p className="text-xs font-semibold uppercase tracking-wider text-muted-foreground mb-1">
+            {t('presentation.kesimpulan.marketingBudget')}
+          </p>
+          <p className="text-sm font-bold text-primary">
+            {renderTranslatable(summary.marketing_budget || '', summary.marketing_budget_i18n, t)}
+          </p>
+        </div>
+      )}
+
+      {/* Closing message */}
+      {(summary.closing_message || summary.closing_message_i18n) && (
+        <div className="rounded-lg border-l-4 border-primary/30 bg-primary/5 p-4">
+          <p className="text-sm whitespace-pre-line">
+            {renderTranslatable(summary.closing_message || '', summary.closing_message_i18n, t)}
+          </p>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function resolveNestedValue(obj: Record<string, unknown>, dotKey: string): unknown {
   const parts = dotKey.split('.');
   let val: unknown = obj;
@@ -243,9 +335,11 @@ function resolveNestedValue(obj: Record<string, unknown>, dotKey: string): unkno
 function ManualInputsSection({
   inputs,
   t,
+  marketplace,
 }: {
   inputs: Record<string, unknown>;
-  t: (key: string) => string;
+  t: (key: string, options?: Record<string, unknown>) => string;
+  marketplace?: string;
 }) {
   const categories = Object.entries(inputs);
   if (categories.length === 0) {
@@ -256,7 +350,7 @@ function ManualInputsSection({
     <div className="space-y-4">
       {categories.map(([category, values]) => {
         const categoryInfo = CATEGORY_LOOKUP.get(category);
-        const categoryLabel = categoryInfo?.displayName ?? capitalize(category);
+        const categoryLabel = categoryInfo?.displayNameKey ? t(categoryInfo.displayNameKey) : capitalize(category);
 
         if (!isRecord(values)) {
           return (
@@ -297,7 +391,7 @@ function ManualInputsSection({
               if (monthLabels && key.startsWith('salesMonth')) {
                 const idx = parseInt(key.replace('salesMonth', ''), 10);
                 if (!isNaN(idx) && idx >= 0 && idx < monthLabels.length) {
-                  dynamicLabel = `Penjualan ${monthLabels[idx]}`;
+                  dynamicLabel = t('evaluation.salesMonthLabel', { month: t(monthLabels[idx]) });
                 }
               }
 
@@ -308,7 +402,7 @@ function ManualInputsSection({
         // Competition section: group by product for a cleaner layout
         if (category === 'competition') {
           const products = ['product1', 'product2', 'product3'] as const;
-          const productLabels = ['Produk Kompetitor 1', 'Produk Kompetitor 2', 'Produk Kompetitor 3'];
+          const productLabels = [t('evaluation.competitorProduct1'), t('evaluation.competitorProduct2'), t('evaluation.competitorProduct3')];
           // Strip the "Produk Kompetitor N — " prefix from labels for compact display
           const shortLabel = (label: string) => label.replace(/^Produk Kompetitor \d — /, '');
 
@@ -324,11 +418,11 @@ function ManualInputsSection({
                       <div className="space-y-1 text-sm">
                         {productEntries.map(([key, val, fieldDef]) => {
                           const isLink = key.endsWith('.link');
-                          const formatted = formatValue(val, key, fieldDef);
+                          const formatted = formatValue(val, key, fieldDef, marketplace);
                           return (
                             <div key={key} className="border-b border-border/50 py-1">
                               <span className="text-muted-foreground">
-                                {shortLabel(fieldDef?.label ?? key)}
+                                {shortLabel(fieldDef?.labelKey ? t(fieldDef.labelKey) : (fieldDef?.label ?? key))}
                               </span>
                               <div className="font-medium">
                                 {isLink && formatted !== '-' ? (
@@ -338,7 +432,7 @@ function ManualInputsSection({
                                     rel="noopener noreferrer"
                                     className="text-blue-600 underline break-all"
                                   >
-                                    Lihat di Shopee
+                                    {t('evaluation.viewOnShopee')}
                                   </a>
                                 ) : (
                                   <span className="break-words">
@@ -365,10 +459,10 @@ function ManualInputsSection({
               {entries.map(([key, val, fieldDef, dynamicLabel]) => (
                 <div key={key} className="rounded-lg border p-3">
                   <span className="text-xs text-muted-foreground">
-                    {dynamicLabel ?? fieldDef?.label ?? key.replace(/_/g, ' ')}
+                    {dynamicLabel ?? (fieldDef?.labelKey ? t(fieldDef.labelKey) : (fieldDef?.label ?? key.replace(/_/g, ' ')))}
                   </span>
                   <div className="font-medium break-words">
-                    {formatValue(val, key, fieldDef)}
+                    {formatValue(val, key, fieldDef, marketplace)}
                     {fieldDef?.benchmark && (
                       <span className="ml-1 text-xs text-muted-foreground">({fieldDef.benchmark})</span>
                     )}
@@ -428,7 +522,7 @@ function EmailOutputSection({ emailOutput, t, onSendMail }: { emailOutput: strin
 }
 
 export function EvaluationDetailPage() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const params = useParams<{ id: string }>();
   const navigate = useNavigate();
   const id = Number(params.id);
@@ -504,7 +598,7 @@ export function EvaluationDetailPage() {
                   <div>
                     <h1 className="text-2xl font-bold">{evaluation.brand_name}</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
-                      {evaluation.evaluator_email} &middot; {formatDate(evaluation.created_at)}
+                      {evaluation.evaluator_email} &middot; {formatDate(evaluation.created_at, getIntlLocale(i18n.language))}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -588,6 +682,7 @@ export function EvaluationDetailPage() {
                     <TopSkuSection
                       data={evaluation.calculator_results.top_sku}
                       t={t}
+                      marketplace={evaluation.marketplace}
                     />
                   ) : (
                     <p className="text-muted-foreground">{t('common.noData')}</p>
@@ -605,6 +700,11 @@ export function EvaluationDetailPage() {
                     <p className="text-muted-foreground">{t('common.noData')}</p>
                   )}
                 </div>
+
+                <ScoringConclusionSection
+                  calculatorResults={evaluation.calculator_results}
+                  t={t}
+                />
               </CardContent>
             </Card>
 
@@ -614,7 +714,7 @@ export function EvaluationDetailPage() {
                 <CardTitle className="text-lg">{t('evaluationDetail.manualInputs')}</CardTitle>
               </CardHeader>
               <CardContent>
-                <ManualInputsSection inputs={evaluation.manual_inputs} t={t} />
+                <ManualInputsSection inputs={evaluation.manual_inputs} t={t} marketplace={evaluation.marketplace} />
               </CardContent>
             </Card>
 
@@ -629,6 +729,8 @@ export function EvaluationDetailPage() {
                   period={evaluation.period}
                   emailOutput={evaluation.email_output}
                   brandRawData={evaluation.brand_raw_data}
+                  scoreBreakdown={evaluation.score_breakdown}
+                  calculatorResults={evaluation.calculator_results}
                 />
               </>
             )}

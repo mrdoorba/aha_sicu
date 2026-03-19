@@ -87,10 +87,14 @@ firebase-debug.log
 firestore-debug.log
 ui-debug.log
 
+# GitHub environment vars reference (contains real IDs)
+infrastructure/GITHUB_ENVIRONMENT_VARS.md
+
 # Provisioning (real user credentials)
 scripts/users-config.yaml
 
 # Local development
+backend/scripts/seed_data/
 docker-compose.override.yml
 *.local.yaml
 *.local.json
@@ -107,3 +111,39 @@ smoke-tests/smoke-results.json
 
 # OS
 Thumbs.db
+
+# ── GSD baseline (auto-generated) ──
+.gsd/activity/
+.gsd/runtime/
+.gsd/worktrees/
+.gsd/auto.lock
+.gsd/metrics.json
+.gsd/completed-units.json
+.gsd/STATE.md
+.gsd/gsd.db
+.gsd/DISCUSSION-MANIFEST.json
+.gsd/milestones/**/*-CONTINUE.md
+.gsd/milestones/**/continue.md
+*.code-workspace
+.env.*
+!.env.example
+.next/
+*.pyc
+target/
+vendor/
+coverage/
+.cache/
+tmp/
+.bg-shell/
+backend/locales/
+.planning/
+
+# ── GSD baseline (auto-generated) ──
+.gsd/forensics/
+
+# ── GSD baseline (auto-generated) ──
+.gsd/parallel/
+.gitnexus
+
+# AEGIS audit state (generated)
+.aegis/

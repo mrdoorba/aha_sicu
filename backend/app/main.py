@@ -4,12 +4,14 @@ import logging
 from contextlib import asynccontextmanager
 from typing import AsyncGenerator
 
-from fastapi import FastAPI
+from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from app.config import settings
 from app.core.exceptions import AppException
-from app.core.middleware import app_exception_handler
+from app.core.logging import setup_logging
+from app.core.middleware import RequestLoggingMiddleware, app_exception_handler
 from app.core.security import init_firebase
 from app.db.connection import db
 from app.modules.accounts.router import router as accounts_router
@@ -22,7 +24,8 @@ from app.modules.email.router import router as email_router
 from app.modules.config.router import router as config_router
 from app.modules.upload.router import router as upload_router
 
-logging.basicConfig(level=logging.INFO, format="%(levelname)s: %(name)s: %(message)s")
+setup_logging(settings.log_level)
+logger = logging.getLogger(__name__)
 
 
 @asynccontextmanager
@@ -39,18 +42,13 @@ async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
 
 app = FastAPI(title="Store ICU API", version="0.1.0", lifespan=lifespan)
 
-# CORS — allow Firebase Hosting origins
+# Request logging + correlation IDs (outermost — wraps all requests)
+app.add_middleware(RequestLoggingMiddleware)
+
+# CORS — origins from CORS_ORIGINS env var (defaults to localhost for local dev)
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:5173",
-        "http://localhost:4173",
-        "https://aha-coms-sicu-dev.web.app",
-        "https://aha-coms-sicu-dev.firebaseapp.com",
-        "https://aha-coms-sicu-prod.web.app",
-        "https://aha-coms-sicu-prod.firebaseapp.com",
-        "https://sicu.ahabot.ai",
-    ],
+    allow_origins=settings.cors_origin_list,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -58,6 +56,22 @@ app.add_middleware(
 
 # Register exception handlers
 app.add_exception_handler(AppException, app_exception_handler)
+
+
+async def global_exception_handler(request: Request, exc: Exception) -> JSONResponse:
+    """Catch-all for unhandled exceptions — no internal details to client (F-07-005)."""
+    logger.exception(
+        "Unhandled exception on %s %s",
+        request.method,
+        request.url.path,
+    )
+    return JSONResponse(
+        status_code=500,
+        content={"error": "Internal server error"},
+    )
+
+
+app.add_exception_handler(Exception, global_exception_handler)
 
 # Register routers
 app.include_router(accounts_router)
@@ -72,6 +86,26 @@ app.include_router(upload_router)
 
 
 @app.get("/health")
-async def health_check() -> dict[str, str]:
-    """Health check endpoint for Cloud Run."""
-    return {"status": "healthy"}
+async def health_check() -> dict:
+    """Health check — verifies DB connectivity for Cloud Run readiness."""
+    checks: dict[str, str] = {}
+    healthy = True
+
+    if db.pool:
+        try:
+            async with db.connection() as conn:
+                await conn.fetchval("SELECT 1")
+            checks["database"] = "ok"
+        except Exception:
+            logger.warning("Health check DB probe failed", exc_info=True)
+            checks["database"] = "unreachable"
+            healthy = False
+    else:
+        checks["database"] = "not_configured"
+
+    if not healthy:
+        return JSONResponse(
+            status_code=503,
+            content={"status": "unhealthy", "checks": checks},
+        )
+    return {"status": "healthy", "checks": checks}

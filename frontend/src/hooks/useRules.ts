@@ -7,8 +7,9 @@ interface ApiScoringRule {
   template: string;
   rules: Record<string, unknown>;
   version: number;
-  updated_by: number | null;
+  updated_by?: number | null;
   updated_at: string;
+  marketplace?: string;
 }
 
 /**
@@ -36,7 +37,7 @@ function toScoringRule(apiRule: ApiScoringRule): ScoringRule {
     template: apiRule.template,
     rules: apiRule.rules,
     version: apiRule.version,
-    updated_by: apiRule.updated_by,
+    updated_by: apiRule.updated_by ?? null,
     updated_at: apiRule.updated_at,
   };
 }
@@ -105,11 +106,13 @@ export interface ScoringRule {
   updated_at: string;
 }
 
-export function useRules() {
+export function useRules(marketplace?: string) {
   const query = useQuery<ScoringRule[]>({
-    queryKey: ['rules'],
+    queryKey: ['rules', marketplace ?? 'ID'],
     queryFn: async () => {
-      const { data, error } = await client.GET('/api/v1/rules');
+      const { data, error } = await client.GET('/api/v1/rules', {
+        params: { query: { marketplace } },
+      });
       if (error) throw new Error('Failed to fetch scoring rules');
       return data.map(toScoringRule);
     },

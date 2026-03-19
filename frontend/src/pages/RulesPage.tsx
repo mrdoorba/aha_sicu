@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { toast } from 'sonner';
 import { useRules, type ScoringRules, type RuleThreshold } from '../hooks/useRules';
@@ -7,6 +7,7 @@ import { useUpdateRule } from '../hooks/useUpdateRule';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Tabs, TabsList, TabsTrigger } from '../components/ui/tabs';
 import { RulesCategoryCard } from '../components/rules/RulesCategoryCard';
 import { PasswordConfirmDialog } from '../components/rules/PasswordConfirmDialog';
 
@@ -45,7 +46,8 @@ function isRuleCategory(value: string): value is RuleCategory {
 
 export const RulesPage = () => {
   const { t } = useTranslation();
-  const { rules, isLoading, isError, refetch } = useRules();
+  const [marketplace, setMarketplace] = useState<string>('ID');
+  const { rules, isLoading, isError, refetch } = useRules(marketplace);
   const { profile } = useCurrentUser();
   const updateRule = useUpdateRule();
   const [isEditing, setIsEditing] = useState(false);
@@ -54,6 +56,14 @@ export const RulesPage = () => {
   const [validationErrors, setValidationErrors] = useState<Record<string, string>>({});
 
   const canEdit = profile?.role === 'leader' || profile?.role === 'admin';
+
+  // Cancel any in-progress editing when marketplace tab changes
+  useEffect(() => {
+    if (isEditing) {
+      cancelEdit();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [marketplace]);
 
   // Find the default rule (or fall back to first available)
   const activeRule = rules.find((r) => r.template === 'default') ?? rules[0] ?? null;
@@ -151,6 +161,7 @@ export const RulesPage = () => {
       await updateRule.mutateAsync({
         template,
         rules: { ...edited },
+        marketplace,
       });
     }
     setShowPasswordDialog(false);
@@ -237,6 +248,13 @@ export const RulesPage = () => {
             )}
           </div>
         </div>
+
+        <Tabs value={marketplace} onValueChange={setMarketplace} className="mb-4">
+          <TabsList>
+            <TabsTrigger value="ID">🇮🇩 Indonesia (IDR)</TabsTrigger>
+            <TabsTrigger value="TH">🇹🇭 Thailand (THB)</TabsTrigger>
+          </TabsList>
+        </Tabs>
 
         <div className="space-y-4">
           {CATEGORY_ORDER.map((category) => {

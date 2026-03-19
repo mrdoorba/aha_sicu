@@ -5,23 +5,23 @@ import { CurrencyField } from './CurrencyField';
 import { NumberField } from './NumberField';
 import { ExternalLink } from 'lucide-react';
 import type { BusinessData } from './formConfig';
-import { BUSINESS_FIELDS, SECTION_LINKS, generateMonthLabels } from './formConfig';
+import { BUSINESS_FIELDS, getSectionLinks, generateMonthLabels, formatCurrency } from './formConfig';
 import type { ScoringRules } from '../../../hooks/useRules';
 import { getBenchmarkFromRules, FORM_TO_RULES_MAP } from './benchmarkUtils';
+import { getIntlLocale } from '../../../lib/localeMap';
 
 interface BusinessFormProps {
   data: BusinessData;
   rules?: ScoringRules;
+  currency?: string;
+  marketplace?: string;
   onChange: (category: 'business', key: string, value: number | string | null) => void;
   onBlur: () => void;
 }
 
-function formatCurrencyDisplay(value: number): string {
-  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'IDR', minimumFractionDigits: 0, maximumFractionDigits: 0 }).format(value);
-}
-
-export function BusinessForm({ data, rules, onChange, onBlur }: BusinessFormProps) {
-  const { t } = useTranslation();
+export function BusinessForm({ data, rules, currency = 'IDR', marketplace = 'ID', onChange, onBlur }: BusinessFormProps) {
+  const { t, i18n } = useTranslation();
+  const links = getSectionLinks(marketplace);
   const monthLabels = useMemo(() => generateMonthLabels(data.salesStartMonth), [data.salesStartMonth]);
 
   // Generate month options for the selector (last 12 months from now)
@@ -31,21 +31,21 @@ export function BusinessForm({ data, rules, onChange, onBlur }: BusinessFormProp
     for (let i = 0; i < 12; i++) {
       const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
       const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const label = d.toLocaleDateString('id-ID', { month: 'short', year: 'numeric' });
+      const label = d.toLocaleDateString(getIntlLocale(i18n.language), { month: 'short', year: 'numeric' });
       options.push({ value: val, label });
     }
     return options;
-  }, []);
+  }, [i18n.language]);
 
   // Dynamic label overrides for sales months and conversion rate
   const getFieldLabel = (field: typeof BUSINESS_FIELDS[number], index: number): string => {
     if (field.key === 'conversionRate') {
-      return t('forms.business.conversionRate', { month: monthLabels[0] });
+      return t('forms.business.conversionRate', { month: t(monthLabels[0]) });
     }
     if (field.key.startsWith('salesMonth')) {
-      return t('forms.business.salesMonth', { month: monthLabels[index] });
+      return t('forms.business.salesMonth', { month: t(monthLabels[index]) });
     }
-    return field.label;
+    return t(field.labelKey!);
   };
 
   // Computed average of 6 months
@@ -58,7 +58,7 @@ export function BusinessForm({ data, rules, onChange, onBlur }: BusinessFormProp
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
           {t('forms.business.title')}
-          <a href={SECTION_LINKS.business} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
+          <a href={links.business} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
             <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
@@ -99,6 +99,7 @@ export function BusinessForm({ data, rules, onChange, onBlur }: BusinessFormProp
                   name={`business.${field.key}`}
                   label={label}
                   benchmark={benchmark}
+                  currency={currency}
                   value={data[field.key as keyof BusinessData] as number | null}
                   onChange={(v) => onChange('business', field.key, v)}
                   onBlur={onBlur}
@@ -125,7 +126,7 @@ export function BusinessForm({ data, rules, onChange, onBlur }: BusinessFormProp
         <div className="mt-4">
           <p className="mb-1 text-sm font-medium">{t('forms.business.averageSales')}</p>
           <div className="rounded-md bg-muted p-2 text-sm" role="status" aria-live="polite">
-            {average == null ? '—' : formatCurrencyDisplay(average)}
+            {average == null ? '—' : `${currency} ${formatCurrency(average)}`}
           </div>
         </div>
       </CardContent>

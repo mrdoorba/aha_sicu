@@ -55,6 +55,7 @@ EVAL_DETAIL_ROW = {
     "evaluator_email": "rina@company.com",
     "created_at": datetime(2026, 2, 10, 10, 30, 0, tzinfo=timezone.utc),
     "rule_version": 1,
+    "marketplace": "ID",
 }
 
 
@@ -310,3 +311,23 @@ def test_get_evaluation_detail_allowed_member(client):
         data = response.json()
         assert data["id"] == 42
         assert data["brand_id"] == 10
+
+
+def test_get_evaluation_detail_has_marketplace(client):
+    """Test marketplace field is present with default 'ID' value."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
+    ):
+        _setup_auth_mocks_for_user(mock_verify, mock_db, mock_user_queries, MOCK_MEMBER)
+        mock_eq.get_evaluation_by_id = AsyncMock(return_value=EVAL_DETAIL_ROW)
+
+        response = client.get(
+            "/api/v1/evaluations/42",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        assert response.json()["marketplace"] == "ID"

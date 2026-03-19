@@ -10,12 +10,14 @@ import {
   TableRow,
 } from '../../ui/table';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/collapsible';
-import { formatIDR } from '../forms/formConfig';
+import { formatCurrency, getCurrencyCode } from '../forms/formConfig';
 import type { CalculatorResult, TopSkuDetails } from '../../../hooks/useCalculator';
 import { isTopSkuDetails } from '../../../lib/calculatorGuards';
+import { getIntlLocale } from '../../../lib/localeMap';
 
 interface TopSkuResultsProps {
   result: CalculatorResult;
+  marketplace?: string;
 }
 
 type SortDir = 'asc' | 'desc';
@@ -32,8 +34,8 @@ function sortBy<T>(data: T[], field: keyof T, dir: SortDir): T[] {
   });
 }
 
-export function TopSkuResults({ result }: TopSkuResultsProps) {
-  const { t } = useTranslation();
+export function TopSkuResults({ result, marketplace = 'ID' }: TopSkuResultsProps) {
+  const { t, i18n } = useTranslation();
   const [isOpen, setIsOpen] = useState(false);
   const [revSortField, setRevSortField] = useState<keyof TopSkuDetails['output_1'][0]>('total_omzet');
   const [revSortDir, setRevSortDir] = useState<SortDir>('desc');
@@ -81,7 +83,7 @@ export function TopSkuResults({ result }: TopSkuResultsProps) {
       <div className="mb-2 flex items-center justify-between">
         <h4 className="text-sm font-semibold">{t('topSku.title')}</h4>
         <time className="text-xs text-muted-foreground">
-          {new Date(result.calculated_at).toLocaleString('id-ID')}
+          {new Date(result.calculated_at).toLocaleString(getIntlLocale(i18n.language))}
         </time>
       </div>
 
@@ -142,8 +144,8 @@ export function TopSkuResults({ result }: TopSkuResultsProps) {
                 <TableRow key={row.kode_variasi}>
                   <TableCell>{row.kode_variasi}</TableCell>
                   <TableCell>{row.product_name}</TableCell>
-                  <TableCell className="text-right">IDR {formatIDR(row.total_omzet)}</TableCell>
-                  <TableCell className="text-right">IDR {formatIDR(row.rata2_harga_jual)}</TableCell>
+                  <TableCell className="text-right">{getCurrencyCode(marketplace)} {formatCurrency(row.total_omzet, marketplace)}</TableCell>
+                  <TableCell className="text-right">{getCurrencyCode(marketplace)} {formatCurrency(row.rata2_harga_jual, marketplace)}</TableCell>
                 </TableRow>
               ))}
             </TableBody>

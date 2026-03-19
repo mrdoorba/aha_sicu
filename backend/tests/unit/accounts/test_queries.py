@@ -33,7 +33,6 @@ SAMPLE_USER_FULL = {
 }
 
 
-@pytest.mark.asyncio
 async def test_get_all_users(mock_conn):
     """Returns list of user dicts."""
     mock_conn.fetch = AsyncMock(return_value=[SAMPLE_USER])
@@ -42,7 +41,6 @@ async def test_get_all_users(mock_conn):
     mock_conn.fetch.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_get_all_users_empty(mock_conn):
     """Returns empty list when no users."""
     mock_conn.fetch = AsyncMock(return_value=[])
@@ -50,7 +48,6 @@ async def test_get_all_users_empty(mock_conn):
     assert result == []
 
 
-@pytest.mark.asyncio
 async def test_create_user(mock_conn):
     """Creates user with specified role and returns dict."""
     mock_conn.fetchrow = AsyncMock(return_value=SAMPLE_USER)
@@ -59,7 +56,6 @@ async def test_create_user(mock_conn):
     mock_conn.fetchrow.assert_called_once()
 
 
-@pytest.mark.asyncio
 async def test_update_user_role(mock_conn):
     """Updates role and returns updated user dict."""
     updated = {**SAMPLE_USER, "role": "admin"}
@@ -68,7 +64,6 @@ async def test_update_user_role(mock_conn):
     assert result["role"] == "admin"
 
 
-@pytest.mark.asyncio
 async def test_update_user_role_not_found(mock_conn):
     """Returns None when user doesn't exist."""
     mock_conn.fetchrow = AsyncMock(return_value=None)
@@ -76,7 +71,6 @@ async def test_update_user_role_not_found(mock_conn):
     assert result is None
 
 
-@pytest.mark.asyncio
 async def test_get_user_by_id(mock_conn):
     """Returns user dict when found."""
     mock_conn.fetchrow = AsyncMock(return_value=SAMPLE_USER_FULL)
@@ -85,7 +79,6 @@ async def test_get_user_by_id(mock_conn):
     assert result["firebase_uid"] == "fb-uid-123"
 
 
-@pytest.mark.asyncio
 async def test_get_user_by_id_not_found(mock_conn):
     """Returns None when not found."""
     mock_conn.fetchrow = AsyncMock(return_value=None)
@@ -93,7 +86,6 @@ async def test_get_user_by_id_not_found(mock_conn):
     assert result is None
 
 
-@pytest.mark.asyncio
 async def test_delete_user_success(mock_conn):
     """Returns True when user deleted."""
     mock_conn.execute = AsyncMock(return_value="DELETE 1")
@@ -101,7 +93,6 @@ async def test_delete_user_success(mock_conn):
     assert result is True
 
 
-@pytest.mark.asyncio
 async def test_delete_user_not_found(mock_conn):
     """Returns False when user doesn't exist."""
     mock_conn.execute = AsyncMock(return_value="DELETE 0")

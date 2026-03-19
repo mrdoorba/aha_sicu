@@ -25,6 +25,7 @@ export interface EvaluationDetail {
   rule_version: number;
   period: string;
   brand_raw_data: BrandRawData;
+  marketplace?: string;
 }
 
 class ApiError extends Error {
@@ -55,7 +56,7 @@ export function useEvaluationDetail(id: number) {
         }
         throw new ApiError('Failed to fetch evaluation detail');
       }
-      return data;
+      return data as EvaluationDetail;
     },
     enabled: id > 0,
   });

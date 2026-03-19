@@ -136,7 +136,7 @@ def _setup_scoring_mocks(mock_bq, mock_eq, mock_cq, mock_rq,
     mock_bq.get_brand_by_id = AsyncMock(return_value=brand if brand is not None else SAMPLE_BRAND)
     mock_eq.get_evaluation_inputs = AsyncMock(return_value=eval_inputs if eval_inputs is not None else SAMPLE_EVAL_INPUTS)
     mock_cq.get_results_by_brand = AsyncMock(return_value=calc_results if calc_results is not None else SAMPLE_CALC_RESULTS)
-    mock_rq.get_rules_by_template = AsyncMock(return_value=rules_row if rules_row is not None else SAMPLE_RULES_ROW)
+    mock_rq.get_rules_by_template_and_marketplace = AsyncMock(return_value=rules_row if rules_row is not None else SAMPLE_RULES_ROW)
 
 
 def test_score_without_token(client):
@@ -477,7 +477,7 @@ def test_score_rules_not_found_falls_back(client):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
         _setup_scoring_mocks(mock_bq, mock_eq, mock_cq, mock_rq, rules_row=None)
         # Override rules to return None (not found)
-        mock_rq.get_rules_by_template = AsyncMock(return_value=None)
+        mock_rq.get_rules_by_template_and_marketplace = AsyncMock(return_value=None)
 
         response = client.post(
             "/api/v1/evaluations/brands/1/score",

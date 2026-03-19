@@ -1,5 +1,6 @@
 """Brand data database queries using parameterized SQL."""
 
+import json
 from datetime import datetime
 from typing import Any, Literal, TypedDict
 
@@ -61,6 +62,47 @@ async def upsert_brand_data(
         brand_name,
         raw_data,
     )
+
+
+async def batch_upsert_brand_data(
+    conn: Connection,
+    table: TableName,
+    brand_names: list[str],
+    raw_data_list: list[dict[str, Any]],
+) -> int:
+    """Batch upsert brand data using unnest arrays.
+
+    Uses a single INSERT...ON CONFLICT with unnest for O(1) round-trips
+    regardless of batch size.
+
+    Args:
+        conn: Database connection (should be within a transaction).
+        table: Target table name.
+        brand_names: List of brand names (parallel with raw_data_list).
+        raw_data_list: List of raw data dicts (parallel with brand_names).
+
+    Returns:
+        Count of upserted rows.
+    """
+    table = _validate_table(table)
+
+    if not brand_names:
+        return 0
+
+    raw_data_json = [json.dumps(d) for d in raw_data_list]
+
+    status = await conn.execute(
+        f"""
+        INSERT INTO {table} (brand_name, raw_data, updated_at)
+        SELECT unnest($1::text[]), unnest($2::jsonb[]), NOW()
+        ON CONFLICT (brand_name) DO UPDATE SET
+            raw_data = EXCLUDED.raw_data,
+            updated_at = NOW()
+        """,
+        brand_names,
+        raw_data_json,
+    )
+    return int(status.split()[-1])
 
 
 async def get_brand_data(

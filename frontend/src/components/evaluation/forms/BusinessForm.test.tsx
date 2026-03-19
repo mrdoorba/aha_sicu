@@ -5,6 +5,17 @@ import { BusinessForm } from './BusinessForm';
 import type { BusinessData } from './formConfig';
 import type { ScoringRules } from '../../../hooks/useRules';
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, opts?: Record<string, string>) => {
+      if (opts) return `${key}::${JSON.stringify(opts)}`;
+      return key;
+    },
+    i18n: { language: 'id' },
+  }),
+  Trans: ({ i18nKey }: { i18nKey: string }) => i18nKey,
+}));
+
 const emptyData: BusinessData = {
   salesStartMonth: null,
   salesMonth0: null,
@@ -42,9 +53,9 @@ describe('BusinessForm', () => {
     );
 
     // 6 sales month currency fields + 1 conversion rate
-    const salesFields = screen.getAllByLabelText(/Penjualan Bulan/);
+    const salesFields = screen.getAllByLabelText(/forms\.business\.salesMonth/);
     expect(salesFields).toHaveLength(6);
-    expect(screen.getByLabelText(/Tingkat Konversi/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/forms\.business\.conversionRate/)).toBeInTheDocument();
   });
 
   it('shows benchmark from rules when rules are provided', () => {
@@ -70,7 +81,7 @@ describe('BusinessForm', () => {
     render(
       <BusinessForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
-    expect(screen.getByText('Bisnis Analisis')).toBeInTheDocument();
+    expect(screen.getByText('forms.business.title')).toBeInTheDocument();
   });
 
   it('renders 6 currency fields for sales months', () => {
@@ -85,7 +96,7 @@ describe('BusinessForm', () => {
     render(
       <BusinessForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
-    expect(screen.getByLabelText(/Bulan Awal Penjualan/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/forms\.business\.startMonth/)).toBeInTheDocument();
   });
 
   it('generates dynamic labels when salesStartMonth is set', () => {
@@ -96,14 +107,16 @@ describe('BusinessForm', () => {
     render(
       <BusinessForm data={dataWithMonth} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
-    expect(screen.getByLabelText(/Penjualan Bulan Jan 2026/)).toBeInTheDocument();
+    // t('forms.business.salesMonth', { month: t('Jan 2026') }) → 'forms.business.salesMonth::{"month":"Jan 2026"}'
+    expect(screen.getByLabelText(/forms\.business\.salesMonth.*Jan 2026/)).toBeInTheDocument();
   });
 
   it('uses generic fallback labels when salesStartMonth is null', () => {
     render(
       <BusinessForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
-    expect(screen.getByLabelText(/Penjualan Bulan Bulan Ini/)).toBeInTheDocument();
+    // t('forms.business.salesMonth', { month: t('generic.thisMonth') }) → 'forms.business.salesMonth::{"month":"generic.thisMonth"}'
+    expect(screen.getByLabelText(/forms\.business\.salesMonth.*generic\.thisMonth/)).toBeInTheDocument();
   });
 
   it('uses generic fallback labels when salesStartMonth is invalid', () => {
@@ -114,7 +127,7 @@ describe('BusinessForm', () => {
     render(
       <BusinessForm data={dataInvalid} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
-    expect(screen.getByLabelText(/Penjualan Bulan Bulan Ini/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/forms\.business\.salesMonth.*generic\.thisMonth/)).toBeInTheDocument();
   });
 
   it('shows computed average when sales data is present', () => {
@@ -130,7 +143,7 @@ describe('BusinessForm', () => {
     render(
       <BusinessForm data={dataWithSales} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
-    expect(screen.getByText('Rata-rata Penjualan 6 Bulan Terakhir')).toBeInTheDocument();
+    expect(screen.getByText('forms.business.averageSales')).toBeInTheDocument();
     // Average = 44833333.33... → should show formatted IDR
     expect(screen.getByText(/44,833,333/)).toBeInTheDocument();
   });
@@ -139,7 +152,7 @@ describe('BusinessForm', () => {
     render(
       <BusinessForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />,
     );
-    expect(screen.getByText('Rata-rata Penjualan 6 Bulan Terakhir')).toBeInTheDocument();
+    expect(screen.getByText('forms.business.averageSales')).toBeInTheDocument();
     expect(screen.getByText('—')).toBeInTheDocument();
   });
 
@@ -150,7 +163,7 @@ describe('BusinessForm', () => {
       <BusinessForm data={emptyData} onChange={onChange} onBlur={vi.fn()} />,
     );
 
-    const select = screen.getByLabelText(/Bulan Awal Penjualan/);
+    const select = screen.getByLabelText(/forms\.business\.startMonth/);
     await user.selectOptions(select, select.querySelector('option:nth-child(2)')!);
     expect(onChange).toHaveBeenCalledWith('business', 'salesStartMonth', expect.any(String));
   });

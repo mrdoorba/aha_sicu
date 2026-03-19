@@ -7,6 +7,8 @@ from app.core.exceptions import UploadException
 from app.modules.upload.parser import (
     REQUIRED_COLUMNS,
     SHOPEE_CSV_SKIP_ROWS,
+    _normalise_english_columns,
+    _normalise_thai_columns,
     dataframe_to_json,
     parse_csv,
     parse_excel,
@@ -232,3 +234,210 @@ def test_english_csv_validates_after_normalisation():
     )
     df, _lang = parse_csv(csv_bytes)
     validate_columns(df, "cpc_ad_report")  # should not raise
+
+
+# ---------------------------------------------------------------------------
+# Thai order export normalisation
+# ---------------------------------------------------------------------------
+
+def _thai_order_df(**overrides: list) -> pl.DataFrame:
+    """Build a DataFrame with Thai order export headers."""
+    base = {
+        "หมายเลขคำสั่งซื้อ": ["ORD001", "ORD001", "ORD002"],
+        "ชื่อสินค้า": ["Product A", "Product B", "Product C"],
+        "ราคาตั้งต้น": [100, 200, 300],
+        "ราคาขาย": [90, 180, 270],
+        "จำนวน": [1, 2, 1],
+        "โค้ดส่วนลดชำระโดยผู้ขาย": [0, 0, 0],
+        "ส่วนลด bundle deal ชำระโดยผู้ขาย": [0, 0, 0],
+        "เลขอ้างอิง SKU (SKU Reference No.)": ["SKU1", "SKU2", "SKU3"],
+        "ชื่อตัวเลือก": ["Var A", "Var B", "Var C"],
+        "โค้ด Coins Cashback ชำระโดยผู้ขาย": [0, 0, 0],
+        "ส่วนลดจาก Shopee": [0, 0, 0],
+    }
+    base.update(overrides)
+    return pl.DataFrame(base)
+
+
+class TestThaiOrderExportNormalisation:
+    """Tests for _normalise_thai_columns."""
+
+    def test_renames_all_columns_to_indonesian(self):
+        df = _thai_order_df()
+        result, was_thai = _normalise_thai_columns(df)
+
+        assert was_thai is True
+        assert "No. Pesanan" in result.columns
+        assert "Nama Produk" in result.columns
+        assert "Harga Awal" in result.columns
+        assert "Harga Setelah Diskon" in result.columns
+        assert "Jumlah" in result.columns
+        assert "Voucher Ditanggung Penjual" in result.columns
+        assert "Paket Diskon (Diskon dari Penjual)" in result.columns
+        assert "Nomor Referensi SKU" in result.columns
+        assert "Nama Variasi" in result.columns
+        assert "Cashback Koin" in result.columns
+        assert "Diskon Dari Shopee" in result.columns
+
+    def test_computes_jumlah_produk_di_pesan(self):
+        """Synthetic column = count of rows per order number."""
+        df = _thai_order_df()
+        result, _ = _normalise_thai_columns(df)
+
+        assert "Jumlah Produk di Pesan" in result.columns
+        rows = result.to_dicts()
+        # ORD001 appears twice → 2, ORD002 appears once → 1
+        assert rows[0]["Jumlah Produk di Pesan"] == 2
+        assert rows[1]["Jumlah Produk di Pesan"] == 2
+        assert rows[2]["Jumlah Produk di Pesan"] == 1
+
+    def test_single_item_order_gets_count_1(self):
+        df = _thai_order_df(**{
+            "หมายเลขคำสั่งซื้อ": ["ORD001"],
+            "ชื่อสินค้า": ["Product A"],
+            "ราคาตั้งต้น": [100],
+            "ราคาขาย": [90],
+            "จำนวน": [1],
+            "โค้ดส่วนลดชำระโดยผู้ขาย": [0],
+            "ส่วนลด bundle deal ชำระโดยผู้ขาย": [0],
+            "เลขอ้างอิง SKU (SKU Reference No.)": ["SKU1"],
+            "ชื่อตัวเลือก": ["Var A"],
+            "โค้ด Coins Cashback ชำระโดยผู้ขาย": [0],
+            "ส่วนลดจาก Shopee": [0],
+        })
+        result, _ = _normalise_thai_columns(df)
+        assert result.to_dicts()[0]["Jumlah Produk di Pesan"] == 1
+
+    def test_validates_after_normalisation(self):
+        """Thai order export passes column validation after normalisation."""
+        df = _thai_order_df()
+        result, _ = _normalise_thai_columns(df)
+        validate_columns(result, "order_export")  # should not raise
+
+    def test_indonesian_passthrough(self):
+        """Indonesian DataFrames pass through unchanged."""
+        cols = REQUIRED_COLUMNS["order_export"]
+        df = pl.DataFrame({col: ["x"] for col in cols})
+        result, was_thai = _normalise_thai_columns(df)
+        assert was_thai is False
+        assert result.columns == df.columns
+
+    def test_does_not_overwrite_existing_jumlah_produk(self):
+        """If the column already exists (Indonesian file), don't recompute it."""
+        cols = REQUIRED_COLUMNS["order_export"]
+        df = pl.DataFrame({col: ["x"] for col in cols})
+        result, was_thai = _normalise_thai_columns(df)
+        assert was_thai is False
+        # Column should still have original value
+        assert result.to_dicts()[0]["Jumlah Produk di Pesan"] == "x"
+
+    def test_large_order_count(self):
+        """Order with 5 items gets count 5 for all rows."""
+        n = 5
+        df = _thai_order_df(**{
+            "หมายเลขคำสั่งซื้อ": ["ORD001"] * n,
+            "ชื่อสินค้า": [f"Product {i}" for i in range(n)],
+            "ราคาตั้งต้น": [100] * n,
+            "ราคาขาย": [90] * n,
+            "จำนวน": [1] * n,
+            "โค้ดส่วนลดชำระโดยผู้ขาย": [0] * n,
+            "ส่วนลด bundle deal ชำระโดยผู้ขาย": [0] * n,
+            "เลขอ้างอิง SKU (SKU Reference No.)": [f"SKU{i}" for i in range(n)],
+            "ชื่อตัวเลือก": [f"Var {i}" for i in range(n)],
+            "โค้ด Coins Cashback ชำระโดยผู้ขาย": [0] * n,
+            "ส่วนลดจาก Shopee": [0] * n,
+        })
+        result, _ = _normalise_thai_columns(df)
+        rows = result.to_dicts()
+        assert all(r["Jumlah Produk di Pesan"] == 5 for r in rows)
+
+
+# ---------------------------------------------------------------------------
+# English mass update normalisation
+# ---------------------------------------------------------------------------
+
+class TestEnglishMassUpdateNormalisation:
+    """Tests for _normalise_english_columns with mass update headers."""
+
+    def test_renames_mass_update_columns(self):
+        df = pl.DataFrame({
+            "Product ID": ["P1"],
+            "Product Name": ["Widget"],
+            "Variation ID": ["V1"],
+            "Variation Name": ["Red"],
+            "SKU": ["SKU1"],
+            "Price": [100],
+            "Stock": [50],
+        })
+        result, was_english = _normalise_english_columns(df)
+
+        assert was_english is True
+        assert "Kode Produk" in result.columns
+        assert "Nama Produk" in result.columns
+        assert "Kode Variasi" in result.columns
+        assert "Nama Variasi" in result.columns
+        assert "SKU" in result.columns  # unchanged
+        assert "Harga" in result.columns
+        assert "Stok" in result.columns
+
+    def test_validates_after_normalisation(self):
+        df = pl.DataFrame({
+            "Product ID": ["P1"],
+            "Product Name": ["Widget"],
+            "Variation ID": ["V1"],
+            "Variation Name": ["Red"],
+            "SKU": ["SKU1"],
+            "Price": [100],
+        })
+        result, _ = _normalise_english_columns(df)
+        validate_columns(result, "mass_update")  # should not raise
+
+    def test_stock_prefix_rename_single(self):
+        """'Stock' → 'Stok'."""
+        df = pl.DataFrame({"Stock": [10], "Product ID": ["P1"]})
+        result, was_english = _normalise_english_columns(df)
+        assert was_english is True
+        assert "Stok" in result.columns
+        assert "Stock" not in result.columns
+
+    def test_stock_prefix_rename_multi_warehouse(self):
+        """'Stock', 'Stock 2', 'Stock 3' → 'Stok', 'Stok 2', 'Stok 3'."""
+        df = pl.DataFrame({
+            "Product ID": ["P1"],
+            "Stock": [10],
+            "Stock 2": [20],
+            "Stock 3": [30],
+        })
+        result, _ = _normalise_english_columns(df)
+        assert "Stok" in result.columns
+        assert "Stok 2" in result.columns
+        assert "Stok 3" in result.columns
+        assert "Stock" not in result.columns
+        assert "Stock 2" not in result.columns
+        assert "Stock 3" not in result.columns
+
+    def test_indonesian_mass_update_passthrough(self):
+        """Indonesian mass update headers pass through unchanged."""
+        df = pl.DataFrame({
+            "Kode Produk": ["P1"],
+            "Nama Produk": ["Widget"],
+            "Kode Variasi": ["V1"],
+            "Nama Variasi": ["Red"],
+            "SKU": ["SKU1"],
+            "Harga": [100],
+            "Stok": [50],
+        })
+        result, was_english = _normalise_english_columns(df)
+        assert was_english is False
+
+    def test_stok_columns_work_with_startswith(self):
+        """After rename, all stock columns match startswith('Stok')."""
+        df = pl.DataFrame({
+            "Product ID": ["P1"],
+            "Stock": [10],
+            "Stock 2": [20],
+            "Stock 3": [30],
+        })
+        result, _ = _normalise_english_columns(df)
+        stok_cols = [c for c in result.columns if c.startswith("Stok")]
+        assert len(stok_cols) == 3

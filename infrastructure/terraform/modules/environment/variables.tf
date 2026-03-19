@@ -26,17 +26,6 @@ variable "cloud_sql_instance_connection_name" {
   type        = string
 }
 
-variable "db_user" {
-  description = "Database user name"
-  type        = string
-}
-
-variable "db_password" {
-  description = "Database password (from random_password)"
-  type        = string
-  sensitive   = true
-}
-
 variable "github_repo" {
   description = "GitHub repository in format 'owner/repo'"
   type        = string
@@ -109,6 +98,18 @@ variable "cloud_run_url" {
   default     = ""
 }
 
+variable "email_enabled" {
+  description = "Whether to enable the send-email feature"
+  type        = bool
+  default     = false
+}
+
+variable "email_allowed_domains" {
+  description = "Comma-separated list of allowed email recipient domains"
+  type        = string
+  default     = ""
+}
+
 variable "cors_origins" {
   description = "Allowed CORS origins for GCS upload bucket"
   type        = list(string)
@@ -118,4 +119,10 @@ variable "depends_on_apis" {
   description = "API enablement resources to depend on"
   type        = list(any)
   default     = []
+}
+
+variable "wif_allowed_branch" {
+  description = "Git branch allowed to authenticate via WIF (e.g., main, develop)"
+  type        = string
+  default     = "main"
 }

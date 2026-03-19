@@ -44,7 +44,6 @@ def test_init_firebase_skips_when_already_initialized():
 # --- verify_firebase_token tests ---
 
 
-@pytest.mark.asyncio
 async def test_verify_token_valid():
     """Test successful token verification."""
     with patch("app.core.security.auth.verify_id_token") as mock_verify:
@@ -54,7 +53,6 @@ async def test_verify_token_valid():
         assert result["email"] == "test@example.com"
 
 
-@pytest.mark.asyncio
 async def test_verify_token_invalid():
     """Test token verification with invalid token."""
     with patch("app.core.security.auth.verify_id_token") as mock_verify:
@@ -67,7 +65,6 @@ async def test_verify_token_invalid():
         assert exc_info.value.detail == "Token validation failed"
 
 
-@pytest.mark.asyncio
 async def test_verify_token_expired():
     """Test token verification with expired token."""
     with patch("app.core.security.auth.verify_id_token") as mock_verify:
@@ -80,7 +77,6 @@ async def test_verify_token_expired():
         assert exc_info.value.detail == "Token has expired"
 
 
-@pytest.mark.asyncio
 async def test_verify_token_generic_exception():
     """Test token verification with generic exception."""
     with patch("app.core.security.auth.verify_id_token") as mock_verify:

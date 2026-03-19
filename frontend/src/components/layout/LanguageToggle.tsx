@@ -5,12 +5,7 @@ import { toast } from 'sonner';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
 import { updateLanguage } from '../../services/apiClient';
-
-const LANGUAGES = [
-  { code: 'id' as const, flag: '\u{1F1EE}\u{1F1E9}', label: 'ID' },
-  { code: 'en' as const, flag: '\u{1F1EC}\u{1F1E7}', label: 'EN' },
-  { code: 'th' as const, flag: '\u{1F1F9}\u{1F1ED}', label: 'TH' },
-];
+import { LANGUAGES, type LanguageCode } from '../../lib/languages';
 
 interface LanguageToggleProps {
   className?: string;
@@ -34,7 +29,7 @@ export const LanguageToggle = ({ className, isCollapsed }: LanguageToggleProps) 
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelect = async (code: 'id' | 'en' | 'th') => {
+  const handleSelect = async (code: LanguageCode) => {
     if (code === i18n.language) {
       setOpen(false);
       return;

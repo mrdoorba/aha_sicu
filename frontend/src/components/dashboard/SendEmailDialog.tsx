@@ -1,6 +1,7 @@
 import { useState, useCallback } from 'react';
 import { Mail, Loader2, ChevronDown, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { EmailLanguageSelector } from '../shared/EmailLanguageSelector';
 import { captureChartAsPng } from '../../lib/captureChart';
 import { toast } from 'sonner';
 import {
@@ -46,6 +47,7 @@ export function SendEmailDialog({
   const { mutate, isPending, isError, reset } = useSendEmail();
 
   const initialRecipients = [brandRawData.email].filter(Boolean) as string[];
+  const [emailLanguage, setEmailLanguage] = useState(i18n.language);
 
   const [recipients, setRecipients] = useState<string[]>(initialRecipients);
   const [cc, setCc] = useState<string[]>([]);
@@ -64,10 +66,13 @@ export function SendEmailDialog({
   const fetchPreview = useCallback(async () => {
     setPreviewLoading(true);
     try {
-      const noteParam = note ? `?note=${encodeURIComponent(note)}` : '';
+      const params = new URLSearchParams();
+      if (note) params.set('note', note);
+      params.set('language', emailLanguage);
+      const qs = params.toString();
       const token = await getCurrentUserToken();
       const res = await fetch(
-        `${API_BASE_URL}/api/v1/email/preview/${evaluationId}${noteParam}`,
+        `${API_BASE_URL}/api/v1/email/preview/${evaluationId}${qs ? `?${qs}` : ''}`,
         {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         },
@@ -79,7 +84,7 @@ export function SendEmailDialog({
     } finally {
       setPreviewLoading(false);
     }
-  }, [evaluationId, note]);
+  }, [evaluationId, note, emailLanguage]);
 
   const togglePreview = () => {
     const next = !showPreview;
@@ -104,6 +109,7 @@ export function SendEmailDialog({
       setShowCc(false);
       setShowBcc(false);
       setNote('');
+      setEmailLanguage(i18n.language);
       setShowPreview(false);
       setPreviewHtml(null);
     }
@@ -131,7 +137,7 @@ export function SendEmailDialog({
         cc: cc.length > 0 ? cc : undefined,
         bcc: bcc.length > 0 ? bcc : undefined,
         note: note || undefined,
-        language: i18n.language,
+        language: emailLanguage,
       },
       {
         onSuccess: () => {
@@ -219,6 +225,9 @@ export function SendEmailDialog({
               </div>
             )}
           </div>
+
+          {/* Email Language Selector */}
+          <EmailLanguageSelector value={emailLanguage} onChange={setEmailLanguage} />
 
           {/* Note Section */}
           <div className="space-y-1.5">

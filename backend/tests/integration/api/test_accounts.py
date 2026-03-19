@@ -133,6 +133,7 @@ def test_create_account_success(client):
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.accounts.service.db") as mock_svc_db,
         patch("app.modules.accounts.service.auth") as mock_auth,
+        patch("app.modules.accounts.router._audit", new_callable=AsyncMock) as mock_audit,
     ):
         _setup_auth(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
         mock_auth.create_user = MagicMock(return_value=mock_firebase_user)
@@ -149,6 +150,14 @@ def test_create_account_success(client):
         data = response.json()
         assert data["email"] == "new@company.com"
         assert data["role"] == "member"
+
+        mock_audit.assert_called_once_with(
+            "account.create",
+            MOCK_ADMIN,
+            "user",
+            "10",
+            details={"email": "new@company.com", "role": "member"},
+        )
 
 
 def test_create_account_duplicate_email(client):
@@ -206,11 +215,18 @@ def test_update_role_success(client):
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.accounts.service.db") as mock_svc_db,
+        patch("app.modules.accounts.router.db") as mock_router_db,
+        patch("app.modules.accounts.router._audit", new_callable=AsyncMock) as mock_audit,
     ):
         _setup_auth(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
         mock_svc_conn = AsyncMock()
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
         mock_svc_conn.fetchrow = AsyncMock(return_value=updated_user)
+
+        # Mock router's old-role fetch
+        mock_router_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_router_conn
+        mock_router_conn.fetchrow = AsyncMock(return_value=MOCK_MEMBER)
 
         response = client.patch(
             "/api/v1/accounts/2/role",
@@ -219,6 +235,14 @@ def test_update_role_success(client):
         )
         assert response.status_code == 200
         assert response.json()["role"] == "leader"
+
+        mock_audit.assert_called_once_with(
+            "account.role_change",
+            MOCK_ADMIN,
+            "user",
+            "2",
+            details={"old_role": "member", "new_role": "leader"},
+        )
 
 
 def test_update_own_role_blocked(client):
@@ -267,6 +291,7 @@ def test_reset_password_success(client):
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.accounts.service.db") as mock_svc_db,
         patch("app.modules.accounts.service.auth") as mock_auth,
+        patch("app.modules.accounts.router._audit", new_callable=AsyncMock) as mock_audit,
     ):
         _setup_auth(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
         mock_svc_conn = AsyncMock()
@@ -280,6 +305,13 @@ def test_reset_password_success(client):
             headers=AUTH_HEADERS,
         )
         assert response.status_code == 204
+
+        mock_audit.assert_called_once_with(
+            "account.password_reset",
+            MOCK_ADMIN,
+            "user",
+            "2",
+        )
 
 
 def test_reset_own_password_blocked(client):
@@ -314,6 +346,8 @@ def test_delete_account_success(client):
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.accounts.service.db") as mock_svc_db,
         patch("app.modules.accounts.service.auth") as mock_auth,
+        patch("app.modules.accounts.router.db") as mock_router_db,
+        patch("app.modules.accounts.router._audit", new_callable=AsyncMock) as mock_audit,
     ):
         _setup_auth(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
         mock_svc_conn = AsyncMock()
@@ -324,11 +358,24 @@ def test_delete_account_success(client):
         mock_auth.delete_user = MagicMock()
         mock_auth.UserNotFoundError = firebase_auth.UserNotFoundError
 
+        # Mock router's pre-delete user fetch
+        mock_router_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_router_conn
+        mock_router_conn.fetchrow = AsyncMock(return_value=target_user)
+
         response = client.delete(
             "/api/v1/accounts/2",
             headers=AUTH_HEADERS,
         )
         assert response.status_code == 204
+
+        mock_audit.assert_called_once_with(
+            "account.delete",
+            MOCK_ADMIN,
+            "user",
+            "2",
+            details={"email": "member@company.com", "role": "member"},
+        )
 
 
 def test_delete_account_firebase_failure_returns_502(client):
@@ -343,6 +390,8 @@ def test_delete_account_firebase_failure_returns_502(client):
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.accounts.service.db") as mock_svc_db,
         patch("app.modules.accounts.service.auth") as mock_auth,
+        patch("app.modules.accounts.router.db") as mock_router_db,
+        patch("app.modules.accounts.router._audit", new_callable=AsyncMock),
     ):
         _setup_auth(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
         mock_svc_conn = AsyncMock()
@@ -354,6 +403,10 @@ def test_delete_account_firebase_failure_returns_502(client):
             side_effect=Exception("INSUFFICIENT_PERMISSION")
         )
         mock_auth.UserNotFoundError = firebase_auth.UserNotFoundError
+
+        mock_router_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_router_conn
+        mock_router_conn.fetchrow = AsyncMock(return_value=target_user)
 
         response = client.delete(
             "/api/v1/accounts/2",
@@ -375,6 +428,8 @@ def test_delete_account_succeeds_when_firebase_user_absent(client):
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.accounts.service.db") as mock_svc_db,
         patch("app.modules.accounts.service.auth") as mock_auth,
+        patch("app.modules.accounts.router.db") as mock_router_db,
+        patch("app.modules.accounts.router._audit", new_callable=AsyncMock),
     ):
         _setup_auth(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
         mock_svc_conn = AsyncMock()
@@ -386,6 +441,10 @@ def test_delete_account_succeeds_when_firebase_user_absent(client):
             side_effect=firebase_auth.UserNotFoundError("user not found")
         )
         mock_auth.UserNotFoundError = firebase_auth.UserNotFoundError
+
+        mock_router_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_router_conn
+        mock_router_conn.fetchrow = AsyncMock(return_value=target_user)
 
         response = client.delete(
             "/api/v1/accounts/2",
@@ -417,11 +476,17 @@ def test_delete_account_not_found(client):
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
         patch("app.modules.accounts.service.db") as mock_svc_db,
+        patch("app.modules.accounts.router.db") as mock_router_db,
+        patch("app.modules.accounts.router._audit", new_callable=AsyncMock),
     ):
         _setup_auth(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
         mock_svc_conn = AsyncMock()
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
         mock_svc_conn.fetchrow = AsyncMock(return_value=None)
+
+        mock_router_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_router_conn
+        mock_router_conn.fetchrow = AsyncMock(return_value=None)
 
         response = client.delete(
             "/api/v1/accounts/999",
@@ -444,3 +509,51 @@ def test_delete_account_member_forbidden(client):
             headers=AUTH_HEADERS,
         )
         assert response.status_code == 403
+
+
+# --- AUDIT RESILIENCE (AC-7) ---
+
+
+def test_create_account_succeeds_when_audit_fails(client):
+    """Mutation succeeds even when audit INSERT fails (AC-7)."""
+    new_user = {
+        "id": 10,
+        "email": "new@company.com",
+        "role": "member",
+        "created_at": datetime(2026, 2, 20, tzinfo=timezone.utc),
+        "last_login": None,
+    }
+    mock_firebase_user = MagicMock()
+    mock_firebase_user.uid = "new-firebase-uid"
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.accounts.service.db") as mock_svc_db,
+        patch("app.modules.accounts.service.auth") as mock_auth,
+        patch("app.modules.accounts.router.db") as mock_router_db,
+        patch(
+            "app.modules.accounts.router.record_audit_event",
+            new_callable=AsyncMock,
+            side_effect=Exception("DB connection failed"),
+        ),
+    ):
+        _setup_auth(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
+        mock_auth.create_user = MagicMock(return_value=mock_firebase_user)
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(return_value=new_user)
+
+        # Mock router's audit connection
+        mock_router_conn = AsyncMock()
+        mock_router_db.connection.return_value.__aenter__.return_value = mock_router_conn
+
+        response = client.post(
+            "/api/v1/accounts",
+            json={"email": "new@company.com", "password": "secret123", "role": "member"},
+            headers=AUTH_HEADERS,
+        )
+        # Mutation succeeds despite audit failure
+        assert response.status_code == 201
+        assert response.json()["email"] == "new@company.com"

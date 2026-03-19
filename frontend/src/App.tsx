@@ -1,6 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Toaster } from './components/ui/sonner';
@@ -19,6 +20,7 @@ import { MainLayout } from './components/layout/MainLayout';
 const queryClient = new QueryClient();
 
 function App() {
+  const { t } = useTranslation();
   const [showDowntimeWarning, setShowDowntimeWarning] = useState(false);
   const downtimeDismissedRef = useRef(false);
 
@@ -85,7 +87,7 @@ function App() {
                 element={
                   <RoleProtectedRoute
                     allowedRoles={['admin']}
-                    accessDeniedMessage="Akses ditolak — halaman akun hanya untuk admin"
+                    accessDeniedMessage={t('auth.accessDeniedAccounts')}
                   >
                     <AccountsPage />
                   </RoleProtectedRoute>

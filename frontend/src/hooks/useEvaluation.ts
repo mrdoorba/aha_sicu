@@ -13,6 +13,7 @@ export interface EvaluationState {
 export interface EvaluationInputsUpdate {
   category_type?: CategoryType | null;
   manual_data?: Record<string, unknown> | null;
+  marketplace?: string;
 }
 
 export function useEvaluationState(brandId: number) {
@@ -38,7 +39,8 @@ export function useSaveEvaluationInputs(brandId: number) {
         '/api/v1/evaluations/brands/{brand_id}',
         {
           params: { path: { brand_id: brandId } },
-          body,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          body: body as any,
         },
       );
       if (error) throw new Error('Failed to save evaluation inputs');

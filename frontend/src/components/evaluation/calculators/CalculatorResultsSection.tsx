@@ -16,6 +16,7 @@ import { DiscountResults } from './DiscountResults';
 
 interface CalculatorResultsSectionProps {
   brandId: number;
+  marketplace?: string;
 }
 
 const FILE_LABELS: Record<string, string> = {
@@ -33,12 +34,12 @@ const CALCULATOR_LABELS: Record<string, string> = {
 
 const CALCULATOR_ORDER = ['ads_keyword', 'top_sku', 'discount'] as const;
 
-function ResultRenderer({ result }: { result: CalculatorResult }) {
+function ResultRenderer({ result, marketplace }: { result: CalculatorResult; marketplace?: string }) {
   switch (result.calculator_type) {
     case 'ads_keyword':
       return <AdsKeywordResults result={result} />;
     case 'top_sku':
-      return <TopSkuResults result={result} />;
+      return <TopSkuResults result={result} marketplace={marketplace} />;
     case 'discount':
       return <DiscountResults result={result} />;
     default:
@@ -137,12 +138,14 @@ function CalculatorCard({
   result,
   status,
   autoCalcError,
+  marketplace,
 }: {
   calcType: string;
   brandId: number;
   result?: CalculatorResult;
   status?: { status: string; has_result: boolean; missing_files: string[]; missing_manual: string[] };
   autoCalcError?: { reason?: string };
+  marketplace?: string;
 }) {
   const { t } = useTranslation();
   const runCalc = useRunCalculator(brandId, calcType as 'ads_keyword' | 'discount' | 'top_sku');
@@ -152,7 +155,7 @@ function CalculatorCard({
     return (
       <Card>
         <CardContent className="pt-4">
-          <ResultRenderer result={result} />
+          <ResultRenderer result={result} marketplace={marketplace} />
         </CardContent>
       </Card>
     );
@@ -222,7 +225,7 @@ function CalculatorCard({
   );
 }
 
-export function CalculatorResultsSection({ brandId }: CalculatorResultsSectionProps) {
+export function CalculatorResultsSection({ brandId, marketplace }: CalculatorResultsSectionProps) {
   const { t } = useTranslation();
   const { data: resultsData, isLoading: resultsLoading } = useCalculatorResults(brandId);
   const { data: statusData, isLoading: statusLoading } = useCalculatorStatus(brandId);
@@ -290,6 +293,7 @@ export function CalculatorResultsSection({ brandId }: CalculatorResultsSectionPr
             result={resultsByType[calcType]}
             status={statusData?.calculators[calcType]}
             autoCalcError={autoCalcErrorsByType[calcType]}
+            marketplace={marketplace}
           />
         ))}
       </div>

@@ -74,7 +74,7 @@ export const DetailedEvaluation = ({ scoreBreakdown }: DetailedEvaluationProps) 
                               value={row.value}
                               verdict={row.verdict}
                               score={row.score}
-                              benchmark={row.metric === 'Biaya (iklan)' ? '-' : row.benchmark}
+                              benchmark={(row.metric_i18n?.key === 'scoring.adCost' || row.metric === 'Biaya (iklan)') ? '-' : row.benchmark}
                               message={row.message}
                               metric_i18n={row.metric_i18n}
                               value_i18n={row.value_i18n}
@@ -83,7 +83,7 @@ export const DetailedEvaluation = ({ scoreBreakdown }: DetailedEvaluationProps) 
                             />
                           </div>
                         );
-                        if (row.metric.startsWith('Rata² Penjualan') || row.metric === 'Program Afiliasi' || row.metric === 'ROI') {
+                        if (row.metric_i18n?.key === 'scoring.avgSales6mo' || row.metric.startsWith('Rata² Penjualan') || row.metric_i18n?.key === 'scoring.promo.programAfiliasi' || row.metric === 'Program Afiliasi' || row.metric === 'ROI') {
                           return [
                             card,
                             <div key={`spacer-${idx}`} className="hidden sm:block" />,

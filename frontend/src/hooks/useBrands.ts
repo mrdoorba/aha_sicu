@@ -28,7 +28,7 @@ export function useBrands(page = 1, limit = 20, search = '') {
         },
       });
       if (error) throw new Error('Failed to fetch brands');
-      return data;
+      return data as BrandListResponse;
     },
   });
 }

@@ -12,6 +12,8 @@ import math
 from dataclasses import dataclass, field
 from typing import Any
 
+from app.calculators.price_parser import _parse_price
+
 
 # ---------------------------------------------------------------------------
 # Result type
@@ -44,25 +46,6 @@ def _safe_num(value: Any) -> float:
         except ValueError:
             return 0.0
     return 0.0
-
-
-def _clean_price(value: Any) -> float:
-    """Remove '.' thousands separator and convert to number.
-
-    Indonesian price format: '125.000' → 125000, '1.250.000' → 1250000.
-    """
-    if value is None:
-        return 0.0
-    if isinstance(value, (int, float)):
-        return float(value)
-    s = str(value).strip()
-    if not s:
-        return 0.0
-    s = s.replace(".", "")
-    try:
-        return float(s)
-    except ValueError:
-        return 0.0
 
 
 # ---------------------------------------------------------------------------
@@ -114,7 +97,12 @@ class LineItem:
     urutan: int
 
 
-def _calculate_line_items(rows: list[dict], urutan_list: list[int]) -> list[LineItem]:
+def _calculate_line_items(
+    rows: list[dict],
+    urutan_list: list[int],
+    *,
+    marketplace: str = "ID",
+) -> list[LineItem]:
     """Compute N (total discount), O (discount %), P (total paid) per line."""
     items: list[LineItem] = []
 
@@ -122,15 +110,15 @@ def _calculate_line_items(rows: list[dict], urutan_list: list[int]) -> list[Line
         if urutan == 0:
             continue
 
-        harga_awal = _clean_price(row.get("Harga Awal"))
-        harga_setelah_diskon = _clean_price(row.get("Harga Setelah Diskon"))
+        harga_awal = _parse_price(row.get("Harga Awal"), marketplace)
+        harga_setelah_diskon = _parse_price(row.get("Harga Setelah Diskon"), marketplace)
         jumlah = _safe_num(row.get("Jumlah"))
         nama_produk = str(row.get("Nama Produk", "") or "").strip()
 
         # Voucher and Paket only applied at Urutan=1
         if urutan == 1:
-            voucher = _clean_price(row.get("Voucher Ditanggung Penjual"))
-            paket = _clean_price(row.get("Paket Diskon (Diskon dari Penjual)"))
+            voucher = _parse_price(row.get("Voucher Ditanggung Penjual"), marketplace)
+            paket = _parse_price(row.get("Paket Diskon (Diskon dari Penjual)"), marketplace)
         else:
             voucher = 0.0
             paket = 0.0
@@ -317,13 +305,18 @@ def _format_output(
 # Main calculator entry point
 # ---------------------------------------------------------------------------
 
-def calculate_discount(order_data: list[dict]) -> DiscountResult:
+def calculate_discount(
+    order_data: list[dict],
+    *,
+    marketplace: str = "ID",
+) -> DiscountResult:
     """Execute the Discount Check Calculator.
 
     Pure function — no I/O, no database access.
 
     Args:
         order_data: Parsed rows from order_export (list of dicts).
+        marketplace: ``"ID"`` (Indonesian) or ``"TH"`` (Thai) price format.
 
     Returns:
         DiscountResult with output_text and details.
@@ -354,7 +347,7 @@ def calculate_discount(order_data: list[dict]) -> DiscountResult:
     urutan_list = _calculate_urutan(order_data)
 
     # Steps 2-6: Calculate line items (clean prices, apply voucher/paket, compute N/O/P)
-    line_items = _calculate_line_items(order_data, urutan_list)
+    line_items = _calculate_line_items(order_data, urutan_list, marketplace=marketplace)
 
     # Step 7: Product summary
     product_summary = _build_product_summary(line_items)

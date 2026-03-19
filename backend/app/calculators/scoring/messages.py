@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from app.calculators.scoring.helpers import (
-    _fmt_idr,
+    _fmt_currency,
     _fmt_pct_0dp,
     _fmt_pct_1dp,
     _format_message_template,
@@ -15,6 +15,7 @@ from app.calculators.scoring.helpers import (
 )
 from app.calculators.scoring.models import CategoryScore, TranslatableText
 from app.calculators.scoring.rules import PROMO_START_ROW, PROMO_TOOLS
+from app.core.marketplace import MARKETPLACE_CURRENCY
 
 def _generate_operational_messages(cat: CategoryScore, manual_data: dict, rules: dict | None = None) -> None:
     """Fill G-column messages for operational rows 7-11.
@@ -74,18 +75,19 @@ def _generate_operational_messages(cat: CategoryScore, manual_data: dict, rules:
             )
 
 
-def _generate_business_messages(cat: CategoryScore, manual_data: dict, rules: dict | None = None) -> None:
+def _generate_business_messages(cat: CategoryScore, manual_data: dict, rules: dict | None = None, *, marketplace: str = "ID") -> None:
     """Fill G-column messages for business rows 13-20."""
     biz_rules = _get_rule_category(rules, "business")
     biz = _get_nested(manual_data, "business") or {}
     sales_months = [_safe_num(biz.get(f"salesMonth{i}")) for i in range(6)]
     current = sales_months[0]
     avg_6mo = round(sum(sales_months) / 6) if any(s > 0 for s in sales_months) else 0
+    currency_code = MARKETPLACE_CURRENCY.get(marketplace, "IDR")
 
     for row in cat.rows:
         if row.row == 13:
-            idr_val = _fmt_idr(current)
-            idr_avg = _fmt_idr(avg_6mo)
+            idr_val = _fmt_currency(current, marketplace)
+            idr_avg = _fmt_currency(avg_6mo, marketplace)
             if avg_6mo > 0 and current > 0:
                 change_pct = ((current - avg_6mo) / avg_6mo) * 100
             else:
@@ -94,16 +96,16 @@ def _generate_business_messages(cat: CategoryScore, manual_data: dict, rules: di
 
             if row.verdict == "✔️":
                 tmpl = _get_rule_value(biz_rules, "monthly_sales_trend", "message_pass",
-                    "✔️ Penjualan = IDR {idr_val} [Meningkat {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: IDR {idr_avg}]")
-                row.message = _format_message_template(tmpl, idr_val=idr_val, change_pct=change_pct_str, idr_avg=idr_avg)
+                    "✔️ Penjualan = {currency} {idr_val} [Meningkat {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: {currency} {idr_avg}]")
+                row.message = _format_message_template(tmpl, idr_val=idr_val, change_pct=change_pct_str, idr_avg=idr_avg, currency=currency_code)
                 row.message_i18n = TranslatableText(
                     key="scoring.monthlySales.pass",
-                    vars={"value": idr_val, "changePct": change_pct_str, "avg": idr_avg},
+                    vars={"value": idr_val, "changePct": change_pct_str, "avg": idr_avg, "currency": currency_code},
                 )
             else:
                 tmpl = _get_rule_value(biz_rules, "monthly_sales_trend", "message_fail",
-                    "❌ Penjualan = IDR {idr_val} [Menurun {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: IDR {idr_avg}]")
-                msg = _format_message_template(tmpl, idr_val=idr_val, change_pct=change_pct_str, idr_avg=idr_avg)
+                    "❌ Penjualan = {currency} {idr_val} [Menurun {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: {currency} {idr_avg}]")
+                msg = _format_message_template(tmpl, idr_val=idr_val, change_pct=change_pct_str, idr_avg=idr_avg, currency=currency_code)
                 if change_pct < -25:
                     severe_tmpl = _get_rule_value(biz_rules, "monthly_sales_trend", "message_fail_severe",
                         "\n❗️ Potensi peningkatan harga jual signifikan atau terdapat event abnormal.")
@@ -111,7 +113,7 @@ def _generate_business_messages(cat: CategoryScore, manual_data: dict, rules: di
                 row.message = msg
                 row.message_i18n = TranslatableText(
                     key="scoring.monthlySales.fail",
-                    vars={"value": idr_val, "changePct": change_pct_str, "avg": idr_avg},
+                    vars={"value": idr_val, "changePct": change_pct_str, "avg": idr_avg, "currency": currency_code},
                 )
         elif row.row == 20:
             val_str = f"{row.value:.1f}%"
@@ -158,7 +160,7 @@ def _generate_visitors_messages(cat: CategoryScore, rules: dict | None = None) -
                     vars={"value": val_str, "threshold": threshold_str},
                 )
         elif row.row == 29:
-            val_str = f"{int(row.value):,}".replace(",", ".")
+            val_str = f"{int(row.value):,}"
             if row.verdict == "✔️":
                 tmpl = _get_rule_value(vis_rules, "followers", "message_pass",
                     "✔️ Total Pengikut = {val_str} [Sudah Baik]")
@@ -169,7 +171,7 @@ def _generate_visitors_messages(cat: CategoryScore, rules: dict | None = None) -
                 )
             else:
                 tmpl = _get_rule_value(vis_rules, "followers", "message_fail",
-                    "❌ Total Pengikut = {val_str} [Kurang Baik, nilai disarankan: >50.000]")
+                    "❌ Total Pengikut = {val_str} [Kurang Baik, nilai disarankan: >50,000]")
                 row.message = _format_message_template(tmpl, val_str=val_str)
                 row.message_i18n = TranslatableText(
                     key="scoring.totalFollowers.fail",
@@ -459,10 +461,11 @@ def _generate_campaign_messages(cat: CategoryScore, rules: dict | None = None) -
                 )
 
 
-def _generate_competition_messages(cat: CategoryScore, manual_data: dict, rules: dict | None = None) -> None:
+def _generate_competition_messages(cat: CategoryScore, manual_data: dict, rules: dict | None = None, *, marketplace: str = "ID") -> None:
     """Fill G-column messages for competition rows 61-63."""
     comp_rules = _get_rule_category(rules, "competition")
     comp = _get_nested(manual_data, "competition") or {}
+    currency_code = MARKETPLACE_CURRENCY.get(marketplace, "IDR")
 
     for row in cat.rows:
         i = row.row - 61
@@ -475,15 +478,16 @@ def _generate_competition_messages(cat: CategoryScore, manual_data: dict, rules:
 
         if row.verdict == "❌":
             tmpl = comp_rules.get("message_fail",
-                "{name} (IDR {selling_price}) = ❌[tidak kompetitif (harga kisaran pasaran: IDR {market_price})]")
+                "{name} ({currency} {selling_price}) = ❌[tidak kompetitif (harga kisaran pasaran: {currency} {market_price})]")
             msg = _format_message_template(
-                tmpl, name=product_name, selling_price=_fmt_idr(selling_price),
-                market_price=_fmt_idr(market_price),
+                tmpl, name=product_name, selling_price=_fmt_currency(selling_price, marketplace),
+                market_price=_fmt_currency(market_price, marketplace), currency=currency_code,
             )
             i18n_vars: dict[str, str] = {
                 "name": product_name,
-                "sellingPrice": _fmt_idr(selling_price),
-                "marketPrice": _fmt_idr(market_price),
+                "sellingPrice": _fmt_currency(selling_price, marketplace),
+                "marketPrice": _fmt_currency(market_price, marketplace),
+                "currency": currency_code,
             }
             if link:
                 msg += f"\n↪{link}"
@@ -494,13 +498,15 @@ def _generate_competition_messages(cat: CategoryScore, manual_data: dict, rules:
                 vars=i18n_vars,
             )
         elif row.verdict == "✔️":
-            tmpl = comp_rules.get("message_pass", "{name} (IDR {selling_price}) = ✅[kompetitif]")
+            tmpl = comp_rules.get("message_pass", "{name} ({currency} {selling_price}) = ✅[kompetitif]")
             msg = _format_message_template(
-                tmpl, name=product_name, selling_price=_fmt_idr(selling_price),
+                tmpl, name=product_name, selling_price=_fmt_currency(selling_price, marketplace),
+                currency=currency_code,
             )
             i18n_vars = {
                 "name": product_name,
-                "sellingPrice": _fmt_idr(selling_price),
+                "sellingPrice": _fmt_currency(selling_price, marketplace),
+                "currency": currency_code,
             }
             if link:
                 msg += f"\n↪{link}"

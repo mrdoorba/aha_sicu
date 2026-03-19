@@ -192,5 +192,136 @@ describe('buildBody', () => {
     expect(body).toContain('(Bapak/Ibu )');
     expect(body).toContain('output');
   });
+
+  it('uses emailBodyOverride when provided', () => {
+    const body = buildBody(
+      'pic@test.com',
+      'TestBrand',
+      'John',
+      'https://shopee.co.id/test',
+      'Electronics',
+      'Original email output',
+      undefined,
+      'Override body content',
+    );
+    expect(body).toContain('Override body content');
+    expect(body).not.toContain('Original email output');
+  });
+
+  it('uses optional TFunction for translations', () => {
+    const mockT = ((key: string, vars?: Record<string, unknown>) => {
+      if (key === 'sendMailUtils.salutation') return `Dear ${vars?.brandName} (${vars?.picName})`;
+      if (key === 'sendMailUtils.intro') return `Intro for ${vars?.brandName}`;
+      return key;
+    }) as unknown as import('i18next').TFunction;
+
+    const body = buildBody(
+      'pic@test.com',
+      'TestBrand',
+      'John',
+      'https://shopee.co.id/test',
+      'Electronics',
+      'Score: 80',
+      mockT,
+    );
+    expect(body).toContain('Dear TestBrand (John)');
+    expect(body).toContain('Intro for TestBrand');
+  });
+});
+
+describe('SendMailDialog — language selector', () => {
+  it('renders language selector in the dialog', () => {
+    renderDialog();
+    expect(screen.getByTestId('email-language-select')).toBeInTheDocument();
+  });
+
+  it('works without scoreBreakdown (old evaluations) — no regression', () => {
+    renderDialog();
+    // Dialog still renders all standard fields
+    expect(screen.getByLabelText('Kepada')).toBeInTheDocument();
+    expect(screen.getByLabelText('Email PIC')).toBeInTheDocument();
+    expect(screen.getByTestId('mail-subject')).toBeInTheDocument();
+    expect(screen.getByTestId('mail-body')).toBeInTheDocument();
+    // Original email output is in the body
+    expect(screen.getByTestId('mail-body')).toHaveTextContent('Skor akhir: 78.5');
+  });
+
+  it('subject updates via buildSubject with TFunction when scoreBreakdown has i18n data', () => {
+    const scoreBreakdown = [
+      {
+        category: 'Operations',
+        score: 10,
+        max_score: 15,
+        available: true,
+        rows: [
+          {
+            row: 1,
+            metric: 'Test',
+            value: 100,
+            benchmark: '>50',
+            verdict: '✔️',
+            message: 'Good',
+            message_i18n: { key: 'scoring.ops.good', vars: {} },
+            score: 5,
+          },
+        ],
+      },
+    ];
+
+    renderDialog({ scoreBreakdown });
+
+    // Subject should still render — it uses the fixed translation function
+    const subject = screen.getByTestId('mail-subject');
+    expect(subject).toHaveTextContent('AHA Store Internal Check Up');
+    expect(subject).toHaveTextContent('Nike Indonesia');
+  });
+
+  it('body uses i18n body override when scoreBreakdown with i18n data is provided', () => {
+    const scoreBreakdown = [
+      {
+        category: 'Operations',
+        score: 10,
+        max_score: 15,
+        available: true,
+        rows: [
+          {
+            row: 1,
+            metric: 'Test',
+            value: 100,
+            benchmark: '>50',
+            verdict: '✔️',
+            message: 'Good',
+            message_i18n: { key: 'scoring.ops.good', vars: {} },
+            score: 5,
+          },
+        ],
+      },
+    ];
+
+    renderDialog({ scoreBreakdown });
+
+    // When i18n data is available, buildI18nEmailBody is used and its output
+    // replaces the original emailOutput in the body
+    const body = screen.getByTestId('mail-body');
+    // The body should still contain the standard header from buildBody
+    expect(body).toHaveTextContent('[EMAIL TO: pic@nike.com]');
+    expect(body).toHaveTextContent('Kepada Pimpinan Nike Indonesia');
+  });
+
+  it('resets language when dialog closes', async () => {
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    renderDialog({ onOpenChange });
+
+    // Change language
+    const select = screen.getByTestId('email-language-select');
+    await user.selectOptions(select, 'th');
+
+    // Close dialog via cancel
+    const cancelButton = screen.getByRole('button', { name: /batal/i });
+    await user.click(cancelButton);
+
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
 });
 

@@ -34,6 +34,10 @@ export function useEvaluationOrchestrator(brandId: number) {
   const { data: evaluationState } = useEvaluationState(brandId);
   const saveMutation = useSaveEvaluationInputs(brandId);
 
+  // --- Marketplace state ---
+  const [marketplace, setMarketplace] = useState<string>('ID');
+  const currency = marketplace === 'TH' ? 'THB' : 'IDR';
+
   // --- Section navigation ---
   const [activeSection, setActiveSection] = useState('section-1');
 
@@ -49,6 +53,7 @@ export function useEvaluationOrchestrator(brandId: number) {
     brandId,
     categoryType: evaluationState?.category_type ?? null,
     initialData: evaluationState?.manual_data ?? null,
+    marketplace,
   });
 
   // --- Derived data ---
@@ -80,7 +85,7 @@ export function useEvaluationOrchestrator(brandId: number) {
   } = useScoring(brandId, recalculateAll);
 
   // --- Rules ---
-  const { rules: rulesData } = useRules();
+  const { rules: rulesData } = useRules(marketplace);
   const activeRules = rulesData.length > 0 ? rulesData[0].rules : undefined;
 
   // --- Save evaluation ---
@@ -127,7 +132,7 @@ export function useEvaluationOrchestrator(brandId: number) {
 
       const scoreResponse = await new Promise<ScoringResult>((resolve, reject) => {
         generateScore(scoringRequest, {
-          onSuccess: resolve,
+          onSuccess: (data) => resolve(data as ScoringResult),
           onError: (err: Error) => reject(err),
         });
       });
@@ -177,6 +182,7 @@ export function useEvaluationOrchestrator(brandId: number) {
             rule_version: scoreResponse.rule_version,
             email_output: scoreResponse.email_body || null,
             period: lastPeriod || generatePeriodOptions()[0],
+            marketplace,
           },
           {
             onSuccess: () => {
@@ -198,7 +204,7 @@ export function useEvaluationOrchestrator(brandId: number) {
   }, [
     evaluationState?.category_type, runAllMutation, scoringResult, brand,
     lastPeriod, generateScore, queryClient, brandId, saveEvaluation,
-    manualData, t,
+    manualData, t, marketplace,
   ]);
 
   const handleCategoryChange = useCallback(
@@ -207,9 +213,10 @@ export function useEvaluationOrchestrator(brandId: number) {
       saveMutation.mutate({
         category_type: value,
         manual_data: evaluationState?.manual_data ?? undefined,
+        marketplace,
       });
     },
-    [saveMutation, evaluationState?.manual_data],
+    [saveMutation, evaluationState?.manual_data, marketplace],
   );
 
   return {
@@ -217,6 +224,11 @@ export function useEvaluationOrchestrator(brandId: number) {
     brand: brand ?? null,
     brandLoading,
     brandError,
+
+    // Marketplace
+    marketplace,
+    setMarketplace,
+    currency,
 
     // Section nav
     activeSection,

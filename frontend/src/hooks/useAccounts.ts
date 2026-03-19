@@ -15,7 +15,7 @@ export function useAccounts() {
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/accounts');
       if (error) throw new Error('Failed to fetch accounts');
-      return data;
+      return data as Account[];
     },
   });
 

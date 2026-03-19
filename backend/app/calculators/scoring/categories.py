@@ -16,6 +16,7 @@ from app.calculators.scoring.helpers import (
 )
 from app.calculators.scoring.models import CategoryScore, RowScore, TranslatableText
 from app.calculators.scoring.rules import PROMO_START_ROW, PROMO_TOOLS
+from app.core.marketplace import MARKETPLACE_CURRENCY
 
 def _score_operational(manual_data: dict, rules: dict | None = None) -> CategoryScore:
     """Score rows 7-11: Kesehatan Operasional Toko.
@@ -502,6 +503,7 @@ def _score_campaign(manual_data: dict, rules: dict | None = None) -> CategorySco
 
 def _score_competition(
     manual_data: dict, calculator_results: dict,
+    *, marketplace: str = "ID",
 ) -> CategoryScore:
     """Score rows 60-63: Kompetisi TOP Produk.
 
@@ -528,7 +530,7 @@ def _score_competition(
 
         rows.append(RowScore(
             row=row_num, metric=f"Produk {i + 1}",
-            value=selling_price, benchmark=f"IDR {_fmt_idr(market_price)}" if market_price > 0 else "-",
+            value=selling_price, benchmark=f"{MARKETPLACE_CURRENCY.get(marketplace, 'IDR')} {_fmt_idr(market_price)}" if market_price > 0 else "-",
             verdict=f_verdict, message="", score=0.0,
             metric_i18n=TranslatableText(key="scoring.competitionProduct", vars={}),
         ))

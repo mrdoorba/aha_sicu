@@ -95,6 +95,15 @@ def _fmt_idr(value: float) -> str:
     return f"{rounded:,}"
 
 
+def _fmt_currency(value: float, marketplace: str = "ID") -> str:
+    """Format a currency value with comma thousands separator.
+
+    Returns the formatted number only (no currency prefix).
+    The currency code is injected via message template placeholders.
+    """
+    return _fmt_idr(value)
+
+
 def _rounddown(value: float, decimals: int) -> float:
     """Round DOWN to specified decimal places."""
     factor = 10 ** decimals

@@ -65,6 +65,9 @@ async def run_ads_keyword_calculator(
             )
             total_products = _extract_total_products(eval_inputs)
 
+            # Load marketplace from evaluation_inputs (defaults to "ID")
+            marketplace = eval_inputs.get("marketplace", "ID") if eval_inputs else "ID"
+
             # Extract and validate parsed data structure
             cpc_data = _extract_parsed_data(cpc_upload, "cpc_ad_report")
             keyword_data = _extract_parsed_data(keyword_upload, "keyword_report")
@@ -86,7 +89,7 @@ async def run_ads_keyword_calculator(
             # Run pure calculator
             try:
                 result = calculate_ads_keyword(
-                    cpc_data, keyword_data, total_products, language=language
+                    cpc_data, keyword_data, total_products, language=language, marketplace=marketplace
                 )
             except Exception as e:
                 raise CalculatorException(
@@ -308,13 +311,19 @@ async def run_discount_calculator(
                     detail="Order Export (order_export) has not been uploaded for this brand",
                 )
 
+            # Load marketplace from evaluation_inputs (defaults to "ID")
+            eval_inputs = await eval_queries.get_evaluation_inputs(
+                conn, brand_id
+            )
+            marketplace = eval_inputs.get("marketplace", "ID") if eval_inputs else "ID"
+
             # Extract and validate parsed data structure + required columns
             _validate_columns(order_upload.get("parsed_data", {}), "order_export")
             order_data = _extract_parsed_data(order_upload, "order_export")
 
             # Run pure calculator
             try:
-                result = calculate_discount(order_data)
+                result = calculate_discount(order_data, marketplace=marketplace)
             except Exception as e:
                 raise CalculatorException(
                     code="CALC_EXECUTION_FAILED",
@@ -387,13 +396,19 @@ async def run_top_sku_calculator(
             _validate_columns(order_upload.get("parsed_data", {}), "order_export_top_sku")
             _validate_columns(mass_update_upload.get("parsed_data", {}), "mass_update")
 
+            # Load marketplace from evaluation_inputs (defaults to "ID")
+            eval_inputs = await eval_queries.get_evaluation_inputs(
+                conn, brand_id
+            )
+            marketplace = eval_inputs.get("marketplace", "ID") if eval_inputs else "ID"
+
             # Extract parsed data
             order_data = _extract_parsed_data(order_upload, "order_export")
             mass_update_data = _extract_parsed_data(mass_update_upload, "mass_update")
 
             # Run pure calculator
             try:
-                result = calculate_top_sku(order_data, mass_update_data)
+                result = calculate_top_sku(order_data, mass_update_data, marketplace=marketplace)
             except Exception as e:
                 raise CalculatorException(
                     code="CALC_EXECUTION_FAILED",

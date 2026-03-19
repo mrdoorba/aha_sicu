@@ -129,7 +129,7 @@ export function useRunCalculator(brandId: number, calculatorType: CalculatorType
         params: { path: { brand_id: brandId } },
       });
       if (error) throw error;
-      return data satisfies CalculatorResult;
+      return data as CalculatorResult;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });
@@ -160,7 +160,7 @@ export function useCalculatorResults(brandId: number) {
         { params: { path: { brand_id: brandId } } },
       );
       if (error) throw error;
-      return data satisfies CalculatorResultsListResponse;
+      return data as CalculatorResultsListResponse;
     },
     enabled: brandId > 0,
   });
@@ -195,7 +195,7 @@ export function useCalculatorStatus(brandId: number) {
         { params: { path: { brand_id: brandId } } },
       );
       if (error) throw error;
-      return data satisfies CalculatorStatusResponse;
+      return data as CalculatorStatusResponse;
     },
     enabled: brandId > 0,
   });
@@ -235,7 +235,7 @@ export function useRunAllCalculators(brandId: number) {
         { params: { path: { brand_id: brandId } } },
       );
       if (error) throw error;
-      return data satisfies RunAllResponse;
+      return data as RunAllResponse;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['calculatorResults', brandId] });

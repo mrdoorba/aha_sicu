@@ -8,7 +8,7 @@ from app.core.exceptions import AuthException
 from app.core.oidc import verify_oidc_token
 
 
-@pytest.mark.asyncio
+
 async def test_verify_oidc_token_valid():
     """Test successful OIDC token verification."""
     mock_claims = {
@@ -22,7 +22,7 @@ async def test_verify_oidc_token_valid():
         assert result["issuer"] == "https://accounts.google.com"
 
 
-@pytest.mark.asyncio
+
 async def test_verify_oidc_token_expired():
     """Test OIDC token verification with expired token."""
     with patch(
@@ -35,7 +35,7 @@ async def test_verify_oidc_token_expired():
         assert exc_info.value.detail == "OIDC token validation failed"
 
 
-@pytest.mark.asyncio
+
 async def test_verify_oidc_token_invalid():
     """Test OIDC token verification with invalid token."""
     with patch(
@@ -48,7 +48,7 @@ async def test_verify_oidc_token_invalid():
         assert exc_info.value.detail == "OIDC token validation failed"
 
 
-@pytest.mark.asyncio
+
 async def test_verify_oidc_token_wrong_audience():
     """Test OIDC token verification with wrong audience."""
     with patch(
@@ -61,7 +61,7 @@ async def test_verify_oidc_token_wrong_audience():
         assert exc_info.value.detail == "OIDC token validation failed"
 
 
-@pytest.mark.asyncio
+
 async def test_verify_oidc_token_empty():
     """Test OIDC token verification rejects empty token."""
     with pytest.raises(AuthException) as exc_info:
@@ -70,7 +70,7 @@ async def test_verify_oidc_token_empty():
     assert exc_info.value.detail == "OIDC token is empty"
 
 
-@pytest.mark.asyncio
+
 async def test_verify_oidc_token_passes_audience():
     """Test that verify_oidc_token passes cloud_run_url as audience."""
     mock_claims = {
@@ -89,7 +89,7 @@ async def test_verify_oidc_token_passes_audience():
         assert call_args[0][2] == "https://api.example.com"
 
 
-@pytest.mark.asyncio
+
 async def test_verify_oidc_token_no_audience_when_empty_url():
     """Test that audience is None when cloud_run_url is empty."""
     mock_claims = {
@@ -107,7 +107,7 @@ async def test_verify_oidc_token_no_audience_when_empty_url():
         assert call_args[0][2] is None
 
 
-@pytest.mark.asyncio
+
 async def test_verify_oidc_token_transport_error():
     """Test OIDC token verification handles network/transport errors gracefully."""
     with patch(

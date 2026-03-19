@@ -151,8 +151,9 @@ def _smtp_send_sync(
     try:
         server = smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30)
         try:
-            server.starttls()
-            server.login(settings.smtp_user, settings.smtp_password)
+            if settings.smtp_use_tls:
+                server.starttls()
+                server.login(settings.smtp_user, settings.smtp_password)
             server.send_message(msg, to_addrs=to_addrs)
             return msg.get("Message-ID", "")
         finally:
@@ -250,14 +251,23 @@ async def send_evaluation_email(
         language=language,
     )
 
-    # Plain text fallback
-    final_score = evaluation_data.get("final_score", "N/A")
-    verdict = evaluation_data.get("verdict", "N/A")
+    # Plain text fallback — use partner score (pass ratio) to match dashboard
+    categories = evaluation_data.get("score_breakdown", [])
+    checks = 0
+    total_verdicts = 0
+    for cat in categories:
+        for row in cat.get("rows", []):
+            v = row.get("verdict", "")
+            if v == "\u2714\ufe0f":
+                checks += 1
+                total_verdicts += 1
+            elif v == "\u274c":
+                total_verdicts += 1
+    partner_score = round((checks / total_verdicts) * 100) if total_verdicts > 0 else "N/A"
     text_content = (
         f"{S['brand_report']}: {brand_name}\n"
         f"{S['plain_period']}: {period}\n"
-        f"{S['plain_score']}: {final_score}\n"
-        f"{S['verdict']}: {verdict}\n"
+        f"{S['plain_score']}: {partner_score}\n"
     )
 
     # Debug mode: write to file instead of sending

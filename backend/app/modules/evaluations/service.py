@@ -268,6 +268,7 @@ async def get_evaluation_detail(conn: Connection, evaluation_id: int) -> Evaluat
         created_at=row["created_at"],
         rule_version=row["rule_version"],
         period=row.get("period", ""),
+        marketplace=row.get("marketplace", "ID"),
         brand_raw_data=brand_raw_data,
     )
 
@@ -336,7 +337,11 @@ async def generate_score(
     calc_rows = await calc_queries.get_results_by_brand(conn, brand_id)
 
     # Load scoring rules — always use the unified "default" template
-    rule_row = await rules_queries.get_rules_by_template(conn, "default")
+    # Marketplace comes from eval_inputs — determines which rules row to use
+    marketplace = (eval_inputs or {}).get("marketplace", "ID")
+    rule_row = await rules_queries.get_rules_by_template_and_marketplace(
+        conn, "default", marketplace=marketplace
+    )
 
     rules_jsonb = rule_row["rules"] if rule_row else None
     rule_version = rule_row["version"] if rule_row else 1
@@ -361,6 +366,7 @@ async def generate_score(
             email=email,
             rules=rules_jsonb,
             rule_version=rule_version,
+            marketplace=marketplace,
         )
     except Exception as e:
         raise CalculatorException(
@@ -431,6 +437,7 @@ async def save_evaluation(
     email_output: str | None = None,
     evaluator_email: str = "",
     period: str = "",
+    marketplace: str = "ID",
 ) -> SaveEvaluationResponse:
     """Save a completed evaluation as a permanent, immutable record.
 
@@ -459,6 +466,7 @@ async def save_evaluation(
             rule_version=rule_version,
             email_output=email_output,
             period=period,
+            marketplace=marketplace,
         )
 
     # Fire-and-forget: sync brand to eval sheet
@@ -531,6 +539,7 @@ async def save_evaluation_inputs(
     last_edited_by: int,
     category_type: str | None,
     manual_data: dict[str, Any] | None,
+    marketplace: str = "ID",
 ) -> EvaluationStateResponse:
     """Upsert evaluation inputs for a brand (shared).
 
@@ -552,6 +561,7 @@ async def save_evaluation_inputs(
             last_edited_by=last_edited_by,
             category_type=category_type,
             manual_data=manual_data,
+            marketplace=marketplace,
         )
 
     return EvaluationStateResponse(

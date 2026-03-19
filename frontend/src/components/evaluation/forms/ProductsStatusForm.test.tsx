@@ -4,6 +4,17 @@ import { describe, it, expect, vi } from 'vitest';
 import { ProductsStatusForm } from './ProductsStatusForm';
 import type { ProductsData } from './formConfig';
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, opts?: Record<string, string>) => {
+      if (opts) return `${key}::${JSON.stringify(opts)}`;
+      return key;
+    },
+    i18n: { language: 'id' },
+  }),
+  Trans: ({ i18nKey }: { i18nKey: string }) => i18nKey,
+}));
+
 const emptyData: ProductsData = {
   productCount: null,
   storeStatus: null,
@@ -12,13 +23,13 @@ const emptyData: ProductsData = {
 describe('ProductsStatusForm', () => {
   it('renders product count number field', () => {
     render(<ProductsStatusForm data={emptyData} storeLink={null} onChange={vi.fn()} onBlur={vi.fn()} />);
-    expect(screen.getByLabelText(/Jumlah Produk/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.products\.productCount/)).toBeInTheDocument();
   });
 
   it('renders status dropdown with placeholder', () => {
     render(<ProductsStatusForm data={emptyData} storeLink={null} onChange={vi.fn()} onBlur={vi.fn()} />);
-    expect(screen.getByText('Status Toko')).toBeInTheDocument();
-    expect(screen.getByText('Pilih...')).toBeInTheDocument();
+    expect(screen.getByText('fields.products.storeStatus')).toBeInTheDocument();
+    expect(screen.getByText('common.select')).toBeInTheDocument();
   });
 
   it('renders benchmarks', () => {
@@ -48,7 +59,7 @@ describe('ProductsStatusForm', () => {
 
   it('renders section title', () => {
     render(<ProductsStatusForm data={emptyData} storeLink={null} onChange={vi.fn()} onBlur={vi.fn()} />);
-    expect(screen.getByText('Products / Status')).toBeInTheDocument();
+    expect(screen.getByText('forms.products.title')).toBeInTheDocument();
   });
 
   it('renders store link when provided', () => {

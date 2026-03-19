@@ -70,4 +70,65 @@ describe('NumberField', () => {
     await user.tab();
     expect(onBlur).toHaveBeenCalled();
   });
+
+  describe('count field parsing', () => {
+    it('strips commas from pasted numbers like 18,219', async () => {
+      const onChange = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <NumberField name="test" label="Total" unit="count" value={null} onChange={onChange} />,
+      );
+      const input = screen.getByRole('textbox');
+      await user.click(input);
+      await user.paste('18,219');
+      expect(onChange).toHaveBeenCalledWith(18219);
+    });
+
+    it('strips periods from numbers like 18.219', async () => {
+      const onChange = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <NumberField name="test" label="Total" unit="count" value={null} onChange={onChange} />,
+      );
+      const input = screen.getByRole('textbox');
+      await user.click(input);
+      await user.paste('18.219');
+      expect(onChange).toHaveBeenCalledWith(18219);
+    });
+
+    it('strips mixed separators from numbers like 1,234.567', async () => {
+      const onChange = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <NumberField name="test" label="Total" unit="count" value={null} onChange={onChange} />,
+      );
+      const input = screen.getByRole('textbox');
+      await user.click(input);
+      await user.paste('1,234.567');
+      expect(onChange).toHaveBeenCalledWith(1234567);
+    });
+
+    it('returns null for empty count input', async () => {
+      const onChange = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <NumberField name="test" label="Total" unit="count" value={42} onChange={onChange} />,
+      );
+      const input = screen.getByRole('textbox');
+      await user.clear(input);
+      expect(onChange).toHaveBeenCalledWith(null);
+    });
+
+    it('returns null for non-numeric count input', async () => {
+      const onChange = vi.fn();
+      const user = userEvent.setup();
+      render(
+        <NumberField name="test" label="Total" unit="count" value={null} onChange={onChange} />,
+      );
+      const input = screen.getByRole('textbox');
+      await user.click(input);
+      await user.paste('abc');
+      expect(onChange).toHaveBeenCalledWith(null);
+    });
+  });
 });

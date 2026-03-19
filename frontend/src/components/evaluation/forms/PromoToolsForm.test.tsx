@@ -3,6 +3,17 @@ import { describe, it, expect, vi } from 'vitest';
 import { PromoToolsForm } from './PromoToolsForm';
 import type { PromoToolsData } from './formConfig';
 
+vi.mock('react-i18next', () => ({
+  useTranslation: () => ({
+    t: (key: string, opts?: Record<string, string>) => {
+      if (opts) return `${key}::${JSON.stringify(opts)}`;
+      return key;
+    },
+    i18n: { language: 'id' },
+  }),
+  Trans: ({ i18nKey }: { i18nKey: string }) => i18nKey,
+}));
+
 const emptyData: PromoToolsData = {
   promoToko: null,
   paketDiskon: null,
@@ -21,33 +32,33 @@ describe('PromoToolsForm', () => {
   it('renders all 11 promo tool fields', () => {
     render(<PromoToolsForm data={emptyData} salesMonth0={0} onChange={vi.fn()} onBlur={vi.fn()} />);
 
-    expect(screen.getByLabelText(/Penjualan dari Promo Toko/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Penjualan dari Paket Diskon/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Penjualan dari Kombo Hemat/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Penjualan dari Flash Sale Toko Saya/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Penjualan dari Voucher/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Penjualan dari Shopee Live/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Penjualan dari Game Toko/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Penjualan dari Brand Membership/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Penjualan dari Gratis Ongkir XTRA/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Penjualan dari Chat Broadcast/)).toBeInTheDocument();
-    expect(screen.getByLabelText(/Penjualan dari Program Afiliasi/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.promoTools\.promoToko/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.promoTools\.paketDiskon/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.promoTools\.komboHemat/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.promoTools\.flashSale/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.promoTools\.voucher/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.promoTools\.shopeeLive/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.promoTools\.gameToko/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.promoTools\.brandMembership/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.promoTools\.gratisOngkir/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.promoTools\.chatBroadcast/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.promoTools\.programAfiliasi/)).toBeInTheDocument();
   });
 
   it('renders benchmarks for promo tools', () => {
     render(<PromoToolsForm data={emptyData} salesMonth0={0} onChange={vi.fn()} onBlur={vi.fn()} />);
 
-    expect(screen.getByText('Benchmark: >8% dari penjualan')).toBeInTheDocument();
-    expect(screen.getByText('Benchmark: >16% dari penjualan')).toBeInTheDocument();
-    expect(screen.getByText('Benchmark: >84% dari penjualan')).toBeInTheDocument();
-    expect(screen.getByText('Benchmark: >15% dari penjualan')).toBeInTheDocument();
-    expect(screen.getByText('Benchmark: >18% dari penjualan')).toBeInTheDocument();
+    expect(screen.getByText('Benchmark: fields.promoTools.promoToko.benchmark')).toBeInTheDocument();
+    expect(screen.getByText('Benchmark: fields.promoTools.paketDiskon.benchmark')).toBeInTheDocument();
+    expect(screen.getByText('Benchmark: fields.promoTools.voucher.benchmark')).toBeInTheDocument();
+    expect(screen.getByText('Benchmark: fields.promoTools.shopeeLive.benchmark')).toBeInTheDocument();
+    expect(screen.getByText('Benchmark: fields.promoTools.programAfiliasi.benchmark')).toBeInTheDocument();
     expect(screen.getByText('Benchmark: >0')).toBeInTheDocument();
   });
 
   it('renders section title with reference link', () => {
     render(<PromoToolsForm data={emptyData} salesMonth0={0} onChange={vi.fn()} onBlur={vi.fn()} />);
-    expect(screen.getByText('Alat Promosi')).toBeInTheDocument();
+    expect(screen.getByText('forms.promoTools.title')).toBeInTheDocument();
   });
 
   it('renders all fields as currency (IDR) inputs', () => {
@@ -58,7 +69,7 @@ describe('PromoToolsForm', () => {
 
   it('shows % Efektifitas as dash when salesMonth0 is 0', () => {
     render(<PromoToolsForm data={emptyData} salesMonth0={0} onChange={vi.fn()} onBlur={vi.fn()} />);
-    expect(screen.getByText('% Efektifitas alat promosi')).toBeInTheDocument();
+    expect(screen.getByText('forms.promoTools.effectivenessPct')).toBeInTheDocument();
     // The dash "—" should be in the efektifitas display
     const displays = screen.getAllByText('—');
     expect(displays.length).toBeGreaterThan(0);

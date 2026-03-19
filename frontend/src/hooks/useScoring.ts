@@ -11,6 +11,10 @@ export interface RowScore {
   verdict: string;
   message: string;
   score: number;
+  metric_i18n?: TranslatableText;
+  value_i18n?: TranslatableText;
+  message_i18n?: TranslatableText;
+  benchmark_i18n?: TranslatableText;
 }
 
 export interface CategoryScore {
@@ -19,6 +23,7 @@ export interface CategoryScore {
   max_score: number;
   rows: RowScore[];
   available: boolean;
+  category_i18n?: TranslatableText;
 }
 
 export interface ScoringResult {
@@ -72,14 +77,15 @@ export function useScoring(brandId: number, preStep?: () => Promise<void>) {
         '/api/v1/evaluations/brands/{brand_id}/score',
         {
           params: { path: { brand_id: brandId } },
-          body: request,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          body: request as any,
         },
       );
       if (error) throw error;
       return data;
     },
     onSuccess: (data) => {
-      setScoringResult(data);
+      setScoringResult(data as ScoringResult);
       setIsStale(false);
       setStep('idle');
       queryClient.setQueryData(['scoring', brandId], data);

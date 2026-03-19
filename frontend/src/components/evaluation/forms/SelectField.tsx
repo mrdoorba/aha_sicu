@@ -1,3 +1,4 @@
+import { useTranslation } from 'react-i18next';
 import { Label } from '../../ui/label';
 import {
   Select,
@@ -25,12 +26,13 @@ export function SelectField({
   value,
   onChange,
 }: SelectFieldProps) {
+  const { t } = useTranslation();
   return (
     <div className="space-y-1">
       <Label htmlFor={name}>{label}</Label>
       <Select value={value ?? ''} onValueChange={onChange}>
         <SelectTrigger id={name}>
-          <SelectValue placeholder="Pilih..." />
+          <SelectValue placeholder={t('common.select')} />
         </SelectTrigger>
         <SelectContent>
           {options.map((opt) => (

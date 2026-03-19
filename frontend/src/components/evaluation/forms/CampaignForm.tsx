@@ -3,16 +3,18 @@ import { Card, CardContent } from '../../ui/card';
 import { NumberField } from './NumberField';
 import { ExternalLink } from 'lucide-react';
 import type { CampaignData } from './formConfig';
-import { CAMPAIGN_FIELDS, SECTION_LINKS } from './formConfig';
+import { CAMPAIGN_FIELDS, getSectionLinks } from './formConfig';
 
 interface CampaignFormProps {
   data: CampaignData;
+  marketplace?: string;
   onChange: (category: 'campaign', key: string, value: number | null) => void;
   onBlur: () => void;
 }
 
-export function CampaignForm({ data, onChange, onBlur }: CampaignFormProps) {
+export function CampaignForm({ data, marketplace = 'ID', onChange, onBlur }: CampaignFormProps) {
   const { t } = useTranslation();
+  const links = getSectionLinks(marketplace);
   const nominated = data.nominatedSessions ?? 0;
   const available = data.availableSessions ?? 0;
   const participationPct = available > 0 ? (nominated / available) * 100 : null;
@@ -22,7 +24,7 @@ export function CampaignForm({ data, onChange, onBlur }: CampaignFormProps) {
       <CardContent className="pt-4">
         <p className="mb-3 flex items-center gap-2 text-sm font-semibold">
           {t('forms.campaign.title')}
-          <a href={SECTION_LINKS.campaign} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
+          <a href={links.campaign} target="_blank" rel="noopener noreferrer" aria-label={t('common.aria.openSellerCenter')}>
             <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
@@ -31,7 +33,7 @@ export function CampaignForm({ data, onChange, onBlur }: CampaignFormProps) {
             <NumberField
               key={field.key}
               name={`campaign.${field.key}`}
-              label={field.label}
+              label={t(field.labelKey!)}
               unit={field.unit}
               benchmark={field.benchmark}
               value={data[field.key as keyof CampaignData] as number | null}

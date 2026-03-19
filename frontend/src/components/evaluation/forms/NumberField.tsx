@@ -11,6 +11,14 @@ interface NumberFieldProps {
   onBlur?: () => void;
 }
 
+/** Strip thousand separators (periods and commas) and parse as integer. */
+function parseCount(raw: string): number | null {
+  if (raw === '') return null;
+  const stripped = raw.replace(/[.,]/g, '');
+  const n = Number(stripped);
+  return Number.isNaN(n) ? null : Math.round(n);
+}
+
 export function NumberField({
   name,
   label,
@@ -20,6 +28,8 @@ export function NumberField({
   onChange,
   onBlur,
 }: NumberFieldProps) {
+  const isCount = unit === 'count';
+
   return (
     <div className="space-y-1">
       <Label htmlFor={name}>
@@ -31,12 +41,17 @@ export function NumberField({
       <Input
         id={name}
         name={name}
-        type="number"
-        step="any"
+        type={isCount ? 'text' : 'number'}
+        inputMode={isCount ? 'numeric' : undefined}
+        step={isCount ? undefined : 'any'}
         value={value ?? ''}
         onChange={(e) => {
           const raw = e.target.value;
-          onChange(raw === '' ? null : Number(raw));
+          if (isCount) {
+            onChange(parseCount(raw));
+          } else {
+            onChange(raw === '' ? null : Number(raw));
+          }
         }}
         onBlur={onBlur}
         placeholder="—"

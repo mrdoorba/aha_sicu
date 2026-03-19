@@ -880,10 +880,9 @@ class TestSheet2BottomThresholdVariants:
         # 80K < 100K threshold → should not appear in bottom
         assert "Ad Below 100K" not in result["al5"]
 
-    def test_en_bottom_min_cost_50k(self):
-        """English: BOTTOM uses min cost 50,000."""
-        # Ad at 80K should qualify for English (>50K) but not Indonesian (>100K)
-        # AM9 = round(avg(80000, 10000)) = 45000, so 80K > AM9 ✓
+    def test_en_bottom_min_cost_same_as_id(self):
+        """English: BOTTOM uses same min cost 100,000 as Indonesian."""
+        # Ad at 80K does not qualify (< 100K threshold) for any language
         data = [
             _kw_row(1, "Ad Above 50K", "Berjalan", "Iklan Produk", "100",
                     "Bidding Manual", "Halaman Pencarian", "kw",
@@ -893,8 +892,8 @@ class TestSheet2BottomThresholdVariants:
                     omzet=5000000, biaya=10000, roas=8.0),
         ]
         result = calculate_sheet2(data, language="en")
-        # 80K > 50K threshold → qualifies for English bottom
-        assert "Ad Above 50K" in result["al5"]
+        # 80K < 100K threshold → does not qualify
+        assert "Ad Above 50K" not in result["al5"]
 
     def test_id_fallback_roas_cap_5(self):
         """Indonesian: fallback ROAS cap is min(round(AM10*2), 5)."""
@@ -914,9 +913,10 @@ class TestSheet2BottomThresholdVariants:
         assert result["is_bottom_fallback"]
         assert "Ad A" in result["al5"]
 
-    def test_en_fallback_roas_cap_4(self):
-        """English: fallback ROAS cap is min(round(AM10*2), 4)."""
-        # Same data as above but English cap=4
+    def test_en_fallback_roas_cap_same_as_id(self):
+        """English: fallback ROAS cap is min(round(AM10*2), 5) — same as Indonesian."""
+        # AM10 = min(round(avg_roas), 3) with roas=3 → AM10=3
+        # fallback cap = min(round(3*2), 5) = min(6, 5) = 5
         data = [
             _kw_row(1, "Ad A", "Berjalan", "Iklan Produk", "100",
                     "Bidding Manual", "Halaman Pencarian", "kw",
@@ -926,8 +926,77 @@ class TestSheet2BottomThresholdVariants:
                     omzet=5000000, biaya=200000, roas=3.0),
         ]
         result = calculate_sheet2(data, language="en")
-        # Fallback: ROAS < min(6, 4) = 4 → Ad A has 4.5, not < 4 → no match
-        assert "Ad A" not in result["al5"]
+        # Fallback: ROAS < min(6, 5) = 5 → Ad A has 4.5 < 5 → qualifies
+        assert "Ad A" in result["al5"]
+
+
+class TestSheet2BottomMarketplaceMinCost:
+    """R025: Test BOTTOM ads marketplace-aware min_cost threshold.
+
+    The BOTTOM query has four conditions:
+      biaya > min_cost AND biaya > am9 AND roas < am10 AND roas < 5
+
+    To isolate the min_cost effect, we use ads where biaya is between 190
+    and 100,000, so min_cost is the deciding factor between TH and ID.
+    We set roas to integer values (1-2) so am10 rounds properly (> 0).
+    """
+
+    def test_min_cost_190_when_marketplace_is_th(self):
+        """TH marketplace: BOTTOM uses min_cost=190 THB.
+
+        An ad with biaya=500 qualifies for bottom in TH (500 > 190)
+        but would NOT qualify in ID (500 < 100,000).
+        """
+        data = [
+            _kw_row(1, "TH Bad Ad", "Berjalan", "Iklan Produk", "100",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=10, biaya=500, roas=1),
+            _kw_row(2, "TH Worse Ad", "Berjalan", "Iklan Produk", "200",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=20, biaya=400, roas=1),
+        ]
+        result = calculate_sheet2(data, marketplace="TH")
+        # am9 = avg(500, 400) = 450; am10 = min(round(avg(1,1)), 3) = 1
+        # Primary: biaya=500 > 190 ✓, > 450 ✓, roas=1 < 1 ✗ → no primary
+        # Fallback: roas_cap = min(round(1*2), 5) = 2; roas=1 < 2 ✓ → qualifies
+        assert "TH Bad Ad" in result["al5"], (
+            f"Expected 'TH Bad Ad' (biaya=500 > min_cost=190) in TH bottom ads, got: {result['al5']}"
+        )
+
+    def test_min_cost_100000_when_marketplace_is_id(self):
+        """ID marketplace: BOTTOM uses min_cost=100,000 IDR.
+
+        Same data as TH test — biaya=500 does NOT qualify (500 < 100,000).
+        """
+        data = [
+            _kw_row(1, "ID Low Ad", "Berjalan", "Iklan Produk", "100",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=10, biaya=500, roas=1),
+            _kw_row(2, "ID Low Ad 2", "Berjalan", "Iklan Produk", "200",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=20, biaya=400, roas=1),
+        ]
+        result = calculate_sheet2(data, marketplace="ID")
+        # biaya=500 < 100,000 IDR threshold → neither ad qualifies
+        assert "ID Low Ad" not in result["al5"], (
+            f"Expected 'ID Low Ad' (biaya=500 < min_cost=100000) excluded from ID bottom, got: {result['al5']}"
+        )
+
+    def test_th_excludes_ad_below_190(self):
+        """TH marketplace: ad with biaya=100 (< 190) should be excluded from bottom."""
+        data = [
+            _kw_row(1, "Cheap TH Ad", "Berjalan", "Iklan Produk", "100",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=10, biaya=100, roas=1),
+            _kw_row(2, "TH Normal Ad", "Berjalan", "Iklan Produk", "200",
+                    "Bidding Manual", "Halaman Pencarian", "kw",
+                    omzet=10, biaya=80, roas=1),
+        ]
+        result = calculate_sheet2(data, marketplace="TH")
+        # am9 = avg(100, 80) = 90; both biaya < 190 → neither qualifies
+        assert "Cheap TH Ad" not in result["al5"], (
+            f"Expected 'Cheap TH Ad' (biaya=100 < min_cost=190) excluded from TH bottom, got: {result['al5']}"
+        )
 
 
 class TestSheet2TopFallbackVariants:
@@ -1004,8 +1073,8 @@ class TestSheet2AL6Variants:
         result = calculate_sheet2(data, language="en")
         assert "pengaturan otomatis" in result["al6"]
 
-    def test_en_al6_does_not_trigger_on_pilih_otomatis(self):
-        """English: 'Pilih Otomatis' should NOT trigger AL6 (not 'Bidding Otomatis')."""
+    def test_en_al6_triggers_on_pilih_otomatis(self):
+        """English: 'Pilih Otomatis' triggers AL6 — checks 'Otomatis' substring same as Indonesian."""
         data = [
             _kw_row(1, "Bad Ad", "Berjalan", "Iklan Produk", "100",
                     "Pilih Otomatis", "Halaman Pencarian", "kw",
@@ -1015,8 +1084,8 @@ class TestSheet2AL6Variants:
                     omzet=5000000, biaya=200000, roas=8.0),
         ]
         result = calculate_sheet2(data, language="en")
-        # "Pilih Otomatis" contains "Otomatis" but not "Bidding Otomatis"
-        assert result["al6"] == ""
+        # "Pilih Otomatis" contains "Otomatis" → AL6 triggers
+        assert "pengaturan otomatis" in result["al6"]
 
 
 # ---------------------------------------------------------------------------

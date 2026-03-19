@@ -6,25 +6,26 @@ from app.db.queries import rules as rules_queries
 from app.modules.rules.schemas import ScoringRuleResponse
 
 
-async def get_all_rules() -> list[ScoringRuleResponse]:
-    """Get all scoring rules.
+async def get_all_rules(*, marketplace: str = "ID") -> list[ScoringRuleResponse]:
+    """Get all scoring rules for a marketplace.
 
     Returns:
-        List of ScoringRuleResponse for all templates.
+        List of ScoringRuleResponse for all templates in the given marketplace.
     """
     async with db.connection() as conn:
-        rows = await rules_queries.get_all_rules(conn)
+        rows = await rules_queries.get_all_rules(conn, marketplace=marketplace)
 
     return [ScoringRuleResponse(**row) for row in rows]
 
 
-async def update_rules(template: str, rules_jsonb: dict, user_id: int) -> ScoringRuleResponse:
-    """Update scoring rules for a template.
+async def update_rules(template: str, rules_jsonb: dict, user_id: int, *, marketplace: str = "ID") -> ScoringRuleResponse:
+    """Update scoring rules for a template and marketplace.
 
     Args:
         template: Template name (fashion or non_fashion).
         rules_jsonb: The full JSONB rules object to replace.
         user_id: ID of the user making the update.
+        marketplace: Marketplace code ('ID' or 'TH').
 
     Returns:
         Updated ScoringRuleResponse.
@@ -33,7 +34,7 @@ async def update_rules(template: str, rules_jsonb: dict, user_id: int) -> Scorin
         AppException: If template not found in database.
     """
     async with db.connection() as conn:
-        row = await rules_queries.update_rules(conn, template, rules_jsonb, user_id)
+        row = await rules_queries.update_rules(conn, template, rules_jsonb, user_id, marketplace=marketplace)
 
     if not row:
         raise AppException(

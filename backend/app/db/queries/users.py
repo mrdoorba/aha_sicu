@@ -28,12 +28,20 @@ async def get_user_by_firebase_uid(conn: Connection, firebase_uid: str) -> UserR
 
 
 async def create_user(conn: Connection, firebase_uid: str, email: str) -> UserRow:
-    """Create new user with default role."""
+    """Create new user with default role.
+
+    Uses ON CONFLICT (email) to handle Firebase emulator UID changes
+    in local dev — updates the firebase_uid without creating duplicates.
+    Preserves role so admin promotions survive emulator rebuilds.
+    """
     return await fetch_one(
         conn,
         """
         INSERT INTO users (firebase_uid, email, role, language, last_login)
         VALUES ($1, $2, 'member', 'id', NOW())
+        ON CONFLICT (email) DO UPDATE
+            SET firebase_uid = EXCLUDED.firebase_uid,
+                last_login = NOW()
         RETURNING id, firebase_uid, email, role, language, created_at, last_login
         """,
         firebase_uid,

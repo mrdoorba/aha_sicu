@@ -3,15 +3,15 @@ import { generateMonthLabels, computeSectionProgress, EMPTY_MANUAL_DATA } from '
 import type { ManualData } from './formConfig';
 
 describe('generateMonthLabels', () => {
-  it('returns correct Indonesian month names for "2026-01"', () => {
+  it('returns correct month names for "2026-01"', () => {
     const labels = generateMonthLabels('2026-01');
     expect(labels).toEqual([
       'Jan 2026',
-      'Des 2025',
+      'Dec 2025',
       'Nov 2025',
-      'Okt 2025',
+      'Oct 2025',
       'Sep 2025',
-      'Agu 2025',
+      'Aug 2025',
     ]);
   });
 
@@ -19,7 +19,7 @@ describe('generateMonthLabels', () => {
     const labels = generateMonthLabels('2026-06');
     expect(labels).toEqual([
       'Jun 2026',
-      'Mei 2026',
+      'May 2026',
       'Apr 2026',
       'Mar 2026',
       'Feb 2026',
@@ -30,30 +30,30 @@ describe('generateMonthLabels', () => {
   it('returns generic fallback for null', () => {
     const labels = generateMonthLabels(null);
     expect(labels).toEqual([
-      'Bulan Ini',
-      'Bulan -1',
-      'Bulan -2',
-      'Bulan -3',
-      'Bulan -4',
-      'Bulan -5',
+      'generic.thisMonth',
+      'generic.month1',
+      'generic.month2',
+      'generic.month3',
+      'generic.month4',
+      'generic.month5',
     ]);
   });
 
   it('returns generic fallback for invalid string', () => {
     expect(generateMonthLabels('invalid')).toEqual([
-      'Bulan Ini', 'Bulan -1', 'Bulan -2', 'Bulan -3', 'Bulan -4', 'Bulan -5',
+      'generic.thisMonth', 'generic.month1', 'generic.month2', 'generic.month3', 'generic.month4', 'generic.month5',
     ]);
   });
 
   it('returns generic fallback for empty string', () => {
     expect(generateMonthLabels('')).toEqual([
-      'Bulan Ini', 'Bulan -1', 'Bulan -2', 'Bulan -3', 'Bulan -4', 'Bulan -5',
+      'generic.thisMonth', 'generic.month1', 'generic.month2', 'generic.month3', 'generic.month4', 'generic.month5',
     ]);
   });
 
   it('returns generic fallback for invalid month number', () => {
     expect(generateMonthLabels('2026-13')).toEqual([
-      'Bulan Ini', 'Bulan -1', 'Bulan -2', 'Bulan -3', 'Bulan -4', 'Bulan -5',
+      'generic.thisMonth', 'generic.month1', 'generic.month2', 'generic.month3', 'generic.month4', 'generic.month5',
     ]);
   });
 });

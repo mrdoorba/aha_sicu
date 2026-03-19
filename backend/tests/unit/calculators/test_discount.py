@@ -14,13 +14,13 @@ from app.calculators.discount import (
     _build_product_summary,
     _calculate_line_items,
     _calculate_urutan,
-    _clean_price,
     _filter_top_sku,
     _format_output,
     _roundup,
     _safe_num,
     calculate_discount,
 )
+from app.calculators.price_parser import _parse_price
 
 
 # ---------------------------------------------------------------------------
@@ -61,37 +61,37 @@ class TestSafeNum:
 
 
 # ---------------------------------------------------------------------------
-# _clean_price tests
+# _parse_price tests (via shared price_parser module)
 # ---------------------------------------------------------------------------
 
 
-class TestCleanPrice:
+class TestParsePrice:
     def test_removes_dots(self):
-        assert _clean_price("125.000") == 125000.0
+        assert _parse_price("125.000") == 125000.0
 
     def test_multiple_dots(self):
-        assert _clean_price("1.250.000") == 1250000.0
+        assert _parse_price("1.250.000") == 1250000.0
 
     def test_zero_string(self):
-        assert _clean_price("0") == 0.0
+        assert _parse_price("0") == 0.0
 
     def test_empty_string(self):
-        assert _clean_price("") == 0.0
+        assert _parse_price("") == 0.0
 
     def test_none(self):
-        assert _clean_price(None) == 0.0
+        assert _parse_price(None) == 0.0
 
     def test_no_dots(self):
-        assert _clean_price("5000") == 5000.0
+        assert _parse_price("5000") == 5000.0
 
     def test_integer_input(self):
-        assert _clean_price(125000) == 125000.0
+        assert _parse_price(125000) == 125000.0
 
     def test_float_input(self):
-        assert _clean_price(125000.5) == 125000.5
+        assert _parse_price(125000.5) == 125000.5
 
     def test_non_numeric(self):
-        assert _clean_price("abc") == 0.0
+        assert _parse_price("abc") == 0.0
 
 
 # ---------------------------------------------------------------------------

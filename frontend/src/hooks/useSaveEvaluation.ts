@@ -11,6 +11,7 @@ export interface SaveEvaluationRequest {
   manual_inputs: Record<string, unknown>;
   rule_version?: number;
   email_output?: string | null;
+  marketplace?: string;
   period?: string;
 }
 
@@ -32,7 +33,8 @@ export function useSaveEvaluation(brandId: number) {
         '/api/v1/evaluations/brands/{brand_id}/save',
         {
           params: { path: { brand_id: brandId } },
-          body: request,
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          body: request as any,
         },
       );
       if (error) throw error;

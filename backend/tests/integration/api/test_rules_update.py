@@ -256,7 +256,7 @@ def test_update_rules_response_schema(client):
 
         assert response.status_code == 200
         data = response.json()
-        expected_fields = {"id", "template", "rules", "version", "updated_by", "updated_at"}
+        expected_fields = {"id", "template", "marketplace", "rules", "version", "updated_by", "updated_at"}
         assert set(data.keys()) == expected_fields
 
 
