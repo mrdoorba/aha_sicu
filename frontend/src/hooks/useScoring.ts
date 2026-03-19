@@ -77,6 +77,7 @@ export function useScoring(brandId: number, preStep?: () => Promise<void>) {
         '/api/v1/evaluations/brands/{brand_id}/score',
         {
           params: { path: { brand_id: brandId } },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           body: request as any,
         },
       );

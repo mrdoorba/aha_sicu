@@ -39,6 +39,7 @@ export function useSaveEvaluationInputs(brandId: number) {
         '/api/v1/evaluations/brands/{brand_id}',
         {
           params: { path: { brand_id: brandId } },
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           body: body as any,
         },
       );

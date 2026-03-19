@@ -23,6 +23,7 @@ export function useSendEmail() {
           ...(bcc && bcc.length > 0 ? { bcc } : {}),
           ...(note ? { note } : {}),
           ...(language ? { language } : {}),
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
         } as any,
       });
       if (error) throw new Error('Failed to send email');

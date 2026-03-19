@@ -6,13 +6,11 @@ import pytest
 from pydantic import ValidationError
 
 from app.modules.evaluations.schemas import (
-    BrandEvaluationItem,
     EvaluationListItem,
     GroupedEvaluationItem,
     RunCalculatorItem,
     SaveEvaluationResponse,
     SingleCalculatorStatus,
-    ScoringResponse,
 )
 
 
