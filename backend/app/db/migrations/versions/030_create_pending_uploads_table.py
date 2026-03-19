@@ -23,7 +23,7 @@ def upgrade() -> None:
         sa.text("""
             CREATE TABLE pending_uploads (
                 upload_id TEXT PRIMARY KEY,
-                brand_id INTEGER NOT NULL REFERENCES brands(id) ON DELETE CASCADE,
+                brand_id INTEGER NOT NULL REFERENCES brand_vp_data(id) ON DELETE CASCADE,
                 file_type TEXT NOT NULL,
                 filename TEXT NOT NULL,
                 content_type TEXT NOT NULL,
