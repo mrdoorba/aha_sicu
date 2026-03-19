@@ -15,7 +15,8 @@ COPY locales ./locales
 # Non-root user for defense-in-depth (F-04-006, F-10-001)
 RUN groupadd --gid 1001 appgroup && \
     useradd --uid 1001 --gid appgroup --no-create-home --shell /bin/false appuser && \
-    chown -R appuser:appgroup /app
+    mkdir -p /home/appuser/.cache/uv && \
+    chown -R appuser:appgroup /app /home/appuser
 
 USER appuser
 
