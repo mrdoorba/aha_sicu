@@ -701,8 +701,8 @@ def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, s
         </td>
       </tr>
       <tr>
-        <td style="background-color:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};padding:14px 16px;font-family:monospace,'Courier New',Courier;font-size:12px;color:{TEXT_DARK};white-space:pre-wrap;line-height:1.6;">
-{_esc(output_text)}</td>
+        <td style="background-color:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};padding:14px 16px;">
+<pre style="margin:0;font-family:monospace,'Courier New',Courier;font-size:12px;color:{TEXT_DARK};white-space:pre-wrap;word-wrap:break-word;line-height:1.6;">{_esc(output_text)}</pre></td>
       </tr>
     </table>
   </td>
