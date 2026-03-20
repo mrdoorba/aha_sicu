@@ -1,7 +1,7 @@
 """Integration tests for email API endpoints (POST /send, GET /preview)."""
 
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
 from app.core.exceptions import AppException
 from app.modules.email.schemas import SendEmailResponse
@@ -103,14 +103,26 @@ def test_send_email_returns_422_when_invalid_recipient_domain(client, auth_heade
     assert any("outside allowed domains" in str(err.get("msg", "")) for err in detail)
 
 
-def test_send_email_returns_422_when_domains_not_configured(client, auth_headers):
-    """Fail-closed: empty EMAIL_ALLOWED_DOMAINS rejects all sends."""
+def test_send_email_allows_any_domain_when_allowlist_empty(client, auth_headers):
+    """Open sending: empty EMAIL_ALLOWED_DOMAINS allows all domains."""
     user, headers, auth_ctx = auth_headers("admin")
 
     with (
         auth_ctx,
         patch("app.config.settings.email_allowed_domains", ""),
+        patch("app.modules.email.router.get_evaluation_detail", new_callable=AsyncMock) as mock_eval,
+        patch("app.modules.email.router.send_evaluation_email", new_callable=AsyncMock) as mock_send,
+        patch("app.modules.email.router.insert_email_history", new_callable=AsyncMock),
+        patch("app.modules.email.router.settings") as mock_router_settings,
     ):
+        mock_eval.return_value = MagicMock()
+        mock_eval.return_value.model_dump.return_value = {
+            "id": 1, "brand_name": "Test", "period": "Jan 2026",
+            "score_breakdown": [], "final_score": 80.0, "verdict": "Good",
+        }
+        mock_send.return_value = MagicMock(success=True, message_id="<test>", recipients=["recipient@example.com"])
+        mock_router_settings.brevo_sender_email = "sender@aha.com"
+
         response = client.post(
             "/api/v1/email/send",
             json={
@@ -121,9 +133,7 @@ def test_send_email_returns_422_when_domains_not_configured(client, auth_headers
             headers=headers,
         )
 
-    assert response.status_code == 422
-    detail = response.json()["detail"]
-    assert any("not configured" in str(err.get("msg", "")) for err in detail)
+    assert response.status_code == 200
 
 
 def test_send_email_returns_404_when_evaluation_not_found(client, auth_headers):

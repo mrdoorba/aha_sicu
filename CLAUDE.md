@@ -84,7 +84,7 @@ Prioritize: simplicity, robustness, performance, correctness. Avoid over-enginee
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **aha_sicu** (3781 symbols, 8895 relationships, 154 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **aha_sicu** (3878 symbols, 9088 relationships, 155 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
@@ -194,7 +194,7 @@ Full audit: `.aegis/report/AEGIS-REPORT.md` | Playbooks: `.aegis/remediation/pla
 - When modifying Cloud Run env vars in Terraform, verify `CLOUD_RUN_URL` and `ALLOWED_SCHEDULER_EMAILS` are present. Never remove them without removing the OIDC code path.
 - CORS origins must come from `CORS_ORIGINS` env var via `settings.cors_origin_list`. Never hardcode origin URLs in `main.py`.
 - When a security feature depends on a config value (allowlist, audience, domain restriction), the empty/missing case must **deny**, not permit. No `if not config: return` in security paths.
-- Email recipients must be validated against `EMAIL_ALLOWED_DOMAINS`. Never bypass domain validation.
+- When `EMAIL_ALLOWED_DOMAINS` is set, email recipients are validated against it. When empty, all domains are allowed (open sending).
 
 ## Infrastructure
 

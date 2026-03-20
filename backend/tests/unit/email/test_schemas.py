@@ -36,11 +36,11 @@ class TestEmailDomainAllowlist:
         assert len(req.recipients) == 1
 
     @patch("app.modules.email.schemas.settings")
-    def test_send_email_rejects_when_allowlist_empty(self, mock_settings):
-        """Rejects all recipients when allowlist is not configured (fail-closed)."""
+    def test_send_email_allows_any_domain_when_allowlist_empty(self, mock_settings):
+        """Allows all recipients when allowlist is not configured (open sending)."""
         mock_settings.email_allowed_domains = ""
-        with pytest.raises(ValidationError, match="not configured"):
-            SendEmailRequest(**_valid_request(recipients=["anyone@anydomain.com"]))
+        req = SendEmailRequest(**_valid_request(recipients=["anyone@anydomain.com"]))
+        assert len(req.recipients) == 1
 
     @patch("app.modules.email.schemas.settings")
     def test_send_email_accepts_when_multiple_allowed_domains(self, mock_settings):
