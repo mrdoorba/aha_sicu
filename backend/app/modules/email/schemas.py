@@ -1,5 +1,7 @@
 """Email module request/response schemas."""
 
+from datetime import datetime
+
 from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.config import settings
@@ -71,7 +73,7 @@ class EmailHistoryItem(BaseModel):
     status: str
     message_id: str | None = None
     error_detail: str | None = None
-    sent_at: str
+    sent_at: datetime
 
 
 class EmailHistoryListResponse(BaseModel):
