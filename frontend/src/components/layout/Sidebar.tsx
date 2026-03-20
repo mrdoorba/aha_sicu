@@ -5,6 +5,7 @@ import {
   LayoutDashboard,
   Briefcase,
   History,
+  Mail,
   Settings,
   Users,
   LogOut,
@@ -58,6 +59,11 @@ export const Sidebar = ({ className }: SidebarProps) => {
       title: t('header.history'),
       href: '/history',
       icon: History,
+    }] : []),
+    ...(canAccessHistory ? [{
+      title: t('header.emailHistory'),
+      href: '/email-history',
+      icon: Mail,
     }] : []),
     ...(canAccessRules ? [{
       title: t('header.rules'),

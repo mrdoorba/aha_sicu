@@ -105,19 +105,19 @@ describe('Sidebar Riwayat link visibility', () => {
     it('shows Riwayat link for leader role', () => {
         mockProfile.role = 'leader';
         renderSidebar();
-        expect(screen.getByText(/riwayat/i)).toBeInTheDocument();
+        expect(screen.getByText(/^riwayat$/i)).toBeInTheDocument();
     });
 
     it('shows Riwayat link for admin role', () => {
         mockProfile.role = 'admin';
         renderSidebar();
-        expect(screen.getByText(/riwayat/i)).toBeInTheDocument();
+        expect(screen.getByText(/^riwayat$/i)).toBeInTheDocument();
     });
 
     it('hides Riwayat link for member role', () => {
         mockProfile.role = 'member';
         renderSidebar();
-        expect(screen.queryByText(/riwayat/i)).not.toBeInTheDocument();
+        expect(screen.queryByText(/^riwayat$/i)).not.toBeInTheDocument();
     });
 });
 

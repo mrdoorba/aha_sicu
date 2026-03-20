@@ -14,6 +14,7 @@ import { HistoryPage } from './pages/HistoryPage';
 import { EvaluationDetailPage } from './pages/EvaluationDetailPage';
 import { RulesPage } from './pages/RulesPage';
 import { AccountsPage } from './pages/AccountsPage';
+import { EmailHistoryPage } from './pages/EmailHistoryPage';
 import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
 import { MainLayout } from './components/layout/MainLayout';
 
@@ -74,6 +75,17 @@ function App() {
                 }
               />
               
+              <Route
+                path="/email-history"
+                element={
+                  <RoleProtectedRoute
+                    allowedRoles={['leader', 'admin']}
+                    accessDeniedMessage={t('auth.accessDeniedEmailHistory')}
+                  >
+                    <EmailHistoryPage />
+                  </RoleProtectedRoute>
+                }
+              />
               <Route
                 path="/rules"
                 element={
