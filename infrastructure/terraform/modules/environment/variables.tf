@@ -67,13 +67,14 @@ variable "cloud_run_service_name" {
   default     = ""
 }
 
-variable "smtp_user" {
-  description = "Gmail address for SMTP sending"
+variable "brevo_sender_name" {
+  description = "Display name for sent emails"
   type        = string
+  default     = "AHA Commerce"
 }
 
-variable "smtp_from_name" {
-  description = "Display name for sent emails"
+variable "brevo_sender_email" {
+  description = "Verified sender email for Brevo transactional emails"
   type        = string
 }
 

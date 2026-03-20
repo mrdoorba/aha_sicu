@@ -151,8 +151,19 @@ resource "google_secret_manager_secret_version" "gsheets_credentials" {
   secret_data = base64decode(google_service_account_key.gsheets_sync.private_key)
 }
 
+# TODO: Remove old smtp_password secret after confirming Brevo works in prod.
+# Kept to allow rollback if needed.
 resource "google_secret_manager_secret" "smtp_password" {
   secret_id = "aha_coms_sicu_${var.environment}_smtp_password"
+  project   = var.project_id
+
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret" "brevo_api_key" {
+  secret_id = "aha_coms_sicu_${var.environment}_brevo_api_key"
   project   = var.project_id
 
   replication {
@@ -185,6 +196,13 @@ resource "google_secret_manager_secret_iam_member" "api_sa_gsheets" {
 
 resource "google_secret_manager_secret_iam_member" "api_sa_smtp_password" {
   secret_id = google_secret_manager_secret.smtp_password.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run.email}"
+  project   = var.project_id
+}
+
+resource "google_secret_manager_secret_iam_member" "api_sa_brevo_api_key" {
+  secret_id = google_secret_manager_secret.brevo_api_key.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.cloud_run.email}"
   project   = var.project_id
@@ -266,38 +284,23 @@ resource "google_cloud_run_v2_service" "api" {
       }
 
       env {
-        name  = "SMTP_HOST"
-        value = "smtp.gmail.com"
-      }
-
-      env {
-        name  = "SMTP_PORT"
-        value = "587"
-      }
-
-      env {
-        name  = "SMTP_USER"
-        value = var.smtp_user
-      }
-
-      env {
-        name = "SMTP_PASSWORD"
+        name = "BREVO_API_KEY"
         value_source {
           secret_key_ref {
-            secret  = google_secret_manager_secret.smtp_password.secret_id
+            secret  = google_secret_manager_secret.brevo_api_key.secret_id
             version = "latest"
           }
         }
       }
 
       env {
-        name  = "SMTP_FROM_NAME"
-        value = var.smtp_from_name
+        name  = "BREVO_SENDER_NAME"
+        value = var.brevo_sender_name
       }
 
       env {
-        name  = "SMTP_FROM_EMAIL"
-        value = var.smtp_user
+        name  = "BREVO_SENDER_EMAIL"
+        value = var.brevo_sender_email
       }
 
       env {
@@ -381,7 +384,7 @@ resource "google_cloud_run_v2_service" "api" {
     google_sql_user.app,
     google_secret_manager_secret_iam_member.api_sa_db_password,
     google_secret_manager_secret_iam_member.api_sa_gsheets,
-    google_secret_manager_secret_iam_member.api_sa_smtp_password,
+    google_secret_manager_secret_iam_member.api_sa_brevo_api_key,
   ]
 }
 

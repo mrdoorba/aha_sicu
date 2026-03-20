@@ -60,15 +60,11 @@ services:
       # Firebase — emulator mode (no real credentials needed)
       FIREBASE_AUTH_EMULATOR_HOST: firebase-emulator:9099
       FIREBASE_CREDENTIALS_PATH: ""
-      # Email — route to MailHog
-      SMTP_HOST: mailhog
-      SMTP_PORT: "1025"
-      SMTP_USER: ""
-      SMTP_PASSWORD: ""
-      SMTP_FROM_NAME: AHA Commerce
-      SMTP_FROM_EMAIL: noreply@ahacommerce.local
-      SMTP_USE_TLS: "false"
-      EMAIL_ENABLED: "true"
+      # Email — Brevo (disabled in local dev by default)
+      BREVO_API_KEY: ""
+      BREVO_SENDER_NAME: AHA Commerce
+      BREVO_SENDER_EMAIL: noreply@ahacommerce.local
+      EMAIL_ENABLED: "false"
       # Upload — local filesystem (no GCS)
       GCS_UPLOAD_BUCKET: ""
       # Google Sheets — disabled

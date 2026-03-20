@@ -115,8 +115,8 @@ module "dev" {
   cloud_run_memory        = var.cloud_run_memory
   cloud_run_cpu           = var.cloud_run_cpu
 
-  smtp_user             = var.smtp_user
-  smtp_from_name        = var.smtp_from_name
+  brevo_sender_name     = var.brevo_sender_name
+  brevo_sender_email    = var.brevo_sender_email
   email_enabled         = var.dev_email_enabled
   email_allowed_domains = var.dev_email_allowed_domains
   cloud_run_url         = var.dev_cloud_run_url
@@ -150,8 +150,8 @@ module "prod" {
   cloud_run_memory        = var.cloud_run_memory
   cloud_run_cpu           = var.cloud_run_cpu
 
-  smtp_user             = var.smtp_user
-  smtp_from_name        = var.smtp_from_name
+  brevo_sender_name     = var.brevo_sender_name
+  brevo_sender_email    = var.brevo_sender_email
   email_enabled         = var.prod_email_enabled
   email_allowed_domains = var.prod_email_allowed_domains
   cloud_run_url         = var.prod_cloud_run_url

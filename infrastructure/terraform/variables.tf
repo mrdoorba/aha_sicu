@@ -71,19 +71,19 @@ variable "gsheets_eval_spreadsheet_id" {
 }
 
 # =============================================================================
-# Email / SMTP Variables
+# Email / Brevo Variables
 # =============================================================================
 
-variable "smtp_user" {
-  description = "Gmail address for SMTP sending"
-  type        = string
-  default     = ""
-}
-
-variable "smtp_from_name" {
+variable "brevo_sender_name" {
   description = "Display name for sent emails"
   type        = string
   default     = "AHA Commerce"
+}
+
+variable "brevo_sender_email" {
+  description = "Verified sender email for Brevo transactional emails"
+  type        = string
+  default     = ""
 }
 
 variable "dev_email_enabled" {

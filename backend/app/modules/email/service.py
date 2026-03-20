@@ -1,13 +1,11 @@
-"""Email composition and SMTP sending service."""
+"""Email composition and Brevo transactional email sending service."""
 
-import asyncio
 import base64
 import logging
-import smtplib
 from collections.abc import Callable
-from email.message import EmailMessage
-from email.utils import make_msgid
 from pathlib import Path
+
+import httpx
 
 from app.config import settings
 from app.core.exceptions import AppException
@@ -17,6 +15,8 @@ from app.modules.email.template import _get_strings
 logger = logging.getLogger(__name__)
 
 ASSETS_DIR = Path(__file__).parent / "assets"
+
+BREVO_API_URL = "https://api.brevo.com/v3/smtp/email"
 
 
 def _load_asset(filename: str) -> bytes:
@@ -57,133 +57,97 @@ def _decode_chart_image(chart_image_b64: str) -> bytes | None:
         ) from exc
 
 
-def build_email_message(
+def _bytes_to_data_uri(data: bytes, subtype: str = "png") -> str:
+    """Convert raw image bytes to a base64 data URI."""
+    b64 = base64.b64encode(data).decode("ascii")
+    return f"data:image/{subtype};base64,{b64}"
+
+
+def _replace_cid_with_data_uri(
+    html: str,
+    cid_map: dict[str, str],
+) -> str:
+    """Replace cid: references in HTML with base64 data URIs.
+
+    Args:
+        html: HTML string containing cid: references.
+        cid_map: Mapping of CID string to data URI string.
+    """
+    for cid, data_uri in cid_map.items():
+        html = html.replace(f"cid:{cid}", data_uri)
+    return html
+
+
+async def brevo_send(
     *,
-    subject: str,
-    from_name: str,
-    from_email: str,
+    sender_name: str,
+    sender_email: str,
     to_emails: list[str],
-    cc_emails: list[str] | None = None,
-    bcc_emails: list[str] | None = None,
+    subject: str,
     html_content: str,
     text_content: str,
-    images: list[tuple[bytes, str, str]],
-) -> EmailMessage:
-    """Build a multipart email with CID inline images.
-
-    Args:
-        subject: Email subject line.
-        from_name: Sender display name.
-        from_email: Sender email address.
-        to_emails: List of recipient email addresses.
-        cc_emails: Optional list of CC email addresses.
-        bcc_emails: Optional list of BCC email addresses (not set as header).
-        html_content: HTML body.
-        text_content: Plain text fallback.
-        images: List of (data, subtype, cid) tuples for inline images.
-
-    Returns:
-        Composed EmailMessage ready to send.
-    """
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"] = f"{from_name} <{from_email}>"
-    msg["To"] = ", ".join(to_emails)
-
-    if cc_emails:
-        msg["Cc"] = ", ".join(cc_emails)
-    # BCC: intentionally NOT set as header
-
-    # Plain text fallback
-    msg.set_content(text_content)
-
-    # HTML alternative
-    msg.add_alternative(html_content, subtype="html")
-
-    # Attach CID images to the HTML part
-    if images:
-        html_part = None
-        for part in msg.walk():
-            if part.get_content_type() == "multipart/related":
-                html_part = part
-                break
-            if part.get_content_type() == "text/html":
-                html_part = part
-                break
-
-        # Get the related part — add_alternative creates multipart/alternative
-        # We need to add images as related to the HTML part
-        for payload in msg.iter_parts():
-            if payload.get_content_type() == "multipart/alternative":
-                for sub in payload.iter_parts():
-                    if sub.get_content_type() == "text/html":
-                        html_part = sub
-                        break
-                break
-
-        if html_part is not None:
-            for data, subtype, cid in images:
-                html_part.add_related(
-                    data,
-                    maintype="image",
-                    subtype=subtype,
-                    cid=cid,
-                )
-
-    return msg
-
-
-def _smtp_send_sync(
-    msg: EmailMessage,
-    *,
-    to_addrs: list[str] | None = None,
+    cc_emails: list[str] | None = None,
+    bcc_emails: list[str] | None = None,
+    api_key: str,
 ) -> str:
-    """Send an email message synchronously via SMTP.
+    """Send an email via the Brevo transactional email API.
 
-    Args:
-        msg: The email message to send.
-        to_addrs: Explicit list of envelope recipients (includes BCC).
-            If None, send_message extracts recipients from headers.
-
-    Returns the Message-ID on success.
+    Returns the Brevo messageId on success.
     Raises AppException with categorized error codes on failure.
     """
-    try:
-        server = smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30)
-        try:
-            if settings.smtp_use_tls:
-                server.starttls()
-                server.login(settings.smtp_user, settings.smtp_password)
-            server.send_message(msg, to_addrs=to_addrs)
-            return msg.get("Message-ID", "")
-        finally:
-            server.quit()
-    except smtplib.SMTPAuthenticationError as exc:
-        raise AppException(
-            code="SMTP_AUTH_ERROR",
-            detail=f"SMTP authentication failed: {exc}",
-            status_code=502,
-        ) from exc
-    except smtplib.SMTPConnectError as exc:
-        raise AppException(
-            code="SMTP_CONNECTION_ERROR",
-            detail=f"Could not connect to SMTP server: {exc}",
-            status_code=502,
-        ) from exc
-    except TimeoutError as exc:
-        raise AppException(
-            code="SMTP_TIMEOUT",
-            detail=f"SMTP connection timed out: {exc}",
-            status_code=504,
-        ) from exc
+    payload: dict = {
+        "sender": {"name": sender_name, "email": sender_email},
+        "to": [{"email": addr} for addr in to_emails],
+        "subject": subject,
+        "htmlContent": html_content,
+        "textContent": text_content,
+        "headers": {"X-Mailin-Tag": "evaluation-report"},
+    }
 
+    if cc_emails:
+        payload["cc"] = [{"email": addr} for addr in cc_emails]
+    if bcc_emails:
+        payload["bcc"] = [{"email": addr} for addr in bcc_emails]
 
-async def smtp_send(
-    msg: EmailMessage,
-    to_addrs: list[str] | None = None,
-) -> str:
-    """Async wrapper around synchronous SMTP send."""
-    return await asyncio.to_thread(_smtp_send_sync, msg, to_addrs=to_addrs)
+    headers = {
+        "api-key": api_key,
+        "Content-Type": "application/json",
+        "Accept": "application/json",
+    }
+
+    async with httpx.AsyncClient(timeout=30.0) as client:
+        response = await client.post(BREVO_API_URL, json=payload, headers=headers)
+
+    if response.status_code == 201:
+        data = response.json()
+        return data.get("messageId", "")
+
+    body = response.text
+    logger.error("Brevo API error %s: %s", response.status_code, body)
+
+    if response.status_code == 401:
+        raise AppException(
+            code="BREVO_AUTH_ERROR",
+            detail=f"Brevo authentication failed: {body}",
+            status_code=502,
+        )
+    if response.status_code == 429:
+        raise AppException(
+            code="BREVO_RATE_LIMIT",
+            detail=f"Brevo rate limit exceeded: {body}",
+            status_code=429,
+        )
+    if response.status_code == 400:
+        raise AppException(
+            code="BREVO_VALIDATION_ERROR",
+            detail=f"Brevo validation error: {body}",
+            status_code=422,
+        )
+    raise AppException(
+        code="BREVO_API_ERROR",
+        detail=f"Brevo API error ({response.status_code}): {body}",
+        status_code=502,
+    )
 
 
 async def send_evaluation_email(
@@ -209,6 +173,7 @@ async def send_evaluation_email(
         cc: Optional list of CC email addresses.
         bcc: Optional list of BCC email addresses.
         note: Optional custom note to include in the email body.
+        language: Language code for email strings.
 
     Returns:
         SendEmailResponse with success status and message ID.
@@ -229,18 +194,12 @@ async def send_evaluation_email(
     header_bytes = _load_asset("aha-e-mail-header-2026.png")
     footer_bytes = _load_asset("aha-e-mail-footer-2026.png")
 
-    # Generate CIDs (strip angle brackets for HTML src references)
-    header_msgid = make_msgid(domain="ahacommerce.id")
-    footer_msgid = make_msgid(domain="ahacommerce.id")
-    header_cid = header_msgid.strip("<>")
-    footer_cid = footer_msgid.strip("<>")
+    # Build CID placeholders (reused for data URI conversion)
+    header_cid = "header-cid"
+    footer_cid = "footer-cid"
+    chart_cid = "chart-cid" if chart_bytes else ""
 
-    chart_cid = ""
-    if chart_bytes:
-        chart_msgid = make_msgid(domain="ahacommerce.id")
-        chart_cid = chart_msgid.strip("<>")
-
-    # Render HTML using the provided function (pass full cid: URIs)
+    # Render HTML using the provided function (pass cid: URIs as before)
     chart_src = f"cid:{chart_cid}" if chart_cid else ""
     html_content = render_html_fn(
         evaluation_data=evaluation_data,
@@ -250,6 +209,16 @@ async def send_evaluation_email(
         note=note,
         language=language,
     )
+
+    # Replace CID references with base64 data URIs for Brevo
+    cid_map: dict[str, str] = {
+        header_cid: _bytes_to_data_uri(header_bytes),
+        footer_cid: _bytes_to_data_uri(footer_bytes),
+    }
+    if chart_bytes and chart_cid:
+        cid_map[chart_cid] = _bytes_to_data_uri(chart_bytes)
+
+    html_content = _replace_cid_with_data_uri(html_content, cid_map)
 
     # Plain text fallback — use partner score (pass ratio) to match dashboard
     categories = evaluation_data.get("score_breakdown", [])
@@ -281,31 +250,26 @@ async def send_evaluation_email(
             recipients=recipients,
         )
 
-    # Build and send
-    images = [
-        (header_bytes, "png", header_cid),
-        (footer_bytes, "png", footer_cid),
-    ]
-    if chart_bytes and chart_cid:
-        images.append((chart_bytes, "png", chart_cid))
-
-    msg = build_email_message(
-        subject=subject,
-        from_name=settings.smtp_from_name,
-        from_email=settings.smtp_from_email,
-        to_emails=recipients,
-        cc_emails=cc,
-        bcc_emails=bcc,
-        html_content=html_content,
-        text_content=text_content,
-        images=images,
-    )
-
-    # Compute all envelope recipients (To + CC + BCC)
-    all_addrs = list(recipients) + (cc or []) + (bcc or [])
+    # Fail-closed: require API key when email is enabled
+    if not settings.brevo_api_key:
+        raise AppException(
+            code="BREVO_CONFIG_ERROR",
+            detail="BREVO_API_KEY is required when EMAIL_ENABLED=true",
+            status_code=500,
+        )
 
     try:
-        message_id = await smtp_send(msg, all_addrs)
+        message_id = await brevo_send(
+            sender_name=settings.brevo_sender_name,
+            sender_email=settings.brevo_sender_email,
+            to_emails=recipients,
+            subject=subject,
+            html_content=html_content,
+            text_content=text_content,
+            cc_emails=cc,
+            bcc_emails=bcc,
+            api_key=settings.brevo_api_key,
+        )
         return SendEmailResponse(
             success=True,
             message_id=message_id,
