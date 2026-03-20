@@ -497,21 +497,36 @@ def _render_detailed_evaluation(
         )
 
         _HALF = 'style="width:50%;padding:4px;vertical-align:top"'
+        _FULL = 'style="width:100%;padding:4px;vertical-align:top"'
+
+        def _is_wide_card(row: dict[str, Any]) -> bool:
+            """Cards with multiline values need full width."""
+            val = str(row.get("value", ""))
+            msg = str(row.get("message", ""))
+            return "\n" in val or "\n" in msg
 
         # Build 2-column grid of metric cards with optional dividers.
         grid_rows: list[str] = []
         pending_left: str | None = None
         for row in rows:
             card = _render_metric_card(row, S, lang)
+            wide = _is_wide_card(row)
             if pending_left is None:
-                if _needs_divider(row):
-                    grid_rows.append(f'<tr><td {_HALF}>{card}</td><td {_HALF}>&nbsp;</td></tr>')
-                    grid_rows.append(_DIVIDER_HTML)
+                if _needs_divider(row) or wide:
+                    grid_rows.append(f'<tr><td {"colspan=\"2\" " + _FULL if wide else _HALF}>{card}</td>{"" if wide else f"<td {_HALF}>&nbsp;</td>"}</tr>')
+                    if _needs_divider(row):
+                        grid_rows.append(_DIVIDER_HTML)
                 else:
                     pending_left = card
             else:
-                grid_rows.append(f'<tr><td {_HALF}>{pending_left}</td><td {_HALF}>{card}</td></tr>')
-                pending_left = None
+                if wide:
+                    # Flush pending left as half-width, then render wide card full-width
+                    grid_rows.append(f'<tr><td {_HALF}>{pending_left}</td><td {_HALF}>&nbsp;</td></tr>')
+                    grid_rows.append(f'<tr><td colspan="2" {_FULL}>{card}</td></tr>')
+                    pending_left = None
+                else:
+                    grid_rows.append(f'<tr><td {_HALF}>{pending_left}</td><td {_HALF}>{card}</td></tr>')
+                    pending_left = None
                 if _needs_divider(row):
                     grid_rows.append(_DIVIDER_HTML)
 
