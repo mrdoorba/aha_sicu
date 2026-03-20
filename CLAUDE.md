@@ -84,7 +84,7 @@ Prioritize: simplicity, robustness, performance, correctness. Avoid over-enginee
 <!-- gitnexus:start -->
 # GitNexus — Code Intelligence
 
-This project is indexed by GitNexus as **aha_sicu** (3802 symbols, 8955 relationships, 154 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
+This project is indexed by GitNexus as **aha_sicu** (3781 symbols, 8895 relationships, 154 execution flows). Use the GitNexus MCP tools to understand code, assess impact, and navigate safely.
 
 > If any GitNexus tool warns the index is stale, run `npx gitnexus analyze` in terminal first.
 
