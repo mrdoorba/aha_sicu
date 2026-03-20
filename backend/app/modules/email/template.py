@@ -185,6 +185,22 @@ def _esc(text: Any) -> str:
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
 
 
+def _preserve_whitespace(text: str) -> str:
+    """Convert whitespace to HTML entities for email clients that strip pre/white-space.
+
+    Converts leading spaces to &nbsp; and newlines to <br>.
+    Preserves blank lines as paragraph breaks.
+    """
+    lines = text.split("\n")
+    html_lines: list[str] = []
+    for line in lines:
+        stripped = line.lstrip(" ")
+        indent = len(line) - len(stripped)
+        prefix = "&nbsp;" * indent if indent > 0 else ""
+        html_lines.append(f"{prefix}{stripped}")
+    return "<br>".join(html_lines)
+
+
 def _closing_with_cta_buttons(closing_message: str, S: dict[str, str]) -> str:
     """Render closing message with URLs replaced by CTA buttons."""
     cta_label = S.get("schedule_consultation", "Jadwalkan Konsultasi Gratis")
@@ -701,8 +717,8 @@ def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, s
         </td>
       </tr>
       <tr>
-        <td style="background-color:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};padding:14px 16px;">
-<pre style="margin:0;font-family:monospace,'Courier New',Courier;font-size:12px;color:{TEXT_DARK};white-space:pre-wrap;word-wrap:break-word;line-height:1.6;">{_esc(output_text)}</pre></td>
+        <td style="background-color:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};padding:14px 16px;font-family:monospace,'Courier New',Courier;font-size:12px;color:{TEXT_DARK};line-height:1.6;">
+{_preserve_whitespace(_esc(output_text))}</td>
       </tr>
     </table>
   </td>
