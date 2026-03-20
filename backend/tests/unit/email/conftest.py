@@ -1,6 +1,7 @@
 """Shared fixtures for email module tests."""
 
 import base64
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -149,3 +150,17 @@ def sample_base64_png() -> str:
         b"\r\n\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
     )
     return base64.b64encode(png_bytes).decode("ascii")
+
+
+@pytest.fixture
+def mock_smtp():
+    """Patch smtplib.SMTP and return mock instance."""
+    with patch("smtplib.SMTP") as mock_class:
+        mock_instance = MagicMock()
+        mock_class.return_value.__enter__ = MagicMock(return_value=mock_instance)
+        mock_class.return_value.__exit__ = MagicMock(return_value=False)
+        # Also handle non-context-manager usage
+        mock_class.return_value = mock_instance
+        mock_instance.send_message.return_value = {}
+        mock_instance.noop.return_value = (250, b"OK")
+        yield mock_class, mock_instance

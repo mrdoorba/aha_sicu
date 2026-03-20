@@ -121,7 +121,7 @@ def test_send_email_allows_any_domain_when_allowlist_empty(client, auth_headers)
             "score_breakdown": [], "final_score": 80.0, "verdict": "Good",
         }
         mock_send.return_value = MagicMock(success=True, message_id="<test>", recipients=["recipient@example.com"])
-        mock_router_settings.brevo_sender_email = "sender@aha.com"
+        mock_router_settings.smtp_from_email = "sender@aha.com"
 
         response = client.post(
             "/api/v1/email/send",

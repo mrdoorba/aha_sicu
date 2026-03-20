@@ -1,17 +1,19 @@
-"""Tests for email service: composition, Brevo API send."""
+"""Tests for email service: composition, CID images, SMTP send."""
 
+import smtplib
+from email.message import EmailMessage
 from pathlib import Path
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import MagicMock, patch
 
-import httpx
 import pytest
 
 from app.core.exceptions import AppException
 from app.modules.email.service import (
     _decode_chart_image,
     _load_asset,
+    _smtp_send_sync,
     _strip_base64_prefix,
-    brevo_send,
+    build_email_message,
     send_evaluation_email,
 )
 
@@ -26,6 +28,7 @@ class TestLoadAsset:
         data = _load_asset("aha-e-mail-header-2026.png")
         assert isinstance(data, bytes)
         assert len(data) > 0
+        # Should start with PNG signature
         assert data[:4] == b"\x89PNG"
 
     def test_loads_footer_image(self) -> None:
@@ -66,177 +69,233 @@ class TestBase64Handling:
 
 
 # ---------------------------------------------------------------------------
-# brevo_send
+# build_email_message
 # ---------------------------------------------------------------------------
-class TestBrevoSend:
-    """Test Brevo API send with error categorization."""
+class TestBuildEmailMessage:
+    """Test email message construction with CID images."""
 
-    async def test_sends_successfully(self) -> None:
-        mock_response = httpx.Response(
-            status_code=201,
-            json={"messageId": "<brevo-msg-123>"},
-            request=httpx.Request("POST", BREVO_URL),
+    # Minimal 1x1 PNG for valid image attachment
+    _PNG = (
+        b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
+        b"\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
+        b"\x00\x00\x00\nIDATx\x9cc\x00\x01\x00\x00\x05\x00\x01"
+        b"\r\n\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
+    )
+
+    def _build_simple_msg(self) -> EmailMessage:
+        return build_email_message(
+            subject="Test Subject",
+            from_name="AHA Commerce",
+            from_email="noreply@aha.com",
+            to_emails=["recipient@example.com"],
+            html_content="<html><body>Hello</body></html>",
+            text_content="Hello",
+            images=[
+                (self._PNG, "png", "header-cid"),
+                (self._PNG, "png", "footer-cid"),
+                (self._PNG, "png", "chart-cid"),
+            ],
         )
 
-        with patch("app.modules.email.service.httpx.AsyncClient") as mock_client_cls:
-            mock_client = AsyncMock()
-            mock_client.post.return_value = mock_response
-            mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+    def test_subject_header(self) -> None:
+        msg = self._build_simple_msg()
+        assert msg["Subject"] == "Test Subject"
 
-            result = await brevo_send(
-                sender_name="AHA Commerce",
-                sender_email="noreply@aha.com",
-                to_emails=["test@example.com"],
-                subject="Test",
-                html_content="<p>Hello</p>",
-                text_content="Hello",
-                api_key="xkeysib-test",
-            )
+    def test_from_header_with_display_name(self) -> None:
+        msg = self._build_simple_msg()
+        assert "AHA Commerce" in msg["From"]
+        assert "noreply@aha.com" in msg["From"]
 
-        assert result == "<brevo-msg-123>"
-        call_kwargs = mock_client.post.call_args
-        assert call_kwargs[1]["headers"]["api-key"] == "xkeysib-test"
+    def test_to_header_single(self) -> None:
+        msg = self._build_simple_msg()
+        assert msg["To"] == "recipient@example.com"
 
-    async def test_sends_with_cc_bcc(self) -> None:
-        mock_response = httpx.Response(
-            status_code=201,
-            json={"messageId": "<brevo-msg-456>"},
-            request=httpx.Request("POST", BREVO_URL),
+    def test_to_header_multiple(self) -> None:
+        msg = build_email_message(
+            subject="Test",
+            from_name="AHA",
+            from_email="noreply@aha.com",
+            to_emails=["a@example.com", "b@example.com", "c@example.com"],
+            html_content="<p>Hi</p>",
+            text_content="Hi",
+            images=[],
         )
+        assert msg["To"] == "a@example.com, b@example.com, c@example.com"
 
-        with patch("app.modules.email.service.httpx.AsyncClient") as mock_client_cls:
-            mock_client = AsyncMock()
-            mock_client.post.return_value = mock_response
-            mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
-
-            await brevo_send(
-                sender_name="AHA",
-                sender_email="noreply@aha.com",
-                to_emails=["a@example.com"],
-                subject="Test",
-                html_content="<p>Hi</p>",
-                text_content="Hi",
-                cc_emails=["cc@example.com"],
-                bcc_emails=["bcc@example.com"],
-                api_key="xkeysib-test",
-            )
-
-        payload = mock_client.post.call_args[1]["json"]
-        assert payload["cc"] == [{"email": "cc@example.com"}]
-        assert payload["bcc"] == [{"email": "bcc@example.com"}]
-
-    async def test_raises_auth_error_on_401(self) -> None:
-        mock_response = httpx.Response(
-            status_code=401,
-            text="Unauthorized",
-            request=httpx.Request("POST", BREVO_URL),
+    def test_cc_header_set_when_provided(self) -> None:
+        msg = build_email_message(
+            subject="Test",
+            from_name="AHA",
+            from_email="noreply@aha.com",
+            to_emails=["a@example.com"],
+            cc_emails=["cc1@example.com", "cc2@example.com"],
+            html_content="<p>Hi</p>",
+            text_content="Hi",
+            images=[],
         )
+        assert msg["Cc"] == "cc1@example.com, cc2@example.com"
 
-        with patch("app.modules.email.service.httpx.AsyncClient") as mock_client_cls:
-            mock_client = AsyncMock()
-            mock_client.post.return_value = mock_response
-            mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+    def test_bcc_header_not_set(self) -> None:
+        msg = build_email_message(
+            subject="Test",
+            from_name="AHA",
+            from_email="noreply@aha.com",
+            to_emails=["a@example.com"],
+            bcc_emails=["bcc@example.com"],
+            html_content="<p>Hi</p>",
+            text_content="Hi",
+            images=[],
+        )
+        assert msg["Bcc"] is None
+
+    def test_no_cc_header_when_empty(self) -> None:
+        msg = self._build_simple_msg()
+        assert msg["Cc"] is None
+
+    def test_has_html_alternative(self) -> None:
+        msg = self._build_simple_msg()
+        # Walk the message parts - should find text/html
+        html_found = False
+        for part in msg.walk():
+            if part.get_content_type() == "text/html":
+                html_found = True
+                break
+        assert html_found, "No text/html part found in message"
+
+    def test_has_text_fallback(self) -> None:
+        msg = self._build_simple_msg()
+        text_found = False
+        for part in msg.walk():
+            if part.get_content_type() == "text/plain":
+                text_found = True
+                break
+        assert text_found, "No text/plain part found in message"
+
+    def test_attaches_three_cid_images(self) -> None:
+        msg = self._build_simple_msg()
+        image_parts = [
+            p for p in msg.walk() if p.get_content_type() == "image/png"
+        ]
+        assert len(image_parts) == 3
+
+    def test_cid_references_match(self) -> None:
+        msg = self._build_simple_msg()
+        cids_found = []
+        for part in msg.walk():
+            if part.get_content_type() == "image/png":
+                content_id = part.get("Content-ID", "")
+                # Strip angle brackets for comparison
+                cid = content_id.strip("<>")
+                cids_found.append(cid)
+        assert "header-cid" in cids_found
+        assert "footer-cid" in cids_found
+        assert "chart-cid" in cids_found
+
+    def test_from_formatted_as_display_name_email(self) -> None:
+        msg = build_email_message(
+            subject="Test",
+            from_name="My Brand",
+            from_email="brand@example.com",
+            to_emails=["to@example.com"],
+            html_content="<p>Hi</p>",
+            text_content="Hi",
+            images=[],
+        )
+        from_header = msg["From"]
+        assert "My Brand" in from_header
+        assert "brand@example.com" in from_header
+
+
+# ---------------------------------------------------------------------------
+# _smtp_send_sync
+# ---------------------------------------------------------------------------
+class TestSmtpSendSync:
+    """Test synchronous SMTP send with error categorization."""
+
+    def test_calls_starttls_login_send(self, mock_smtp: tuple) -> None:
+        mock_class, mock_instance = mock_smtp
+        msg = EmailMessage()
+        msg["Message-ID"] = "<test123@ahacommerce.id>"
+
+        with patch("app.modules.email.service.settings") as mock_settings:
+            mock_settings.smtp_host = "smtp.gmail.com"
+            mock_settings.smtp_port = 587
+            mock_settings.smtp_user = "user@gmail.com"
+            mock_settings.smtp_password = "secret"
+            mock_class.return_value = mock_instance
+
+            _smtp_send_sync(msg)
+
+        mock_class.assert_called_once_with("smtp.gmail.com", 587, timeout=30)
+        mock_instance.starttls.assert_called_once()
+        mock_instance.login.assert_called_once_with("user@gmail.com", "secret")
+        mock_instance.send_message.assert_called_once_with(msg, to_addrs=None)
+
+    def test_sends_with_explicit_to_addrs(self, mock_smtp: tuple) -> None:
+        mock_class, mock_instance = mock_smtp
+        msg = EmailMessage()
+        msg["Message-ID"] = "<test123@ahacommerce.id>"
+        all_addrs = ["a@example.com", "b@example.com", "bcc@example.com"]
+
+        with patch("app.modules.email.service.settings") as mock_settings:
+            mock_settings.smtp_host = "smtp.gmail.com"
+            mock_settings.smtp_port = 587
+            mock_settings.smtp_user = "user@gmail.com"
+            mock_settings.smtp_password = "secret"
+            mock_class.return_value = mock_instance
+
+            _smtp_send_sync(msg, to_addrs=all_addrs)
+
+        mock_instance.send_message.assert_called_once_with(msg, to_addrs=all_addrs)
+
+    def test_raises_smtp_auth_error(self, mock_smtp: tuple) -> None:
+        mock_class, mock_instance = mock_smtp
+        mock_instance.login.side_effect = smtplib.SMTPAuthenticationError(
+            535, b"Authentication failed"
+        )
+        msg = EmailMessage()
+
+        with patch("app.modules.email.service.settings") as mock_settings:
+            mock_settings.smtp_host = "smtp.gmail.com"
+            mock_settings.smtp_port = 587
+            mock_settings.smtp_user = "user@gmail.com"
+            mock_settings.smtp_password = "wrong"
+            mock_class.return_value = mock_instance
 
             with pytest.raises(AppException) as exc_info:
-                await brevo_send(
-                    sender_name="AHA",
-                    sender_email="noreply@aha.com",
-                    to_emails=["test@example.com"],
-                    subject="Test",
-                    html_content="<p>Hi</p>",
-                    text_content="Hi",
-                    api_key="bad-key",
-                )
+                _smtp_send_sync(msg)
+            assert exc_info.value.code == "SMTP_AUTH_ERROR"
+            assert exc_info.value.status_code == 502
 
-        assert exc_info.value.code == "BREVO_AUTH_ERROR"
-        assert exc_info.value.status_code == 502
-
-    async def test_raises_rate_limit_on_429(self) -> None:
-        mock_response = httpx.Response(
-            status_code=429,
-            text="Rate limited",
-            request=httpx.Request("POST", BREVO_URL),
+    def test_raises_smtp_connection_error(self, mock_smtp: tuple) -> None:
+        mock_class, _ = mock_smtp
+        mock_class.side_effect = smtplib.SMTPConnectError(
+            421, b"Connection refused"
         )
+        msg = EmailMessage()
 
-        with patch("app.modules.email.service.httpx.AsyncClient") as mock_client_cls:
-            mock_client = AsyncMock()
-            mock_client.post.return_value = mock_response
-            mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+        with patch("app.modules.email.service.settings") as mock_settings:
+            mock_settings.smtp_host = "smtp.gmail.com"
+            mock_settings.smtp_port = 587
 
             with pytest.raises(AppException) as exc_info:
-                await brevo_send(
-                    sender_name="AHA",
-                    sender_email="noreply@aha.com",
-                    to_emails=["test@example.com"],
-                    subject="Test",
-                    html_content="<p>Hi</p>",
-                    text_content="Hi",
-                    api_key="xkeysib-test",
-                )
+                _smtp_send_sync(msg)
+            assert exc_info.value.code == "SMTP_CONNECTION_ERROR"
+            assert exc_info.value.status_code == 502
 
-        assert exc_info.value.code == "BREVO_RATE_LIMIT"
-        assert exc_info.value.status_code == 429
+    def test_raises_smtp_timeout(self, mock_smtp: tuple) -> None:
+        mock_class, _ = mock_smtp
+        mock_class.side_effect = TimeoutError("Connection timed out")
+        msg = EmailMessage()
 
-    async def test_raises_api_error_on_500(self) -> None:
-        mock_response = httpx.Response(
-            status_code=500,
-            text="Internal Server Error",
-            request=httpx.Request("POST", BREVO_URL),
-        )
-
-        with patch("app.modules.email.service.httpx.AsyncClient") as mock_client_cls:
-            mock_client = AsyncMock()
-            mock_client.post.return_value = mock_response
-            mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+        with patch("app.modules.email.service.settings") as mock_settings:
+            mock_settings.smtp_host = "smtp.gmail.com"
+            mock_settings.smtp_port = 587
 
             with pytest.raises(AppException) as exc_info:
-                await brevo_send(
-                    sender_name="AHA",
-                    sender_email="noreply@aha.com",
-                    to_emails=["test@example.com"],
-                    subject="Test",
-                    html_content="<p>Hi</p>",
-                    text_content="Hi",
-                    api_key="xkeysib-test",
-                )
-
-        assert exc_info.value.code == "BREVO_API_ERROR"
-        assert exc_info.value.status_code == 502
-
-    async def test_raises_validation_error_on_400(self) -> None:
-        mock_response = httpx.Response(
-            status_code=400,
-            text="Bad Request",
-            request=httpx.Request("POST", BREVO_URL),
-        )
-
-        with patch("app.modules.email.service.httpx.AsyncClient") as mock_client_cls:
-            mock_client = AsyncMock()
-            mock_client.post.return_value = mock_response
-            mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
-            mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
-
-            with pytest.raises(AppException) as exc_info:
-                await brevo_send(
-                    sender_name="AHA",
-                    sender_email="noreply@aha.com",
-                    to_emails=["test@example.com"],
-                    subject="Test",
-                    html_content="<p>Hi</p>",
-                    text_content="Hi",
-                    api_key="xkeysib-test",
-                )
-
-        assert exc_info.value.code == "BREVO_VALIDATION_ERROR"
-        assert exc_info.value.status_code == 422
-
-
-BREVO_URL = "https://api.brevo.com/v3/smtp/email"
+                _smtp_send_sync(msg)
+            assert exc_info.value.code == "SMTP_TIMEOUT"
+            assert exc_info.value.status_code == 504
 
 
 # ---------------------------------------------------------------------------
@@ -259,6 +318,8 @@ class TestSendEvaluationEmail:
     ) -> None:
         with patch("app.modules.email.service.settings") as mock_settings:
             mock_settings.email_enabled = False
+            mock_settings.smtp_from_name = "AHA Commerce"
+            mock_settings.smtp_from_email = "noreply@aha.com"
 
             await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -267,6 +328,7 @@ class TestSendEvaluationEmail:
                 render_html_fn=mock_render_fn,
             )
 
+        # Check the render function received chart_src, header_src, footer_src
         call_kwargs = mock_render_fn.call_args[1]
         assert "chart_src" in call_kwargs
         assert "header_src" in call_kwargs
@@ -280,6 +342,8 @@ class TestSendEvaluationEmail:
     ) -> None:
         with patch("app.modules.email.service.settings") as mock_settings:
             mock_settings.email_enabled = False
+            mock_settings.smtp_from_name = "AHA Commerce"
+            mock_settings.smtp_from_email = "noreply@aha.com"
 
             result = await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -299,6 +363,8 @@ class TestSendEvaluationEmail:
     ) -> None:
         with patch("app.modules.email.service.settings") as mock_settings:
             mock_settings.email_enabled = False
+            mock_settings.smtp_from_name = "AHA Commerce"
+            mock_settings.smtp_from_email = "noreply@aha.com"
 
             result = await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -310,12 +376,13 @@ class TestSendEvaluationEmail:
         assert result.success is True
         assert result.message_id == "debug-file"
         assert result.recipients == ["test@example.com"]
+        # Check file was written
         preview_path = Path(f"/tmp/email_preview_{sample_evaluation_data['id']}.html")
         assert preview_path.exists()
         content = preview_path.read_text()
         assert "Rendered email" in content
 
-    async def test_sends_via_brevo_when_enabled(
+    async def test_sends_via_smtp_when_enabled(
         self,
         sample_evaluation_data: dict,
         sample_base64_png: str,
@@ -323,13 +390,12 @@ class TestSendEvaluationEmail:
     ) -> None:
         with (
             patch("app.modules.email.service.settings") as mock_settings,
-            patch("app.modules.email.service.brevo_send", new_callable=AsyncMock) as mock_send,
+            patch("app.modules.email.service.smtp_send") as mock_send,
         ):
             mock_settings.email_enabled = True
-            mock_settings.brevo_api_key = "xkeysib-test"
-            mock_settings.brevo_sender_name = "AHA Commerce"
-            mock_settings.brevo_sender_email = "noreply@aha.com"
-            mock_send.return_value = "<brevo-msg-123>"
+            mock_settings.smtp_from_name = "AHA Commerce"
+            mock_settings.smtp_from_email = "noreply@aha.com"
+            mock_send.return_value = "<msg123@ahacommerce.id>"
 
             result = await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -339,7 +405,7 @@ class TestSendEvaluationEmail:
             )
 
         assert result.success is True
-        assert result.message_id == "<brevo-msg-123>"
+        assert result.message_id == "<msg123@ahacommerce.id>"
         mock_send.assert_called_once()
 
     async def test_subject_auto_generated_format(
@@ -351,13 +417,18 @@ class TestSendEvaluationEmail:
         """Subject should be 'Laporan Evaluasi Brand: [Brand] - [Period]'."""
         with (
             patch("app.modules.email.service.settings") as mock_settings,
-            patch("app.modules.email.service.brevo_send", new_callable=AsyncMock) as mock_send,
+            patch("app.modules.email.service.smtp_send") as mock_send,
+            patch(
+                "app.modules.email.service.build_email_message"
+            ) as mock_build,
         ):
             mock_settings.email_enabled = True
-            mock_settings.brevo_api_key = "xkeysib-test"
-            mock_settings.brevo_sender_name = "AHA Commerce"
-            mock_settings.brevo_sender_email = "noreply@aha.com"
+            mock_settings.smtp_from_name = "AHA Commerce"
+            mock_settings.smtp_from_email = "noreply@aha.com"
             mock_send.return_value = "<msg@test>"
+
+            mock_msg = MagicMock()
+            mock_build.return_value = mock_msg
 
             await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -366,7 +437,7 @@ class TestSendEvaluationEmail:
                 render_html_fn=mock_render_fn,
             )
 
-        call_kwargs = mock_send.call_args[1]
+        call_kwargs = mock_build.call_args[1]
         expected_subject = "Laporan Evaluasi Brand: Kopi Kenangan - Januari 2026"
         assert call_kwargs["subject"] == expected_subject
 
@@ -378,6 +449,8 @@ class TestSendEvaluationEmail:
     ) -> None:
         with patch("app.modules.email.service.settings") as mock_settings:
             mock_settings.email_enabled = False
+            mock_settings.smtp_from_name = "AHA Commerce"
+            mock_settings.smtp_from_email = "noreply@aha.com"
 
             await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -398,13 +471,14 @@ class TestSendEvaluationEmail:
     ) -> None:
         with (
             patch("app.modules.email.service.settings") as mock_settings,
-            patch("app.modules.email.service.brevo_send", new_callable=AsyncMock) as mock_send,
+            patch("app.modules.email.service.smtp_send") as mock_send,
+            patch("app.modules.email.service.build_email_message") as mock_build,
         ):
             mock_settings.email_enabled = True
-            mock_settings.brevo_api_key = "xkeysib-test"
-            mock_settings.brevo_sender_name = "AHA Commerce"
-            mock_settings.brevo_sender_email = "noreply@aha.com"
+            mock_settings.smtp_from_name = "AHA Commerce"
+            mock_settings.smtp_from_email = "noreply@aha.com"
             mock_send.return_value = "<msg@test>"
+            mock_build.return_value = MagicMock()
 
             result = await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -415,61 +489,16 @@ class TestSendEvaluationEmail:
                 bcc=["bcc@example.com"],
             )
 
-        call_kwargs = mock_send.call_args[1]
-        assert call_kwargs["to_emails"] == ["a@example.com", "b@example.com"]
-        assert call_kwargs["cc_emails"] == ["cc@example.com"]
-        assert call_kwargs["bcc_emails"] == ["bcc@example.com"]
+        # Verify build_email_message called with correct params
+        build_kwargs = mock_build.call_args[1]
+        assert build_kwargs["to_emails"] == ["a@example.com", "b@example.com"]
+        assert build_kwargs["cc_emails"] == ["cc@example.com"]
+        assert build_kwargs["bcc_emails"] == ["bcc@example.com"]
+
+        # Verify smtp_send called with all addresses
+        send_call_args = mock_send.call_args
+        # Second positional arg is to_addrs
+        assert "a@example.com" in send_call_args[0][1]
+        assert "bcc@example.com" in send_call_args[0][1]
+
         assert result.recipients == ["a@example.com", "b@example.com"]
-
-    async def test_raises_config_error_when_api_key_missing(
-        self,
-        sample_evaluation_data: dict,
-        sample_base64_png: str,
-        mock_render_fn: MagicMock,
-    ) -> None:
-        with patch("app.modules.email.service.settings") as mock_settings:
-            mock_settings.email_enabled = True
-            mock_settings.brevo_api_key = ""
-            mock_settings.brevo_sender_name = "AHA Commerce"
-            mock_settings.brevo_sender_email = "noreply@aha.com"
-
-            with pytest.raises(AppException) as exc_info:
-                await send_evaluation_email(
-                    evaluation_data=sample_evaluation_data,
-                    recipients=["test@example.com"],
-                    chart_image_b64=sample_base64_png,
-                    render_html_fn=mock_render_fn,
-                )
-
-        assert exc_info.value.code == "BREVO_CONFIG_ERROR"
-        assert exc_info.value.status_code == 500
-
-    async def test_html_contains_data_uris_not_cids(
-        self,
-        sample_evaluation_data: dict,
-        sample_base64_png: str,
-        mock_render_fn: MagicMock,
-    ) -> None:
-        """Verify CID references are replaced with data URIs before sending."""
-        mock_render_fn.return_value = '<img src="cid:header-cid"><img src="cid:footer-cid">'
-
-        with (
-            patch("app.modules.email.service.settings") as mock_settings,
-            patch("app.modules.email.service.brevo_send", new_callable=AsyncMock) as mock_send,
-        ):
-            mock_settings.email_enabled = True
-            mock_settings.brevo_api_key = "xkeysib-test"
-            mock_settings.brevo_sender_name = "AHA Commerce"
-            mock_settings.brevo_sender_email = "noreply@aha.com"
-            mock_send.return_value = "<msg@test>"
-
-            await send_evaluation_email(
-                evaluation_data=sample_evaluation_data,
-                recipients=["test@example.com"],
-                chart_image_b64=sample_base64_png,
-                render_html_fn=mock_render_fn,
-            )
-
-        html_sent = mock_send.call_args[1]["html_content"]
-        assert "cid:" not in html_sent
-        assert "data:image/png;base64," in html_sent

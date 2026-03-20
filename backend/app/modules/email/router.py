@@ -116,7 +116,7 @@ async def send_email_endpoint(
             await insert_email_history(
                 conn,
                 evaluation_id=body.evaluation_id,
-                sender_email=settings.brevo_sender_email or "",
+                sender_email=settings.smtp_from_email or "",
                 recipient_email=recipient_str,
                 cc_emails=[str(c) for c in body.cc] if body.cc else None,
                 bcc_emails=[str(b) for b in body.bcc] if body.bcc else None,
@@ -134,7 +134,7 @@ async def send_email_endpoint(
         await insert_email_history(
             conn,
             evaluation_id=body.evaluation_id,
-            sender_email=settings.brevo_sender_email or "",
+            sender_email=settings.smtp_from_email or "",
             recipient_email=recipient_str,
             cc_emails=[str(c) for c in body.cc] if body.cc else None,
             bcc_emails=[str(b) for b in body.bcc] if body.bcc else None,

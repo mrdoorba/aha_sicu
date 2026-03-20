@@ -1,4 +1,4 @@
-"""Tests for Brevo configuration and email schemas."""
+"""Tests for SMTP configuration and email schemas."""
 
 import os
 from unittest.mock import patch
@@ -11,43 +11,43 @@ from app.config import Settings
 from app.modules.email.schemas import SendEmailRequest, SendEmailResponse
 
 
-class TestBrevoConfigDefaults:
-    """Test that Brevo config fields have correct defaults."""
+class TestSmtpConfigDefaults:
+    """Test that SMTP config fields have correct defaults."""
 
-    def test_brevo_api_key_default_empty(self) -> None:
+    def test_smtp_host_default(self) -> None:
         s = Settings(_env_file=None)
-        assert s.brevo_api_key == ""
+        assert s.smtp_host == "smtp.gmail.com"
 
-    def test_brevo_sender_name_default(self) -> None:
+    def test_smtp_from_name_default(self) -> None:
         s = Settings(_env_file=None)
-        assert s.brevo_sender_name == "AHA Commerce"
+        assert s.smtp_from_name == "AHA Commerce"
 
-    def test_brevo_sender_email_default_empty(self) -> None:
+    def test_smtp_from_email_default_empty(self) -> None:
         s = Settings(_env_file=None)
-        assert s.brevo_sender_email == ""
+        assert s.smtp_from_email == ""
 
     def test_email_enabled_default(self) -> None:
         s = Settings(_env_file=None)
         assert s.email_enabled is False
 
 
-class TestBrevoConfigEnvOverrides:
-    """Test that all Brevo fields can be overridden via env vars."""
+class TestSmtpConfigEnvOverrides:
+    """Test that all SMTP fields can be overridden via env vars."""
 
-    def test_brevo_api_key_override(self) -> None:
-        with patch.dict(os.environ, {"BREVO_API_KEY": "xkeysib-test-key"}):
+    def test_smtp_host_override(self) -> None:
+        with patch.dict(os.environ, {"SMTP_HOST": "smtp.custom.com"}):
             s = Settings(_env_file=None)
-            assert s.brevo_api_key == "xkeysib-test-key"
+            assert s.smtp_host == "smtp.custom.com"
 
-    def test_brevo_sender_name_override(self) -> None:
-        with patch.dict(os.environ, {"BREVO_SENDER_NAME": "My Brand"}):
+    def test_smtp_from_name_override(self) -> None:
+        with patch.dict(os.environ, {"SMTP_FROM_NAME": "My Brand"}):
             s = Settings(_env_file=None)
-            assert s.brevo_sender_name == "My Brand"
+            assert s.smtp_from_name == "My Brand"
 
-    def test_brevo_sender_email_override(self) -> None:
-        with patch.dict(os.environ, {"BREVO_SENDER_EMAIL": "noreply@brand.com"}):
+    def test_smtp_from_email_override(self) -> None:
+        with patch.dict(os.environ, {"SMTP_FROM_EMAIL": "noreply@brand.com"}):
             s = Settings(_env_file=None)
-            assert s.brevo_sender_email == "noreply@brand.com"
+            assert s.smtp_from_email == "noreply@brand.com"
 
     def test_email_enabled_override(self) -> None:
         with patch.dict(os.environ, {"EMAIL_ENABLED": "true"}):

@@ -28,7 +28,7 @@ class TestSendEmailLogsHistory:
              patch("app.modules.email.router.insert_email_history", new_callable=AsyncMock) as mock_insert, \
              patch("app.modules.email.router.settings") as mock_router_settings, \
              patch("app.modules.email.schemas.settings") as mock_schema_settings:
-            mock_router_settings.brevo_sender_email = "sender@aha.com"
+            mock_router_settings.smtp_from_email = "sender@aha.com"
             mock_schema_settings.email_allowed_domains = "ahacommerce.id"
 
             response = client.post(
@@ -66,7 +66,7 @@ class TestSendEmailLogsHistory:
              patch("app.modules.email.router.insert_email_history", new_callable=AsyncMock) as mock_insert, \
              patch("app.modules.email.router.settings") as mock_router_settings, \
              patch("app.modules.email.schemas.settings") as mock_schema_settings:
-            mock_router_settings.brevo_sender_email = "sender@aha.com"
+            mock_router_settings.smtp_from_email = "sender@aha.com"
             mock_schema_settings.email_allowed_domains = "ahacommerce.id"
 
             response = client.post(
@@ -107,7 +107,7 @@ class TestSendEmailLogsHistory:
              patch("app.modules.email.router.insert_email_history", new_callable=AsyncMock, side_effect=Exception("DB write failed")), \
              patch("app.modules.email.router.settings") as mock_router_settings, \
              patch("app.modules.email.schemas.settings") as mock_schema_settings:
-            mock_router_settings.brevo_sender_email = "sender@aha.com"
+            mock_router_settings.smtp_from_email = "sender@aha.com"
             mock_schema_settings.email_allowed_domains = "ahacommerce.id"
 
             response = client.post(

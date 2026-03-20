@@ -57,12 +57,16 @@ class Settings(BaseSettings):
     # GCS Upload Bucket (empty = local dev fallback)
     gcs_upload_bucket: str = ""
 
-    # Email / Brevo
-    brevo_api_key: str = ""
-    brevo_sender_name: str = "AHA Commerce"
-    brevo_sender_email: str = ""
+    # Email / SMTP
+    smtp_host: str = "smtp.gmail.com"
+    smtp_port: int = 587
+    smtp_user: str = ""
+    smtp_password: str = ""
+    smtp_from_name: str = "AHA Commerce"
+    smtp_from_email: str = ""
+    smtp_use_tls: bool = True
     email_enabled: bool = False
-    email_allowed_domains: str = ""  # comma-separated: "ahacommerce.co.id,example.com"
+    email_allowed_domains: str = ""
     brevo_webhook_secret: str = ""
 
     # Google Sheets API - Credentials
