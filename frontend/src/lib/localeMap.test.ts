@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { getIntlLocale } from './localeMap';
+import { getIntlLocale } from './languages';
 
 describe('getIntlLocale', () => {
   it('should return id-ID for id', () => {

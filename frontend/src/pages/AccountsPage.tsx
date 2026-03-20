@@ -36,7 +36,7 @@ import {
   DialogHeader,
   DialogTitle,
 } from '../components/ui/dialog';
-import { getIntlLocale } from '../lib/localeMap';
+import { getIntlLocale } from '../lib/languages';
 
 const ROLES = ['member', 'leader', 'admin'] as const;
 

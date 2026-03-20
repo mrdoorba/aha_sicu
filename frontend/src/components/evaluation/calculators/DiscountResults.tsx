@@ -3,7 +3,7 @@ import { AlertTriangle } from 'lucide-react';
 import { Badge } from '../../ui/badge';
 import type { CalculatorResult } from '../../../hooks/useCalculator';
 import { isDiscountDetails } from '../../../lib/calculatorGuards';
-import { getIntlLocale } from '../../../lib/localeMap';
+import { getIntlLocale } from '../../../lib/languages';
 
 interface DiscountResultsProps {
   result: CalculatorResult;

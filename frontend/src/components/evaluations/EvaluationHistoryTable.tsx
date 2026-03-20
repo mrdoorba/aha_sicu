@@ -18,7 +18,7 @@ import { Calendar } from '../ui/calendar';
 import { Popover, PopoverContent, PopoverTrigger } from '../ui/popover';
 import { useGroupedEvaluations, type GroupedEvaluationItem } from '../../hooks/useGroupedEvaluations';
 import { useBrandEvaluations } from '../../hooks/useBrandEvaluations';
-import { getIntlLocale } from '../../lib/localeMap';
+import { getIntlLocale } from '../../lib/languages';
 
 function SearchInput({
   value,

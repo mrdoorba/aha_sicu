@@ -5,8 +5,9 @@ from __future__ import annotations
 import pytest
 
 from app.modules.email.template import (
-    CATEGORY_MAP,
-    STRINGS,
+    _get_category_map,
+    _get_strings,
+    _load_locale,
     render_email_html,
     _compute_verdict_counts,
     _format_display_value,
@@ -361,13 +362,15 @@ class TestMetricNameTranslation:
 
 
 class TestStringsAndCategoryMap:
-    """STRINGS dict and CATEGORY_MAP tests."""
+    """_get_strings() and _get_category_map() tests."""
 
-    def test_strings_has_id_key(self) -> None:
-        assert "id" in STRINGS
+    def test_strings_returns_dict_for_id(self) -> None:
+        s = _get_strings("id")
+        assert isinstance(s, dict)
+        assert len(s) > 0
 
     def test_strings_has_section_headers(self) -> None:
-        id_strings = STRINGS["id"]
+        id_strings = _get_strings("id")
         required_keys = [
             "score_overview",
             "detailed_evaluation",
@@ -383,9 +386,9 @@ class TestStringsAndCategoryMap:
 
     def test_strings_has_new_keys(self) -> None:
         for lang in ("id", "en", "th"):
-            s = STRINGS[lang]
+            s = _get_strings(lang)
             for key in ("average_stock", "product_code", "product_name", "kesimpulan", "marketing_budget"):
-                assert key in s, f"Missing STRINGS[{lang}] key: {key}"
+                assert key in s, f"Missing _get_strings({lang}) key: {key}"
 
     def test_category_map_entries(self) -> None:
         expected_keys = [
@@ -400,8 +403,29 @@ class TestStringsAndCategoryMap:
             "Stok",
             "Discount",
         ]
+        cat_map = _get_category_map("id")
         for key in expected_keys:
-            assert key in CATEGORY_MAP["id"], f"Missing CATEGORY_MAP key: {key}"
+            assert key in cat_map, f"Missing CATEGORY_MAP key: {key}"
+
+    def test_migrated_email_strings_fidelity(self) -> None:
+        """Spot-check that migrated locale values match original hardcoded values."""
+        id_s = _get_strings("id")
+        assert id_s["score_overview"] == "Laporan Evaluasi Partner"
+        assert id_s["marketing_budget"] == "Est. Biaya Marketing"
+        en_s = _get_strings("en")
+        assert en_s["score_overview"] == "Partner Evaluation Report"
+        assert en_s["marketing_budget"] == "Est. Marketing Budget"
+        th_s = _get_strings("th")
+        assert th_s["score_overview"] is not None  # Thai chars, just verify present
+
+    def test_get_strings_returns_key_name_when_locale_missing(self, tmp_path: object, monkeypatch: pytest.MonkeyPatch) -> None:
+        """_get_strings falls back to key name when locale file unavailable."""
+        import app.modules.email.template as tpl
+        monkeypatch.setattr(tpl, "_LOCALES_DIR", tmp_path)
+        _load_locale.cache_clear()
+        s = _get_strings("id")
+        assert s["score_overview"] == "score_overview"  # key name as fallback
+        _load_locale.cache_clear()  # restore for other tests
 
 
 # ===================================================================
@@ -477,7 +501,7 @@ class TestDetailedEvaluation:
         }
         html = _render_full(data)
         # Detailed Evaluation section header should not appear (no categories with rows)
-        assert STRINGS["id"]["detailed_evaluation"] not in html
+        assert _get_strings("id")["detailed_evaluation"] not in html
 
 
 class TestBenchmarkVisibility:
@@ -710,7 +734,7 @@ class TestDataIntelligence:
 
     def test_section_header_present(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
-        assert STRINGS["id"]["data_intelligence"] in html
+        assert _get_strings("id")["data_intelligence"] in html
 
     def test_section_number_04(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
@@ -730,7 +754,7 @@ class TestDataIntelligence:
             "period": "Maret 2026",
         }
         html = _render_full(data)
-        assert STRINGS["id"]["data_intelligence"] not in html
+        assert _get_strings("id")["data_intelligence"] not in html
 
 
 # ===================================================================
@@ -750,7 +774,7 @@ class TestKesimpulan:
     def test_marketing_budget_rendered(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
         assert "IDR 5,000,000" in html
-        assert STRINGS["id"]["marketing_budget"] in html
+        assert _get_strings("id")["marketing_budget"] in html
 
     def test_closing_message_rendered(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
@@ -762,7 +786,7 @@ class TestKesimpulan:
 
     def test_section_header_present(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
-        assert STRINGS["id"]["kesimpulan"] in html
+        assert _get_strings("id")["kesimpulan"] in html
 
     def test_section_number_05(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
@@ -781,7 +805,7 @@ class TestKesimpulan:
             "period": "Maret 2026",
         }
         html = _render_full(data)
-        assert STRINGS["id"]["kesimpulan"] not in html
+        assert _get_strings("id")["kesimpulan"] not in html
 
     def test_skips_when_summary_has_no_content(self, sample_categories: list[dict]) -> None:
         data = {
@@ -802,7 +826,7 @@ class TestKesimpulan:
             "period": "Maret 2026",
         }
         html = _render_full(data)
-        assert STRINGS["id"]["kesimpulan"] not in html
+        assert _get_strings("id")["kesimpulan"] not in html
 
     def test_renders_only_conclusion_when_budget_missing(self, sample_categories: list[dict]) -> None:
         data = {
@@ -823,9 +847,9 @@ class TestKesimpulan:
             "period": "Maret 2026",
         }
         html = _render_full(data)
-        assert STRINGS["id"]["kesimpulan"] in html
+        assert _get_strings("id")["kesimpulan"] in html
         assert "Good performance" in html
-        assert STRINGS["id"]["marketing_budget"] not in html
+        assert _get_strings("id")["marketing_budget"] not in html
 
     def test_html_escaped(self, sample_categories: list[dict]) -> None:
         data = {
@@ -870,7 +894,7 @@ class TestFullRender:
 
     def test_all_sections_present(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
-        s = STRINGS["id"]
+        s = _get_strings("id")
         assert s["score_overview"] in html
         assert s["detailed_evaluation"] in html
         assert s["score_breakdown"] in html
@@ -890,7 +914,7 @@ class TestFullRender:
     def test_section_ordering(self, evaluation_data: dict) -> None:
         """Sections should appear in order: 01-05."""
         html = _render_full(evaluation_data)
-        s = STRINGS["id"]
+        s = _get_strings("id")
         pos_overview = html.find(s["score_overview"])
         pos_detailed = html.find(s["detailed_evaluation"])
         pos_breakdown = html.find(s["score_breakdown"])
@@ -969,5 +993,5 @@ class TestCustomNote:
             note="Test note positioning",
         )
         note_pos = html.find("Test note positioning")
-        score_pos = html.find(STRINGS["id"]["score_overview"])
+        score_pos = html.find(_get_strings("id")["score_overview"])
         assert note_pos < score_pos, "Note should appear before Score Overview"

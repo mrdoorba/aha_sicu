@@ -30,7 +30,7 @@ import {
 } from '../components/evaluation/forms/formConfig';
 import { isRecord, isRecordArray } from '../lib/typeGuards';
 import { CATEGORY_MAP } from '../lib/categoryMap';
-import { getIntlLocale } from '../lib/localeMap';
+import { getIntlLocale } from '../lib/languages';
 import { renderTranslatable, renderAdList, renderFlagList, type TranslatableText } from '../utils/renderTranslatable';
 import { buildI18nEmailBody, type ScoringConclusionData } from '../utils/buildI18nEmailBody';
 import type { TranslatableI18n, AdListI18n } from '../hooks/useCalculator';

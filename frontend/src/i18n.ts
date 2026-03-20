@@ -1,15 +1,21 @@
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
-import id from './locales/id.json';
-import en from './locales/en.json';
-import th from './locales/th.json';
+
+const localeModules = import.meta.glob('./locales/*.json', { eager: true }) as Record<
+  string,
+  { default: Record<string, string> }
+>;
+
+const resources: Record<string, { translation: Record<string, string> }> = {};
+for (const [path, module] of Object.entries(localeModules)) {
+  const code = path.match(/\.\/locales\/(.+)\.json$/)?.[1];
+  if (code) {
+    resources[code] = { translation: module.default };
+  }
+}
 
 i18n.use(initReactI18next).init({
-  resources: {
-    id: { translation: id },
-    en: { translation: en },
-    th: { translation: th },
-  },
+  resources,
   lng: 'id',
   fallbackLng: 'id',
   interpolation: {

@@ -1,5 +1,5 @@
 import { useTranslation } from 'react-i18next';
-import { getIntlLocale } from '../../lib/localeMap';
+import { getIntlLocale } from '../../lib/languages';
 
 interface DashboardFooterProps {
   evaluatorEmail: string;

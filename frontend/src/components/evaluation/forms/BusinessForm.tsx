@@ -8,7 +8,7 @@ import type { BusinessData } from './formConfig';
 import { BUSINESS_FIELDS, getSectionLinks, generateMonthLabels, formatCurrency } from './formConfig';
 import type { ScoringRules } from '../../../hooks/useRules';
 import { getBenchmarkFromRules, FORM_TO_RULES_MAP } from './benchmarkUtils';
-import { getIntlLocale } from '../../../lib/localeMap';
+import { getIntlLocale } from '../../../lib/languages';
 
 interface BusinessFormProps {
   data: BusinessData;

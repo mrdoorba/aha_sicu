@@ -34,154 +34,34 @@ BORDER_LIGHT = "#E4E4E7"     # neutral-200
 # Gmail won't load @font-face but will use Manrope if installed locally.
 FONT_STACK = "'Manrope',Arial,Helvetica,sans-serif"
 
-STRINGS: dict[str, dict[str, str]] = {
-    "id": {
-        "score_overview": "Laporan Evaluasi Partner",
-        "detailed_evaluation": "Evaluasi Detail",
-        "score_breakdown": "Rincian Skor",
-        "data_intelligence": "Data Inteligensi",
-        "ads_analysis": "Analisis Iklan",
-        "top_sku": "Top SKU",
-        "revenue_ranking": "Peringkat Omzet",
-        "stock_ranking": "Peringkat Stok",
-        "average_stock": "Rata-rata Stok",
-        "product_code": "Kode Variasi",
-        "product_name": "Nama Produk",
-        "kesimpulan": "Kesimpulan",
-        "marketing_budget": "Est. Biaya Marketing",
-        "metric": "Metrik",
-        "value": "Nilai",
-        "benchmark": "Benchmark",
-        "verdict": "Keputusan",
-        "score": "Skor",
-        "message": "Pesan",
-        "approved": "Disetujui",
-        "rejected": "Ditolak",
-        "check_count": "Lolos",
-        "cross_count": "Tidak Lolos",
-        "performance_verdict": "Performa dapat Ditingkatkan",
-        "brand_report": "Laporan Evaluasi Brand",
-        "subject": "Laporan Evaluasi Brand: {brand_name} - {period}",
-        "plain_score": "Skor Akhir",
-        "plain_period": "Periode",
-        "chart_placeholder": "Chart akan ditampilkan di email",
-    },
-    "en": {
-        "score_overview": "Partner Evaluation Report",
-        "detailed_evaluation": "Detailed Evaluation",
-        "score_breakdown": "Score Breakdown",
-        "data_intelligence": "Data Intelligence",
-        "ads_analysis": "Ads Analysis",
-        "top_sku": "Top SKU",
-        "revenue_ranking": "Revenue Ranking",
-        "stock_ranking": "Stock Ranking",
-        "average_stock": "Average Stock",
-        "product_code": "Variant Code",
-        "product_name": "Product Name",
-        "kesimpulan": "Conclusion",
-        "marketing_budget": "Est. Marketing Budget",
-        "metric": "Metric",
-        "value": "Value",
-        "benchmark": "Benchmark",
-        "verdict": "Verdict",
-        "score": "Score",
-        "message": "Message",
-        "approved": "Approved",
-        "rejected": "Rejected",
-        "check_count": "Pass",
-        "cross_count": "Fail",
-        "performance_verdict": "Performance can be Improved",
-        "brand_report": "Brand Evaluation Report",
-        "subject": "Brand Evaluation Report: {brand_name} - {period}",
-        "plain_score": "Final Score",
-        "plain_period": "Period",
-        "chart_placeholder": "Chart will be displayed in email",
-    },
-    "th": {
-        "score_overview": "\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e40\u0e21\u0e34\u0e19\u0e1e\u0e32\u0e23\u0e4c\u0e17\u0e40\u0e19\u0e2d\u0e23\u0e4c",
-        "detailed_evaluation": "\u0e01\u0e32\u0e23\u0e1b\u0e23\u0e30\u0e40\u0e21\u0e34\u0e19\u0e42\u0e14\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14",
-        "score_breakdown": "\u0e23\u0e32\u0e22\u0e25\u0e30\u0e40\u0e2d\u0e35\u0e22\u0e14\u0e04\u0e30\u0e41\u0e19\u0e19",
-        "data_intelligence": "\u0e02\u0e49\u0e2d\u0e21\u0e39\u0e25\u0e40\u0e0a\u0e34\u0e07\u0e25\u0e36\u0e01",
-        "ads_analysis": "\u0e27\u0e34\u0e40\u0e04\u0e23\u0e32\u0e30\u0e2b\u0e4c\u0e42\u0e06\u0e29\u0e13\u0e32",
-        "top_sku": "Top SKU",
-        "revenue_ranking": "\u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a\u0e23\u0e32\u0e22\u0e44\u0e14\u0e49",
-        "stock_ranking": "\u0e2d\u0e31\u0e19\u0e14\u0e31\u0e1a\u0e2a\u0e15\u0e47\u0e2d\u0e01",
-        "average_stock": "\u0e2a\u0e15\u0e47\u0e2d\u0e01\u0e40\u0e09\u0e25\u0e35\u0e48\u0e22",
-        "product_code": "\u0e23\u0e2b\u0e31\u0e2a\u0e15\u0e31\u0e27\u0e41\u0e1b\u0e23",
-        "product_name": "\u0e0a\u0e37\u0e48\u0e2d\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32",
-        "kesimpulan": "\u0e2a\u0e23\u0e38\u0e1b\u0e1c\u0e25",
-        "marketing_budget": "\u0e07\u0e1a\u0e01\u0e32\u0e23\u0e15\u0e25\u0e32\u0e14\u0e42\u0e14\u0e22\u0e1b\u0e23\u0e30\u0e21\u0e32\u0e13",
-        "metric": "\u0e15\u0e31\u0e27\u0e0a\u0e35\u0e49\u0e27\u0e31\u0e14",
-        "value": "\u0e04\u0e48\u0e32",
-        "benchmark": "\u0e40\u0e01\u0e13\u0e11\u0e4c\u0e21\u0e32\u0e15\u0e23\u0e10\u0e32\u0e19",
-        "verdict": "\u0e1c\u0e25\u0e01\u0e32\u0e23\u0e15\u0e31\u0e14\u0e2a\u0e34\u0e19",
-        "score": "\u0e04\u0e30\u0e41\u0e19\u0e19",
-        "message": "\u0e02\u0e49\u0e2d\u0e04\u0e27\u0e32\u0e21",
-        "approved": "\u0e1c\u0e48\u0e32\u0e19",
-        "rejected": "\u0e44\u0e21\u0e48\u0e1c\u0e48\u0e32\u0e19",
-        "check_count": "\u0e1c\u0e48\u0e32\u0e19",
-        "cross_count": "\u0e44\u0e21\u0e48\u0e1c\u0e48\u0e32\u0e19",
-        "performance_verdict": "\u0e2a\u0e32\u0e21\u0e32\u0e23\u0e16\u0e1b\u0e23\u0e31\u0e1a\u0e1b\u0e23\u0e38\u0e07\u0e1b\u0e23\u0e30\u0e2a\u0e34\u0e17\u0e18\u0e34\u0e20\u0e32\u0e1e\u0e44\u0e14\u0e49",
-        "brand_report": "\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1b\u0e23\u0e30\u0e40\u0e21\u0e34\u0e19\u0e41\u0e1a\u0e23\u0e19\u0e14\u0e4c",
-        "subject": "\u0e23\u0e32\u0e22\u0e07\u0e32\u0e19\u0e1b\u0e23\u0e30\u0e40\u0e21\u0e34\u0e19\u0e41\u0e1a\u0e23\u0e19\u0e14\u0e4c: {brand_name} - {period}",
-        "plain_score": "\u0e04\u0e30\u0e41\u0e19\u0e19\u0e2a\u0e38\u0e14\u0e17\u0e49\u0e32\u0e22",
-        "plain_period": "\u0e0a\u0e48\u0e27\u0e07\u0e40\u0e27\u0e25\u0e32",
-        "chart_placeholder": "\u0e41\u0e1c\u0e19\u0e20\u0e39\u0e21\u0e34\u0e08\u0e30\u0e41\u0e2a\u0e14\u0e07\u0e43\u0e19\u0e2d\u0e35\u0e40\u0e21\u0e25",
-    },
+# Expected email string keys for defensive fallback.
+_EMAIL_STRING_KEYS: frozenset[str] = frozenset({
+    "score_overview", "detailed_evaluation", "score_breakdown",
+    "data_intelligence", "ads_analysis", "top_sku", "revenue_ranking",
+    "stock_ranking", "average_stock", "product_code", "product_name",
+    "kesimpulan", "marketing_budget", "metric", "value", "benchmark",
+    "verdict", "score", "message", "approved", "rejected",
+    "check_count", "cross_count", "performance_verdict", "brand_report",
+    "subject", "plain_score", "plain_period", "chart_placeholder",
+})
+
+# Indonesian category names are the canonical keys used in evaluation data.
+_CATEGORY_KEYS: dict[str, str] = {
+    "operational": "Kesehatan Operasional Toko",
+    "business": "Bisnis Analisis",
+    "visitors": "Tinjauan Pengunjung",
+    "promo": "Promo Toko",
+    "products": "Jumlah Produk & Status Toko",
+    "ads": "Data Iklan",
+    "campaign": "Partisipasi Campaign",
+    "competition": "Kompetisi TOP Produk",
+    "stock": "Stok",
+    "discount": "Discount",
 }
-
-CATEGORY_MAP: dict[str, dict[str, str]] = {
-    "id": {
-        "Kesehatan Operasional Toko": "Operasional",
-        "Bisnis Analisis": "Bisnis",
-        "Tinjauan Pengunjung": "Pengunjung",
-        "Promo Toko": "Alat Promo",
-        "Jumlah Produk & Status Toko": "Produk & Status",
-        "Data Iklan": "Iklan",
-        "Partisipasi Campaign": "Campaign",
-        "Kompetisi TOP Produk": "Kompetisi",
-        "Stok": "Stok",
-        "Discount": "Diskon",
-    },
-    "en": {
-        "Kesehatan Operasional Toko": "Operations",
-        "Bisnis Analisis": "Business",
-        "Tinjauan Pengunjung": "Visitors",
-        "Promo Toko": "Promo Tools",
-        "Jumlah Produk & Status Toko": "Products & Status",
-        "Data Iklan": "Ads",
-        "Partisipasi Campaign": "Campaign",
-        "Kompetisi TOP Produk": "Competition",
-        "Stok": "Stock",
-        "Discount": "Discount",
-    },
-    "th": {
-        "Kesehatan Operasional Toko": "\u0e14\u0e33\u0e40\u0e19\u0e34\u0e19\u0e07\u0e32\u0e19",
-        "Bisnis Analisis": "\u0e18\u0e38\u0e23\u0e01\u0e34\u0e08",
-        "Tinjauan Pengunjung": "\u0e1c\u0e39\u0e49\u0e40\u0e22\u0e35\u0e48\u0e22\u0e21\u0e0a\u0e21",
-        "Promo Toko": "\u0e40\u0e04\u0e23\u0e37\u0e48\u0e2d\u0e07\u0e21\u0e37\u0e2d\u0e42\u0e1b\u0e23\u0e42\u0e21\u0e15",
-        "Jumlah Produk & Status Toko": "\u0e2a\u0e34\u0e19\u0e04\u0e49\u0e32\u0e41\u0e25\u0e30\u0e2a\u0e16\u0e32\u0e19\u0e30",
-        "Data Iklan": "\u0e42\u0e06\u0e29\u0e13\u0e32",
-        "Partisipasi Campaign": "\u0e41\u0e04\u0e21\u0e40\u0e1b\u0e0d",
-        "Kompetisi TOP Produk": "\u0e01\u0e32\u0e23\u0e41\u0e02\u0e48\u0e07\u0e02\u0e31\u0e19",
-        "Stok": "\u0e2a\u0e15\u0e47\u0e2d\u0e01",
-        "Discount": "\u0e2a\u0e48\u0e27\u0e19\u0e25\u0e14",
-    },
-}
-
-
-def _get_strings(language: str = "id") -> dict[str, str]:
-    """Get string translations for the given language, falling back to Indonesian."""
-    return STRINGS.get(language, STRINGS["id"])
-
-
-def _get_category_map(language: str = "id") -> dict[str, str]:
-    """Get category label map for the given language, falling back to Indonesian."""
-    return CATEGORY_MAP.get(language, CATEGORY_MAP["id"])
 
 
 # ---------------------------------------------------------------------------
-# i18n — metric name translation (shared locale files with frontend)
+# i18n — shared locale files with frontend
 # ---------------------------------------------------------------------------
 
 # Local dev: resolve relative to source tree.  Docker: /app/locales mount.
@@ -199,6 +79,33 @@ def _load_locale(lang: str) -> dict[str, str]:
     if path.is_file():
         return json.loads(path.read_text(encoding="utf-8"))
     return {}
+
+
+def _get_strings(language: str = "id") -> dict[str, str]:
+    """Get email string translations from locale file.
+
+    Falls back to key name if locale file is missing/incomplete,
+    preventing KeyError crashes in template rendering.
+    """
+    locale = _load_locale(language) or _load_locale("id")
+    result: dict[str, str] = {}
+    for k, v in locale.items():
+        if k.startswith("email.") and not k.startswith("email.category."):
+            result[k[len("email."):]] = v
+    # Ensure all expected keys exist — fall back to key name itself
+    for key in _EMAIL_STRING_KEYS:
+        if key not in result:
+            result[key] = key
+    return result
+
+
+def _get_category_map(language: str = "id") -> dict[str, str]:
+    """Get category label map from locale file."""
+    locale = _load_locale(language) or _load_locale("id")
+    return {
+        indo_name: locale.get(f"email.category.{key}", indo_name)
+        for key, indo_name in _CATEGORY_KEYS.items()
+    }
 
 
 def _translate(key: str, vars_: dict[str, str] | None, lang: str) -> str | None:

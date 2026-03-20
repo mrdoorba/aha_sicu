@@ -13,7 +13,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../../ui/co
 import { formatCurrency, getCurrencyCode } from '../forms/formConfig';
 import type { CalculatorResult, TopSkuDetails } from '../../../hooks/useCalculator';
 import { isTopSkuDetails } from '../../../lib/calculatorGuards';
-import { getIntlLocale } from '../../../lib/localeMap';
+import { getIntlLocale } from '../../../lib/languages';
 
 interface TopSkuResultsProps {
   result: CalculatorResult;

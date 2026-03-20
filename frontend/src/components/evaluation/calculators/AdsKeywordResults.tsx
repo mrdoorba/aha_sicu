@@ -2,7 +2,7 @@ import { useTranslation } from 'react-i18next';
 import type { CalculatorResult, AdsKeywordDetails, TranslatableI18n } from '../../../hooks/useCalculator';
 import { renderTranslatable, renderAdList, renderFlagList } from '../../../utils/renderTranslatable';
 import { isAdsKeywordDetails } from '../../../lib/calculatorGuards';
-import { getIntlLocale } from '../../../lib/localeMap';
+import { getIntlLocale } from '../../../lib/languages';
 
 interface AdsKeywordResultsProps {
   result: CalculatorResult;
