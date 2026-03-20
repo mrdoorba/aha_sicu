@@ -43,6 +43,7 @@ _EMAIL_STRING_KEYS: frozenset[str] = frozenset({
     "verdict", "score", "message", "approved", "rejected",
     "check_count", "cross_count", "performance_verdict", "brand_report",
     "subject", "plain_score", "plain_period", "chart_placeholder",
+    "schedule_consultation",
 })
 
 # Indonesian category names are the canonical keys used in evaluation data.
@@ -175,10 +176,38 @@ def _compute_verdict_counts(categories: list[dict[str, Any]]) -> dict[str, int]:
     return {"checks": checks, "xs": xs, "total": total, "score": score}
 
 
+_URL_RE = re.compile(r'(https?://[^\s]+|[a-zA-Z0-9][-a-zA-Z0-9]*\.[a-zA-Z]{2,}(?:\.[a-zA-Z]{2,})?(?:/[^\s]*)?)')
+
+
 def _esc(text: Any) -> str:
     """Escape HTML special characters."""
     s = str(text)
     return s.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;").replace('"', "&quot;")
+
+
+def _closing_with_cta_buttons(closing_message: str, S: dict[str, str]) -> str:
+    """Render closing message with URLs replaced by CTA buttons."""
+    cta_label = S.get("schedule_consultation", "Jadwalkan Konsultasi Gratis")
+
+    def _replace_url(match: re.Match) -> str:
+        url = match.group(0)
+        href = url if url.startswith("http") else f"https://{url}"
+        return (
+            f'</td></tr>'
+            f'<tr><td align="center" style="padding:12px 18px;">'
+            f'<a href="{_esc(href)}" target="_blank" '
+            f'style="display:inline-block;background-color:{PRIMARY_BLUE};color:{WHITE};'
+            f'font-size:14px;font-weight:700;text-decoration:none;'
+            f'padding:12px 32px;border-radius:28px;">'
+            f'{_esc(cta_label)}</a>'
+            f'</td></tr>'
+            f'<tr><td style="padding:0 18px;font-size:13px;color:{TEXT_DARK};line-height:1.7;">'
+        )
+
+    escaped = _esc(closing_message)
+    result = _URL_RE.sub(_replace_url, escaped)
+    result = result.replace("\n", "<br>")
+    return result
 
 
 def _section_header(number: str, title: str) -> str:
@@ -843,7 +872,7 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
 
     # Closing message
     if closing_message:
-        escaped_closing = _esc(closing_message).replace("\n", "<br>")
+        escaped_closing = _closing_with_cta_buttons(closing_message, S)
         parts.append(f"""\
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
                  style="border-left:4px solid {PRIMARY_BLUE}40;background-color:{PRIMARY_LIGHT};border-radius:0 8px 8px 0;">
