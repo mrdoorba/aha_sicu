@@ -192,7 +192,11 @@ async def ensure_test_brands(conn: asyncpg.Connection) -> None:
 async def seed() -> None:
     conn = await asyncpg.connect(DATABASE_URL)
     try:
-        if PROD_DUMP.exists():
+        # Skip seed if data already exists (preserves locally-created evaluations)
+        existing = await conn.fetchval("SELECT COUNT(*) FROM brand_vp_data")
+        if existing > 0:
+            print(f"Database already seeded ({existing} brands). Skipping re-seed.")
+        elif PROD_DUMP.exists():
             await seed_from_dump(conn)
         else:
             print(f"No prod dump found at {PROD_DUMP}, using minimal seed data")

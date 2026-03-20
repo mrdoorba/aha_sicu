@@ -826,6 +826,8 @@ class TestEdgeCases:
         expected_keys = {
             "discount_pct", "range_min", "range_max",
             "voucher_pct", "paket_pct", "fake_discount_flag",
+            "discount_pct_raw", "range_min_raw", "range_max_raw",
+            "voucher_pct_raw", "paket_pct_raw", "i18n",
             "product_summary", "top_sku", "totals",
         }
         assert set(result.details.keys()) == expected_keys
@@ -842,3 +844,159 @@ class TestEdgeCases:
         assert "sum_voucher" in totals
         assert "sum_paket" in totals
         assert "sum_harga_setelah_diskon" in totals
+
+
+# ---------------------------------------------------------------------------
+# i18n and raw numeric fields tests (AC-1, AC-1b, AC-2)
+# ---------------------------------------------------------------------------
+
+
+class TestDiscountRawNumericFields:
+    """AC-1: Details contain raw float fields alongside formatted strings."""
+
+    def test_raw_discount_pct_is_float(self):
+        """discount_pct_raw is a float matching the value used for formatted string."""
+        data = [
+            _make_order_row("ORD001", "Product A", "100.000", "80.000", "1", "0", "0"),
+        ]
+        result = calculate_discount(data)
+        assert isinstance(result.details["discount_pct_raw"], float)
+        # The raw value * 100 formatted to 1dp should equal the formatted string
+        raw = result.details["discount_pct_raw"]
+        assert result.details["discount_pct"] == f"{raw * 100:.1f}%"
+
+    def test_raw_range_values_are_floats(self):
+        """range_min_raw and range_max_raw are floats."""
+        result = calculate_discount(SUKA_DATA)
+        assert isinstance(result.details["range_min_raw"], float)
+        assert isinstance(result.details["range_max_raw"], float)
+
+    def test_raw_voucher_pct_is_float(self):
+        """voucher_pct_raw is a float."""
+        result = calculate_discount(MND_DISCOUNT_DATA)
+        assert isinstance(result.details["voucher_pct_raw"], float)
+        raw = result.details["voucher_pct_raw"]
+        assert result.details["voucher_pct"] == f"{raw * 100:.1f}%"
+
+    def test_raw_paket_pct_is_float(self):
+        """paket_pct_raw is a float."""
+        result = calculate_discount(MND_DISCOUNT_DATA)
+        assert isinstance(result.details["paket_pct_raw"], float)
+        raw = result.details["paket_pct_raw"]
+        assert result.details["paket_pct"] == f"{raw * 100:.1f}%"
+
+    def test_existing_formatted_fields_unchanged(self):
+        """Adding raw fields does not change existing formatted fields."""
+        result = calculate_discount(MND_DISCOUNT_DATA)
+        assert result.details["discount_pct"] == "137.3%"
+        assert result.details["range_min"] == "59.5%"
+        assert result.details["range_max"] == "59.5%"
+        assert result.details["voucher_pct"] == "11.4%"
+        assert result.details["paket_pct"] == "2.3%"
+
+
+class TestDiscountI18nFields:
+    """AC-2: Details contain i18n dict with TranslatableText-style entries."""
+
+    def test_i18n_dict_present(self):
+        """Details contain an 'i18n' dict."""
+        data = [
+            _make_order_row("ORD001", "Product A", "100.000", "80.000", "1", "0", "0"),
+        ]
+        result = calculate_discount(data)
+        assert "i18n" in result.details
+        assert isinstance(result.details["i18n"], dict)
+
+    def test_i18n_has_expected_keys(self):
+        """i18n dict has topSkuDiscount, range, voucher, packageDiscount."""
+        data = [
+            _make_order_row("ORD001", "Product A", "100.000", "80.000", "1", "0", "0"),
+        ]
+        result = calculate_discount(data)
+        i18n = result.details["i18n"]
+        assert "topSkuDiscount" in i18n
+        assert "range" in i18n
+        assert "voucher" in i18n
+        assert "packageDiscount" in i18n
+
+    def test_i18n_entry_structure(self):
+        """Each i18n entry has 'key' and 'vars'."""
+        data = [
+            _make_order_row("ORD001", "Product A", "100.000", "80.000", "1", "5.000", "3.000"),
+        ]
+        result = calculate_discount(data)
+        i18n = result.details["i18n"]
+        for name, entry in i18n.items():
+            assert "key" in entry, f"i18n[{name}] missing 'key'"
+            assert "vars" in entry, f"i18n[{name}] missing 'vars'"
+
+    def test_i18n_vars_contain_formatted_values(self):
+        """i18n vars use formatted percentage values."""
+        result = calculate_discount(MND_DISCOUNT_DATA)
+        i18n = result.details["i18n"]
+        assert i18n["topSkuDiscount"]["vars"]["value"] == "137.3%"
+        assert i18n["range"]["vars"]["min"] == "59.5%"
+        assert i18n["range"]["vars"]["max"] == "59.5%"
+        assert i18n["voucher"]["vars"]["value"] == "11.4%"
+        assert i18n["packageDiscount"]["vars"]["value"] == "2.3%"
+
+    def test_fake_discount_i18n_present_when_flag_true(self):
+        """fakeDiscount i18n entry appears when fake_discount_flag is True."""
+        result = calculate_discount(KYPSO_DATA)
+        assert result.details["fake_discount_flag"] is True
+        assert "fakeDiscount" in result.details["i18n"]
+        assert result.details["i18n"]["fakeDiscount"]["key"] == "discount.output.fakeDiscount"
+
+    def test_fake_discount_i18n_absent_when_flag_false(self):
+        """fakeDiscount i18n entry absent when fake_discount_flag is False."""
+        result = calculate_discount(SUKA_DATA)
+        assert result.details["fake_discount_flag"] is False
+        assert "fakeDiscount" not in result.details["i18n"]
+
+    def test_i18n_translation_keys(self):
+        """i18n keys follow discount.output.* pattern."""
+        data = [
+            _make_order_row("ORD001", "Product A", "100.000", "80.000", "1", "0", "0"),
+        ]
+        result = calculate_discount(data)
+        i18n = result.details["i18n"]
+        assert i18n["topSkuDiscount"]["key"] == "discount.output.topSkuDiscount"
+        assert i18n["range"]["key"] == "discount.output.range"
+        assert i18n["voucher"]["key"] == "discount.output.voucher"
+        assert i18n["packageDiscount"]["key"] == "discount.output.packageDiscount"
+
+
+class TestDiscountEmptyDataI18n:
+    """AC-1b: Empty-data path includes raw fields and i18n dict."""
+
+    def test_empty_data_has_raw_fields(self):
+        """calculate_discount([]) returns raw float fields with value 0.0."""
+        result = calculate_discount([])
+        assert result.details["discount_pct_raw"] == 0.0
+        assert result.details["range_min_raw"] == 0.0
+        assert result.details["range_max_raw"] == 0.0
+        assert result.details["voucher_pct_raw"] == 0.0
+        assert result.details["paket_pct_raw"] == 0.0
+
+    def test_empty_data_has_i18n_dict(self):
+        """calculate_discount([]) returns i18n dict with zero-value vars."""
+        result = calculate_discount([])
+        assert "i18n" in result.details
+        i18n = result.details["i18n"]
+        assert i18n["topSkuDiscount"]["vars"]["value"] == "0.0%"
+        assert i18n["range"]["vars"]["min"] == "0.0%"
+        assert i18n["range"]["vars"]["max"] == "0.0%"
+        assert i18n["voucher"]["vars"]["value"] == "0.0%"
+        assert i18n["packageDiscount"]["vars"]["value"] == "0.0%"
+        assert "fakeDiscount" not in i18n
+
+    def test_empty_data_structurally_identical(self):
+        """Empty-data result has same keys as non-empty result."""
+        empty_result = calculate_discount([])
+        data = [_make_order_row("ORD001", "Product A", "100.000", "80.000", "1", "0", "0")]
+        normal_result = calculate_discount(data)
+        # Both should have the same set of top-level detail keys (minus product_summary/top_sku which differ)
+        for key in ["discount_pct_raw", "range_min_raw", "range_max_raw",
+                     "voucher_pct_raw", "paket_pct_raw", "i18n"]:
+            assert key in empty_result.details, f"Empty result missing '{key}'"
+            assert key in normal_result.details, f"Normal result missing '{key}'"

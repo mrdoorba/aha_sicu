@@ -2,6 +2,7 @@ services:
   # ─── PostgreSQL ────────────────────────────────────────────────
   postgres:
     image: postgres:18
+    restart: unless-stopped
     environment:
       POSTGRES_USER: aha_sicu
       POSTGRES_PASSWORD: localdev

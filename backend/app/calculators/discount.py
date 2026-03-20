@@ -282,13 +282,34 @@ def _format_output(
         lines.append(output5)
     output_text = "\n".join(lines)
 
+    formatted_discount_pct = _format_pct_1dp(discount_pct)
+    formatted_range_min = _format_pct_1dp(range_min)
+    formatted_range_max = _format_pct_1dp(range_max)
+    formatted_voucher_pct = _format_pct_1dp(voucher_pct)
+    formatted_paket_pct = _format_pct_1dp(paket_pct)
+
+    i18n: dict[str, Any] = {
+        "topSkuDiscount": {"key": "discount.output.topSkuDiscount", "vars": {"value": formatted_discount_pct}},
+        "range": {"key": "discount.output.range", "vars": {"min": formatted_range_min, "max": formatted_range_max}},
+        "voucher": {"key": "discount.output.voucher", "vars": {"value": formatted_voucher_pct}},
+        "packageDiscount": {"key": "discount.output.packageDiscount", "vars": {"value": formatted_paket_pct}},
+    }
+    if fake_discount_flag:
+        i18n["fakeDiscount"] = {"key": "discount.output.fakeDiscount", "vars": {}}
+
     details = {
-        "discount_pct": _format_pct_1dp(discount_pct),
-        "range_min": _format_pct_1dp(range_min),
-        "range_max": _format_pct_1dp(range_max),
-        "voucher_pct": _format_pct_1dp(voucher_pct),
-        "paket_pct": _format_pct_1dp(paket_pct),
+        "discount_pct": formatted_discount_pct,
+        "range_min": formatted_range_min,
+        "range_max": formatted_range_max,
+        "voucher_pct": formatted_voucher_pct,
+        "paket_pct": formatted_paket_pct,
+        "discount_pct_raw": discount_pct,
+        "range_min_raw": range_min,
+        "range_max_raw": range_max,
+        "voucher_pct_raw": voucher_pct,
+        "paket_pct_raw": paket_pct,
         "fake_discount_flag": fake_discount_flag,
+        "i18n": i18n,
         "totals": {
             "sum_n": sum_n,
             "sum_p": sum_p,
@@ -330,7 +351,18 @@ def calculate_discount(
                 "range_max": "0.0%",
                 "voucher_pct": "0.0%",
                 "paket_pct": "0.0%",
+                "discount_pct_raw": 0.0,
+                "range_min_raw": 0.0,
+                "range_max_raw": 0.0,
+                "voucher_pct_raw": 0.0,
+                "paket_pct_raw": 0.0,
                 "fake_discount_flag": False,
+                "i18n": {
+                    "topSkuDiscount": {"key": "discount.output.topSkuDiscount", "vars": {"value": "0.0%"}},
+                    "range": {"key": "discount.output.range", "vars": {"min": "0.0%", "max": "0.0%"}},
+                    "voucher": {"key": "discount.output.voucher", "vars": {"value": "0.0%"}},
+                    "packageDiscount": {"key": "discount.output.packageDiscount", "vars": {"value": "0.0%"}},
+                },
                 "product_summary": [],
                 "top_sku": [],
                 "totals": {

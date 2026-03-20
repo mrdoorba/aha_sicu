@@ -31,7 +31,10 @@ import {
 import { isRecord, isRecordArray } from '../lib/typeGuards';
 import { CATEGORY_MAP } from '../lib/categoryMap';
 import { getIntlLocale } from '../lib/localeMap';
-import { renderTranslatable, type TranslatableText } from '../utils/renderTranslatable';
+import { renderTranslatable, renderAdList, renderFlagList, type TranslatableText } from '../utils/renderTranslatable';
+import { buildI18nEmailBody, type ScoringConclusionData } from '../utils/buildI18nEmailBody';
+import type { TranslatableI18n, AdListI18n } from '../hooks/useCalculator';
+import type { CategoryScore } from '../hooks/useScoring';
 
 interface ScoringSummary {
   conclusion?: string;
@@ -165,10 +168,34 @@ function ScoreBreakdownTable({
   );
 }
 
-function AdsKeywordSection({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
+function AdsKeywordSection({ data, t }: { data: Record<string, unknown>; t: TFunction }) {
   const text = typeof data.output_text === 'string' ? data.output_text : '';
   if (!text) return <p className="text-muted-foreground">{t('common.noData')}</p>;
-  return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
+
+  const details = isRecord(data.details) ? data.details : undefined;
+  const hasI18n = details?.ak2_i18n != null;
+
+  if (!hasI18n || !details) {
+    return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
+  }
+
+  const parts: string[] = [];
+  parts.push(renderTranslatable('', details.ak2_i18n as TranslatableI18n | null, t));
+  parts.push(renderTranslatable('', details.ak3_i18n as TranslatableI18n | null, t));
+  if (details.ak4_i18n != null) {
+    parts.push(renderFlagList('', details.ak4_i18n as TranslatableI18n[] | null, t));
+  }
+  parts.push(renderAdList('', details.al2_i18n as AdListI18n | null, t));
+  parts.push(renderTranslatable('', details.al3_i18n as TranslatableI18n | null, t));
+  parts.push(renderAdList('', details.al5_i18n as AdListI18n | null, t));
+  for (const key of ['al6_i18n', 'al7_i18n', 'al8_i18n', 'al9_i18n']) {
+    if (details[key] != null) {
+      parts.push(renderTranslatable('', details[key] as TranslatableI18n | null, t));
+    }
+  }
+
+  const translated = parts.filter(Boolean).join('\n');
+  return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{translated}</pre>;
 }
 
 function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>; t: (key: string) => string; marketplace?: string }) {
@@ -260,10 +287,26 @@ function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>
   );
 }
 
-function DiscountSection({ data, t }: { data: Record<string, unknown>; t: (key: string) => string }) {
+function DiscountSection({ data, t }: { data: Record<string, unknown>; t: TFunction }) {
   const text = typeof data.output_text === 'string' ? data.output_text : '';
   if (!text) return <p className="text-muted-foreground">{t('common.noData')}</p>;
-  return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
+
+  const details = isRecord(data.details) ? data.details : undefined;
+  const i18nDict = isRecord(details?.i18n) ? details.i18n : undefined;
+
+  if (!i18nDict) {
+    return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
+  }
+
+  const lines: string[] = [];
+  for (const key of ['topSkuDiscount', 'range', 'voucher', 'packageDiscount', 'fakeDiscount']) {
+    const entry = i18nDict[key];
+    if (isRecord(entry) && typeof entry.key === 'string') {
+      lines.push(t(entry.key as string, entry.vars as Record<string, string>));
+    }
+  }
+
+  return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{lines.join('\n')}</pre>;
 }
 
 function ScoringConclusionSection({
@@ -464,7 +507,7 @@ function ManualInputsSection({
                   <div className="font-medium break-words">
                     {formatValue(val, key, fieldDef, marketplace)}
                     {fieldDef?.benchmark && (
-                      <span className="ml-1 text-xs text-muted-foreground">({fieldDef.benchmark})</span>
+                      <span className="ml-1 text-xs text-muted-foreground">({fieldDef.benchmarkKey ? t(fieldDef.benchmarkKey) : fieldDef.benchmark})</span>
                     )}
                   </div>
                 </div>
@@ -477,12 +520,35 @@ function ManualInputsSection({
   );
 }
 
-function EmailOutputSection({ emailOutput, t, onSendMail }: { emailOutput: string; t: (key: string) => string; onSendMail: () => void }) {
+function EmailOutputSection({
+  emailOutput,
+  t,
+  onSendMail,
+  scoreBreakdown,
+  scoringSummary,
+  calculatorResults,
+}: {
+  emailOutput: string;
+  t: TFunction;
+  onSendMail: () => void;
+  scoreBreakdown?: CategoryScore[];
+  scoringSummary?: ScoringConclusionData | null;
+  calculatorResults?: Record<string, unknown>;
+}) {
   const [copied, setCopied] = useState(false);
+
+  // Check if i18n data is available in score breakdown
+  const hasI18n = scoreBreakdown?.some((cat) =>
+    cat.rows.some((r) => r.message_i18n != null),
+  ) ?? false;
+
+  const displayText = hasI18n && scoreBreakdown
+    ? buildI18nEmailBody(scoreBreakdown, scoringSummary ?? null, t, calculatorResults)
+    : emailOutput;
 
   const handleCopy = async () => {
     try {
-      await navigator.clipboard.writeText(emailOutput);
+      await navigator.clipboard.writeText(displayText);
       setCopied(true);
       toast.success(t('evaluationDetail.emailCopied'));
       setTimeout(() => setCopied(false), 2000);
@@ -515,7 +581,7 @@ function EmailOutputSection({ emailOutput, t, onSendMail }: { emailOutput: strin
         </div>
       </CardHeader>
       <CardContent>
-        <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{emailOutput}</pre>
+        <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{displayText}</pre>
       </CardContent>
     </Card>
   );
@@ -721,7 +787,18 @@ export function EvaluationDetailPage() {
             {/* Email Output (conditional) */}
             {evaluation.email_output && (
               <>
-                <EmailOutputSection emailOutput={evaluation.email_output} t={t} onSendMail={() => setSendMailDialogOpen(true)} />
+                <EmailOutputSection
+                  emailOutput={evaluation.email_output}
+                  t={t}
+                  onSendMail={() => setSendMailDialogOpen(true)}
+                  scoreBreakdown={evaluation.score_breakdown as CategoryScore[]}
+                  scoringSummary={
+                    isScoringSummary(evaluation.calculator_results.scoring_summary)
+                      ? evaluation.calculator_results.scoring_summary as ScoringConclusionData
+                      : null
+                  }
+                  calculatorResults={evaluation.calculator_results}
+                />
                 <SendMailDialog
                   open={sendMailDialogOpen}
                   onOpenChange={setSendMailDialogOpen}

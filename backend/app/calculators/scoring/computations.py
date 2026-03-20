@@ -29,22 +29,37 @@ def _parse_d73_percentages(d73_text: str) -> tuple[float, float, float, float, f
     return t, ra, rb, v, p
 
 
-def _compute_g68(d73_text: str, d52: float) -> str:
+def _compute_g68(
+    d73_text: str,
+    d52: float,
+    *,
+    discount_details: dict | None = None,
+) -> str:
     """G68: Marketing cost estimation.
 
-    Parses D73 discount text, combines with ad cost percentage (d52 as fraction).
+    When discount_details with raw numeric fields is provided, reads values
+    directly from the dict. Otherwise falls back to regex parsing of d73_text.
     """
     if not d73_text:
         return ""
 
-    t, ra, rb, v, p = _parse_d73_percentages(d73_text)
+    if discount_details and "discount_pct_raw" in discount_details:
+        t = discount_details["discount_pct_raw"]
+        ra = discount_details["range_min_raw"]
+        rb = discount_details["range_max_raw"]
+        v = discount_details["voucher_pct_raw"]
+        p = discount_details["paket_pct_raw"]
+        fake_discount = discount_details.get("fake_discount_flag", False)
+    else:
+        t, ra, rb, v, p = _parse_d73_percentages(d73_text)
+        fake_discount = "Berpotensi" in d73_text or "fake discount" in d73_text.lower()
 
     low = (ra * t) + v + p + d52 + 0.05
     high = (rb * t) + v + p + d52 + 0.05
 
     result = f"{low * 100:.1f}% ~ {high * 100:.1f}%"
 
-    if "Berpotensi" in d73_text or "fake discount" in d73_text.lower():
+    if fake_discount:
         result += "\n📌 Berpotensi menggunakan 'fake discount'"
 
     return result
@@ -69,10 +84,14 @@ def _parse_g68_left(g68_text: str) -> float:
 def _compute_g72(
     g68_text: str, d52: float, d73_text: str, is_fashion: bool,
     rules: dict | None = None,
+    *,
+    discount_details: dict | None = None,
 ) -> float:
     """G72: Recommended marketing percentage (as fraction).
 
     Complex MIN/MAX formula with Fashion adjustment.
+    When discount_details with raw numeric fields is provided, reads values
+    directly from the dict. Otherwise falls back to regex parsing of d73_text.
     """
     mkt_rules = _get_rule_category(rules, "marketing")
     if is_fashion:
@@ -87,7 +106,14 @@ def _compute_g72(
     if not d73_text:
         return floor
 
-    t, ra, rb, v, p = _parse_d73_percentages(d73_text)
+    if discount_details and "discount_pct_raw" in discount_details:
+        t = discount_details["discount_pct_raw"]
+        ra = discount_details["range_min_raw"]
+        rb = discount_details["range_max_raw"]
+        v = discount_details["voucher_pct_raw"]
+        p = discount_details["paket_pct_raw"]
+    else:
+        t, ra, rb, v, p = _parse_d73_percentages(d73_text)
 
     avg = ((ra * t + v + p + d52) + (rb * t + v + p + d52)) / 2
     base = _rounddown(avg - base_subtraction, 2)

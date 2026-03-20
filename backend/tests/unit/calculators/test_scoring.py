@@ -734,6 +734,119 @@ class TestG68:
         assert _compute_g68("", 0.05) == ""
 
 
+class TestG68WithDiscountDetails:
+    """AC-3/AC-4: _compute_g68 reads from discount details when available."""
+
+    D73 = "% Diskon TOP SKU: 100.0%\nRange: 40.0% ~ 50.0%\nVoucher 3.0%\nPaket Diskon 1.0%"
+
+    def _make_details(
+        self, *, t: float = 1.0, ra: float = 0.40, rb: float = 0.50,
+        v: float = 0.03, p: float = 0.01, fake: bool = False,
+    ) -> dict:
+        return {
+            "discount_pct_raw": t,
+            "range_min_raw": ra,
+            "range_max_raw": rb,
+            "voucher_pct_raw": v,
+            "paket_pct_raw": p,
+            "fake_discount_flag": fake,
+        }
+
+    def test_produces_same_output_as_text_parsing(self):
+        """G68 with discount_details produces identical output to regex parsing."""
+        details = self._make_details()
+        result_text = _compute_g68(self.D73, 0.05)
+        result_details = _compute_g68(self.D73, 0.05, discount_details=details)
+        assert result_details == result_text
+
+    def test_falls_back_to_regex_when_details_none(self):
+        """G68 falls back to regex when discount_details is None."""
+        result = _compute_g68(self.D73, 0.05, discount_details=None)
+        assert "54.0%" in result
+        assert "64.0%" in result
+
+    def test_falls_back_to_regex_when_details_lack_raw_fields(self):
+        """G68 falls back to regex when discount_details lacks raw fields."""
+        incomplete_details = {"fake_discount_flag": False}
+        result = _compute_g68(self.D73, 0.05, discount_details=incomplete_details)
+        assert "54.0%" in result
+
+    def test_fake_discount_from_details(self):
+        """G68 reads fake_discount_flag from details instead of text parsing."""
+        details = self._make_details(fake=True)
+        result = _compute_g68(self.D73, 0.05, discount_details=details)
+        assert "Berpotensi" in result
+
+    def test_no_fake_discount_from_details(self):
+        """G68 with fake_discount_flag=False omits flag even if text has it."""
+        d73_with_flag = self.D73 + "\n📌 Berpotensi menggunakan 'fake discount'"
+        details = self._make_details(fake=False)
+        result = _compute_g68(d73_with_flag, 0.05, discount_details=details)
+        assert "Berpotensi" not in result
+
+    def test_missing_fake_discount_flag_defaults_to_false(self):
+        """G68 with discount_details missing fake_discount_flag defaults to no flag."""
+        details = {
+            "discount_pct_raw": 1.0,
+            "range_min_raw": 0.40,
+            "range_max_raw": 0.50,
+            "voucher_pct_raw": 0.03,
+            "paket_pct_raw": 0.01,
+        }
+        result = _compute_g68(self.D73, 0.05, discount_details=details)
+        assert "Berpotensi" not in result
+
+    @pytest.mark.parametrize("t,ra,rb,v,p", [
+        (1.0, 0.40, 0.50, 0.03, 0.01),
+        (0.5, 0.10, 0.20, 0.02, 0.005),
+        (1.373, 0.595, 0.595, 0.114, 0.023),
+    ])
+    def test_parametrized_equivalence(self, t: float, ra: float, rb: float, v: float, p: float):
+        """Both paths produce identical output for various inputs."""
+        d73 = (
+            f"% Diskon TOP SKU: {t * 100:.1f}%\n"
+            f"Range: {ra * 100:.1f}% ~ {rb * 100:.1f}%\n"
+            f"Voucher {v * 100:.1f}%\n"
+            f"Paket Diskon {p * 100:.1f}%"
+        )
+        details = self._make_details(t=t, ra=ra, rb=rb, v=v, p=p)
+        result_text = _compute_g68(d73, 0.05)
+        result_details = _compute_g68(d73, 0.05, discount_details=details)
+        assert result_details == result_text
+
+
+class TestG72WithDiscountDetails:
+    """_compute_g72 reads from discount details when available."""
+
+    D73 = "% Diskon TOP SKU: 100.0%\nRange: 10.0% ~ 15.0%\nVoucher 1.0%\nPaket Diskon 0.5%"
+
+    def _make_details(
+        self, *, t: float = 1.0, ra: float = 0.10, rb: float = 0.15,
+        v: float = 0.01, p: float = 0.005,
+    ) -> dict:
+        return {
+            "discount_pct_raw": t,
+            "range_min_raw": ra,
+            "range_max_raw": rb,
+            "voucher_pct_raw": v,
+            "paket_pct_raw": p,
+        }
+
+    def test_produces_same_output_as_text_parsing(self):
+        """G72 with discount_details produces identical output to regex parsing."""
+        g68 = _compute_g68(self.D73, 0.03)
+        details = self._make_details()
+        result_text = _compute_g72(g68, 0.03, self.D73, is_fashion=False)
+        result_details = _compute_g72(g68, 0.03, self.D73, is_fashion=False, discount_details=details)
+        assert result_details == result_text
+
+    def test_falls_back_to_regex_when_details_none(self):
+        """G72 falls back to regex when discount_details is None."""
+        g68 = _compute_g68(self.D73, 0.03)
+        result = _compute_g72(g68, 0.03, self.D73, is_fashion=False, discount_details=None)
+        assert result >= 0.12
+
+
 class TestG72:
     def test_fashion_floor(self):
         d73 = "% Diskon TOP SKU: 100.0%\nRange: 10.0% ~ 15.0%\nVoucher 1.0%\nPaket Diskon 0.5%"

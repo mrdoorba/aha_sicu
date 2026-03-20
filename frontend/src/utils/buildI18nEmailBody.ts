@@ -1,7 +1,9 @@
 import type { TFunction } from 'i18next';
 import type { CategoryScore } from '../hooks/useScoring';
+import type { TranslatableI18n, AdListI18n } from '../hooks/useCalculator';
 import type { TranslatableText } from './renderTranslatable';
-import { renderTranslatable } from './renderTranslatable';
+import { renderTranslatable, renderAdList, renderFlagList } from './renderTranslatable';
+import { isRecord } from '../lib/typeGuards';
 
 /**
  * Scoring summary data shape used for the conclusion, marketing, and closing
@@ -136,17 +138,33 @@ function translateSectionHeader(
  * Extract messages from a category, optionally filtering by row numbers.
  * Each message is rendered via `renderTranslatable` so i18n fields are used
  * when available, with raw message as fallback.
+ *
+ * Row 53 is special: it contains the full ads keyword output text from the
+ * backend with no message_i18n. When calculatorResults are provided, we
+ * build translated text from the ads_keyword details i18n fields instead.
  */
 function getMessages(
   cat: CategoryScore,
   t: TFunction,
   rowFilter?: number[],
+  calculatorResults?: Record<string, unknown>,
 ): string[] {
   const msgs: string[] = [];
   for (const r of cat.rows) {
     if (rowFilter && !rowFilter.includes(r.row)) continue;
+    // Row 53: ads keyword output — use calculator details i18n if available
+    if (r.row === 53 && !r.message_i18n && calculatorResults) {
+      const translated = buildAdsKeywordI18nText(calculatorResults, t);
+      if (translated) {
+        msgs.push(translated);
+        continue;
+      }
+    }
     const text = renderTranslatable(r.message, r.message_i18n, t);
-    if (text) msgs.push(text);
+    if (!text) continue;
+    // Append product link for competition rows when i18n rendering drops it
+    const link = r.message_i18n?.vars.link;
+    msgs.push(link ? `${text}\n↪${link}` : text);
   }
   return msgs;
 }
@@ -181,6 +199,63 @@ function getPromoMessages(cat: CategoryScore, t: TFunction): string[] {
 }
 
 // ---------------------------------------------------------------------------
+// Ads keyword i18n rendering for email row 53
+// ---------------------------------------------------------------------------
+
+/**
+ * Build translated ads keyword analysis text from calculator details i18n fields.
+ * Mirrors AdsKeywordSection rendering in EvaluationDetailPage.
+ * Returns empty string if i18n fields are not available.
+ */
+function buildAdsKeywordI18nText(
+  calculatorResults: Record<string, unknown>,
+  t: TFunction,
+): string {
+  const akResult = isRecord(calculatorResults.ads_keyword)
+    ? calculatorResults.ads_keyword
+    : undefined;
+  if (!akResult) return '';
+
+  const details = isRecord(akResult.details) ? akResult.details : undefined;
+  if (!details?.ak2_i18n) return '';
+
+  const parts: string[] = [];
+  parts.push(renderTranslatable('', details.ak2_i18n as TranslatableI18n | null, t));
+  parts.push(renderTranslatable('', details.ak3_i18n as TranslatableI18n | null, t));
+  if (details.ak4_i18n != null) {
+    parts.push(renderFlagList('', details.ak4_i18n as TranslatableI18n[] | null, t));
+  }
+  parts.push(renderAdList('', details.al2_i18n as AdListI18n | null, t));
+  parts.push(renderTranslatable('', details.al3_i18n as TranslatableI18n | null, t));
+  parts.push(renderAdList('', details.al5_i18n as AdListI18n | null, t));
+  for (const key of ['al6_i18n', 'al7_i18n', 'al8_i18n', 'al9_i18n']) {
+    if (details[key] != null) {
+      parts.push(renderTranslatable('', details[key] as TranslatableI18n | null, t));
+    }
+  }
+
+  return parts.filter(Boolean).join('\n');
+}
+
+/**
+ * Translate the fake discount line embedded in marketing estimation text.
+ * The backend hardcodes "📌 Berpotensi menggunakan 'fake discount'" into g68.
+ * We detect and replace it with the translated version.
+ */
+const FAKE_DISCOUNT_PATTERN = /📌\s*Berpotensi menggunakan 'fake discount'/;
+
+function translateMarketingEstimation(
+  raw: string,
+  t: TFunction,
+): string {
+  if (!FAKE_DISCOUNT_PATTERN.test(raw)) return raw;
+  return raw.replace(
+    FAKE_DISCOUNT_PATTERN,
+    t('discount.output.fakeDiscount'),
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main email body builder
 // ---------------------------------------------------------------------------
 
@@ -198,6 +273,7 @@ export function buildI18nEmailBody(
   categoryScores: CategoryScore[],
   scoringSummary: ScoringConclusionData | null,
   t: TFunction,
+  calculatorResults?: Record<string, unknown>,
 ): string {
   const sections: string[] = [];
 
@@ -210,7 +286,7 @@ export function buildI18nEmailBody(
     if (def.promoRange) {
       msgs = getPromoMessages(cat, t);
     } else {
-      msgs = getMessages(cat, t, def.rows);
+      msgs = getMessages(cat, t, def.rows, calculatorResults);
     }
 
     if (msgs.length === 0) continue;
@@ -231,9 +307,12 @@ export function buildI18nEmailBody(
       sections.push('');
     }
 
-    // 10. Marketing estimation
+    // 10. Marketing estimation (translate embedded fake discount line)
+    const rawMarketing = scoringSummary.marketing_estimation
+      ? translateMarketingEstimation(scoringSummary.marketing_estimation, t)
+      : undefined;
     const marketingText = renderFieldI18n(
-      scoringSummary.marketing_estimation,
+      rawMarketing,
       scoringSummary.marketing_estimation_i18n,
       t,
     );

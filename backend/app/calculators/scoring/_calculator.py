@@ -130,9 +130,10 @@ def calculate_score(
     d52 = d49 / d13 if d13 > 0 else 0.0
 
     d73_text = _get_nested(calculator_results, "discount", "output_text") or ""
+    discount_details = _get_nested(calculator_results, "discount", "details")
 
-    g68 = _compute_g68(d73_text, d52)
-    g72 = _compute_g72(g68, d52, d73_text, is_fashion, rules)
+    g68 = _compute_g68(d73_text, d52, discount_details=discount_details)
+    g72 = _compute_g72(g68, d52, d73_text, is_fashion, rules, discount_details=discount_details)
     g73 = _compute_g73(verdict, g72, d13, rules)
 
     marketing_label = f"📌 Estimasi persentase biaya marketing {brand_name} sekarang:"

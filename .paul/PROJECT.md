@@ -43,6 +43,10 @@ Business development can quickly assess whether a store/lead is worth pursuing u
 - ✓ WIF branch restriction per environment (dev=develop, prod=main) — Phase 7
 - ✓ Cloud SQL authorized_networks lockdown (empty default = no public IP) — Phase 7
 - ✓ Evaluation schema Literal type enforcement (13 response fields) — Phase 7
+- ✓ Calculator output i18n (AdsKeyword, Discount, Email sections respect language toggle) — Phase 8
+- ✓ Backward-compatible fallback for old evaluations without i18n data — Phase 8
+- ✓ Discount calculator emits raw numeric values + i18n translation keys — Phase 8
+- ✓ Scoring G68/G72 refactored to read from details dict (no regex dependency) — Phase 8
 
 ## Constraints
 - [To be identified during planning]
@@ -64,4 +68,4 @@ Quick Reference:
 
 ---
 *Created: 2026-03-19*
-*Last updated: 2026-03-19 — v0.2 AEGIS Security Remediation milestone closed, deployed to production*
+*Last updated: 2026-03-20 after Phase 8*

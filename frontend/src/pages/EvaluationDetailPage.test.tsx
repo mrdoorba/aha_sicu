@@ -566,6 +566,91 @@ describe('EvaluationDetailPage', () => {
     expect(screen.getByText('Terima kasih')).toBeInTheDocument();
   });
 
+  // --- AdsKeywordSection i18n tests ---
+
+  it('renders translated ads keyword text when i18n fields present in details', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: {
+        ...MOCK_EVALUATION,
+        calculator_results: {
+          ...MOCK_EVALUATION.calculator_results,
+          ads_keyword: {
+            output_text: 'AK analysis text output',
+            details: {
+              ak2_i18n: { key: 'ads.summary', vars: { active: '10', paused: '5', ended: '3', unique_count: '20', product_pct: '40%', total_products: '50' } },
+              ak3_i18n: { key: 'ads.typeBreakdown', vars: { semua_total: '8', toko_total: '4', toko_auto: '2', toko_manual: '2' } },
+              ak4_i18n: [
+                { key: 'ads.flag.activeGood', vars: {} },
+              ],
+              al2_i18n: {
+                header: { key: 'ads.topHeader', vars: {} },
+                ads: [{ key: 'ads.topAd', vars: { name: 'Ad1', gmv: '100', roas: '5', biddingKey: 'ads.value.biddingOtomatis', jenisKey: 'ads.value.iklanProduk', penempatanKey: 'ads.value.semuaPenempatan', keyword: 'shoes' } }],
+              },
+              al3_i18n: { key: 'ads.topRecommendation.auto', vars: {} },
+              al5_i18n: {
+                header: { key: 'ads.bottomHeader', vars: {} },
+                ads: [{ key: 'ads.bottomAd', vars: { name: 'Ad2', cost: '50', roas: '1', biddingKey: 'ads.value.biddingManual', jenisKey: 'ads.value.iklanToko', penempatanKey: 'ads.value.halamanPencarian', keyword: 'sandals' } }],
+              },
+            },
+          },
+        },
+      },
+    };
+    renderPage();
+
+    // Should NOT show the raw output_text
+    expect(screen.queryByText('AK analysis text output')).not.toBeInTheDocument();
+    // Should show translated ads summary (i18n key with vars rendered by i18next)
+    expect(screen.getByText(/Total Iklan/)).toBeInTheDocument();
+  });
+
+  it('renders raw output_text for ads keyword when i18n fields absent', () => {
+    // Default MOCK_EVALUATION has details: {} — no i18n fields
+    renderPage();
+
+    expect(screen.getByText('AK analysis text output')).toBeInTheDocument();
+  });
+
+  // --- DiscountSection i18n tests ---
+
+  it('renders translated discount text when i18n dict present in details', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: {
+        ...MOCK_EVALUATION,
+        calculator_results: {
+          ...MOCK_EVALUATION.calculator_results,
+          discount: {
+            output_text: '% Diskon TOP SKU: 2.7%',
+            details: {
+              i18n: {
+                topSkuDiscount: { key: 'discount.output.topSkuDiscount', vars: { value: '2.7%' } },
+                range: { key: 'discount.output.range', vars: { min: '0%', max: '10%' } },
+                voucher: { key: 'discount.output.voucher', vars: { value: '5%' } },
+                packageDiscount: { key: 'discount.output.packageDiscount', vars: { value: '3%' } },
+              },
+            },
+          },
+        },
+      },
+    };
+    renderPage();
+
+    // Should NOT show the raw output_text as a standalone pre block
+    // Instead should show translated discount lines
+    // i18n renders: "% Diskon TOP SKU: 2.7%" from discount.output.topSkuDiscount key
+    expect(screen.getByText(/Diskon TOP SKU.*2\.7%/)).toBeInTheDocument();
+    expect(screen.getByText(/Voucher.*5%/)).toBeInTheDocument();
+  });
+
+  it('renders raw output_text for discount when i18n dict absent', () => {
+    // Default MOCK_EVALUATION has details: {} — no i18n
+    renderPage();
+
+    expect(screen.getByText(/Diskon TOP SKU/)).toBeInTheDocument();
+  });
+
   it('renders nothing for scoring conclusion when scoring_summary is missing', () => {
     // MOCK_EVALUATION.calculator_results has no scoring_summary by default
     renderPage();
@@ -573,5 +658,79 @@ describe('EvaluationDetailPage', () => {
     // The section heading "Kesimpulan" should not appear in the calculator results area
     // (it would only appear if ScoringConclusionSection rendered)
     expect(screen.queryByText('Kesimpulan')).not.toBeInTheDocument();
+  });
+
+  // --- EmailOutputSection i18n tests ---
+
+  it('renders translated email sections when score_breakdown has message_i18n', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: {
+        ...MOCK_EVALUATION,
+        score_breakdown: [
+          {
+            category: 'Kesehatan Operasional Toko',
+            score: 10.0,
+            max_score: 10.0,
+            available: true,
+            rows: [
+              { row: 1, metric: 'unfulfilled', value: '0.5%', benchmark: '<1%', verdict: 'pass', message: 'OK', score: 2, message_i18n: { key: 'scoring.unfulfilledOrderRate.pass', vars: { value: '0.5%' } } },
+            ],
+          },
+        ],
+      },
+    };
+    renderPage();
+
+    // Should show translated content from buildI18nEmailBody
+    // The i18n key resolves via test i18n setup — check that the section header appears
+    expect(screen.getByText(/Performa Operasional Toko/)).toBeInTheDocument();
+    // Should NOT show the raw email_output text
+    expect(screen.queryByText('Brand evaluation for Nike Indonesia')).not.toBeInTheDocument();
+  });
+
+  it('renders raw email output when score_breakdown lacks message_i18n', () => {
+    // Default MOCK_EVALUATION score_breakdown has rows: [] — no message_i18n
+    renderPage();
+
+    expect(screen.getByText(/Brand evaluation for Nike Indonesia/)).toBeInTheDocument();
+  });
+
+  it('copies translated email text when i18n available', async () => {
+    const writeText = vi.fn().mockResolvedValue(undefined);
+    Object.defineProperty(navigator, 'clipboard', {
+      value: { writeText },
+      writable: true,
+      configurable: true,
+    });
+
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: {
+        ...MOCK_EVALUATION,
+        score_breakdown: [
+          {
+            category: 'Kesehatan Operasional Toko',
+            score: 10.0,
+            max_score: 10.0,
+            available: true,
+            rows: [
+              { row: 1, metric: 'unfulfilled', value: '0.5%', benchmark: '<1%', verdict: 'pass', message: 'OK', score: 2, message_i18n: { key: 'scoring.unfulfilledOrderRate.pass', vars: { value: '0.5%' } } },
+            ],
+          },
+        ],
+      },
+    };
+    renderPage();
+
+    const copyBtn = screen.getByRole('button', { name: /email output/i });
+    await userEvent.click(copyBtn);
+
+    // Should NOT copy the raw emailOutput, but the translated body
+    expect(writeText).not.toHaveBeenCalledWith(MOCK_EVALUATION.email_output);
+    // Should copy some text that includes the translated section
+    expect(writeText).toHaveBeenCalledTimes(1);
+    const copiedText = writeText.mock.calls[0][0] as string;
+    expect(copiedText).toContain('Performa Operasional Toko');
   });
 });

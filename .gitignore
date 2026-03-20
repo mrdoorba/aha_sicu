@@ -65,6 +65,7 @@ docs/plans/
 .claude/
 .cursor/
 .gemini/
+.paul/
 _bmad/
 .github/prompts/
 .github/skills/
@@ -147,3 +148,7 @@ backend/locales/
 
 # AEGIS audit state (generated)
 .aegis/
+
+# BASE workspace state
+.base/
+.mcp.json

@@ -17,12 +17,22 @@ The first line is a **clear, scannable summary** — no metaphor, immediately pa
 Author: Mr. Door
 ```
 
-**Example:**
+**Examples:**
 ```
 Add bulk CSV import for product listings
 
 A new door opens — products may now arrive in waves of fifty thousand.
 Adds POST /api/v1/products/import with chunked processing.
+
+Author: Mr. Door
+```
+
+```
+Fix race condition in WebSocket reconnection logic
+
+Between one heartbeat and the next, two threads reached for the same
+lock — and both believed themselves first. Now only one hand turns
+the handle. Guards shared state with asyncio.Lock in the reconnect path.
 
 Author: Mr. Door
 ```

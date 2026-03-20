@@ -90,7 +90,7 @@ export function SendMailDialog({
       }
     }
 
-    return buildI18nEmailBody(castScores, scoringSummary, fixedT);
+    return buildI18nEmailBody(castScores, scoringSummary, fixedT, calculatorResults);
   }, [hasI18nData, scoreBreakdown, calculatorResults, emailLanguage]);
 
   const fixedT = useMemo(() => {
