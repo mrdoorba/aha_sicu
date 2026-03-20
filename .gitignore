@@ -66,6 +66,7 @@ docs/plans/
 .cursor/
 .gemini/
 .paul/
+.carl/
 _bmad/
 .github/prompts/
 .github/skills/
