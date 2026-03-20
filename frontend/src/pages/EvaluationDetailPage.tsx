@@ -791,7 +791,7 @@ export function EvaluationDetailPage() {
                   emailOutput={evaluation.email_output}
                   t={t}
                   onSendMail={() => setSendMailDialogOpen(true)}
-                  scoreBreakdown={evaluation.score_breakdown as CategoryScore[]}
+                  scoreBreakdown={evaluation.score_breakdown as unknown as CategoryScore[]}
                   scoringSummary={
                     isScoringSummary(evaluation.calculator_results.scoring_summary)
                       ? evaluation.calculator_results.scoring_summary as ScoringConclusionData
