@@ -191,6 +191,50 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/email/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List History Endpoint
+         * @description List all email history with pagination and filtering.
+         *
+         *     Requires leader or admin role.
+         */
+        get: operations["list_history_endpoint_api_v1_email_history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/email/history/{evaluation_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Evaluation History Endpoint
+         * @description List email history for a specific evaluation.
+         *
+         *     Requires leader or admin role.
+         */
+        get: operations["evaluation_history_endpoint_api_v1_email_history__evaluation_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/email/send": {
         parameters: {
             query?: never;
@@ -206,6 +250,7 @@ export interface paths {
          *
          *     Fetches evaluation data, renders the HTML template with the provided
          *     chart image, and sends (or previews in debug mode) the email.
+         *     Logs the result to email_history.
          */
         post: operations["send_email_endpoint_api_v1_email_send_post"];
         delete?: never;
@@ -845,10 +890,16 @@ export interface components {
             id: number;
             /** Final Score */
             final_score: number;
-            /** Verdict */
-            verdict: string;
-            /** Template */
-            template: string;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
+            /**
+             * Template
+             * @enum {string}
+             */
+            template: "fashion" | "non_fashion";
             /** Evaluator Email */
             evaluator_email: string;
             /**
@@ -1036,6 +1087,50 @@ export interface components {
             filename: string;
         };
         /**
+         * EmailHistoryItem
+         * @description Single email history record.
+         */
+        EmailHistoryItem: {
+            /** Id */
+            id: number;
+            /** Evaluation Id */
+            evaluation_id: number;
+            /** Sender Email */
+            sender_email: string;
+            /** Recipient Email */
+            recipient_email: string;
+            /** Cc Emails */
+            cc_emails?: string[] | null;
+            /** Bcc Emails */
+            bcc_emails?: string[] | null;
+            /** Subject */
+            subject: string;
+            /** Status */
+            status: string;
+            /** Message Id */
+            message_id?: string | null;
+            /** Error Detail */
+            error_detail?: string | null;
+            /** Sent At */
+            sent_at: string;
+        };
+        /**
+         * EmailHistoryListResponse
+         * @description Paginated email history response.
+         */
+        EmailHistoryListResponse: {
+            /** Items */
+            items: components["schemas"]["EmailHistoryItem"][];
+            /** Total */
+            total: number;
+            /** Page */
+            page: number;
+            /** Limit */
+            limit: number;
+            /** Pages */
+            pages: number;
+        };
+        /**
          * EvalSheetSyncResponse
          * @description Response model for eval sheet sync endpoint.
          */
@@ -1060,10 +1155,16 @@ export interface components {
             brand_name: string;
             /** Final Score */
             final_score: number;
-            /** Verdict */
-            verdict: string;
-            /** Template */
-            template: string;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
+            /**
+             * Template
+             * @enum {string}
+             */
+            template: "fashion" | "non_fashion";
             /** Score Breakdown */
             score_breakdown: {
                 [key: string]: unknown;
@@ -1127,10 +1228,16 @@ export interface components {
             brand_name: string;
             /** Final Score */
             final_score: number;
-            /** Verdict */
-            verdict: string;
-            /** Template */
-            template: string;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
+            /**
+             * Template
+             * @enum {string}
+             */
+            template: "fashion" | "non_fashion";
             /** Evaluator Email */
             evaluator_email: string;
             /**
@@ -1189,8 +1296,11 @@ export interface components {
             evaluation_count: number;
             /** Top Score */
             top_score: number;
-            /** Top Verdict */
-            top_verdict: string;
+            /**
+             * Top Verdict
+             * @enum {string}
+             */
+            top_verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
             /**
              * Latest Date
              * Format: date-time
@@ -1280,8 +1390,11 @@ export interface components {
         RunCalculatorItem: {
             /** Calculator Type */
             calculator_type: string;
-            /** Status */
-            status: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "success" | "skipped" | "error";
             /** Result */
             result?: {
                 [key: string]: unknown;
@@ -1347,10 +1460,16 @@ export interface components {
             brand_id: number;
             /** Final Score */
             final_score: number;
-            /** Verdict */
-            verdict: string;
-            /** Template */
-            template: string;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
+            /**
+             * Template
+             * @enum {string}
+             */
+            template: "fashion" | "non_fashion";
             /**
              * Created At
              * Format: date-time
@@ -1404,8 +1523,11 @@ export interface components {
             total_score: number;
             /** Category Scores */
             category_scores: components["schemas"]["CategoryScoreItem"][];
-            /** Verdict */
-            verdict: string;
+            /**
+             * Verdict
+             * @enum {string}
+             */
+            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
             /** Conclusion */
             conclusion: string;
             /** Marketing Estimation */
@@ -1420,8 +1542,11 @@ export interface components {
             email_subject: string;
             /** Email Body */
             email_body: string;
-            /** Template */
-            template: string;
+            /**
+             * Template
+             * @enum {string}
+             */
+            template: "fashion" | "non_fashion";
             /** Rule Version */
             rule_version: number;
             /** Conclusion I18N */
@@ -1537,8 +1662,11 @@ export interface components {
          * @description Readiness status for a single calculator.
          */
         SingleCalculatorStatus: {
-            /** Status */
-            status: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "ready" | "pending";
             /** Has Result */
             has_result: boolean;
             /** Required Files */
@@ -2003,6 +2131,75 @@ export interface operations {
                     "application/json": {
                         [key: string]: boolean;
                     };
+                };
+            };
+        };
+    };
+    list_history_endpoint_api_v1_email_history_get: {
+        parameters: {
+            query?: {
+                page?: number;
+                limit?: number;
+                sort_by?: string;
+                sort_order?: string;
+                search?: string | null;
+                date_from?: string | null;
+                date_to?: string | null;
+                status?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailHistoryListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    evaluation_history_endpoint_api_v1_email_history__evaluation_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                evaluation_id: number;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["EmailHistoryItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };

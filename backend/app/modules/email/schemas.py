@@ -1,8 +1,14 @@
 """Email module request/response schemas."""
 
-from pydantic import BaseModel, EmailStr, Field, model_validator
+from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
 
 from app.config import settings
+
+_KNOWN_BREVO_EVENTS: frozenset[str] = frozenset({
+    "sent", "delivered", "softBounce", "hardBounce",
+    "opened", "uniqueOpened", "click", "spam",
+    "blocked", "invalid", "deferred",
+})
 
 
 class SendEmailRequest(BaseModel):
@@ -52,3 +58,50 @@ class SendEmailResponse(BaseModel):
     success: bool
     message_id: str
     recipients: list[str]
+
+
+class EmailHistoryItem(BaseModel):
+    """Single email history record."""
+
+    id: int
+    evaluation_id: int
+    sender_email: str
+    recipient_email: str
+    cc_emails: list[str] | None = None
+    bcc_emails: list[str] | None = None
+    subject: str
+    status: str
+    message_id: str | None = None
+    error_detail: str | None = None
+    sent_at: str
+
+
+class EmailHistoryListResponse(BaseModel):
+    """Paginated email history response."""
+
+    items: list[EmailHistoryItem]
+    total: int
+    page: int
+    limit: int
+    pages: int
+
+
+class BrevoWebhookEvent(BaseModel):
+    """Single Brevo webhook event payload."""
+
+    model_config = ConfigDict(populate_by_name=True)
+
+    event: str
+    email: str = ""
+    message_id: str = Field(default="", alias="message-id")
+    ts_epoch: int = 0
+    date: str = ""
+    subject: str = ""
+    reason: str = ""
+    tags: list[str] = Field(default_factory=list)
+
+    @model_validator(mode="after")
+    def validate_event_type(self) -> "BrevoWebhookEvent":
+        if self.event not in _KNOWN_BREVO_EVENTS:
+            raise ValueError(f"Unknown Brevo event: {self.event}")
+        return self

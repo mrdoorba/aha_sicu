@@ -22,6 +22,34 @@ import {
 import { useEmailHistory } from '../hooks/useEmailHistory';
 import { getIntlLocale } from '../lib/languages';
 
+const STATUS_BADGE_STYLES: Record<string, string> = {
+  sent: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
+  delivered: 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400',
+  opened: 'bg-purple-100 text-purple-800 dark:bg-purple-900/30 dark:text-purple-400',
+  clicked: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900/30 dark:text-indigo-400',
+  bounced: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  failed: 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400',
+  deferred: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/30 dark:text-yellow-400',
+  spam: 'bg-orange-100 text-orange-800 dark:bg-orange-900/30 dark:text-orange-400',
+  blocked: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+  invalid: 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400',
+};
+
+const STATUS_I18N_KEYS: Record<string, string> = {
+  sent: 'emailHistory.statusSent',
+  delivered: 'emailHistory.statusDelivered',
+  opened: 'emailHistory.statusOpened',
+  clicked: 'emailHistory.statusClicked',
+  bounced: 'emailHistory.statusBounced',
+  failed: 'emailHistory.statusFailed',
+  deferred: 'emailHistory.statusDeferred',
+  spam: 'emailHistory.statusSpam',
+  blocked: 'emailHistory.statusBlocked',
+  invalid: 'emailHistory.statusInvalid',
+};
+
+const FILTER_STATUSES = ['sent', 'delivered', 'bounced', 'opened', 'deferred', 'failed', 'spam'] as const;
+
 export const EmailHistoryPage = () => {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
@@ -216,8 +244,9 @@ export const EmailHistoryPage = () => {
         </SelectTrigger>
         <SelectContent>
           <SelectItem value="all">{t('emailHistory.statusAll')}</SelectItem>
-          <SelectItem value="sent">{t('emailHistory.statusSent')}</SelectItem>
-          <SelectItem value="failed">{t('emailHistory.statusFailed')}</SelectItem>
+          {FILTER_STATUSES.map((s) => (
+            <SelectItem key={s} value={s}>{t(STATUS_I18N_KEYS[s])}</SelectItem>
+          ))}
         </SelectContent>
       </Select>
     </div>
@@ -265,12 +294,10 @@ export const EmailHistoryPage = () => {
                         <TableCell>
                           <span
                             className={`inline-flex items-center rounded-full px-2 py-0.5 text-xs font-medium ${
-                              item.status === 'sent'
-                                ? 'bg-green-100 text-green-800 dark:bg-green-900/30 dark:text-green-400'
-                                : 'bg-red-100 text-red-800 dark:bg-red-900/30 dark:text-red-400'
+                              STATUS_BADGE_STYLES[item.status] ?? 'bg-gray-100 text-gray-800 dark:bg-gray-900/30 dark:text-gray-400'
                             }`}
                           >
-                            {item.status === 'sent' ? t('emailHistory.statusSent') : t('emailHistory.statusFailed')}
+                            {t(STATUS_I18N_KEYS[item.status] ?? 'emailHistory.statusSent')}
                           </span>
                         </TableCell>
                         <TableCell className="text-muted-foreground text-sm">

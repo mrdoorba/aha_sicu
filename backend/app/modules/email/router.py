@@ -1,30 +1,83 @@
 """Email API endpoints for sending and previewing evaluation reports."""
 
+import logging
+from datetime import date
+
 from asyncpg import Connection
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import HTMLResponse
 
-from app.core.dependencies import get_current_user, get_db_connection
-from app.modules.email.schemas import SendEmailRequest, SendEmailResponse
+from app.config import settings
+from app.core.dependencies import get_current_user, get_db_connection, require_role
+from app.db.queries.email_history import (
+    insert_email_history,
+    list_email_history,
+    list_email_history_by_evaluation,
+)
+from app.modules.email.schemas import (
+    EmailHistoryItem,
+    EmailHistoryListResponse,
+    SendEmailRequest,
+    SendEmailResponse,
+)
 from app.modules.email.service import asset_to_data_uri, send_evaluation_email
 from app.modules.email.template import _get_strings, render_email_html
 from app.modules.evaluations.service import get_evaluation_detail
 
+logger = logging.getLogger(__name__)
+
 router = APIRouter(prefix="/api/v1/email", tags=["email"])
 
 
-def _chart_placeholder_svg(language: str = "id") -> str:
-    """Generate chart placeholder SVG with localized text."""
-    S = _get_strings(language)
-    text = S["chart_placeholder"]
-    return (
-        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
-        "width='600' height='300' viewBox='0 0 600 300'%3E"
-        "%3Crect width='600' height='300' fill='%23f0f0f0'/%3E"
-        "%3Ctext x='300' y='150' text-anchor='middle' fill='%23999' "
-        "font-family='Arial' font-size='14'%3E"
-        f"{text}%3C/text%3E%3C/svg%3E"
+@router.get("/history", response_model=EmailHistoryListResponse)
+async def list_history_endpoint(
+    current_user: dict = Depends(require_role("leader", "admin")),
+    conn: Connection = Depends(get_db_connection),
+    page: int = Query(default=1, ge=1),
+    limit: int = Query(default=20, ge=1, le=100),
+    sort_by: str = Query(default="sent_at"),
+    sort_order: str = Query(default="desc"),
+    search: str | None = Query(default=None),
+    date_from: date | None = Query(default=None),
+    date_to: date | None = Query(default=None),
+    status: str | None = Query(default=None),
+) -> EmailHistoryListResponse:
+    """List all email history with pagination and filtering.
+
+    Requires leader or admin role.
+    """
+    result = await list_email_history(
+        conn,
+        page=page,
+        limit=limit,
+        sort_by=sort_by,
+        sort_order=sort_order,
+        search=search,
+        date_from=date_from,
+        date_to=date_to,
+        status_filter=status,
     )
+    return EmailHistoryListResponse(
+        items=[EmailHistoryItem(**row) for row in result["items"]],
+        total=result["total"],
+        page=result["page"],
+        limit=result["limit"],
+        pages=result["pages"],
+    )
+
+
+@router.get("/history/{evaluation_id}", response_model=list[EmailHistoryItem])
+async def evaluation_history_endpoint(
+    evaluation_id: int,
+    current_user: dict = Depends(require_role("leader", "admin")),
+    conn: Connection = Depends(get_db_connection),
+) -> list[EmailHistoryItem]:
+    """List email history for a specific evaluation.
+
+    Requires leader or admin role.
+    """
+    rows = await list_email_history_by_evaluation(conn, evaluation_id)
+    return [EmailHistoryItem(**row) for row in rows]
 
 
 @router.post("/send", response_model=SendEmailResponse)
@@ -37,21 +90,63 @@ async def send_email_endpoint(
 
     Fetches evaluation data, renders the HTML template with the provided
     chart image, and sends (or previews in debug mode) the email.
+    Logs the result to email_history.
     """
     evaluation = await get_evaluation_detail(conn=conn, evaluation_id=body.evaluation_id)
     eval_dict = evaluation.model_dump()
 
-    return await send_evaluation_email(
-        evaluation_data=eval_dict,
-        recipients=[str(r) for r in body.recipients],
-        chart_image_b64=body.chart_image,
-        subject=body.subject,
-        render_html_fn=render_email_html,
-        cc=[str(c) for c in body.cc] if body.cc else None,
-        bcc=[str(b) for b in body.bcc] if body.bcc else None,
-        note=body.note,
-        language=body.language,
-    )
+    recipient_str = ", ".join(str(r) for r in body.recipients)
+    subject = body.subject or ""
+
+    try:
+        result = await send_evaluation_email(
+            evaluation_data=eval_dict,
+            recipients=[str(r) for r in body.recipients],
+            chart_image_b64=body.chart_image,
+            subject=body.subject,
+            render_html_fn=render_email_html,
+            cc=[str(c) for c in body.cc] if body.cc else None,
+            bcc=[str(b) for b in body.bcc] if body.bcc else None,
+            note=body.note,
+            language=body.language,
+        )
+    except Exception as send_exc:
+        # Log failed send to history (silently — logging must not block error propagation)
+        try:
+            await insert_email_history(
+                conn,
+                evaluation_id=body.evaluation_id,
+                sender_email=settings.brevo_sender_email or "",
+                recipient_email=recipient_str,
+                cc_emails=[str(c) for c in body.cc] if body.cc else None,
+                bcc_emails=[str(b) for b in body.bcc] if body.bcc else None,
+                subject=subject,
+                status="failed",
+                message_id=None,
+                error_detail=str(send_exc),
+            )
+        except Exception:
+            logger.exception("Failed to log email failure to history")
+        raise
+
+    # Log successful send to history (silently)
+    try:
+        await insert_email_history(
+            conn,
+            evaluation_id=body.evaluation_id,
+            sender_email=settings.brevo_sender_email or "",
+            recipient_email=recipient_str,
+            cc_emails=[str(c) for c in body.cc] if body.cc else None,
+            bcc_emails=[str(b) for b in body.bcc] if body.bcc else None,
+            subject=subject,
+            status="sent",
+            message_id=result.message_id,
+            error_detail=None,
+        )
+    except Exception:
+        logger.exception("Failed to log email success to history")
+
+    return result
 
 
 @router.get("/preview/{evaluation_id}")
@@ -87,3 +182,17 @@ async def preview_email_endpoint(
     )
 
     return HTMLResponse(content=html)
+
+
+def _chart_placeholder_svg(language: str = "id") -> str:
+    """Generate chart placeholder SVG with localized text."""
+    S = _get_strings(language)
+    text = S["chart_placeholder"]
+    return (
+        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
+        "width='600' height='300' viewBox='0 0 600 300'%3E"
+        "%3Crect width='600' height='300' fill='%23f0f0f0'/%3E"
+        "%3Ctext x='300' y='150' text-anchor='middle' fill='%23999' "
+        "font-family='Arial' font-size='14'%3E"
+        f"{text}%3C/text%3E%3C/svg%3E"
+    )

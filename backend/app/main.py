@@ -21,6 +21,7 @@ from app.modules.evaluations.router import router as evaluations_router
 from app.modules.sync.router import router as sync_router
 from app.modules.rules.router import router as rules_router
 from app.modules.email.router import router as email_router
+from app.modules.email.webhook import webhook_router
 from app.modules.config.router import router as config_router
 from app.modules.upload.router import router as upload_router
 
@@ -83,6 +84,7 @@ app.include_router(evaluations_router)
 app.include_router(rules_router)
 app.include_router(sync_router)
 app.include_router(upload_router)
+app.include_router(webhook_router)
 
 
 @app.get("/health")

@@ -63,6 +63,7 @@ class Settings(BaseSettings):
     brevo_sender_email: str = ""
     email_enabled: bool = False
     email_allowed_domains: str = ""  # comma-separated: "ahacommerce.co.id,example.com"
+    brevo_webhook_secret: str = ""
 
     # Google Sheets API - Credentials
     gsheets_credentials_path: str | None = None
