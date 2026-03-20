@@ -86,6 +86,18 @@ class EmailHistoryListResponse(BaseModel):
     pages: int
 
 
+class DeleteEmailHistoryRequest(BaseModel):
+    """Request body for batch-deleting email history entries."""
+
+    ids: list[int] = Field(min_length=1, max_length=100)
+
+
+class DeleteEmailHistoryResponse(BaseModel):
+    """Response after deleting email history entries."""
+
+    deleted: int
+
+
 class BrevoWebhookEvent(BaseModel):
     """Single Brevo webhook event payload."""
 

@@ -7,6 +7,7 @@ import pytest
 
 from app.db.queries.email_history import (
     _LIMIT_CAP,
+    delete_email_history_by_ids,
     insert_email_history,
     list_email_history,
     list_email_history_by_evaluation,
@@ -251,3 +252,30 @@ class TestListEmailHistoryByEvaluation:
         assert len(result) == 2
         query = mock_conn.fetch.call_args[0][0]
         assert "evaluation_id = $1" in query
+
+
+class TestDeleteEmailHistoryByIds:
+    async def test_deletes_entries_when_ids_provided(self, mock_conn: AsyncMock) -> None:
+        mock_conn.execute.return_value = "DELETE 3"
+
+        result = await delete_email_history_by_ids(mock_conn, ids=[1, 2, 3])
+
+        assert result == 3
+        mock_conn.execute.assert_called_once()
+
+    async def test_returns_zero_when_empty_ids(self, mock_conn: AsyncMock) -> None:
+        result = await delete_email_history_by_ids(mock_conn, ids=[])
+
+        assert result == 0
+        mock_conn.execute.assert_not_called()
+
+    async def test_rejects_batch_exceeding_limit(self, mock_conn: AsyncMock) -> None:
+        with pytest.raises(ValueError, match="exceeds limit"):
+            await delete_email_history_by_ids(mock_conn, ids=list(range(101)))
+
+    async def test_returns_zero_when_ids_not_found(self, mock_conn: AsyncMock) -> None:
+        mock_conn.execute.return_value = "DELETE 0"
+
+        result = await delete_email_history_by_ids(mock_conn, ids=[999])
+
+        assert result == 0

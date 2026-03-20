@@ -190,6 +190,28 @@ async def update_email_status_by_message_id(
     return result == "UPDATE 1"
 
 
+_DELETE_BATCH_CAP = 100
+
+
+async def delete_email_history_by_ids(
+    conn: Connection,
+    *,
+    ids: list[int],
+) -> int:
+    """Delete email history entries by IDs. Returns count deleted."""
+    if not ids:
+        return 0
+    if len(ids) > _DELETE_BATCH_CAP:
+        raise ValueError(f"Batch size {len(ids)} exceeds limit of {_DELETE_BATCH_CAP}")
+
+    result = await conn.execute(
+        "DELETE FROM email_history WHERE id = ANY($1::int[])",
+        ids,
+    )
+    # asyncpg returns "DELETE N"
+    return int(result.split()[-1])
+
+
 async def list_email_history_by_evaluation(
     conn: Connection,
     evaluation_id: int,

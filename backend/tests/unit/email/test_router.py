@@ -1,6 +1,8 @@
-"""Tests for email router: history logging, history endpoints, RBAC."""
+"""Tests for email router: history logging, history endpoints, delete, RBAC."""
 
 from unittest.mock import AsyncMock, MagicMock, patch
+
+
 
 
 class TestSendEmailLogsHistory:
@@ -208,3 +210,76 @@ class TestHistoryEndpoints:
             response = client.get("/api/v1/email/history/42", headers=headers)
 
         assert response.status_code == 403
+
+
+class TestDeleteHistoryEndpoint:
+    """Test DELETE /history batch delete."""
+
+    async def test_deletes_entries_when_admin(
+        self, client, mock_db_conn, auth_headers
+    ) -> None:
+        user, headers, auth_ctx = auth_headers("admin")
+        mock_db_conn.execute.return_value = "DELETE 2"
+
+        with auth_ctx, \
+             patch("app.modules.email.router.delete_email_history_by_ids", new_callable=AsyncMock, return_value=2) as mock_delete, \
+             patch("app.modules.email.router.record_audit_event", new_callable=AsyncMock) as mock_audit:
+            response = client.request(
+                "DELETE",
+                "/api/v1/email/history",
+                json={"ids": [1, 2]},
+                headers=headers,
+            )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["deleted"] == 2
+        mock_delete.assert_called_once()
+        mock_audit.assert_called_once()
+        audit_kwargs = mock_audit.call_args[1]
+        assert audit_kwargs["action"] == "email_history.delete"
+
+    async def test_returns_403_when_leader(
+        self, client, mock_db_conn, auth_headers
+    ) -> None:
+        user, headers, auth_ctx = auth_headers("leader")
+
+        with auth_ctx:
+            response = client.request(
+                "DELETE",
+                "/api/v1/email/history",
+                json={"ids": [1]},
+                headers=headers,
+            )
+
+        assert response.status_code == 403
+
+    async def test_returns_403_when_member(
+        self, client, mock_db_conn, auth_headers
+    ) -> None:
+        user, headers, auth_ctx = auth_headers("member")
+
+        with auth_ctx:
+            response = client.request(
+                "DELETE",
+                "/api/v1/email/history",
+                json={"ids": [1]},
+                headers=headers,
+            )
+
+        assert response.status_code == 403
+
+    async def test_returns_422_when_empty_ids(
+        self, client, mock_db_conn, auth_headers
+    ) -> None:
+        user, headers, auth_ctx = auth_headers("admin")
+
+        with auth_ctx:
+            response = client.request(
+                "DELETE",
+                "/api/v1/email/history",
+                json={"ids": []},
+                headers=headers,
+            )
+
+        assert response.status_code == 422

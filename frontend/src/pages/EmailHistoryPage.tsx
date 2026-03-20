@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { ChevronLeft, ChevronRight, AlertCircle, Search, X } from 'lucide-react';
+import { ChevronLeft, ChevronRight, AlertCircle, Search, X, Trash2 } from 'lucide-react';
 import {
   Table,
   TableHeader,
@@ -19,8 +19,18 @@ import {
   SelectTrigger,
   SelectValue,
 } from '../components/ui/select';
+import {
+  Dialog,
+  DialogContent,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '../components/ui/dialog';
 import { useEmailHistory } from '../hooks/useEmailHistory';
+import { useDeleteEmailHistory } from '../hooks/useDeleteEmailHistory';
+import { useCurrentUser } from '../hooks/useCurrentUser';
 import { getIntlLocale } from '../lib/languages';
+import { toast } from 'sonner';
 
 const STATUS_BADGE_STYLES: Record<string, string> = {
   sent: 'bg-blue-100 text-blue-800 dark:bg-blue-900/30 dark:text-blue-400',
@@ -53,6 +63,8 @@ const FILTER_STATUSES = ['sent', 'delivered', 'bounced', 'opened', 'deferred', '
 export const EmailHistoryPage = () => {
   const { t, i18n } = useTranslation();
   const [searchParams, setSearchParams] = useSearchParams();
+  const { profile } = useCurrentUser();
+  const isAdmin = profile?.role === 'admin';
 
   const dateFormatter = useMemo(
     () => new Intl.DateTimeFormat(getIntlLocale(i18n.language), {
@@ -74,6 +86,17 @@ export const EmailHistoryPage = () => {
   const statusFromUrl = searchParams.get('status') ?? '';
   const [searchInput, setSearchInput] = useState(searchFromUrl);
   const isInitialMount = useRef(true);
+
+  // Selection state
+  const [selected, setSelected] = useState<Set<number>>(new Set());
+  const [confirmOpen, setConfirmOpen] = useState(false);
+
+  const deleteMutation = useDeleteEmailHistory();
+
+  // Clear selection when page/filters change
+  useEffect(() => {
+    setSelected(new Set());
+  }, [page, searchFromUrl, dateFromUrl, dateToUrl, statusFromUrl]);
 
   // Debounce: update URL params after 300ms idle (skip initial mount)
   useEffect(() => {
@@ -178,6 +201,38 @@ export const EmailHistoryPage = () => {
     statusFromUrl || undefined,
   );
 
+  const toggleItem = (id: number) => {
+    setSelected((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const toggleAll = () => {
+    if (selected.size === items.length) {
+      setSelected(new Set());
+    } else {
+      setSelected(new Set(items.map((i) => i.id)));
+    }
+  };
+
+  const handleDelete = () => {
+    const ids = Array.from(selected);
+    deleteMutation.mutate(ids, {
+      onSuccess: (data) => {
+        toast.success(t('emailHistory.deleteSuccess', { count: data.deleted }));
+        setSelected(new Set());
+        setConfirmOpen(false);
+      },
+      onError: () => {
+        toast.error(t('emailHistory.deleteError'));
+        setConfirmOpen(false);
+      },
+    });
+  };
+
   if (isError) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
@@ -249,6 +304,17 @@ export const EmailHistoryPage = () => {
           ))}
         </SelectContent>
       </Select>
+      {isAdmin && selected.size > 0 && (
+        <Button
+          variant="destructive"
+          size="sm"
+          onClick={() => setConfirmOpen(true)}
+          disabled={deleteMutation.isPending}
+        >
+          <Trash2 className="mr-1.5 size-4" aria-hidden="true" />
+          {t('emailHistory.deleteSelected', { count: selected.size })}
+        </Button>
+      )}
     </div>
   );
 
@@ -271,6 +337,17 @@ export const EmailHistoryPage = () => {
             >
               <TableHeader>
                 <TableRow>
+                  {isAdmin && (
+                    <TableHead className="w-10">
+                      <input
+                        type="checkbox"
+                        className="size-4 rounded border-gray-300 accent-primary"
+                        checked={items.length > 0 && selected.size === items.length}
+                        onChange={toggleAll}
+                        aria-label={t('emailHistory.aria.selectAll')}
+                      />
+                    </TableHead>
+                  )}
                   <TableHead className="text-xs uppercase">{t('emailHistory.recipient')}</TableHead>
                   <TableHead className="text-xs uppercase">{t('emailHistory.subject')}</TableHead>
                   <TableHead className="text-xs uppercase">{t('emailHistory.statusLabel')}</TableHead>
@@ -281,6 +358,7 @@ export const EmailHistoryPage = () => {
                 {isLoading
                   ? Array.from({ length: 10 }).map((_, i) => (
                       <TableRow key={i}>
+                        {isAdmin && <TableCell><div className="h-4 w-4 animate-pulse rounded bg-muted" /></TableCell>}
                         <TableCell><div className="h-4 w-40 animate-pulse rounded bg-muted" /></TableCell>
                         <TableCell><div className="h-4 w-48 animate-pulse rounded bg-muted" /></TableCell>
                         <TableCell><div className="h-4 w-16 animate-pulse rounded bg-muted" /></TableCell>
@@ -288,7 +366,18 @@ export const EmailHistoryPage = () => {
                       </TableRow>
                     ))
                   : items.map((item) => (
-                      <TableRow key={item.id}>
+                      <TableRow key={item.id} className={selected.has(item.id) ? 'bg-muted/50' : ''}>
+                        {isAdmin && (
+                          <TableCell>
+                            <input
+                              type="checkbox"
+                              className="size-4 rounded border-gray-300 accent-primary"
+                              checked={selected.has(item.id)}
+                              onChange={() => toggleItem(item.id)}
+                              aria-label={t('emailHistory.aria.selectRow')}
+                            />
+                          </TableCell>
+                        )}
                         <TableCell className="font-medium">{item.recipient_email}</TableCell>
                         <TableCell>{item.subject}</TableCell>
                         <TableCell>
@@ -340,6 +429,26 @@ export const EmailHistoryPage = () => {
           )}
         </>
       )}
+
+      {/* Delete confirmation dialog */}
+      <Dialog open={confirmOpen} onOpenChange={setConfirmOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>{t('emailHistory.deleteConfirmTitle')}</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-muted-foreground">
+            {t('emailHistory.deleteConfirmMessage', { count: selected.size })}
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmOpen(false)} disabled={deleteMutation.isPending}>
+              {t('common.cancel')}
+            </Button>
+            <Button variant="destructive" onClick={handleDelete} disabled={deleteMutation.isPending}>
+              {deleteMutation.isPending ? t('common.deleting') : t('common.delete')}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

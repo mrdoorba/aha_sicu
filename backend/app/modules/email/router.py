@@ -10,11 +10,15 @@ from fastapi.responses import HTMLResponse
 from app.config import settings
 from app.core.dependencies import get_current_user, get_db_connection, require_role
 from app.db.queries.email_history import (
+    delete_email_history_by_ids,
     insert_email_history,
     list_email_history,
     list_email_history_by_evaluation,
 )
+from app.core.audit import record_audit_event
 from app.modules.email.schemas import (
+    DeleteEmailHistoryRequest,
+    DeleteEmailHistoryResponse,
     EmailHistoryItem,
     EmailHistoryListResponse,
     SendEmailRequest,
@@ -78,6 +82,26 @@ async def evaluation_history_endpoint(
     """
     rows = await list_email_history_by_evaluation(conn, evaluation_id)
     return [EmailHistoryItem(**row) for row in rows]
+
+
+@router.delete("/history", response_model=DeleteEmailHistoryResponse)
+async def delete_history_endpoint(
+    body: DeleteEmailHistoryRequest,
+    current_user: dict = Depends(require_role("admin")),
+    conn: Connection = Depends(get_db_connection),
+) -> DeleteEmailHistoryResponse:
+    """Batch-delete email history entries. Requires admin role."""
+    deleted = await delete_email_history_by_ids(conn, ids=body.ids)
+    await record_audit_event(
+        conn,
+        action="email_history.delete",
+        actor_id=current_user["id"],
+        actor_email=current_user["email"],
+        target_type="email_history",
+        target_id=",".join(str(i) for i in body.ids),
+        details={"ids": body.ids, "deleted": deleted},
+    )
+    return DeleteEmailHistoryResponse(deleted=deleted)
 
 
 @router.post("/send", response_model=SendEmailResponse)
