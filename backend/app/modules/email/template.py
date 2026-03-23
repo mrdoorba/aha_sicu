@@ -291,8 +291,8 @@ def _render_header(
 <!-- Header Image -->
 <tr>
   <td style="padding:0;margin:0;">
-    <img src="{header_src}" width="800"
-         style="display:block;width:100%;max-width:800px;height:auto;border:0;"
+    <img src="{header_src}" width="900"
+         style="display:block;width:100%;height:auto;border:0;"
          alt="AHA Commerce">
   </td>
 </tr>
@@ -409,8 +409,8 @@ def _render_footer(footer_src: str) -> str:
 <!-- Footer Image -->
 <tr>
   <td style="padding:0;margin:0;">
-    <img src="{footer_src}" width="800"
-         style="display:block;width:100%;max-width:800px;height:auto;border:0;"
+    <img src="{footer_src}" width="900"
+         style="display:block;width:100%;height:auto;border:0;"
          alt="AHA Commerce Footer">
   </td>
 </tr>"""
