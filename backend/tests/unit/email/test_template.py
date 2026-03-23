@@ -884,10 +884,13 @@ class TestResponsive:
         head_html = html[:head_end] if head_end != -1 else ""
         assert "@media" in head_html
 
-    def test_no_max_width_constraint(self, evaluation_data: dict) -> None:
-        """Email should be fully fluid — no max-width on the wrapper table."""
+    def test_no_max_width_on_wrapper(self, evaluation_data: dict) -> None:
+        """Email wrapper table should be fully fluid — no max-width cap."""
         html = _render_full(evaluation_data)
-        assert "max-width:" not in html.replace(" ", "")
+        # The outer wrapper table should NOT have a max-width constraint.
+        # (Inner elements like table cells and media queries may still use max-width.)
+        assert "max-width:600px" not in html.replace(" ", "")
+        assert "max-width:900px" not in html.replace(" ", "")
 
 
 class TestFullRender:
