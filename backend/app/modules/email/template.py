@@ -1055,7 +1055,7 @@ def render_email_html(
   <tr>
     <td align="center" style="padding:20px 0;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"
-             style="width:100%;max-width:900px;background-color:{WHITE};border-radius:8px;">
+             style="width:100%;background-color:{WHITE};border-radius:8px;">
         {header}
         {note_section}
         {score_overview}
