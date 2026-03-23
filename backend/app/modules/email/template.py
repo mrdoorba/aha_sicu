@@ -291,7 +291,7 @@ def _render_header(
 <!-- Header Image -->
 <tr>
   <td style="padding:0;margin:0;">
-    <img src="{header_src}" width="600"
+    <img src="{header_src}" width="900"
          style="display:block;width:100%;height:auto;border:0;"
          alt="AHA Commerce">
   </td>
@@ -409,7 +409,7 @@ def _render_footer(footer_src: str) -> str:
 <!-- Footer Image -->
 <tr>
   <td style="padding:0;margin:0;">
-    <img src="{footer_src}" width="600"
+    <img src="{footer_src}" width="900"
          style="display:block;width:100%;height:auto;border:0;"
          alt="AHA Commerce Footer">
   </td>
@@ -1044,7 +1044,7 @@ def render_email_html(
 <style type="text/css">
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap');
 {_EMAIL_CSS}
-@media only screen and (max-width:620px) {{
+@media only screen and (max-width:920px) {{
   .metric-grid td {{ display:block !important; width:100% !important; }}
 }}
 </style>
@@ -1055,7 +1055,7 @@ def render_email_html(
   <tr>
     <td align="center" style="padding:20px 0;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"
-             style="width:100%;max-width:600px;background-color:{WHITE};border-radius:8px;">
+             style="width:100%;max-width:900px;background-color:{WHITE};border-radius:8px;">
         {header}
         {note_section}
         {score_overview}
