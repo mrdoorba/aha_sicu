@@ -884,9 +884,10 @@ class TestResponsive:
         head_html = html[:head_end] if head_end != -1 else ""
         assert "@media" in head_html
 
-    def test_max_width_pattern(self, evaluation_data: dict) -> None:
+    def test_no_max_width_constraint(self, evaluation_data: dict) -> None:
+        """Email should be fully fluid — no max-width on the wrapper table."""
         html = _render_full(evaluation_data)
-        assert "max-width:600px" in html.replace(" ", "")
+        assert "max-width:" not in html.replace(" ", "")
 
 
 class TestFullRender:
