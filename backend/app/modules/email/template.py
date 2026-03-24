@@ -43,7 +43,7 @@ _EMAIL_STRING_KEYS: frozenset[str] = frozenset({
     "verdict", "score", "message", "approved", "rejected",
     "check_count", "cross_count", "performance_verdict", "brand_report",
     "subject", "plain_score", "plain_period", "chart_placeholder",
-    "schedule_consultation",
+    "schedule_consultation", "signoff_regards",
 })
 
 # Indonesian category names are the canonical keys used in evaluation data.
@@ -908,7 +908,7 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
                  style="border-left:4px solid {PRIMARY_BLUE}40;background-color:{PRIMARY_LIGHT};border-radius:0 8px 8px 0;">
             <tr>
-              <td style="padding:16px 18px;font-size:13px;color:{TEXT_DARK};line-height:1.7;">
+              <td style="padding:24px 18px;font-size:13px;color:{TEXT_DARK};line-height:1.7;">
                 {escaped_closing}
               </td>
             </tr>
@@ -925,6 +925,99 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
       <tr>
         <td style="padding:20px;">
 {all_parts}
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>"""
+
+
+def _render_signoff(S: dict[str, str]) -> str:
+    """Render sign-off section after kesimpulan: regards and linked company name."""
+    return f"""\
+<!-- Sign-off -->
+<tr>
+  <td style="padding:16px 30px 24px 30px;">
+    <p style="margin:0 0 0 0;font-size:14px;color:{TEXT_DARK};line-height:1.7;font-family:{FONT_STACK};">
+      {_esc(S['signoff_regards'])}
+    </p>
+    <a href="https://www.ahacommerce.net/" target="_blank"
+       style="font-size:14px;font-weight:700;color:{PRIMARY_BLUE};text-decoration:underline;font-family:{FONT_STACK};">AHA Commerce</a>
+  </td>
+</tr>"""
+
+
+# ---------------------------------------------------------------------------
+# Footer banner — gold "Superpower your brand" + navy social/location bar
+# ---------------------------------------------------------------------------
+
+_FOOTER_GOLD = "#f4c144"
+_FOOTER_NAVY = "#0f0e7f"
+
+_SOCIAL_LINKS: dict[str, dict[str, str]] = {
+    "id": {
+        "facebook": "https://www.facebook.com/ahacommerce.id",
+        "instagram": "https://www.instagram.com/ahacommerce/",
+        "linkedin": "https://www.linkedin.com/company/ahacommerce",
+        "location": "GoWork - Central Park Mall, Jakarta, Indonesia",
+        "company_name": "AHA Commerce",
+    },
+    "th": {
+        "facebook": "https://www.facebook.com/people/AHA-Commerce-Thailand/61579578384962/",
+        "instagram": "https://www.instagram.com/ahacommerce.th",
+        "linkedin": "https://www.linkedin.com/company/ahacommerce-th/",
+        "location": "JustCo - Mitrtown Office Tower, Pathum Wan, Bangkok, Thailand",
+        "company_name": "AHA Commerce Thailand",
+    },
+}
+
+
+def _render_footer_banner(syb_src: str, language: str) -> str:
+    """Render the gold + navy footer banner with social links and location."""
+    links = _SOCIAL_LINKS.get(language, _SOCIAL_LINKS["id"])
+    return f"""\
+<!-- Footer Banner -->
+<tr>
+  <td style="padding:24px 30px 0 30px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="border-radius:12px;overflow:hidden;">
+      <!-- Gold section -->
+      <tr>
+        <td style="background-color:{_FOOTER_GOLD};padding:30px 40px;text-align:center;">
+          <p style="margin:0 0 16px 0;font-size:20px;font-weight:800;color:{_FOOTER_NAVY};font-family:{FONT_STACK};">
+            Let's #GrowTogether
+          </p>
+          <img src="{syb_src}" width="400"
+               style="display:inline-block;width:100%;max-width:400px;height:auto;border:0;"
+               alt="Superpower your brand">
+        </td>
+      </tr>
+      <!-- Navy section -->
+      <tr>
+        <td style="background-color:{_FOOTER_NAVY};padding:24px 40px;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                 style="margin:0 auto;">
+            <tr>
+              <td style="padding:0 16px;">
+                <a href="{_esc(links['facebook'])}" target="_blank"
+                   style="font-size:14px;color:#ffffff;text-decoration:none;font-family:{FONT_STACK};">Facebook</a>
+              </td>
+              <td style="padding:0 16px;">
+                <a href="{_esc(links['instagram'])}" target="_blank"
+                   style="font-size:14px;color:#ffffff;text-decoration:none;font-family:{FONT_STACK};">Instagram</a>
+              </td>
+              <td style="padding:0 16px;">
+                <a href="{_esc(links['linkedin'])}" target="_blank"
+                   style="font-size:14px;color:#ffffff;text-decoration:none;font-family:{FONT_STACK};">LinkedIn</a>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:16px 0 4px 0;font-size:14px;font-weight:700;color:#ffffff;font-family:{FONT_STACK};">
+            {_esc(links['company_name'])}
+          </p>
+          <p style="margin:0;font-size:12px;color:#ffffff;font-family:{FONT_STACK};">
+            &#128205; {_esc(links['location'])}
+          </p>
         </td>
       </tr>
     </table>
@@ -985,6 +1078,7 @@ def render_email_html(
     chart_src: str,
     header_src: str,
     footer_src: str,
+    syb_src: str = "",
     note: str | None = None,
     language: str = "id",
 ) -> str:
@@ -1031,6 +1125,8 @@ def render_email_html(
     breakdown = _render_score_breakdown(chart_src, categories, S, cat_map)
     intelligence = _render_data_intelligence(calculator_results, S)
     kesimpulan = _render_kesimpulan(calculator_results, S)
+    signoff = _render_signoff(S)
+    footer_banner = _render_footer_banner(syb_src, language) if syb_src else ""
     footer = _render_footer(footer_src)
 
     lang_code = language if language in ("id", "en", "th") else "id"
@@ -1063,6 +1159,8 @@ def render_email_html(
         {breakdown}
         {intelligence}
         {kesimpulan}
+        {signoff}
+        {footer_banner}
         {footer}
       </table>
     </td>

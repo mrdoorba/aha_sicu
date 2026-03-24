@@ -167,11 +167,14 @@ async def send_evaluation_email(
 
     header_bytes = _load_asset("aha-e-mail-header-2026.png")
     footer_bytes = _load_asset("aha-e-mail-footer-2026.png")
+    syb_bytes = _load_asset("syb-color-3.png")
 
     header_msgid = make_msgid(domain="ahacommerce.id")
     footer_msgid = make_msgid(domain="ahacommerce.id")
+    syb_msgid = make_msgid(domain="ahacommerce.id")
     header_cid = header_msgid.strip("<>")
     footer_cid = footer_msgid.strip("<>")
+    syb_cid = syb_msgid.strip("<>")
 
     chart_cid = ""
     if chart_bytes:
@@ -184,6 +187,7 @@ async def send_evaluation_email(
         chart_src=chart_src,
         header_src=f"cid:{header_cid}",
         footer_src=f"cid:{footer_cid}",
+        syb_src=f"cid:{syb_cid}",
         note=note,
         language=language,
     )
@@ -219,6 +223,7 @@ async def send_evaluation_email(
     images = [
         (header_bytes, "png", header_cid),
         (footer_bytes, "png", footer_cid),
+        (syb_bytes, "png", syb_cid),
     ]
     if chart_bytes and chart_cid:
         images.append((chart_bytes, "png", chart_cid))

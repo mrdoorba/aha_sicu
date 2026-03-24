@@ -194,6 +194,7 @@ async def preview_email_endpoint(
     # Convert header/footer assets to data URIs for browser rendering
     header_src = asset_to_data_uri("aha-e-mail-header-2026.png")
     footer_src = asset_to_data_uri("aha-e-mail-footer-2026.png")
+    syb_src = asset_to_data_uri("syb-color-3.png")
 
     lang = language or current_user.get("language", "id")
     html = render_email_html(
@@ -201,6 +202,7 @@ async def preview_email_endpoint(
         chart_src=_chart_placeholder_svg(lang),
         header_src=header_src,
         footer_src=footer_src,
+        syb_src=syb_src,
         note=note,
         language=lang,
     )
