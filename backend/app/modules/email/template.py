@@ -131,6 +131,21 @@ def _resolve_metric_name(row: dict[str, Any], lang: str) -> str:
     return row.get("metric", "")
 
 
+def _resolve_translatable_text(
+    i18n: dict[str, Any] | None, fallback: str, lang: str,
+) -> str:
+    """Resolve a TranslatableText-style dict to a translated string.
+
+    Falls back to *fallback* when *i18n* is absent, malformed, or the
+    key is missing from the locale file.
+    """
+    if i18n and isinstance(i18n, dict) and i18n.get("key"):
+        translated = _translate(i18n["key"], i18n.get("vars"), lang)
+        if translated is not None:
+            return translated
+    return fallback
+
+
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
@@ -425,7 +440,9 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id"
     """Render a single metric card matching the dashboard CategoryMetricCard style."""
     is_pass = row.get("verdict") == "\u2714\ufe0f"
     verdict_color = GREEN if is_pass else ORANGE
-    message = _esc(row.get("message", "")).replace("\n", "<br>")
+    raw_message = row.get("message", "")
+    translated_message = _resolve_translatable_text(row.get("message_i18n"), raw_message, lang)
+    message = _esc(translated_message).replace("\n", "<br>")
     raw_metric = row.get("metric", "")
     display_metric = _resolve_metric_name(row, lang)
     display_value = _format_display_value(raw_metric, row.get("value"))
@@ -441,7 +458,7 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id"
         detail_parts: list[str] = []
         if has_benchmark:
             detail_parts.append(
-                f'<div class="sm" style="padding-bottom:3px">Benchmark: {_esc(benchmark)}</div>'
+                f'<div class="sm" style="padding-bottom:3px">{_esc(S["benchmark"])}: {_esc(benchmark)}</div>'
             )
         if message:
             detail_parts.append(
@@ -832,7 +849,7 @@ def _parse_bullet_points(text: str) -> list[str]:
     ]
 
 
-def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) -> str:
+def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str], *, language: str = "id", marketplace: str = "ID") -> str:
     """Render kesimpulan (conclusion) section: bullet points, marketing budget, closing message."""
     if not calculator_results:
         return ""
@@ -844,6 +861,26 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
     conclusion = summary.get("conclusion", "")
     marketing_budget = summary.get("marketing_budget", "")
     closing_message = summary.get("closing_message", "")
+
+    # Resolve i18n companions (fall back to raw text for old evaluations)
+    conclusion_i18n = summary.get("conclusion_i18n")
+    if conclusion_i18n and isinstance(conclusion_i18n, list):
+        translated_bullets: list[str] = []
+        for item in conclusion_i18n:
+            t = _resolve_translatable_text(item, "", language)
+            if not t:
+                translated_bullets = []  # atomic fallback
+                break
+            translated_bullets.append(t)
+        if translated_bullets:
+            conclusion = "\n".join(f"- {b}" for b in translated_bullets)
+
+    marketing_budget = _resolve_translatable_text(
+        summary.get("marketing_budget_i18n"), marketing_budget, language,
+    )
+    closing_message = _resolve_translatable_text(
+        summary.get("closing_message_i18n"), closing_message, language,
+    )
 
     # Skip entirely if no content
     if not conclusion and not marketing_budget and not closing_message:
@@ -1124,7 +1161,7 @@ def render_email_html(
     detailed = _render_detailed_evaluation(categories, S, cat_map, language)
     breakdown = _render_score_breakdown(chart_src, categories, S, cat_map)
     intelligence = _render_data_intelligence(calculator_results, S)
-    kesimpulan = _render_kesimpulan(calculator_results, S)
+    kesimpulan = _render_kesimpulan(calculator_results, S, language=language, marketplace=evaluation_data.get("marketplace", "ID"))
     signoff = _render_signoff(S)
     footer_banner = _render_footer_banner(syb_src, language) if syb_src else ""
     footer = _render_footer(footer_src)

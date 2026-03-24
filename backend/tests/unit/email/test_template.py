@@ -8,6 +8,7 @@ from app.modules.email.template import (
     _get_category_map,
     _get_strings,
     _load_locale,
+    _resolve_translatable_text,
     render_email_html,
     _compute_verdict_counts,
     _format_display_value,
@@ -999,3 +1000,224 @@ class TestCustomNote:
         note_pos = html.find("Test note positioning")
         score_pos = html.find(_get_strings("id")["score_overview"])
         assert note_pos < score_pos, "Note should appear before Score Overview"
+
+
+# ===================================================================
+# Phase: Email i18n — translate _i18n companion fields
+# ===================================================================
+
+
+def _render_full_th(evaluation_data: dict) -> str:
+    """Helper to render full email HTML in Thai."""
+    return render_email_html(
+        evaluation_data=evaluation_data,
+        chart_src="cid:chart123@domain",
+        header_src="cid:header123@domain",
+        footer_src="cid:footer123@domain",
+        language="th",
+    )
+
+
+class TestResolveTranslatableText:
+    """Unit tests for _resolve_translatable_text helper."""
+
+    def test_resolves_valid_i18n_dict(self) -> None:
+        i18n = {"key": "scoring.adCost", "vars": {}}
+        result = _resolve_translatable_text(i18n, "Biaya (iklan)", "th")
+        assert result == "ค่าใช้จ่ายโฆษณา"
+
+    def test_falls_back_when_i18n_is_none(self) -> None:
+        result = _resolve_translatable_text(None, "fallback text", "th")
+        assert result == "fallback text"
+
+    def test_falls_back_when_i18n_has_no_key(self) -> None:
+        result = _resolve_translatable_text({"key": "", "vars": {}}, "fallback", "th")
+        assert result == "fallback"
+
+    def test_falls_back_when_key_missing_from_locale(self) -> None:
+        i18n = {"key": "nonexistent.key.xyz", "vars": {}}
+        result = _resolve_translatable_text(i18n, "raw text", "th")
+        assert result == "raw text"
+
+    def test_interpolates_vars(self) -> None:
+        i18n = {"key": "scoring.monthlySales", "vars": {"month": "Feb 2026"}}
+        result = _resolve_translatable_text(i18n, "Penjualan Bulan Feb 2026", "th")
+        assert "Feb 2026" in result
+        # Should be Thai, not Indonesian
+        assert "ยอดขาย" in result
+
+    def test_falls_back_when_i18n_is_not_dict(self) -> None:
+        result = _resolve_translatable_text("not a dict", "fallback", "th")
+        assert result == "fallback"
+
+
+class TestBenchmarkLabelI18n:
+    """Benchmark label uses S['benchmark'] instead of hardcoded 'Benchmark:'."""
+
+    def test_thai_benchmark_label_translated(self, evaluation_data: dict) -> None:
+        html = _render_full_th(evaluation_data)
+        th_strings = _get_strings("th")
+        # Should contain the Thai benchmark label
+        assert f"{th_strings['benchmark']}:" in html
+        # Should NOT contain hardcoded English/Indonesian "Benchmark:"
+        assert "Benchmark:" not in html
+
+    def test_indonesian_benchmark_label_still_works(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        id_strings = _get_strings("id")
+        assert f"{id_strings['benchmark']}:" in html
+
+
+class TestRowMessageI18n:
+    """Row-level message_i18n resolution in metric cards."""
+
+    def test_thai_row_message_resolved_from_i18n(self, evaluation_data: dict) -> None:
+        """When message_i18n is present, Thai email should use translated message."""
+        evaluation_data["score_breakdown"][0]["rows"][0]["message_i18n"] = {
+            "key": "scoring.chatResponseRate.pass",
+            "vars": {"value": "95"},
+        }
+        html = _render_full_th(evaluation_data)
+        # Thai translation should appear
+        assert "อัตราการตอบแชท" in html
+
+    def test_falls_back_to_raw_message_when_no_i18n(self, evaluation_data: dict) -> None:
+        """Without message_i18n, raw Indonesian message is used (backward compat)."""
+        # Ensure no message_i18n key
+        for cat in evaluation_data["score_breakdown"]:
+            for row in cat["rows"]:
+                row.pop("message_i18n", None)
+        html = _render_full_th(evaluation_data)
+        assert "Baik" in html  # raw Indonesian text
+
+    def test_falls_back_when_i18n_key_missing(self, evaluation_data: dict) -> None:
+        """If the i18n key doesn't exist in locale, fall back to raw message."""
+        evaluation_data["score_breakdown"][0]["rows"][0]["message_i18n"] = {
+            "key": "nonexistent.key",
+            "vars": {},
+        }
+        html = _render_full_th(evaluation_data)
+        assert "Baik" in html  # fallback to raw "message"
+
+
+class TestConclusionI18n:
+    """conclusion_i18n bullet points resolved in kesimpulan section."""
+
+    def _make_th_eval(self, sample_categories: list[dict]) -> dict:
+        return {
+            "id": 1,
+            "brand_id": 1,
+            "brand_name": "Test TH",
+            "final_score": 50.0,
+            "verdict": "✔️",
+            "template": "fashion",
+            "score_breakdown": sample_categories,
+            "calculator_results": {
+                "scoring_summary": {
+                    "conclusion": "- Performa toko sangat baik",
+                    "conclusion_i18n": [
+                        {"key": "conclusion.operationalGood", "vars": {}},
+                    ],
+                    "marketing_budget": "IDR 5,000,000",
+                    "marketing_budget_i18n": {
+                        "key": "marketing.budgetRecommendation",
+                        "vars": {"pct": "22.4% ~ 26.2%"},
+                    },
+                    "closing_message": "Kami melihat potensi toko",
+                    "closing_message_i18n": {
+                        "key": "closing.potential",
+                        "vars": {"store_name": "Test TH"},
+                    },
+                },
+            },
+            "period": "Maret 2026",
+            "marketplace": "TH",
+        }
+
+    def test_thai_conclusion_bullets_translated(self, sample_categories: list[dict]) -> None:
+        data = self._make_th_eval(sample_categories)
+        html = render_email_html(
+            evaluation_data=data,
+            chart_src="cid:chart",
+            header_src="cid:header",
+            footer_src="cid:footer",
+            language="th",
+        )
+        # Thai translation of conclusion.operationalGood
+        assert "สุขภาพการดำเนินงานร้านค้าอยู่ในเกณฑ์ดี" in html
+        # Raw Indonesian should NOT appear
+        assert "Performa toko sangat baik" not in html
+
+    def test_thai_closing_message_translated(self, sample_categories: list[dict]) -> None:
+        data = self._make_th_eval(sample_categories)
+        html = render_email_html(
+            evaluation_data=data,
+            chart_src="cid:chart",
+            header_src="cid:header",
+            footer_src="cid:footer",
+            language="th",
+        )
+        # Thai closing.potential contains this
+        assert "ศักยภาพ" in html
+        # Raw Indonesian should NOT appear
+        assert "Kami melihat potensi toko" not in html
+
+    def test_thai_marketing_budget_translated(self, sample_categories: list[dict]) -> None:
+        data = self._make_th_eval(sample_categories)
+        html = render_email_html(
+            evaluation_data=data,
+            chart_src="cid:chart",
+            header_src="cid:header",
+            footer_src="cid:footer",
+            language="th",
+        )
+        # Thai marketing.budgetRecommendation contains this
+        assert "งบการตลาด" in html
+
+    def test_conclusion_atomic_fallback(self, sample_categories: list[dict]) -> None:
+        """If ANY bullet in conclusion_i18n fails, use entire raw conclusion."""
+        data = self._make_th_eval(sample_categories)
+        data["calculator_results"]["scoring_summary"]["conclusion_i18n"] = [
+            {"key": "conclusion.operationalGood", "vars": {}},
+            {"key": "nonexistent.key.xyz", "vars": {}},  # will fail
+        ]
+        html = render_email_html(
+            evaluation_data=data,
+            chart_src="cid:chart",
+            header_src="cid:header",
+            footer_src="cid:footer",
+            language="th",
+        )
+        # Falls back to raw Indonesian
+        assert "Performa toko sangat baik" in html
+
+
+class TestBackwardCompatibility:
+    """Indonesian emails without _i18n fields render identically."""
+
+    def test_indonesian_without_i18n_fields_unchanged(self, evaluation_data: dict) -> None:
+        """Evaluation data without any _i18n fields should render the same as before."""
+        # Ensure no _i18n fields
+        for cat in evaluation_data["score_breakdown"]:
+            for row in cat["rows"]:
+                row.pop("message_i18n", None)
+        summary = evaluation_data["calculator_results"]["scoring_summary"]
+        summary.pop("conclusion_i18n", None)
+        summary.pop("closing_message_i18n", None)
+        summary.pop("marketing_budget_i18n", None)
+
+        html = _render_full(evaluation_data)
+        # Indonesian text preserved
+        assert "Baik" in html
+        assert "Performa toko sangat baik" in html
+        assert "IDR 5,000,000" in html
+        assert "brand ini menunjukkan performa yang baik" in html
+
+    def test_fallback_missing_translation_key(self, evaluation_data: dict) -> None:
+        """When _i18n key doesn't exist in locale, fall back to raw text."""
+        evaluation_data["calculator_results"]["scoring_summary"]["conclusion_i18n"] = [
+            {"key": "totally.fake.key", "vars": {}},
+        ]
+        html = _render_full(evaluation_data)
+        # Falls back to raw Indonesian conclusion
+        assert "Performa toko sangat baik" in html
