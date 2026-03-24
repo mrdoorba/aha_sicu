@@ -1,6 +1,6 @@
 # Lefthook — git hook manager
 # Install: brew install lefthook && lefthook install
-# Runs backend lint + frontend lint before push to catch CI failures early.
+# Runs lint + full tests before push to catch CI failures early.
 
 pre-push:
   parallel: true
@@ -11,3 +11,12 @@ pre-push:
     frontend-lint:
       root: frontend/
       run: npm run lint
+    backend-tests:
+      root: backend/
+      run: uv run pytest tests/ -x --tb=short -q
+    frontend-typecheck:
+      root: frontend/
+      run: npx tsc -b --noEmit
+    frontend-tests:
+      root: frontend/
+      run: npx vitest run --reporter=dot

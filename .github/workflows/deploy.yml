@@ -1,6 +1,8 @@
 # Store ICU - Deploy Workflow
 # Single orchestrator: runs CI once, then deploys backend + frontend in parallel.
 # Dev: auto-deploys on push to develop.  Prod: requires environment protection approval.
+# Skips entirely for docs-only changes.  Skips individual deploys when only the
+# other side changed (e.g. frontend-only push won't redeploy backend).
 
 name: Deploy
 
@@ -8,17 +10,45 @@ on:
   workflow_dispatch:
   push:
     branches: [develop, production]
+    paths-ignore:
+      - '*.md'
+      - 'my-designs/**'
+      - 'docs/**'
+      - '.claude/**'
+      - '.gitnexus/**'
+      - 'lefthook.yml'
 
 concurrency:
   group: deploy-${{ github.ref_name }}
   cancel-in-progress: ${{ github.ref_name == 'develop' }}
 
 jobs:
+  # Detect which parts of the codebase changed so we can skip unnecessary deploys.
+  changes:
+    name: Detect changes
+    runs-on: ubuntu-latest
+    outputs:
+      backend: ${{ steps.filter.outputs.backend }}
+      frontend: ${{ steps.filter.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          filters: |
+            backend:
+              - 'backend/**'
+              - 'frontend/src/locales/**'
+            frontend:
+              - 'frontend/**'
+
   ci:
+    needs: changes
     uses: ./.github/workflows/ci.yml
 
   deploy-backend:
-    needs: ci
+    needs: [ci, changes]
+    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/_deploy-backend.yml
     permissions:
       contents: read
@@ -27,7 +57,8 @@ jobs:
       environment: ${{ github.ref == 'refs/heads/production' && 'production' || 'dev' }}
 
   deploy-frontend:
-    needs: ci
+    needs: [ci, changes]
+    if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
     uses: ./.github/workflows/_deploy-frontend.yml
     permissions:
       contents: read
