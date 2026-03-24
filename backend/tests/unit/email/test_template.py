@@ -8,7 +8,9 @@ from app.modules.email.template import (
     _get_category_map,
     _get_strings,
     _load_locale,
+    _resolve_ads_output_text,
     _resolve_translatable_text,
+    _translate,
     render_email_html,
     _compute_verdict_counts,
     _format_display_value,
@@ -1100,6 +1102,47 @@ class TestRowMessageI18n:
         assert "Baik" in html  # fallback to raw "message"
 
 
+class TestValueI18n:
+    """Row-level value_i18n resolution (e.g. discount checkup multiline value)."""
+
+    def test_thai_value_resolved_from_value_i18n(self, evaluation_data: dict) -> None:
+        """Discount checkup multiline value should use value_i18n when present."""
+        evaluation_data["score_breakdown"].append({
+            "category": "Discount",
+            "score": 0, "max_score": 10, "available": True,
+            "rows": [{
+                "row": 73, "metric": "Discount Check Up",
+                "value": "% Diskon TOP SKU: 26.9%\nRange: 0.0% ~ 69.6%\nVoucher 0.0%\nPaket Diskon 0.0%\n📌 Berpotensi menggunakan 'fake discount'",
+                "value_i18n": {
+                    "key": "scoring.discountCheckup.fail",
+                    "vars": {"discountPct": "26.9%", "rangeMin": "0.0%", "rangeMax": "69.6%", "voucherPct": "0.0%", "paketPct": "0.0%"},
+                },
+                "benchmark": "-", "verdict": "❌", "message": "", "score": 0,
+                "metric_i18n": {"key": "scoring.discountCheckup", "vars": {}},
+                "message_i18n": None,
+            }],
+        })
+        html = _render_full_th(evaluation_data)
+        # Thai translation should appear
+        assert "ส่วนลด TOP SKU" in html
+        # Indonesian raw should NOT appear
+        assert "Diskon TOP SKU" not in html
+
+    def test_falls_back_to_raw_value_when_no_value_i18n(self, evaluation_data: dict) -> None:
+        """Without value_i18n, raw value is used."""
+        evaluation_data["score_breakdown"].append({
+            "category": "Discount",
+            "score": 0, "max_score": 10, "available": True,
+            "rows": [{
+                "row": 73, "metric": "Discount Check Up",
+                "value": "% Diskon TOP SKU: 26.9%",
+                "benchmark": "-", "verdict": "❌", "message": "", "score": 0,
+            }],
+        })
+        html = _render_full_th(evaluation_data)
+        assert "Diskon TOP SKU" in html  # raw Indonesian preserved
+
+
 class TestConclusionI18n:
     """conclusion_i18n bullet points resolved in kesimpulan section."""
 
@@ -1221,3 +1264,197 @@ class TestBackwardCompatibility:
         html = _render_full(evaluation_data)
         # Falls back to raw Indonesian conclusion
         assert "Performa toko sangat baik" in html
+
+
+# ===================================================================
+# Phase: Ads keyword i18n — translate ads output_text sections
+# ===================================================================
+
+
+class TestTranslateNestedRefs:
+    """_translate resolves $t(key) nested references."""
+
+    def test_resolves_dollar_t_refs(self) -> None:
+        # ads.topAd template contains $t({{biddingKey}}) etc.
+        result = _translate(
+            "ads.topAd",
+            {
+                "name": "Test Ad",
+                "gmv": "THB 1,000",
+                "roas": "5.00",
+                "biddingKey": "ads.value.biddingOtomatis",
+                "jenisKey": "ads.value.iklanProduk",
+                "penempatanKey": "ads.value.semuaPenempatan",
+                "keyword": "shoes",
+            },
+            "th",
+        )
+        assert result is not None
+        # $t(ads.value.biddingOtomatis) should resolve to Thai "บิดอัตโนมัติ"
+        assert "บิดอัตโนมัติ" in result
+        assert "$t(" not in result  # no unresolved refs
+        assert "Test Ad" in result
+
+    def test_dollar_t_with_missing_key_leaves_key_name(self) -> None:
+        """When a $t() ref key is missing from locale, leave the key name."""
+        result = _translate(
+            "ads.topRecommendation.manual",
+            {},
+            "th",
+        )
+        assert result is not None
+        # This key has no $t() refs, should just work
+        assert "$t(" not in result
+
+
+class TestResolveAdsOutputText:
+    """_resolve_ads_output_text assembles translated ads sections."""
+
+    def _sample_details(self) -> dict:
+        return {
+            "ak2_i18n": {"key": "ads.summary", "vars": {
+                "active": "25", "paused": "0", "ended": "0",
+                "unique_count": "24", "product_pct": "68.6%",
+                "total_products": "35",
+            }},
+            "ak3_i18n": {"key": "ads.typeBreakdown", "vars": {
+                "semua_total": "23", "toko_total": "1",
+                "toko_auto": "1", "toko_manual": "0",
+            }},
+            "ak4_i18n": [
+                {"key": "ads.flag.productGood", "vars": {}},
+                {"key": "ads.flag.activeGood", "vars": {}},
+            ],
+            "al2_i18n": {
+                "header": {"key": "ads.topHeader", "vars": {}},
+                "ads": [
+                    {"key": "ads.topAd", "vars": {
+                        "name": "SALT Cameron",
+                        "gmv": "THB 42,609",
+                        "roas": "8.82",
+                        "biddingKey": "ads.value.gmvMaxRoas",
+                        "jenisKey": "ads.value.iklanProduk",
+                        "penempatanKey": "ads.value.semuaPenempatan",
+                        "keyword": "Auto Selected",
+                    }},
+                ],
+            },
+            "al3_i18n": {"key": "ads.topRecommendation.auto", "vars": {}},
+            "al5_i18n": None,
+            "al6_i18n": {"key": "ads.flag.autoUncontrolled", "vars": {}},
+            "al7_i18n": None,
+            "al8_i18n": None,
+            "al9_i18n": None,
+        }
+
+    def test_resolves_all_sections_to_thai(self) -> None:
+        details = self._sample_details()
+        result = _resolve_ads_output_text(details, "th")
+        assert result is not None
+        # ak2: Thai ads.summary
+        assert "โฆษณาทั้งหมด" in result
+        # ak3: Thai ads.typeBreakdown
+        assert "ประเภทโฆษณา" in result
+        # ak4: Thai flags
+        assert "จำนวนสินค้าที่เข้าร่วมโฆษณาอยู่ในระดับดี" in result
+        # al2: Thai top ads header
+        assert "โฆษณา TOP" in result
+        # al3: Thai recommendation
+        assert "การตั้งค่าอัตโนมัติ" in result
+        # al6: Thai flag
+        assert "ค่าใช้จ่ายไม่สามารถควบคุมได้" in result
+
+    def test_returns_none_when_no_i18n_details(self) -> None:
+        result = _resolve_ads_output_text({}, "th")
+        assert result is None
+
+    def test_returns_none_when_all_i18n_none(self) -> None:
+        details = {
+            "ak2_i18n": None, "ak3_i18n": None, "ak4_i18n": None,
+            "al2_i18n": None, "al3_i18n": None, "al5_i18n": None,
+            "al6_i18n": None, "al7_i18n": None, "al8_i18n": None,
+            "al9_i18n": None,
+        }
+        result = _resolve_ads_output_text(details, "th")
+        assert result is None
+
+    def test_falls_back_to_none_on_missing_key(self) -> None:
+        details = self._sample_details()
+        details["ak2_i18n"] = {"key": "nonexistent.key", "vars": {}}
+        result = _resolve_ads_output_text(details, "th")
+        # Atomic fallback — if any section fails, return None
+        assert result is None
+
+
+class TestAdsOutputI18nIntegration:
+    """Integration: Thai email renders translated ads analysis text."""
+
+    def _make_th_eval_with_ads(self, sample_categories: list[dict]) -> dict:
+        return {
+            "id": 1,
+            "brand_id": 1,
+            "brand_name": "Test TH",
+            "final_score": 50.0,
+            "verdict": "✔️",
+            "template": "fashion",
+            "score_breakdown": sample_categories,
+            "calculator_results": {
+                "ads_keyword": {
+                    "output_text": "• Total Iklan: 25 Aktif, 0 Dijeda dan 0 Berakhir.\n• Melibatkan 24 (68.6%) produk dari total jumlah produk: 35.",
+                    "details": {
+                        "ak2_i18n": {"key": "ads.summary", "vars": {
+                            "active": "25", "paused": "0", "ended": "0",
+                            "unique_count": "24", "product_pct": "68.6%",
+                            "total_products": "35",
+                        }},
+                        "ak3_i18n": None,
+                        "ak4_i18n": [
+                            {"key": "ads.flag.productGood", "vars": {}},
+                        ],
+                        "al2_i18n": None,
+                        "al3_i18n": None,
+                        "al5_i18n": None,
+                        "al6_i18n": None,
+                        "al7_i18n": None,
+                        "al8_i18n": None,
+                        "al9_i18n": None,
+                    },
+                },
+            },
+            "period": "Maret 2026",
+        }
+
+    def test_thai_email_renders_translated_ads(self, sample_categories: list[dict]) -> None:
+        data = self._make_th_eval_with_ads(sample_categories)
+        html = render_email_html(
+            evaluation_data=data,
+            chart_src="cid:chart",
+            header_src="cid:header",
+            footer_src="cid:footer",
+            language="th",
+        )
+        # Thai text should appear
+        assert "โฆษณาทั้งหมด" in html
+        # Indonesian raw text should NOT appear
+        assert "Total Iklan" not in html
+
+    def test_indonesian_email_without_details_unchanged(self, sample_categories: list[dict]) -> None:
+        """ID email with ads but no details dict renders raw output_text."""
+        data = {
+            "id": 1,
+            "brand_id": 1,
+            "brand_name": "Test ID",
+            "final_score": 50.0,
+            "verdict": "✔️",
+            "template": "fashion",
+            "score_breakdown": sample_categories,
+            "calculator_results": {
+                "ads_keyword": {
+                    "output_text": "• Total Iklan: 25 Aktif, 0 Dijeda dan 0 Berakhir.",
+                    "details": {},
+                },
+            },
+            "period": "Maret 2026",
+        }
+        html = _render_full(data)
+        assert "Total Iklan" in html

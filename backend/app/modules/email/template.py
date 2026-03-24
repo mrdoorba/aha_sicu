@@ -109,8 +109,15 @@ def _get_category_map(language: str = "id") -> dict[str, str]:
     }
 
 
+_DOLLAR_T_RE = re.compile(r'\$t\(([^)]+)\)')
+
+
 def _translate(key: str, vars_: dict[str, str] | None, lang: str) -> str | None:
-    """Resolve an i18n key with {{var}} interpolation, like the frontend's t()."""
+    """Resolve an i18n key with {{var}} interpolation, like the frontend's t().
+
+    Also resolves ``$t(otherKey)`` nested references (one level deep),
+    matching the i18next behaviour used in frontend locale files.
+    """
     locale = _load_locale(lang) or _load_locale("id")
     template = locale.get(key)
     if template is None:
@@ -118,6 +125,11 @@ def _translate(key: str, vars_: dict[str, str] | None, lang: str) -> str | None:
     if vars_:
         for var_name, var_value in vars_.items():
             template = template.replace(f"{{{{{var_name}}}}}", str(var_value))
+    # Resolve $t(someKey) nested references
+    def _resolve_ref(m: re.Match) -> str:
+        ref_key = m.group(1)
+        return locale.get(ref_key, ref_key)
+    template = _DOLLAR_T_RE.sub(_resolve_ref, template)
     return template
 
 
@@ -144,6 +156,57 @@ def _resolve_translatable_text(
         if translated is not None:
             return translated
     return fallback
+
+
+def _resolve_ads_output_text(details: dict[str, Any], lang: str) -> str | None:
+    """Resolve ads_keyword i18n sections into a single translated text block.
+
+    Returns ``None`` when details lack i18n keys or any section fails
+    (atomic fallback — caller should use raw output_text).
+    """
+    _SECTION_KEYS = ("ak2", "ak3", "ak4", "al2", "al3", "al5", "al6", "al7", "al8", "al9")
+
+    has_any = any(details.get(f"{k}_i18n") for k in _SECTION_KEYS)
+    if not has_any:
+        return None
+
+    sections: list[str] = []
+    for key in _SECTION_KEYS:
+        i18n = details.get(f"{key}_i18n")
+        if not i18n:
+            continue
+
+        # ak4_i18n is a list of flag dicts
+        if isinstance(i18n, list):
+            flag_lines: list[str] = []
+            for item in i18n:
+                t = _resolve_translatable_text(item, "", lang)
+                if not t:
+                    return None  # atomic fallback
+                flag_lines.append(t)
+            sections.append("\n".join(flag_lines))
+
+        # al2_i18n / al5_i18n are complex: {"header": {...}, "ads": [...]}
+        elif isinstance(i18n, dict) and "header" in i18n:
+            header = _resolve_translatable_text(i18n["header"], "", lang)
+            if not header:
+                return None
+            ad_lines: list[str] = []
+            for ad_item in i18n.get("ads", []):
+                t = _resolve_translatable_text(ad_item, "", lang)
+                if not t:
+                    return None
+                ad_lines.append(t)
+            sections.append(header + "\n" + "\n".join(ad_lines) if ad_lines else header)
+
+        # Simple dict: {"key": "...", "vars": {...}}
+        elif isinstance(i18n, dict) and i18n.get("key"):
+            t = _resolve_translatable_text(i18n, "", lang)
+            if not t:
+                return None
+            sections.append(t)
+
+    return "\n\n".join(sections) if sections else None
 
 
 # ---------------------------------------------------------------------------
@@ -445,7 +508,14 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id"
     message = _esc(translated_message).replace("\n", "<br>")
     raw_metric = row.get("metric", "")
     display_metric = _resolve_metric_name(row, lang)
-    display_value = _format_display_value(raw_metric, row.get("value"))
+    raw_value = row.get("value")
+    # Resolve value_i18n for translatable multiline values (e.g. discount checkup)
+    value_i18n = row.get("value_i18n")
+    if value_i18n and isinstance(raw_value, str):
+        translated_value = _resolve_translatable_text(value_i18n, raw_value, lang)
+        display_value = translated_value
+    else:
+        display_value = _format_display_value(raw_metric, raw_value)
 
     benchmark = row.get("benchmark", "")
     if raw_metric == "Biaya (iklan)":
@@ -703,7 +773,7 @@ def _render_ranking_table(
         <tr style="background-color:{CARD_BG};">
           <td style="padding:8px 10px;font-size:11px;color:{TEXT_SECONDARY};font-weight:bold;border-bottom:2px solid {BORDER_LIGHT};text-transform:uppercase;letter-spacing:0.5px;">{_esc(code_label)}</td>
           <td style="padding:8px 10px;font-size:11px;color:{TEXT_SECONDARY};font-weight:bold;border-bottom:2px solid {BORDER_LIGHT};text-transform:uppercase;letter-spacing:0.5px;">{_esc(name_label)}</td>
-          <td style="padding:8px 10px;font-size:11px;color:{TEXT_SECONDARY};font-weight:bold;border-bottom:2px solid {BORDER_LIGHT};text-align:right;text-transform:uppercase;letter-spacing:0.5px;width:100px;">{_esc(value_key.replace('_', ' ').title())}</td>
+          <td style="padding:8px 10px;font-size:11px;color:{TEXT_SECONDARY};font-weight:bold;border-bottom:2px solid {BORDER_LIGHT};text-align:right;text-transform:uppercase;letter-spacing:0.5px;width:100px;">{_esc(value_label)}</td>
         </tr>
         {rows_html}
       </table>
@@ -712,7 +782,7 @@ def _render_ranking_table(
 </table>"""
 
 
-def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, str]) -> str:
+def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, str], *, language: str = "id") -> str:
     """Render data intelligence section: ads analysis + top SKU tables."""
     if not calculator_results:
         return ""
@@ -723,6 +793,11 @@ def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, s
     ads = calculator_results.get("ads_keyword")
     if ads:
         output_text = ads.get("output_text", "")
+        # Try i18n resolution from details
+        details = ads.get("details") or {}
+        translated = _resolve_ads_output_text(details, language)
+        if translated:
+            output_text = translated
         if output_text:
             parts.append(f"""\
 <tr>
@@ -1160,7 +1235,7 @@ def render_email_html(
     score_overview = _render_score_overview(categories, S)
     detailed = _render_detailed_evaluation(categories, S, cat_map, language)
     breakdown = _render_score_breakdown(chart_src, categories, S, cat_map)
-    intelligence = _render_data_intelligence(calculator_results, S)
+    intelligence = _render_data_intelligence(calculator_results, S, language=language)
     kesimpulan = _render_kesimpulan(calculator_results, S, language=language, marketplace=evaluation_data.get("marketplace", "ID"))
     signoff = _render_signoff(S)
     footer_banner = _render_footer_banner(syb_src, language) if syb_src else ""
