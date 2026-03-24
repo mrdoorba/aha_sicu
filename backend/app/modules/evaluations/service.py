@@ -15,6 +15,7 @@ from app.db.queries.utils import paginate
 from app.calculators.engine import check_calculator_readiness, run_ready_calculators
 from app.db.queries import brands as brand_queries
 from app.db.queries import calculator_results as calc_queries
+from app.db.queries import email_history as email_history_queries
 from app.db.queries import evaluations as eval_queries
 from app.db.queries import rules as rules_queries
 from app.calculators.scoring.models import TranslatableText
@@ -206,6 +207,12 @@ async def delete_evaluation(conn: Connection, evaluation_id: int) -> bool:
     """Delete an evaluation by ID. Returns True if deleted, raises 404 if not found."""
     # Get brand info before delete (for sheet sync)
     brand_info = await eval_queries.get_evaluation_brand_info(conn, evaluation_id)
+
+    # Remove linked email history rows first — FK is ON DELETE RESTRICT
+    email_rows = await email_history_queries.list_email_history_by_evaluation(conn, evaluation_id)
+    if email_rows:
+        ids = [row["id"] for row in email_rows]
+        await email_history_queries.delete_email_history_by_ids(conn, ids=ids)
 
     deleted = await eval_queries.delete_evaluation(conn, evaluation_id)
 
