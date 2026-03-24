@@ -36,7 +36,7 @@ aha_sicu/
 
 ## Getting Started
 
-See the [Development Guide](docs/engineer/development-guide.md) for full setup instructions.
+See [Contributing](docs/CONTRIBUTING.md) for full setup instructions.
 
 **Quick start:**
 
@@ -64,29 +64,14 @@ Deployment triggers on push:
 - `develop` → auto-deploy to dev environment
 - `main` → deploy to production (manual approval)
 
-See the [Deployment Guide](docs/engineer/deployment-guide.md) for details.
+See the [Runbook](docs/RUNBOOK.md) for deployment details.
 
 ## Documentation
 
-### For Engineers
-
 | Document | Description |
 |----------|------------|
-| [Project Overview](docs/engineer/project-overview.md) | Domain, workflow, tech stack, environments |
-| [Architecture - Backend](docs/engineer/architecture-backend.md) | FastAPI modules, patterns, auth, DB |
-| [Architecture - Frontend](docs/engineer/architecture-frontend.md) | React SPA, components, state, API client |
-| [Architecture - Infrastructure](docs/engineer/architecture-infrastructure.md) | GCP resources, Terraform, CI/CD |
-| [API Reference](docs/engineer/api-reference.md) | All REST endpoints with schemas |
-| [Data Models](docs/engineer/data-models.md) | Database tables, relationships, migrations |
-| [Scoring Engine](docs/engineer/scoring-engine.md) | Calculators, rules, verdict logic |
-| [Development Guide](docs/engineer/development-guide.md) | Setup, testing, commands |
-| [Deployment Guide](docs/engineer/deployment-guide.md) | CI/CD, environments, secrets |
-| [Onboarding Guide](docs/engineer/onboarding-guide.md) | BD team walkthrough |
-
-### For AI Agents
-
-| Document | Description |
-|----------|------------|
-| [Codebase Map](docs/agent/CODEBASE.md) | File map, entry points, module boundaries |
-| [Conventions](docs/agent/CONVENTIONS.md) | Naming, patterns, style guidelines |
-| [Change Patterns](docs/agent/PATTERNS.md) | Step-by-step recipes for common changes |
+| [Contributing](docs/CONTRIBUTING.md) | Setup, commands, testing, code style, PR checklist |
+| [Environment Variables](docs/ENV.md) | All env vars for backend, frontend, Docker, and CI/CD |
+| [Runbook](docs/RUNBOOK.md) | Deployment, health checks, troubleshooting, rollback |
+| [GitHub Environment Vars](infrastructure/GITHUB_ENVIRONMENT_VARS.md) | CI/CD variables per deployment target |
+| [Smoke Tests](smoke-tests/README.md) | Playwright API smoke tests for deployed environments |
