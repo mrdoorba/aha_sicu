@@ -25,7 +25,8 @@ def mock_sheets_client():
     """Mock Google Sheets client."""
     with patch("app.modules.sync.service.GoogleSheetsClient") as mock:
         instance = MagicMock()
-        instance.fetch_vp_data = AsyncMock()
+        instance.fetch_sheet_data = AsyncMock()
+        instance.fetch_headers = AsyncMock(return_value=[])
         instance.fetch_meeting_data = AsyncMock()
         mock.return_value = instance
         yield instance
@@ -42,18 +43,23 @@ def mock_queries():
         mock_sync.get_latest_sync_status = AsyncMock()
         mock_brand.upsert_brand_data = AsyncMock()
         mock_brand.batch_upsert_brand_data = AsyncMock(
-            side_effect=lambda conn, table, brand_names, raw_data_list: len(brand_names)
+            side_effect=lambda conn, table, brand_names, raw_data_list, marketplace="ID": len(brand_names)
         )
         yield mock_sync, mock_brand
 
 
 @pytest.fixture
 def mock_settings():
-    """Mock settings."""
+    """Mock settings with ID VP configured."""
     with patch("app.modules.sync.service.settings") as mock:
         mock.gsheets_vp_spreadsheet_id = "vp-id"
+        mock.gsheets_vp_range = "VP!A:Y"
         mock.gsheets_vp_brand_column = "Nama Brand"
+        mock.gsheets_vp_spreadsheet_id_th = None
+        mock.gsheets_vp_range_th = "VP!A:W"
+        mock.gsheets_vp_brand_column_th = "Brand"
         mock.gsheets_meeting_spreadsheet_id = "meeting-id"
+        mock.gsheets_meeting_range = "ZAP: 1st Meeting!A:D"
         mock.gsheets_meeting_brand_column = "Brand"
         yield mock
 
@@ -64,8 +70,8 @@ async def test_run_sync_both_sheets_success(mock_db, mock_sheets_client, mock_qu
 
     mock_sync, mock_brand = mock_queries
 
-    # Mock VP data
-    mock_sheets_client.fetch_vp_data.return_value = [
+    # Mock VP data (now via fetch_sheet_data)
+    mock_sheets_client.fetch_sheet_data.return_value = [
         {"Nama Brand": "Nike", "Category": "Fashion"},
         {"Nama Brand": "Adidas", "Category": "Fashion"},
     ]
@@ -78,8 +84,9 @@ async def test_run_sync_both_sheets_success(mock_db, mock_sheets_client, mock_qu
     result = await run_sync()
 
     assert result.sync_id == 1
-    assert result.vp_result is not None
-    assert result.vp_result.rows_synced == 2
+    assert "vp_id" in result.vp_results
+    vp_result = result.vp_results["vp_id"]
+    assert vp_result.rows_synced == 2
     assert result.meeting_result is not None
     assert result.meeting_result.rows_synced == 1
     assert result.total_synced == 3
@@ -94,17 +101,19 @@ async def test_run_sync_vp_only(mock_db, mock_sheets_client, mock_queries):
 
     with patch("app.modules.sync.service.settings") as mock_settings:
         mock_settings.gsheets_vp_spreadsheet_id = "vp-id"
+        mock_settings.gsheets_vp_range = "VP!A:Y"
         mock_settings.gsheets_vp_brand_column = "Nama Brand"
+        mock_settings.gsheets_vp_spreadsheet_id_th = None
         mock_settings.gsheets_meeting_spreadsheet_id = None  # Not configured
 
-        mock_sheets_client.fetch_vp_data.return_value = [
+        mock_sheets_client.fetch_sheet_data.return_value = [
             {"Nama Brand": "Nike"},
         ]
 
         result = await run_sync()
 
-        assert result.vp_result is not None
-        assert result.vp_result.rows_synced == 1
+        assert "vp_id" in result.vp_results
+        assert result.vp_results["vp_id"].rows_synced == 1
         assert result.meeting_result is None
         assert result.total_synced == 1
 
@@ -115,7 +124,7 @@ async def test_run_sync_atomic_failure_when_batch_upsert_fails(mock_db, mock_she
 
     mock_sync, mock_brand = mock_queries
 
-    mock_sheets_client.fetch_vp_data.return_value = [
+    mock_sheets_client.fetch_sheet_data.return_value = [
         {"Nama Brand": "Nike"},
         {"Nama Brand": "Adidas"},
     ]
@@ -126,10 +135,11 @@ async def test_run_sync_atomic_failure_when_batch_upsert_fails(mock_db, mock_she
 
     result = await run_sync()
 
-    assert result.vp_result.rows_synced == 0
-    assert len(result.vp_result.errors) == 1
-    assert result.vp_result.errors[0].brand == "batch"
-    assert result.vp_result.success is False
+    vp_result = result.vp_results["vp_id"]
+    assert vp_result.rows_synced == 0
+    assert len(vp_result.errors) == 1
+    assert vp_result.errors[0].brand == "batch"
+    assert vp_result.success is False
     assert result.success is False
 
 
@@ -139,7 +149,7 @@ async def test_run_sync_skips_empty_brand_names(mock_db, mock_sheets_client, moc
 
     mock_sync, mock_brand = mock_queries
 
-    mock_sheets_client.fetch_vp_data.return_value = [
+    mock_sheets_client.fetch_sheet_data.return_value = [
         {"Nama Brand": "Nike"},
         {"Nama Brand": ""},  # Empty brand name
         {"Nama Brand": "   "},  # Whitespace only
@@ -148,9 +158,10 @@ async def test_run_sync_skips_empty_brand_names(mock_db, mock_sheets_client, moc
 
     result = await run_sync()
 
-    assert result.vp_result.rows_synced == 1
-    assert result.vp_result.rows_skipped == 2  # Two empty rows silently skipped
-    assert len(result.vp_result.errors) == 0  # Not counted as errors
+    vp_result = result.vp_results["vp_id"]
+    assert vp_result.rows_synced == 1
+    assert vp_result.rows_skipped == 2  # Two empty rows silently skipped
+    assert len(vp_result.errors) == 0  # Not counted as errors
 
 
 async def test_run_sync_handles_sheet_fetch_error(mock_db, mock_sheets_client, mock_queries, mock_settings):
@@ -160,7 +171,7 @@ async def test_run_sync_handles_sheet_fetch_error(mock_db, mock_sheets_client, m
 
     mock_sync, _ = mock_queries
 
-    mock_sheets_client.fetch_vp_data.side_effect = SyncException(
+    mock_sheets_client.fetch_sheet_data.side_effect = SyncException(
         code="SYNC_PERMISSION_DENIED", detail="No access"
     )
     mock_sheets_client.fetch_meeting_data.return_value = [{"Brand": "Test"}]
@@ -168,8 +179,8 @@ async def test_run_sync_handles_sheet_fetch_error(mock_db, mock_sheets_client, m
     result = await run_sync()
 
     # VP failed but meeting succeeded
-    assert result.vp_result is not None
-    assert result.vp_result.success is False
+    assert "vp_id" in result.vp_results
+    assert result.vp_results["vp_id"].success is False
     assert result.meeting_result is not None
     assert result.meeting_result.rows_synced == 1
     assert result.success is False  # Overall failed because VP failed
@@ -181,7 +192,7 @@ async def test_run_sync_empty_sheets(mock_db, mock_sheets_client, mock_queries, 
 
     mock_sync, mock_brand = mock_queries
 
-    mock_sheets_client.fetch_vp_data.return_value = []
+    mock_sheets_client.fetch_sheet_data.return_value = []
     mock_sheets_client.fetch_meeting_data.return_value = []
 
     result = await run_sync()
@@ -197,7 +208,7 @@ async def test_run_sync_with_pre_created_sync_id(mock_db, mock_sheets_client, mo
 
     mock_sync, mock_brand = mock_queries
 
-    mock_sheets_client.fetch_vp_data.return_value = [
+    mock_sheets_client.fetch_sheet_data.return_value = [
         {"Nama Brand": "Nike"},
     ]
     mock_sheets_client.fetch_meeting_data.return_value = []
@@ -209,7 +220,7 @@ async def test_run_sync_with_pre_created_sync_id(mock_db, mock_sheets_client, mo
     mock_sync.create_sync_status.assert_not_called()
     # Should still update sync status at completion
     mock_sync.update_sync_status.assert_called_once()
-    assert result.vp_result.rows_synced == 1
+    assert result.vp_results["vp_id"].rows_synced == 1
     assert result.success is True
 
 
@@ -219,7 +230,7 @@ async def test_run_sync_without_sync_id_creates_record(mock_db, mock_sheets_clie
 
     mock_sync, mock_brand = mock_queries
 
-    mock_sheets_client.fetch_vp_data.return_value = []
+    mock_sheets_client.fetch_sheet_data.return_value = []
     mock_sheets_client.fetch_meeting_data.return_value = []
 
     result = await run_sync()
@@ -263,5 +274,3 @@ async def test_get_latest_sync_status_returns_none_when_no_syncs(mock_db, mock_q
     result = await get_latest_sync_status()
 
     assert result is None
-
-
