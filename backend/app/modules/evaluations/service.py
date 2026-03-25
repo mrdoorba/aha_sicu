@@ -18,6 +18,22 @@ from app.db.queries import calculator_results as calc_queries
 from app.db.queries import email_history as email_history_queries
 from app.db.queries import evaluations as eval_queries
 from app.db.queries import rules as rules_queries
+# Per-marketplace mapping from raw_data column names to BrandRawData fields
+_BRAND_RAW_DATA_COLUMNS: dict[str, dict[str, str]] = {
+    "ID": {
+        "email": "Email",
+        "pic_name": "Nama PIC/ Jabatan*",
+        "store_link": "Link Shopee Mall / LazMall",
+        "kategori": "Kategori",
+    },
+    "TH": {
+        "email": "Email",
+        "pic_name": "PIC",
+        "store_link": "Shopee Link",
+        "kategori": "Product Category",
+    },
+}
+
 from app.calculators.scoring.models import TranslatableText
 from app.modules.evaluations.schemas import (
     BrandEvaluationItem,
@@ -253,11 +269,13 @@ async def get_evaluation_detail(conn: Connection, evaluation_id: int) -> Evaluat
 
     # Map VP sheet raw_data keys to clean keys for email composition
     raw_data = ensure_dict(row.get("raw_data"))
+    marketplace = row.get("marketplace", "ID")
+    col_map = _BRAND_RAW_DATA_COLUMNS.get(marketplace, _BRAND_RAW_DATA_COLUMNS["ID"])
     brand_raw_data = BrandRawData(
-        email=raw_data.get("Email"),
-        pic_name=raw_data.get("Nama PIC/ Jabatan*"),
-        store_link=raw_data.get("Link Shopee Mall / LazMall"),
-        kategori=raw_data.get("Kategori"),
+        email=raw_data.get(col_map["email"]),
+        pic_name=raw_data.get(col_map["pic_name"]),
+        store_link=raw_data.get(col_map["store_link"]),
+        kategori=raw_data.get(col_map["kategori"]),
     )
 
     return EvaluationDetailResponse(
