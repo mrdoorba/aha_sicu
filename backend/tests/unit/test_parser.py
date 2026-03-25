@@ -87,7 +87,7 @@ def test_parse_excel_invalid():
 def test_parse_excel_header_row_2():
     """Mass Update files have headers at row 3 (0-indexed row 2)."""
     df = pl.DataFrame({"Kode Variasi": ["V1"], "Nama Produk": ["P1"], "Nama Variasi": ["V1"], "SKU": ["S1"], "Stok": [10]})
-    excel_bytes = __make_excel_bytes(df, header_row=2)
+    excel_bytes = _make_excel_bytes(df, header_row=2)
     result = parse_excel(excel_bytes, header_row=2)
     assert "Kode Variasi" in result.columns
     assert "Nama Produk" in result.columns
