@@ -32,7 +32,7 @@ def mock_brand_queries():
     """Mock brand_queries module."""
     with patch("app.modules.sync.service.brand_queries") as mock:
         mock.batch_upsert_brand_data = AsyncMock(
-            side_effect=lambda conn, table, brand_names, raw_data_list: len(brand_names)
+            side_effect=lambda conn, table, brand_names, raw_data_list, marketplace="ID": len(brand_names)
         )
         yield mock
 
@@ -57,8 +57,9 @@ async def test_batch_upsert_returns_count_when_all_rows_valid(mock_conn):
     mock_conn.execute.assert_called_once()
     call_args = mock_conn.execute.call_args
     assert "unnest($1::text[])" in call_args[0][0]
-    assert "unnest($2::jsonb[])" in call_args[0][0]
-    assert "ON CONFLICT (brand_name) DO UPDATE" in call_args[0][0]
+    assert "unnest($2::text[])" in call_args[0][0]  # marketplace array
+    assert "unnest($3::jsonb[])" in call_args[0][0]
+    assert "ON CONFLICT (brand_name, marketplace) DO UPDATE" in call_args[0][0]
     assert call_args[0][1] == ["Nike", "Adidas", "Puma"]
 
 

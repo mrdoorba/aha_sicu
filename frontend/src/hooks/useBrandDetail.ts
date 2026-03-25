@@ -6,6 +6,7 @@ export interface BrandDetail {
   brand_name: string;
   raw_data: Record<string, unknown>;
   updated_at: string;
+  marketplace: string;
   meeting_raw_data: Record<string, unknown> | null;
 }
 

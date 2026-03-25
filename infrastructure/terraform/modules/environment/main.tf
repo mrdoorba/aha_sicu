@@ -329,6 +329,11 @@ resource "google_cloud_run_v2_service" "api" {
       }
 
       env {
+        name  = "GSHEETS_VP_SPREADSHEET_ID_TH"
+        value = var.gsheets_vp_spreadsheet_id_th
+      }
+
+      env {
         name  = "CLOUD_RUN_URL"
         value = var.cloud_run_url
       }

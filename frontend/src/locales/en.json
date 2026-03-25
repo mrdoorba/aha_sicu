@@ -803,6 +803,7 @@
   "email.plain_period": "Period",
   "email.chart_placeholder": "Chart will be displayed in email",
   "email.schedule_consultation": "Schedule Free Consultation",
+  "email.signoff_regards": "Best regards,",
   "email.category.operational": "Operations",
   "email.category.business": "Business",
   "email.category.visitors": "Visitors",

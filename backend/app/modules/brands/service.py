@@ -13,8 +13,9 @@ async def get_brands_paginated(
     page: int = 1,
     limit: int = 20,
     search: str | None = None,
+    marketplaces: list[str] | None = None,
 ) -> BrandListResponse:
-    """Get paginated brand list with optional search.
+    """Get paginated brand list with optional search and marketplace filter.
 
     Queries brand_vp_data with LEFT JOIN to brand_meeting_data.
 
@@ -22,6 +23,7 @@ async def get_brands_paginated(
         page: Page number (1-based).
         limit: Items per page.
         search: Optional search term for brand_name.
+        marketplaces: Optional marketplace codes to filter by.
 
     Returns:
         BrandListResponse with paginated results.
@@ -30,9 +32,11 @@ async def get_brands_paginated(
 
     async with db.connection() as conn:
         rows = await brand_queries.get_brands_with_meeting(
-            conn, limit=limit, offset=offset, search=search
+            conn, limit=limit, offset=offset, search=search, marketplaces=marketplaces
         )
-        total = await brand_queries.get_brands_count_with_search(conn, search=search)
+        total = await brand_queries.get_brands_count_with_search(
+            conn, search=search, marketplaces=marketplaces
+        )
 
     items = [BrandListItem(**row) for row in rows]
     pages = math.ceil(total / limit) if total > 0 else 0

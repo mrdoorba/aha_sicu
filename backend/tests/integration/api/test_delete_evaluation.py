@@ -129,6 +129,37 @@ def test_delete_evaluation_not_found(client):
         assert data["code"] == "EVAL_NOT_FOUND"
 
 
+def test_delete_evaluation_cleans_up_email_history(client):
+    """Test that linked email history rows are deleted before the evaluation."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
+        patch("app.modules.evaluations.service.email_history_queries") as mock_ehq,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries, MOCK_LEADER)
+        mock_eq.get_evaluation_brand_info = AsyncMock(
+            return_value={"brand_id": 1, "brand_name": "Salt"}
+        )
+        mock_eq.delete_evaluation = AsyncMock(return_value=True)
+        mock_eq.count_evaluations_by_brand_id = AsyncMock(return_value=1)
+        mock_ehq.list_email_history_by_evaluation = AsyncMock(
+            return_value=[{"id": 10}, {"id": 11}]
+        )
+        mock_ehq.delete_email_history_by_ids = AsyncMock(return_value=2)
+
+        response = client.delete(
+            "/api/v1/evaluations/86",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 204
+        mock_ehq.delete_email_history_by_ids.assert_awaited_once()
+        _, kwargs = mock_ehq.delete_email_history_by_ids.await_args
+        assert kwargs["ids"] == [10, 11]
+
+
 def test_delete_evaluation_unauthorized(client):
     """Test unauthenticated request returns 401."""
     response = client.delete("/api/v1/evaluations/42")

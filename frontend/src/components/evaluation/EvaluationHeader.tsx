@@ -12,13 +12,10 @@ interface EvaluationHeaderProps {
   marketplace?: string;
 }
 
-const VP_DISPLAY_FIELDS = [
-  'Nama PIC/ Jabatan*',
-  'No WA*',
-  'Email',
-  'Kategori',
-  'Link Shopee Mall / LazMall',
-] as const;
+const VP_DISPLAY_FIELDS_BY_MARKETPLACE: Record<string, readonly string[]> = {
+  ID: ['Nama PIC/ Jabatan*', 'No WA*', 'Email', 'Kategori', 'Link Shopee Mall / LazMall'],
+  TH: ['PIC', 'Contact Number', 'Email', 'Product Category', 'Shopee Link'],
+};
 
 const META_KEYS = new Set(['id', 'created_at', 'updated_at', 'synced_at']);
 
@@ -74,7 +71,9 @@ export const EvaluationHeader = ({ brand, isLoading, isError, marketplace }: Eva
     );
   }
 
-  const vpFields = VP_DISPLAY_FIELDS
+  const vpDisplayFields = VP_DISPLAY_FIELDS_BY_MARKETPLACE[marketplace ?? 'ID']
+    ?? VP_DISPLAY_FIELDS_BY_MARKETPLACE['ID'];
+  const vpFields = vpDisplayFields
     .filter((key) => {
       const val = brand.raw_data[key];
       return val !== undefined && val !== null && val !== '';

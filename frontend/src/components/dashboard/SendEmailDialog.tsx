@@ -49,10 +49,16 @@ export function SendEmailDialog({
   const initialRecipients = [brandRawData.email].filter(Boolean) as string[];
   const [emailLanguage, setEmailLanguage] = useState(i18n.language);
 
+  const DEFAULT_CC: Record<string, string[]> = {
+    id: ['tbd@ahacommerce.net', 'main@ahacommerce.net'],
+    th: ['th.bd@ahacommerce.net'],
+  };
+  const initialCc = DEFAULT_CC[i18n.language] ?? DEFAULT_CC['id'] ?? [];
+
   const [recipients, setRecipients] = useState<string[]>(initialRecipients);
-  const [cc, setCc] = useState<string[]>([]);
+  const [cc, setCc] = useState<string[]>(initialCc);
   const [bcc, setBcc] = useState<string[]>([]);
-  const [showCc, setShowCc] = useState(false);
+  const [showCc, setShowCc] = useState(initialCc.length > 0);
   const [showBcc, setShowBcc] = useState(false);
   const [note, setNote] = useState('');
   const [showPreview, setShowPreview] = useState(false);
@@ -104,9 +110,9 @@ export function SendEmailDialog({
       reset();
       setCaptureError(false);
       setRecipients(initialRecipients);
-      setCc([]);
+      setCc(initialCc);
       setBcc([]);
-      setShowCc(false);
+      setShowCc(initialCc.length > 0);
       setShowBcc(false);
       setNote('');
       setEmailLanguage(i18n.language);
@@ -227,7 +233,12 @@ export function SendEmailDialog({
           </div>
 
           {/* Email Language Selector */}
-          <EmailLanguageSelector value={emailLanguage} onChange={setEmailLanguage} />
+          <EmailLanguageSelector value={emailLanguage} onChange={(lang) => {
+            setEmailLanguage(lang);
+            const newCc = DEFAULT_CC[lang] ?? DEFAULT_CC['id'] ?? [];
+            setCc(newCc);
+            setShowCc(newCc.length > 0);
+          }} />
 
           {/* Note Section */}
           <div className="space-y-1.5">

@@ -23,6 +23,7 @@ class BrandListItem(BaseModel):
     brand_name: str
     raw_data: dict[str, Any]
     updated_at: datetime
+    marketplace: str = "ID"
     meeting_raw_data: dict[str, Any] | None = None
 
     @field_validator("raw_data", "meeting_raw_data", mode="before")
@@ -38,6 +39,7 @@ class BrandDetailResponse(BaseModel):
     brand_name: str
     raw_data: dict[str, Any]
     updated_at: datetime
+    marketplace: str = "ID"
     meeting_raw_data: dict[str, Any] | None = None
 
     @field_validator("raw_data", "meeting_raw_data", mode="before")

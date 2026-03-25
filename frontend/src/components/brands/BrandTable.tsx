@@ -51,9 +51,12 @@ export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
             ))
           : brands.map((brand) => (
               <TableRow key={brand.id} className="hover:bg-muted/50">
-                <TableCell className="font-medium">{brand.brand_name}</TableCell>
+                <TableCell className="font-medium">
+                  <span className="mr-2">{brand.marketplace === 'TH' ? '\ud83c\uddf9\ud83c\udded' : '\ud83c\uddee\ud83c\udde9'}</span>
+                  {brand.brand_name}
+                </TableCell>
                 <TableCell className="text-sm text-muted-foreground">
-                  {summarizeRawData(brand.raw_data) || t('brandTable.fallback.noData')}
+                  {summarizeRawData(brand.raw_data, brand.marketplace) || t('brandTable.fallback.noData')}
                 </TableCell>
                 <TableCell>
                   {brand.meeting_raw_data ? (
@@ -81,23 +84,24 @@ export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
   );
 };
 
-// Priority fields to display from VP raw_data (in order of importance)
-const PRIORITY_KEYS = [
-  'Nama PIC/ Jabatan*',
-  'Kategori',
-  'No WA*',
-];
-
-const PRIORITY_LABELS: Record<string, string> = {
-  'Nama PIC/ Jabatan*': 'Nama PIC',
-  'No WA*': 'No WA',
+// Priority fields to display from VP raw_data per marketplace
+const PRIORITY_KEYS_BY_MARKETPLACE: Record<string, string[]> = {
+  ID: ['Nama PIC/ Jabatan*', 'Kategori', 'No WA*'],
+  TH: ['PIC', 'Product Category', 'Contact Number'],
 };
 
-function summarizeRawData(rawData: Record<string, unknown>): string {
+const PRIORITY_LABELS_BY_MARKETPLACE: Record<string, Record<string, string>> = {
+  ID: { 'Nama PIC/ Jabatan*': 'Nama PIC', 'No WA*': 'No WA' },
+  TH: {},
+};
+
+function summarizeRawData(rawData: Record<string, unknown>, marketplace: string): string {
+  const keys = PRIORITY_KEYS_BY_MARKETPLACE[marketplace] ?? PRIORITY_KEYS_BY_MARKETPLACE['ID'];
+  const labels = PRIORITY_LABELS_BY_MARKETPLACE[marketplace] ?? {};
   const parts: string[] = [];
-  for (const key of PRIORITY_KEYS) {
+  for (const key of keys) {
     if (key in rawData && rawData[key] !== '' && rawData[key] != null) {
-      const label = PRIORITY_LABELS[key] ?? key;
+      const label = labels[key] ?? key;
       parts.push(`${label}: ${String(rawData[key])}`);
     }
     if (parts.length >= 3) break;

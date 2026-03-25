@@ -361,7 +361,7 @@ function renderConclusionI18n(
 ): string {
   if (summary.conclusion_i18n && summary.conclusion_i18n.length > 0) {
     return summary.conclusion_i18n
-      .map((item) => t(item.key, item.vars))
+      .map((item) => `- ${t(item.key, item.vars)}`)
       .join('\n');
   }
   return summary.conclusion || '';

@@ -11,9 +11,12 @@ export interface SyncStatusData {
   brands_synced: number;
   error_message: string | null;
   sync_details: Record<string, {
-    rows_synced: number;
-    rows_skipped: number;
+    rows_synced?: number;
+    rows_skipped?: number;
     status: string;
+    error?: string;
+    missing?: string[];
+    unexpected?: string[];
   }> | null;
 }
 

@@ -43,7 +43,7 @@ _EMAIL_STRING_KEYS: frozenset[str] = frozenset({
     "verdict", "score", "message", "approved", "rejected",
     "check_count", "cross_count", "performance_verdict", "brand_report",
     "subject", "plain_score", "plain_period", "chart_placeholder",
-    "schedule_consultation",
+    "schedule_consultation", "signoff_regards",
 })
 
 # Indonesian category names are the canonical keys used in evaluation data.
@@ -109,8 +109,15 @@ def _get_category_map(language: str = "id") -> dict[str, str]:
     }
 
 
+_DOLLAR_T_RE = re.compile(r'\$t\(([^)]+)\)')
+
+
 def _translate(key: str, vars_: dict[str, str] | None, lang: str) -> str | None:
-    """Resolve an i18n key with {{var}} interpolation, like the frontend's t()."""
+    """Resolve an i18n key with {{var}} interpolation, like the frontend's t().
+
+    Also resolves ``$t(otherKey)`` nested references (one level deep),
+    matching the i18next behaviour used in frontend locale files.
+    """
     locale = _load_locale(lang) or _load_locale("id")
     template = locale.get(key)
     if template is None:
@@ -118,6 +125,11 @@ def _translate(key: str, vars_: dict[str, str] | None, lang: str) -> str | None:
     if vars_:
         for var_name, var_value in vars_.items():
             template = template.replace(f"{{{{{var_name}}}}}", str(var_value))
+    # Resolve $t(someKey) nested references
+    def _resolve_ref(m: re.Match) -> str:
+        ref_key = m.group(1)
+        return locale.get(ref_key, ref_key)
+    template = _DOLLAR_T_RE.sub(_resolve_ref, template)
     return template
 
 
@@ -129,6 +141,72 @@ def _resolve_metric_name(row: dict[str, Any], lang: str) -> str:
         if translated:
             return translated
     return row.get("metric", "")
+
+
+def _resolve_translatable_text(
+    i18n: dict[str, Any] | None, fallback: str, lang: str,
+) -> str:
+    """Resolve a TranslatableText-style dict to a translated string.
+
+    Falls back to *fallback* when *i18n* is absent, malformed, or the
+    key is missing from the locale file.
+    """
+    if i18n and isinstance(i18n, dict) and i18n.get("key"):
+        translated = _translate(i18n["key"], i18n.get("vars"), lang)
+        if translated is not None:
+            return translated
+    return fallback
+
+
+def _resolve_ads_output_text(details: dict[str, Any], lang: str) -> str | None:
+    """Resolve ads_keyword i18n sections into a single translated text block.
+
+    Returns ``None`` when details lack i18n keys or any section fails
+    (atomic fallback — caller should use raw output_text).
+    """
+    _SECTION_KEYS = ("ak2", "ak3", "ak4", "al2", "al3", "al5", "al6", "al7", "al8", "al9")
+
+    has_any = any(details.get(f"{k}_i18n") for k in _SECTION_KEYS)
+    if not has_any:
+        return None
+
+    sections: list[str] = []
+    for key in _SECTION_KEYS:
+        i18n = details.get(f"{key}_i18n")
+        if not i18n:
+            continue
+
+        # ak4_i18n is a list of flag dicts
+        if isinstance(i18n, list):
+            flag_lines: list[str] = []
+            for item in i18n:
+                t = _resolve_translatable_text(item, "", lang)
+                if not t:
+                    return None  # atomic fallback
+                flag_lines.append(t)
+            sections.append("\n".join(flag_lines))
+
+        # al2_i18n / al5_i18n are complex: {"header": {...}, "ads": [...]}
+        elif isinstance(i18n, dict) and "header" in i18n:
+            header = _resolve_translatable_text(i18n["header"], "", lang)
+            if not header:
+                return None
+            ad_lines: list[str] = []
+            for ad_item in i18n.get("ads", []):
+                t = _resolve_translatable_text(ad_item, "", lang)
+                if not t:
+                    return None
+                ad_lines.append(t)
+            sections.append(header + "\n" + "\n".join(ad_lines) if ad_lines else header)
+
+        # Simple dict: {"key": "...", "vars": {...}}
+        elif isinstance(i18n, dict) and i18n.get("key"):
+            t = _resolve_translatable_text(i18n, "", lang)
+            if not t:
+                return None
+            sections.append(t)
+
+    return "\n\n".join(sections) if sections else None
 
 
 # ---------------------------------------------------------------------------
@@ -291,7 +369,7 @@ def _render_header(
 <!-- Header Image -->
 <tr>
   <td style="padding:0;margin:0;">
-    <img src="{header_src}" width="600"
+    <img src="{header_src}" width="900"
          style="display:block;width:100%;height:auto;border:0;"
          alt="AHA Commerce">
   </td>
@@ -409,7 +487,7 @@ def _render_footer(footer_src: str) -> str:
 <!-- Footer Image -->
 <tr>
   <td style="padding:0;margin:0;">
-    <img src="{footer_src}" width="600"
+    <img src="{footer_src}" width="900"
          style="display:block;width:100%;height:auto;border:0;"
          alt="AHA Commerce Footer">
   </td>
@@ -425,10 +503,19 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id"
     """Render a single metric card matching the dashboard CategoryMetricCard style."""
     is_pass = row.get("verdict") == "\u2714\ufe0f"
     verdict_color = GREEN if is_pass else ORANGE
-    message = _esc(row.get("message", "")).replace("\n", "<br>")
+    raw_message = row.get("message", "")
+    translated_message = _resolve_translatable_text(row.get("message_i18n"), raw_message, lang)
+    message = _esc(translated_message).replace("\n", "<br>")
     raw_metric = row.get("metric", "")
     display_metric = _resolve_metric_name(row, lang)
-    display_value = _format_display_value(raw_metric, row.get("value"))
+    raw_value = row.get("value")
+    # Resolve value_i18n for translatable multiline values (e.g. discount checkup)
+    value_i18n = row.get("value_i18n")
+    if value_i18n and isinstance(raw_value, str):
+        translated_value = _resolve_translatable_text(value_i18n, raw_value, lang)
+        display_value = translated_value
+    else:
+        display_value = _format_display_value(raw_metric, raw_value)
 
     benchmark = row.get("benchmark", "")
     if raw_metric == "Biaya (iklan)":
@@ -441,7 +528,7 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id"
         detail_parts: list[str] = []
         if has_benchmark:
             detail_parts.append(
-                f'<div class="sm" style="padding-bottom:3px">Benchmark: {_esc(benchmark)}</div>'
+                f'<div class="sm" style="padding-bottom:3px">{_esc(S["benchmark"])}: {_esc(benchmark)}</div>'
             )
         if message:
             detail_parts.append(
@@ -686,7 +773,7 @@ def _render_ranking_table(
         <tr style="background-color:{CARD_BG};">
           <td style="padding:8px 10px;font-size:11px;color:{TEXT_SECONDARY};font-weight:bold;border-bottom:2px solid {BORDER_LIGHT};text-transform:uppercase;letter-spacing:0.5px;">{_esc(code_label)}</td>
           <td style="padding:8px 10px;font-size:11px;color:{TEXT_SECONDARY};font-weight:bold;border-bottom:2px solid {BORDER_LIGHT};text-transform:uppercase;letter-spacing:0.5px;">{_esc(name_label)}</td>
-          <td style="padding:8px 10px;font-size:11px;color:{TEXT_SECONDARY};font-weight:bold;border-bottom:2px solid {BORDER_LIGHT};text-align:right;text-transform:uppercase;letter-spacing:0.5px;width:100px;">{_esc(value_key.replace('_', ' ').title())}</td>
+          <td style="padding:8px 10px;font-size:11px;color:{TEXT_SECONDARY};font-weight:bold;border-bottom:2px solid {BORDER_LIGHT};text-align:right;text-transform:uppercase;letter-spacing:0.5px;width:100px;">{_esc(value_label)}</td>
         </tr>
         {rows_html}
       </table>
@@ -695,7 +782,7 @@ def _render_ranking_table(
 </table>"""
 
 
-def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, str]) -> str:
+def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, str], *, language: str = "id") -> str:
     """Render data intelligence section: ads analysis + top SKU tables."""
     if not calculator_results:
         return ""
@@ -706,6 +793,11 @@ def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, s
     ads = calculator_results.get("ads_keyword")
     if ads:
         output_text = ads.get("output_text", "")
+        # Try i18n resolution from details
+        details = ads.get("details") or {}
+        translated = _resolve_ads_output_text(details, language)
+        if translated:
+            output_text = translated
         if output_text:
             parts.append(f"""\
 <tr>
@@ -832,7 +924,7 @@ def _parse_bullet_points(text: str) -> list[str]:
     ]
 
 
-def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) -> str:
+def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str], *, language: str = "id", marketplace: str = "ID") -> str:
     """Render kesimpulan (conclusion) section: bullet points, marketing budget, closing message."""
     if not calculator_results:
         return ""
@@ -844,6 +936,26 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
     conclusion = summary.get("conclusion", "")
     marketing_budget = summary.get("marketing_budget", "")
     closing_message = summary.get("closing_message", "")
+
+    # Resolve i18n companions (fall back to raw text for old evaluations)
+    conclusion_i18n = summary.get("conclusion_i18n")
+    if conclusion_i18n and isinstance(conclusion_i18n, list):
+        translated_bullets: list[str] = []
+        for item in conclusion_i18n:
+            t = _resolve_translatable_text(item, "", language)
+            if not t:
+                translated_bullets = []  # atomic fallback
+                break
+            translated_bullets.append(t)
+        if translated_bullets:
+            conclusion = "\n".join(f"- {b}" for b in translated_bullets)
+
+    marketing_budget = _resolve_translatable_text(
+        summary.get("marketing_budget_i18n"), marketing_budget, language,
+    )
+    closing_message = _resolve_translatable_text(
+        summary.get("closing_message_i18n"), closing_message, language,
+    )
 
     # Skip entirely if no content
     if not conclusion and not marketing_budget and not closing_message:
@@ -908,7 +1020,7 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
                  style="border-left:4px solid {PRIMARY_BLUE}40;background-color:{PRIMARY_LIGHT};border-radius:0 8px 8px 0;">
             <tr>
-              <td style="padding:16px 18px;font-size:13px;color:{TEXT_DARK};line-height:1.7;">
+              <td style="padding:24px 18px;font-size:13px;color:{TEXT_DARK};line-height:1.7;">
                 {escaped_closing}
               </td>
             </tr>
@@ -925,6 +1037,99 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str]) ->
       <tr>
         <td style="padding:20px;">
 {all_parts}
+        </td>
+      </tr>
+    </table>
+  </td>
+</tr>"""
+
+
+def _render_signoff(S: dict[str, str]) -> str:
+    """Render sign-off section after kesimpulan: regards and linked company name."""
+    return f"""\
+<!-- Sign-off -->
+<tr>
+  <td style="padding:16px 30px 24px 30px;">
+    <p style="margin:0 0 0 0;font-size:14px;color:{TEXT_DARK};line-height:1.7;font-family:{FONT_STACK};">
+      {_esc(S['signoff_regards'])}
+    </p>
+    <a href="https://www.ahacommerce.net/" target="_blank"
+       style="font-size:14px;font-weight:700;color:{PRIMARY_BLUE};text-decoration:underline;font-family:{FONT_STACK};">AHA Commerce</a>
+  </td>
+</tr>"""
+
+
+# ---------------------------------------------------------------------------
+# Footer banner — gold "Superpower your brand" + navy social/location bar
+# ---------------------------------------------------------------------------
+
+_FOOTER_GOLD = "#f4c144"
+_FOOTER_NAVY = "#0f0e7f"
+
+_SOCIAL_LINKS: dict[str, dict[str, str]] = {
+    "id": {
+        "facebook": "https://www.facebook.com/ahacommerce.id",
+        "instagram": "https://www.instagram.com/ahacommerce/",
+        "linkedin": "https://www.linkedin.com/company/ahacommerce",
+        "location": "GoWork - Central Park Mall, Jakarta, Indonesia",
+        "company_name": "AHA Commerce",
+    },
+    "th": {
+        "facebook": "https://www.facebook.com/people/AHA-Commerce-Thailand/61579578384962/",
+        "instagram": "https://www.instagram.com/ahacommerce.th",
+        "linkedin": "https://www.linkedin.com/company/ahacommerce-th/",
+        "location": "JustCo - Mitrtown Office Tower, Pathum Wan, Bangkok, Thailand",
+        "company_name": "AHA Commerce Thailand",
+    },
+}
+
+
+def _render_footer_banner(syb_src: str, language: str) -> str:
+    """Render the gold + navy footer banner with social links and location."""
+    links = _SOCIAL_LINKS.get(language, _SOCIAL_LINKS["id"])
+    return f"""\
+<!-- Footer Banner -->
+<tr>
+  <td style="padding:24px 30px 0 30px;">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
+           style="border-radius:12px;overflow:hidden;">
+      <!-- Gold section -->
+      <tr>
+        <td style="background-color:{_FOOTER_GOLD};padding:30px 40px;text-align:center;">
+          <p style="margin:0 0 16px 0;font-size:20px;font-weight:800;color:{_FOOTER_NAVY};font-family:{FONT_STACK};">
+            Let's #GrowTogether
+          </p>
+          <img src="{syb_src}" width="400"
+               style="display:inline-block;width:100%;max-width:400px;height:auto;border:0;"
+               alt="Superpower your brand">
+        </td>
+      </tr>
+      <!-- Navy section -->
+      <tr>
+        <td style="background-color:{_FOOTER_NAVY};padding:24px 40px;text-align:center;">
+          <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                 style="margin:0 auto;">
+            <tr>
+              <td style="padding:0 16px;">
+                <a href="{_esc(links['facebook'])}" target="_blank"
+                   style="font-size:14px;color:#ffffff;text-decoration:none;font-family:{FONT_STACK};">Facebook</a>
+              </td>
+              <td style="padding:0 16px;">
+                <a href="{_esc(links['instagram'])}" target="_blank"
+                   style="font-size:14px;color:#ffffff;text-decoration:none;font-family:{FONT_STACK};">Instagram</a>
+              </td>
+              <td style="padding:0 16px;">
+                <a href="{_esc(links['linkedin'])}" target="_blank"
+                   style="font-size:14px;color:#ffffff;text-decoration:none;font-family:{FONT_STACK};">LinkedIn</a>
+              </td>
+            </tr>
+          </table>
+          <p style="margin:16px 0 4px 0;font-size:14px;font-weight:700;color:#ffffff;font-family:{FONT_STACK};">
+            {_esc(links['company_name'])}
+          </p>
+          <p style="margin:0;font-size:12px;color:#ffffff;font-family:{FONT_STACK};">
+            &#128205; {_esc(links['location'])}
+          </p>
         </td>
       </tr>
     </table>
@@ -985,6 +1190,7 @@ def render_email_html(
     chart_src: str,
     header_src: str,
     footer_src: str,
+    syb_src: str = "",
     note: str | None = None,
     language: str = "id",
 ) -> str:
@@ -1029,8 +1235,10 @@ def render_email_html(
     score_overview = _render_score_overview(categories, S)
     detailed = _render_detailed_evaluation(categories, S, cat_map, language)
     breakdown = _render_score_breakdown(chart_src, categories, S, cat_map)
-    intelligence = _render_data_intelligence(calculator_results, S)
-    kesimpulan = _render_kesimpulan(calculator_results, S)
+    intelligence = _render_data_intelligence(calculator_results, S, language=language)
+    kesimpulan = _render_kesimpulan(calculator_results, S, language=language, marketplace=evaluation_data.get("marketplace", "ID"))
+    signoff = _render_signoff(S)
+    footer_banner = _render_footer_banner(syb_src, language) if syb_src else ""
     footer = _render_footer(footer_src)
 
     lang_code = language if language in ("id", "en", "th") else "id"
@@ -1044,7 +1252,7 @@ def render_email_html(
 <style type="text/css">
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap');
 {_EMAIL_CSS}
-@media only screen and (max-width:620px) {{
+@media only screen and (max-width:920px) {{
   .metric-grid td {{ display:block !important; width:100% !important; }}
 }}
 </style>
@@ -1055,7 +1263,7 @@ def render_email_html(
   <tr>
     <td align="center" style="padding:20px 0;">
       <table role="presentation" cellpadding="0" cellspacing="0" border="0"
-             style="width:100%;max-width:600px;background-color:{WHITE};border-radius:8px;">
+             style="width:100%;background-color:{WHITE};border-radius:8px;">
         {header}
         {note_section}
         {score_overview}
@@ -1063,6 +1271,8 @@ def render_email_html(
         {breakdown}
         {intelligence}
         {kesimpulan}
+        {signoff}
+        {footer_banner}
         {footer}
       </table>
     </td>

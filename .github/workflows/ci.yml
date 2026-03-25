@@ -57,7 +57,7 @@ jobs:
         run: uv python install 3.14
 
       - name: Install dependencies
-        run: uv sync --all-extras
+        run: uv sync --frozen --all-extras
 
       - name: Lint
         run: uv run ruff check .
@@ -68,8 +68,33 @@ jobs:
       - name: Run tests
         run: uv run pytest -v --cov=app --cov-report=term-missing
 
+  # Shared frontend setup: install once, cache node_modules for lint + test jobs.
+  frontend-setup:
+    name: Frontend Setup
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+
+      - name: Cache node_modules
+        id: cache-nm
+        uses: actions/cache@v5
+        with:
+          path: frontend/node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
+
+      - name: Install dependencies
+        if: steps.cache-nm.outputs.cache-hit != 'true'
+        run: npm ci
+        working-directory: frontend
+
   frontend-lint:
     name: Frontend Lint & Type Check
+    needs: frontend-setup
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -82,11 +107,12 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Restore node_modules
+        uses: actions/cache@v5
+        with:
+          path: frontend/node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
 
       - name: Lint
         run: npm run lint
@@ -96,6 +122,7 @@ jobs:
 
   frontend-test:
     name: Frontend Tests (shard ${{ matrix.shard }})
+    needs: frontend-setup
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -111,11 +138,12 @@ jobs:
         uses: actions/setup-node@v6
         with:
           node-version: '20'
-          cache: 'npm'
-          cache-dependency-path: frontend/package-lock.json
 
-      - name: Install dependencies
-        run: npm ci
+      - name: Restore node_modules
+        uses: actions/cache@v5
+        with:
+          path: frontend/node_modules
+          key: nm-${{ runner.os }}-${{ hashFiles('frontend/package-lock.json') }}
 
       - name: Run tests
         run: npx vitest run --shard=${{ matrix.shard }}

@@ -9,6 +9,12 @@ from app.config import settings
 from app.db.connection import db
 from app.db.queries import brands as brand_queries
 from app.db.queries import sync_status as sync_queries
+from app.modules.sync.column_drift import (
+    ColumnDriftError,
+    validate_headers,
+    EXPECTED_HEADERS_VP_ID,
+    EXPECTED_HEADERS_VP_TH,
+)
 from app.modules.sync.schemas import (
     SheetSyncResult,
     SyncError,
@@ -25,6 +31,7 @@ async def _sync_sheet_to_table(
     table: str,
     brand_column: str,
     sheet_type: str,
+    marketplace: str = "ID",
 ) -> SheetSyncResult:
     """Sync rows from a sheet to a database table.
 
@@ -87,6 +94,7 @@ async def _sync_sheet_to_table(
                     table=table,
                     brand_names=brand_names,
                     raw_data_list=raw_data_list,
+                    marketplace=marketplace,
                 )
 
         duration_ms = (time.monotonic() - start_time) * 1000
@@ -126,36 +134,79 @@ async def _sync_sheet_to_table(
         )
 
 
-async def _sync_vp_sheet(
+def _get_vp_configs() -> list[dict[str, Any]]:
+    """Build VP configs from settings. Called at sync time, not import time."""
+    configs = [
+        {
+            "marketplace": "ID",
+            "spreadsheet_id": settings.gsheets_vp_spreadsheet_id,
+            "range": settings.gsheets_vp_range,
+            "brand_column": settings.gsheets_vp_brand_column,
+            "expected_headers": EXPECTED_HEADERS_VP_ID,
+            "sheet_name": settings.gsheets_vp_range.split("!")[0],
+        },
+    ]
+    if settings.gsheets_vp_spreadsheet_id_th:
+        configs.append({
+            "marketplace": "TH",
+            "spreadsheet_id": settings.gsheets_vp_spreadsheet_id_th,
+            "range": settings.gsheets_vp_range_th,
+            "brand_column": settings.gsheets_vp_brand_column_th,
+            "expected_headers": EXPECTED_HEADERS_VP_TH,
+            "sheet_name": settings.gsheets_vp_range_th.split("!")[0],
+        })
+    return configs
+
+
+async def _sync_vp_sheets(
     sheets_client: GoogleSheetsClient,
-) -> SheetSyncResult | None:
-    """Fetch and sync VP sheet data.
+) -> dict[str, SheetSyncResult | ColumnDriftError]:
+    """Fetch and sync VP sheets for all configured marketplaces."""
+    results: dict[str, SheetSyncResult | ColumnDriftError] = {}
 
-    Returns None if VP spreadsheet is not configured.
-    Raises on unrecoverable fetch errors.
-    """
-    if not settings.gsheets_vp_spreadsheet_id:
-        logger.info("VP spreadsheet not configured, skipping")
-        return None
+    for cfg in _get_vp_configs():
+        mk = cfg["marketplace"]
+        key = f"vp_{mk.lower()}"
 
-    try:
-        logger.info("Fetching VP data...")
-        vp_rows = await sheets_client.fetch_vp_data()
-        logger.info(f"Fetched {len(vp_rows)} rows from VP sheet")
+        if not cfg["spreadsheet_id"]:
+            logger.info(f"VP spreadsheet for {mk} not configured, skipping")
+            continue
 
-        result = await _sync_sheet_to_table(
-            rows=vp_rows,
-            table="brand_vp_data",
-            brand_column=settings.gsheets_vp_brand_column,
-            sheet_type="vp",
-        )
-        logger.info(
-            f"VP sync: {result.rows_synced} synced, {len(result.errors)} errors"
-        )
-        return result
-    except Exception as e:
-        logger.error(f"VP sync failed: {e}")
-        raise
+        try:
+            # Step 1: Validate headers
+            if cfg["expected_headers"]:
+                actual_headers = await sheets_client.fetch_headers(
+                    cfg["spreadsheet_id"], cfg["sheet_name"]
+                )
+                drift = validate_headers(
+                    cfg["expected_headers"], actual_headers,
+                    marketplace=mk, sheet="VP",
+                )
+                if drift:
+                    logger.warning(f"Column drift detected for VP {mk}: {drift}")
+                    results[key] = drift
+                    continue
+
+            # Step 2: Fetch and sync data
+            rows = await sheets_client.fetch_sheet_data(
+                cfg["spreadsheet_id"], cfg["range"]
+            )
+            result = await _sync_sheet_to_table(
+                rows=rows,
+                table="brand_vp_data",
+                brand_column=cfg["brand_column"],
+                sheet_type=key,
+                marketplace=mk,
+            )
+            results[key] = result
+
+        except Exception as e:
+            logger.error(f"VP sync failed for {mk}: {e}")
+            results[key] = SheetSyncResult(
+                sheet_type=key, rows_synced=0, errors=[], success=False
+            )
+
+    return results
 
 
 async def _sync_meeting_sheet(
@@ -180,6 +231,7 @@ async def _sync_meeting_sheet(
             table="brand_meeting_data",
             brand_column=settings.gsheets_meeting_brand_column,
             sheet_type="meeting",
+            marketplace="ID",
         )
         logger.info(
             f"Meeting sync: {result.rows_synced} synced, "
@@ -219,19 +271,16 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
 
     logger.info(f"Starting sync with ID: {sync_id}")
 
-    vp_result: SheetSyncResult | None = None
+    vp_results: dict[str, SheetSyncResult | ColumnDriftError] = {}
     meeting_result: SheetSyncResult | None = None
     all_errors: list[str] = []
 
     try:
-        # Sync VP sheet
+        # Sync VP sheets (all configured marketplaces)
         try:
-            vp_result = await _sync_vp_sheet(sheets_client)
+            vp_results = await _sync_vp_sheets(sheets_client)
         except Exception as e:
             all_errors.append(f"VP: {e}")
-            vp_result = SheetSyncResult(
-                sheet_type="vp", rows_synced=0, errors=[], success=False
-            )
 
         # Sync Meeting sheet
         try:
@@ -242,43 +291,70 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
                 sheet_type="meeting", rows_synced=0, errors=[], success=False
             )
 
-        # Calculate totals
-        total_synced = (vp_result.rows_synced if vp_result else 0) + (
-            meeting_result.rows_synced if meeting_result else 0
-        )
-        total_errors = (
-            (len(vp_result.errors) if vp_result else 0)
-            + (len(meeting_result.errors) if meeting_result else 0)
-            + len(all_errors)
-        )
-        overall_success = total_errors == 0 and bool(vp_result or meeting_result)
+        # Build sync_details with new keys
+        sync_details: dict[str, Any] = {}
+        for key, result in vp_results.items():
+            if isinstance(result, ColumnDriftError):
+                sync_details[key] = {
+                    "status": "column_drift",
+                    "error": f"Missing: {result.missing}, Unexpected: {result.unexpected}",
+                    "missing": result.missing,
+                    "unexpected": result.unexpected,
+                }
+            elif isinstance(result, SheetSyncResult):
+                sync_details[key] = {
+                    "rows_synced": result.rows_synced,
+                    "rows_skipped": result.rows_skipped,
+                    "errors": [e.model_dump() for e in result.errors],
+                    "status": "success" if result.success else "failed",
+                }
 
-        # Build error message
-        error_message = None
-        if all_errors or total_errors > 0:
-            error_parts = all_errors.copy()
-            if vp_result and vp_result.errors:
-                error_parts.append(f"VP: {len(vp_result.errors)} row errors")
-            if meeting_result and meeting_result.errors:
-                error_parts.append(f"Meeting: {len(meeting_result.errors)} row errors")
-            error_message = "; ".join(error_parts)
-
-        # Build per-sheet breakdown for persistence
-        sync_details = {}
-        if vp_result:
-            sync_details["vp_sheet"] = {
-                "rows_synced": vp_result.rows_synced,
-                "rows_skipped": vp_result.rows_skipped,
-                "errors": [e.model_dump() for e in vp_result.errors],
-                "status": "success" if vp_result.success else "failed",
-            }
         if meeting_result:
-            sync_details["meeting_sheet"] = {
+            sync_details["m1_id"] = {
                 "rows_synced": meeting_result.rows_synced,
                 "rows_skipped": meeting_result.rows_skipped,
                 "errors": [e.model_dump() for e in meeting_result.errors],
                 "status": "success" if meeting_result.success else "failed",
             }
+
+        # Aggregate totals from vp_results + meeting
+        vp_synced = sum(
+            r.rows_synced for r in vp_results.values() if isinstance(r, SheetSyncResult)
+        )
+        vp_errors = sum(
+            len(r.errors) for r in vp_results.values() if isinstance(r, SheetSyncResult)
+        )
+        meeting_synced = meeting_result.rows_synced if meeting_result else 0
+        meeting_errors = len(meeting_result.errors) if meeting_result else 0
+        drift_errors = [
+            {"marketplace": r.marketplace, "missing": r.missing, "unexpected": r.unexpected}
+            for r in vp_results.values() if isinstance(r, ColumnDriftError)
+        ]
+
+        total_synced = vp_synced + meeting_synced
+        vp_failures = sum(
+            1 for r in vp_results.values()
+            if isinstance(r, SheetSyncResult) and not r.success
+        )
+        total_errors = vp_errors + meeting_errors + len(all_errors)
+        overall_success = (
+            total_errors == 0
+            and len(drift_errors) == 0
+            and vp_failures == 0
+        )
+
+        # Build error message
+        error_message = None
+        if all_errors or total_errors > 0 or drift_errors:
+            error_parts = all_errors.copy()
+            for r in vp_results.values():
+                if isinstance(r, SheetSyncResult) and r.errors:
+                    error_parts.append(f"{r.sheet_type}: {len(r.errors)} row errors")
+            if meeting_result and meeting_result.errors:
+                error_parts.append(f"Meeting: {len(meeting_result.errors)} row errors")
+            for d in drift_errors:
+                error_parts.append(f"Column drift ({d['marketplace']})")
+            error_message = "; ".join(error_parts) if error_parts else None
 
         # Update sync status
         completed_at = datetime.now(timezone.utc)
@@ -297,11 +373,12 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
 
         return SyncResult(
             sync_id=sync_id,
-            vp_result=vp_result,
+            vp_results=vp_results,
             meeting_result=meeting_result,
             total_synced=total_synced,
             total_errors=total_errors,
             success=overall_success,
+            column_drift_errors=drift_errors,
         )
 
     except Exception as e:

@@ -149,14 +149,11 @@ describe('SendEmailDialog', () => {
     expect(sendBtn).toBeEnabled();
   });
 
-  it('shows CC link and clicking it reveals CC field', () => {
+  it('shows CC field pre-filled with default CC for ID language', () => {
     renderDialog();
-    const ccLink = screen.getByRole('button', { name: 'CC' });
-    expect(ccLink).toBeInTheDocument();
-    fireEvent.click(ccLink);
-    // CC label should appear
+    // CC field should be visible by default (pre-filled with ID defaults)
     expect(screen.getByText('sendEmail.cc')).toBeInTheDocument();
-    // CC link should disappear
+    // CC toggle button should not be present since CC is already shown
     expect(screen.queryByRole('button', { name: 'CC' })).not.toBeInTheDocument();
   });
 

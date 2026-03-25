@@ -15,6 +15,7 @@ from app.db.queries.utils import paginate
 from app.calculators.engine import check_calculator_readiness, run_ready_calculators
 from app.db.queries import brands as brand_queries
 from app.db.queries import calculator_results as calc_queries
+from app.db.queries import email_history as email_history_queries
 from app.db.queries import evaluations as eval_queries
 from app.db.queries import rules as rules_queries
 from app.calculators.scoring.models import TranslatableText
@@ -40,7 +41,24 @@ from app.modules.evaluations.schemas import (
     SingleCalculatorStatus,
     TranslatableTextSchema,
 )
+
 logger = logging.getLogger(__name__)
+
+# Per-marketplace mapping from raw_data column names to BrandRawData fields
+_BRAND_RAW_DATA_COLUMNS: dict[str, dict[str, str]] = {
+    "ID": {
+        "email": "Email",
+        "pic_name": "Nama PIC/ Jabatan*",
+        "store_link": "Link Shopee Mall / LazMall",
+        "kategori": "Kategori",
+    },
+    "TH": {
+        "email": "Email",
+        "pic_name": "PIC",
+        "store_link": "Shopee Link",
+        "kategori": "Product Category",
+    },
+}
 
 
 def _to_schema(t: TranslatableText | None) -> TranslatableTextSchema | None:
@@ -207,6 +225,12 @@ async def delete_evaluation(conn: Connection, evaluation_id: int) -> bool:
     # Get brand info before delete (for sheet sync)
     brand_info = await eval_queries.get_evaluation_brand_info(conn, evaluation_id)
 
+    # Remove linked email history rows first — FK is ON DELETE RESTRICT
+    email_rows = await email_history_queries.list_email_history_by_evaluation(conn, evaluation_id)
+    if email_rows:
+        ids = [row["id"] for row in email_rows]
+        await email_history_queries.delete_email_history_by_ids(conn, ids=ids)
+
     deleted = await eval_queries.delete_evaluation(conn, evaluation_id)
 
     if not deleted:
@@ -246,11 +270,13 @@ async def get_evaluation_detail(conn: Connection, evaluation_id: int) -> Evaluat
 
     # Map VP sheet raw_data keys to clean keys for email composition
     raw_data = ensure_dict(row.get("raw_data"))
+    marketplace = row.get("marketplace", "ID")
+    col_map = _BRAND_RAW_DATA_COLUMNS.get(marketplace, _BRAND_RAW_DATA_COLUMNS["ID"])
     brand_raw_data = BrandRawData(
-        email=raw_data.get("Email"),
-        pic_name=raw_data.get("Nama PIC/ Jabatan*"),
-        store_link=raw_data.get("Link Shopee Mall / LazMall"),
-        kategori=raw_data.get("Kategori"),
+        email=raw_data.get(col_map["email"]),
+        pic_name=raw_data.get(col_map["pic_name"]),
+        store_link=raw_data.get(col_map["store_link"]),
+        kategori=raw_data.get(col_map["kategori"]),
     )
 
     return EvaluationDetailResponse(

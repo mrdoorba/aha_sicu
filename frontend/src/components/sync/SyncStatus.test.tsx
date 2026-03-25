@@ -47,8 +47,8 @@ describe('SyncStatus', () => {
         brands_synced: 100,
         error_message: null,
         sync_details: {
-          vp_sheet: { rows_synced: 80, rows_skipped: 0, status: 'success' },
-          meeting_sheet: { rows_synced: 20, rows_skipped: 0, status: 'success' },
+          vp_id: { rows_synced: 80, rows_skipped: 0, status: 'success' },
+          m1_id: { rows_synced: 20, rows_skipped: 0, status: 'success' },
         },
       },
       isLoading: false,
@@ -57,8 +57,8 @@ describe('SyncStatus', () => {
     renderSyncStatus();
 
     expect(screen.getByText(/terakhir disinkronkan/i)).toBeInTheDocument();
-    expect(screen.getByText(/vp: 80 brands/i)).toBeInTheDocument();
-    expect(screen.getByText(/M1: 20 brands/i)).toBeInTheDocument();
+    expect(screen.getByText(/VP_ID: 80/)).toBeInTheDocument();
+    expect(screen.getByText(/M1_ID: 20/)).toBeInTheDocument();
   });
 
   it('renders "Menyinkronkan..." for in_progress state', () => {

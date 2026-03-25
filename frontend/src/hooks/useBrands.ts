@@ -7,6 +7,7 @@ export interface BrandListItem {
   brand_name: string;
   raw_data: Record<string, unknown>;
   updated_at: string;
+  marketplace: string;
   meeting_raw_data: Record<string, unknown> | null;
 }
 
@@ -18,13 +19,19 @@ export interface BrandListResponse {
   pages: number;
 }
 
-export function useBrands(page = 1, limit = 20, search = '') {
+export function useBrands(page = 1, limit = 20, search = '', marketplaces?: string[]) {
+  const marketplaceParam = marketplaces?.length ? marketplaces.join(',') : undefined;
   return useQuery({
-    queryKey: ['brands', page, limit, search],
+    queryKey: ['brands', page, limit, search, marketplaceParam],
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/brands', {
         params: {
-          query: { page, limit, ...(search ? { search } : {}) },
+          query: {
+            page,
+            limit,
+            ...(search ? { search } : {}),
+            ...(marketplaceParam ? { marketplace: marketplaceParam } : {}),
+          },
         },
       });
       if (error) throw new Error('Failed to fetch brands');

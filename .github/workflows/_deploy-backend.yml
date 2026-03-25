@@ -14,6 +14,9 @@
 #   CLOUD_SQL_INSTANCE_NAME   – Cloud SQL instance name (for backups and start/stop API)
 #   DB_USER                   – Database username
 #   DB_NAME                   – Database name
+#   SMTP_SECRET_NAME          – Secret Manager secret name for SMTP password
+#   SMTP_USER                 – SMTP username (email address)
+#   SMTP_FROM_EMAIL           – Sender email address
 #
 # Google Sheets env vars (set per environment, synced to Cloud Run):
 #   GSHEETS_VP_SPREADSHEET_ID      – VP sheet spreadsheet ID
@@ -152,6 +155,10 @@ jobs:
             GSHEETS_VP_SPREADSHEET_ID=${{ vars.GSHEETS_VP_SPREADSHEET_ID }}
             GSHEETS_MEETING_SPREADSHEET_ID=${{ vars.GSHEETS_MEETING_SPREADSHEET_ID }}
             GSHEETS_EVAL_SPREADSHEET_ID=${{ vars.GSHEETS_EVAL_SPREADSHEET_ID }}
+            SMTP_USER=${{ vars.SMTP_USER }}
+            SMTP_FROM_EMAIL=${{ vars.SMTP_FROM_EMAIL }}
+          secrets: |
+            SMTP_PASSWORD=${{ vars.SMTP_SECRET_NAME }}:latest
           flags: ${{ inputs.environment == 'dev' && '--cpu-throttling' || '' }}
 
       - name: Verify deployment

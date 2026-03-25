@@ -7,7 +7,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, field_validator, model_validator
 
 
-SheetType = Literal["vp", "meeting"]
+SheetType = Literal["vp", "vp_id", "vp_th", "meeting"]
 
 
 class SyncError(BaseModel):
@@ -28,14 +28,15 @@ class SheetSyncResult(BaseModel):
 
 
 class SyncResult(BaseModel):
-    """Result of a full sync operation (both sheets)."""
+    """Result of a full sync operation."""
 
     sync_id: int
-    vp_result: SheetSyncResult | None
-    meeting_result: SheetSyncResult | None
+    vp_results: dict[str, Any] = {}  # key: vp_id, vp_th, etc.
+    meeting_result: SheetSyncResult | None = None
     total_synced: int
     total_errors: int
     success: bool
+    column_drift_errors: list[dict[str, Any]] = []
 
 
 class EvalSheetSyncResponse(BaseModel):
