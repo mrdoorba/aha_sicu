@@ -73,10 +73,15 @@ class Settings(BaseSettings):
     gsheets_credentials_path: str | None = None
     gsheets_credentials_json: str | None = None
 
-    # VP Sheet (brand_vp_data)
+    # VP Sheet - Indonesia (brand_vp_data, marketplace='ID')
     gsheets_vp_spreadsheet_id: str | None = None
     gsheets_vp_range: str = "VP!A:Y"
     gsheets_vp_brand_column: str = "Nama Brand"
+
+    # VP Sheet - Thailand (brand_vp_data, marketplace='TH')
+    gsheets_vp_spreadsheet_id_th: str | None = None
+    gsheets_vp_range_th: str = "VP!A:W"
+    gsheets_vp_brand_column_th: str = "Brand"
 
     # 1st Meeting Sheet (brand_meeting_data)
     gsheets_meeting_spreadsheet_id: str | None = None
