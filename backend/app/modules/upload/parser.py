@@ -142,6 +142,47 @@ def _normalise_thai_columns(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
     return df, True
 
 
+# ---------------------------------------------------------------------------
+# Thai → Indonesian normalisation for Shopee Thailand mass update exports
+# ---------------------------------------------------------------------------
+
+_MASS_UPDATE_COLUMN_RENAME_TH: dict[str, str] = {
+    "รหัสสินค้า": "Kode Produk",
+    "ชื่อสินค้า": "Nama Produk",
+    "รหัสตัวเลือกสินค้า": "Kode Variasi",
+    "ชื่อตัวเลือกสินค้า": "Nama Variasi",
+    "เลข SKU": "SKU",
+    "ราคา": "Harga",
+}
+
+
+def _normalise_thai_mass_update(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
+    """Rename Thai Shopee mass-update columns to Indonesian.
+
+    Also renames ``คลัง*`` columns to ``Stok*`` so the calculator's
+    ``startswith("Stok")`` lookup works for multi-warehouse files.
+
+    Returns:
+        Tuple of (normalised DataFrame, was_thai) where was_thai is True
+        if Thai column renames were applied.
+    """
+    actual = set(df.columns)
+    rename_map = {th: id_ for th, id_ in _MASS_UPDATE_COLUMN_RENAME_TH.items() if th in actual}
+
+    # Rename "คลัง", "คลัง 2", "คลัง 3", … → "Stok", "Stok 2", "Stok 3", …
+    for col in actual:
+        if col == "คลัง":
+            rename_map[col] = "Stok"
+        elif col.startswith("คลัง "):
+            rename_map[col] = "Stok " + col[len("คลัง "):]
+
+    if not rename_map:
+        return df, False
+
+    df = df.rename(rename_map)
+    return df, True
+
+
 # Required columns per file type — matched against actual Shopee exports.
 REQUIRED_COLUMNS: dict[str, list[str]] = {
     "cpc_ad_report": [
@@ -261,13 +302,16 @@ def dataframe_to_json(
 ) -> dict[str, Any]:
     """Convert a Polars DataFrame to a JSON-serializable dict for JSONB storage.
 
+    Uses columnar rows format (list-of-lists) instead of list-of-dicts
+    to avoid repeating column names for every row.
+
     Args:
         df: The DataFrame to convert.
-        source_language: ``"en"`` or ``"id"`` — detected CSV language.
+        source_language: ``"en"``, ``"id"``, or ``"th"`` — detected language.
     """
     return {
         "columns": df.columns,
-        "data": df.to_dicts(),
+        "rows": [list(r) for r in df.rows()],
         "row_count": len(df),
         "source_language": source_language,
     }

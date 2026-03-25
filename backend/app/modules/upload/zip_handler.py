@@ -65,7 +65,7 @@ def process_zip(zip_bytes: bytes, file_type: str) -> pl.DataFrame:
         excel_entries.sort(key=_extract_part_number)
 
         header_row = 2 if file_type == "mass_update" else 0
-        dataframes: list[pl.DataFrame] = []
+        result_df: pl.DataFrame | None = None
         reference_columns: list[str] | None = None
 
         for entry_name in excel_entries:
@@ -84,6 +84,6 @@ def process_zip(zip_bytes: bytes, file_type: str) -> pl.DataFrame:
                     ),
                 )
 
-            dataframes.append(df)
+            result_df = df if result_df is None else pl.concat([result_df, df])
 
-        return pl.concat(dataframes)
+        return result_df

@@ -9,6 +9,7 @@ from app.modules.upload.parser import (
     SHOPEE_CSV_SKIP_ROWS,
     _normalise_english_columns,
     _normalise_thai_columns,
+    _normalise_thai_mass_update,
     dataframe_to_json,
     parse_csv,
     parse_excel,
@@ -140,20 +141,49 @@ def test_validate_columns_unknown_file_type():
 # DataFrame → JSON
 # ---------------------------------------------------------------------------
 
-def test_dataframe_to_json():
-    df = pl.DataFrame({"name": ["a", "b"], "value": [1, 2]})
-    result = dataframe_to_json(df)
-    assert result["columns"] == ["name", "value"]
-    assert result["row_count"] == 2
-    assert len(result["data"]) == 2
-    assert result["data"][0] == {"name": "a", "value": 1}
-    assert result["source_language"] == "id"
+class TestDataframeToJson:
+    """Tests for dataframe_to_json columnar format."""
 
+    def test_produces_rows_format(self):
+        df = pl.DataFrame({"A": [1, 2], "B": ["x", "y"]})
+        result = dataframe_to_json(df)
+        assert "rows" in result
+        assert "data" not in result
+        assert result["columns"] == ["A", "B"]
+        assert result["rows"] == [list(r) for r in df.rows()]
+        assert result["row_count"] == 2
 
-def test_dataframe_to_json_english():
-    df = pl.DataFrame({"name": ["a"], "value": [1]})
-    result = dataframe_to_json(df, source_language="en")
-    assert result["source_language"] == "en"
+    def test_round_trip_equivalence(self):
+        """Reconstructed dicts from rows format == to_dicts() output."""
+        df = pl.DataFrame({
+            "Name": ["Alice", "Bob"],
+            "Age": [30, 25],
+            "Score": [9.5, 8.0],
+        })
+        result = dataframe_to_json(df)
+        columns = result["columns"]
+        reconstructed = [dict(zip(columns, row)) for row in result["rows"]]
+        assert reconstructed == df.to_dicts()
+
+    def test_preserves_source_language(self):
+        df = pl.DataFrame({"A": [1]})
+        result = dataframe_to_json(df, source_language="th")
+        assert result["source_language"] == "th"
+
+    def test_empty_dataframe(self):
+        df = pl.DataFrame({"A": pl.Series([], dtype=pl.Int64)})
+        result = dataframe_to_json(df)
+        assert result["rows"] == []
+        assert result["row_count"] == 0
+        assert result["columns"] == ["A"]
+
+    def test_wide_dataframe_no_repeated_keys(self):
+        """59-column DataFrame should not repeat column names in rows."""
+        cols = {f"Col_{i}": [i] for i in range(59)}
+        df = pl.DataFrame(cols)
+        result = dataframe_to_json(df)
+        assert len(result["rows"][0]) == 59
+        assert not isinstance(result["rows"][0], dict)
 
 
 # ---------------------------------------------------------------------------
@@ -441,3 +471,103 @@ class TestEnglishMassUpdateNormalisation:
         result, _ = _normalise_english_columns(df)
         stok_cols = [c for c in result.columns if c.startswith("Stok")]
         assert len(stok_cols) == 3
+
+
+# ---------------------------------------------------------------------------
+# Thai mass update normalisation
+# ---------------------------------------------------------------------------
+
+def _thai_mass_update_df(**overrides: list) -> pl.DataFrame:
+    """Build a DataFrame with Thai mass update headers."""
+    base = {
+        "รหัสสินค้า": ["P1", "P2"],
+        "ชื่อสินค้า": ["Product A", "Product B"],
+        "รหัสตัวเลือกสินค้า": ["V1", "V2"],
+        "ชื่อตัวเลือกสินค้า": ["Red", "Blue"],
+        "เลข SKU": ["SKU1", "SKU2"],
+        "ราคา": [100, 200],
+        "คลัง": [50, 30],
+    }
+    base.update(overrides)
+    return pl.DataFrame(base)
+
+
+class TestThaiMassUpdateNormalisation:
+    """Tests for _normalise_thai_mass_update."""
+
+    def test_renames_all_columns_to_indonesian(self):
+        df = _thai_mass_update_df()
+        result, was_thai = _normalise_thai_mass_update(df)
+
+        assert was_thai is True
+        assert "Kode Produk" in result.columns
+        assert "Nama Produk" in result.columns
+        assert "Kode Variasi" in result.columns
+        assert "Nama Variasi" in result.columns
+        assert "SKU" in result.columns
+        assert "Harga" in result.columns
+        assert "Stok" in result.columns
+
+    def test_validates_after_normalisation(self):
+        """Thai mass update passes column validation after normalisation."""
+        df = _thai_mass_update_df()
+        result, _ = _normalise_thai_mass_update(df)
+        validate_columns(result, "mass_update")  # should not raise
+
+    def test_stock_wildcard_multi_warehouse(self):
+        """คลัง, คลัง 2, คลัง 3 → Stok, Stok 2, Stok 3."""
+        df = _thai_mass_update_df(**{
+            "คลัง 2": [10, 20],
+            "คลัง 3": [5, 15],
+        })
+        result, was_thai = _normalise_thai_mass_update(df)
+        assert was_thai is True
+        assert "Stok" in result.columns
+        assert "Stok 2" in result.columns
+        assert "Stok 3" in result.columns
+        assert "คลัง" not in result.columns
+        assert "คลัง 2" not in result.columns
+        assert "คลัง 3" not in result.columns
+
+    def test_indonesian_passthrough(self):
+        """Indonesian DataFrames pass through unchanged."""
+        cols = REQUIRED_COLUMNS["mass_update"]
+        df = pl.DataFrame({col: ["x"] for col in cols})
+        result, was_thai = _normalise_thai_mass_update(df)
+        assert was_thai is False
+        assert result.columns == df.columns
+
+    def test_preserves_extra_columns(self):
+        """Non-mapped columns are kept as-is."""
+        df = _thai_mass_update_df(**{"GTIN": ["123", "456"]})
+        result, _ = _normalise_thai_mass_update(df)
+        assert "GTIN" in result.columns
+
+
+class TestParseFileThaiGating:
+    """Verify _parse_file gates Thai normalisation by file_type."""
+
+    def test_thai_mass_update_gets_mass_update_mapping(self):
+        """Thai mass_update file should use _normalise_thai_mass_update, not _normalise_thai_columns."""
+        from app.modules.upload.service import _parse_file
+
+        df = _thai_mass_update_df()
+        file_bytes = _make_excel_bytes(df, header_row=2)
+        result_df, lang = _parse_file(file_bytes, "test.xlsx", "mass_update")
+
+        assert lang == "th"
+        assert "Kode Produk" in result_df.columns
+        assert "Nama Produk" in result_df.columns
+        # Should NOT have order_export columns like "No. Pesanan"
+        assert "No. Pesanan" not in result_df.columns
+
+    def test_thai_order_export_gets_order_export_mapping(self):
+        """Thai order_export file should still use _normalise_thai_columns."""
+        from app.modules.upload.service import _parse_file
+
+        df = _thai_order_df()
+        file_bytes = _make_excel_bytes(df)
+        result_df, lang = _parse_file(file_bytes, "test.xlsx", "order_export")
+
+        assert lang == "th"
+        assert "No. Pesanan" in result_df.columns

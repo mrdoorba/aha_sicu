@@ -65,6 +65,7 @@ const BRANDS_RESPONSE = {
 describe('BrandsPage', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    localStorage.removeItem('brands_marketplace_filter');
     mockUseTriggerSync.mockReturnValue({
       mutate: vi.fn(),
       isPending: false,

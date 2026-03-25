@@ -13,17 +13,34 @@ export const BrandsPage = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
-  const [activeMarketplaces, setActiveMarketplaces] = useState<string[]>(['ID', 'TH']);
+  const [activeMarketplaces, setActiveMarketplaces] = useState<string[]>(() => {
+    try {
+      const saved = localStorage.getItem('brands_marketplace_filter');
+      if (saved) {
+        const parsed = JSON.parse(saved) as unknown;
+        if (Array.isArray(parsed) && parsed.length > 0 && parsed.every((v) => typeof v === 'string')) {
+          return parsed as string[];
+        }
+      }
+    } catch {
+      // ignore malformed data
+    }
+    return ['ID', 'TH'];
+  });
   const limit = 20;
 
   const toggleMarketplace = (mp: string) => {
     setActiveMarketplaces((prev) => {
+      let next: string[];
       if (prev.includes(mp)) {
         // Don't allow deselecting all
         if (prev.length === 1) return prev;
-        return prev.filter((m) => m !== mp);
+        next = prev.filter((m) => m !== mp);
+      } else {
+        next = [...prev, mp];
       }
-      return [...prev, mp];
+      localStorage.setItem('brands_marketplace_filter', JSON.stringify(next));
+      return next;
     });
     setPage(1);
   };

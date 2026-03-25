@@ -133,7 +133,11 @@ def _extract_source_language(upload: dict) -> str:
 
 
 def _extract_parsed_data(upload: dict, file_type: str) -> list[dict[str, Any]]:
-    """Extract and validate parsed_data.data from a brand upload record.
+    """Extract and validate parsed_data from a brand upload record.
+
+    Supports both formats:
+    - New: ``{"columns": [...], "rows": [[v1, v2], ...]}``
+    - Old: ``{"columns": [...], "data": [{"col": v1}, ...]}``
 
     Raises:
         CalculatorException: CALC_MISSING_DATA if parsed_data structure is invalid.
@@ -151,14 +155,21 @@ def _extract_parsed_data(upload: dict, file_type: str) -> list[dict[str, Any]]:
             detail=f"Upload '{file_type}' has invalid parsed_data structure",
         )
 
-    data = parsed_data.get("data")
-    if not isinstance(data, list):
-        raise CalculatorException(
-            code="CALC_MISSING_DATA",
-            detail=f"Upload '{file_type}' has invalid parsed_data.data structure",
-        )
+    # New columnar format: reconstruct list[dict] from columns + rows
+    rows = parsed_data.get("rows")
+    if isinstance(rows, list):
+        columns = parsed_data.get("columns", [])
+        return [dict(zip(columns, row)) for row in rows]
 
-    return data
+    # Old row-dict format: return as-is
+    data = parsed_data.get("data")
+    if isinstance(data, list):
+        return data
+
+    raise CalculatorException(
+        code="CALC_MISSING_DATA",
+        detail=f"Upload '{file_type}' has invalid parsed_data.data structure",
+    )
 
 
 # Required columns per calculator file type

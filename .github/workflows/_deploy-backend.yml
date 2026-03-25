@@ -19,7 +19,8 @@
 #   SMTP_FROM_EMAIL           – Sender email address
 #
 # Google Sheets env vars (set per environment, synced to Cloud Run):
-#   GSHEETS_VP_SPREADSHEET_ID      – VP sheet spreadsheet ID
+#   GSHEETS_VP_SPREADSHEET_ID      – VP sheet spreadsheet ID (Indonesia)
+#   GSHEETS_VP_SPREADSHEET_ID_TH   – VP sheet spreadsheet ID (Thailand)
 #   GSHEETS_MEETING_SPREADSHEET_ID – 1st Meeting sheet spreadsheet ID
 #   GSHEETS_EVAL_SPREADSHEET_ID    – Evaluation status sheet spreadsheet ID
 #
@@ -153,6 +154,7 @@ jobs:
           image: ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
           env_vars: |
             GSHEETS_VP_SPREADSHEET_ID=${{ vars.GSHEETS_VP_SPREADSHEET_ID }}
+            GSHEETS_VP_SPREADSHEET_ID_TH=${{ vars.GSHEETS_VP_SPREADSHEET_ID_TH }}
             GSHEETS_MEETING_SPREADSHEET_ID=${{ vars.GSHEETS_MEETING_SPREADSHEET_ID }}
             GSHEETS_EVAL_SPREADSHEET_ID=${{ vars.GSHEETS_EVAL_SPREADSHEET_ID }}
             SMTP_USER=${{ vars.SMTP_USER }}

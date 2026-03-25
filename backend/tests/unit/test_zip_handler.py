@@ -143,3 +143,19 @@ def test_process_zip_structure_mismatch():
     with pytest.raises(UploadException) as exc:
         process_zip(zip_bytes, "order_export")
     assert exc.value.code == "UPLOAD_ZIP_STRUCTURE_MISMATCH"
+
+
+def test_process_zip_incremental_concat_matches_batch():
+    """Incremental concat produces identical result to batch concat."""
+    df1 = pl.DataFrame({"Col_A": [1, 2], "Col_B": ["a", "b"]})
+    df2 = pl.DataFrame({"Col_A": [3, 4], "Col_B": ["c", "d"]})
+    df3 = pl.DataFrame({"Col_A": [5, 6], "Col_B": ["e", "f"]})
+    zip_bytes = _make_zip({
+        "data_part_1_of_3.xlsx": df1,
+        "data_part_2_of_3.xlsx": df2,
+        "data_part_3_of_3.xlsx": df3,
+    })
+    result = process_zip(zip_bytes, "order_export")
+    assert len(result) == 6
+    assert result["Col_A"].to_list() == [1, 2, 3, 4, 5, 6]
+    assert result["Col_B"].to_list() == ["a", "b", "c", "d", "e", "f"]
