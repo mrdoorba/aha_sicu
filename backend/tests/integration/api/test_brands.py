@@ -76,11 +76,12 @@ def test_brands_returns_paginated_response(client):
         assert data["items"][1]["brand_name"] == "Brand DEF"
         assert data["items"][1]["meeting_raw_data"] is None
 
-        # Verify default offset/limit/search reached the database
+        # Verify default offset/limit/search/marketplace reached the database
         fetch_args = mock_brands_conn.fetch.call_args[0]
         assert fetch_args[1] is None  # search=None
-        assert fetch_args[2] == 20    # default limit
-        assert fetch_args[3] == 0     # default offset (page 1)
+        assert fetch_args[2] is None  # marketplaces=None (no filter)
+        assert fetch_args[3] == 20    # default limit
+        assert fetch_args[4] == 0     # default offset (page 1)
 
 
 def test_brands_pagination_params(client):
@@ -114,8 +115,9 @@ def test_brands_pagination_params(client):
         # Verify correct offset/limit/search reached the database
         fetch_args = mock_brands_conn.fetch.call_args[0]
         assert fetch_args[1] is None  # search=None (no search param)
-        assert fetch_args[2] == 10    # limit=10
-        assert fetch_args[3] == 10    # offset=10 (page 2, limit 10)
+        assert fetch_args[2] is None  # marketplaces=None (no filter)
+        assert fetch_args[3] == 10    # limit=10
+        assert fetch_args[4] == 10    # offset=10 (page 2, limit 10)
 
 
 def test_brands_empty_state(client):
@@ -176,8 +178,9 @@ def test_brands_search_with_results(client):
         # Verify search term reached the database query
         fetch_args = mock_brands_conn.fetch.call_args[0]
         assert fetch_args[1] == "ABC"  # search='ABC'
-        assert fetch_args[2] == 20     # default limit
-        assert fetch_args[3] == 0      # default offset (page 1)
+        assert fetch_args[2] is None   # marketplaces=None (no filter)
+        assert fetch_args[3] == 20     # default limit
+        assert fetch_args[4] == 0      # default offset (page 1)
 
 
 def test_brands_search_no_results(client):
