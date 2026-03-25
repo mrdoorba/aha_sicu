@@ -38,9 +38,10 @@ export const SyncStatus = () => {
 
   const handleSyncNow = () => {
     triggerSync.mutate(undefined, {
-      onSuccess: (data: any) => {
-        if (data?.column_drift_errors?.length > 0) {
-          setDriftError(data.column_drift_errors[0]);
+      onSuccess: (data: unknown) => {
+        const result = data as { column_drift_errors?: Array<{ marketplace: string; missing: string[]; unexpected: string[] }> } | undefined;
+        if (result?.column_drift_errors?.length) {
+          setDriftError(result.column_drift_errors[0]);
         } else {
           toast.success(t('sync.startSuccess'));
         }
