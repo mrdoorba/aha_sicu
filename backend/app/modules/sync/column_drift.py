@@ -104,5 +104,9 @@ EXPECTED_HEADERS_VP_TH: list[str] = [
 ]
 
 # Indonesia Meeting sheet columns A-D
-# TODO: Populate when meeting sheet headers are provided
-EXPECTED_HEADERS_MEETING_ID: list[str] = []
+EXPECTED_HEADERS_MEETING_ID: list[str] = [
+    "Brand",
+    "Title",
+    "Duration (mins)",
+    "Timestamp",
+]
