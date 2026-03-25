@@ -65,7 +65,20 @@ Change to list-of-lists format:
 {"columns": [...], "rows": [[v1, v2, ...], ...], "row_count": N, "source_language": "id"}
 ```
 
-**Backward compatibility:** The consumer (`_extract_parsed_data` in `calculator_service.py`) checks for `"rows"` key first (new format), falls back to `"data"` key (old format). No migration needed — old uploads continue to work.
+**Backward compatibility:** `_extract_parsed_data` in `calculator_service.py` (line 135) is the single consumer of `parsed_data`. It is called from 5 call sites across 3 calculators (ads_keyword, discount, top_sku), all in `calculator_service.py`. It always returns `list[dict[str, Any]]`.
+
+The updated function checks for `"rows"` key first (new format), reconstructing dicts by zipping columns with each row:
+
+```python
+if "rows" in parsed_data:
+    columns = parsed_data["columns"]
+    return [dict(zip(columns, row)) for row in parsed_data["rows"]]
+return parsed_data.get("data", [])  # old format fallback
+```
+
+No migration needed — old uploads stored with `"data"` key continue to work. All 5 call sites receive identical `list[dict]` output regardless of storage format.
+
+**Side benefit:** The columnar JSONB is significantly smaller on disk (no repeated key strings), helpful given Cloud SQL is on `db-f1-micro` with 10GB disk.
 
 **Round-trip equivalence test:** Unit test verifying that reconstructed list-of-dicts from columns+rows matches `to_dicts()` output exactly.
 
@@ -101,11 +114,29 @@ New `_normalise_thai_mass_update(df)` function:
 3. Applies `คลัง*` → `Stok*` wildcard rename
 4. Returns `(df, was_thai)`
 
-**Wiring:** Called from `_parse_file` in `service.py` when `file_type == "mass_update"`, after the existing English normalisation pass.
+**Wiring:** The existing normalisation chain in `_parse_file` (`service.py` lines 64-76) runs `_normalise_thai_columns` for ALL file types when language is not English. This must be gated:
+
+- Gate `_normalise_thai_columns` to only run when `file_type == "order_export"` (it only has order_export mappings anyway, and column name overlap like `"ชื่อสินค้า"` could cause conflicts)
+- Add `_normalise_thai_mass_update` for `file_type == "mass_update"`, in the same position
+
+```python
+# After English normalisation pass:
+if source_language != "en":
+    if file_type == "order_export":
+        df, was_thai = _normalise_thai_columns(df)
+    elif file_type == "mass_update":
+        df, was_thai = _normalise_thai_mass_update(df)
+    else:
+        was_thai = False
+    if was_thai:
+        source_language = "th"
+```
+
+**Column names verified** against actual file `cintage_mass_update_sales_info_205856685_20260325150823.xlsx` (header_row=2, 12,604 rows × 15 cols).
 
 **Files changed:**
 - `backend/app/modules/upload/parser.py` — new mapping + function
-- `backend/app/modules/upload/service.py` — call the new function in `_parse_file`
+- `backend/app/modules/upload/service.py` — gate Thai normalisation by file_type
 - Tests using the actual Cintage Thai mass update file
 
 ## Calculation Impact
@@ -119,7 +150,7 @@ None. All three changes are transparent to the calculator layer:
 
 - [ ] Unit test: `dataframe_to_json` round-trip (rows format → reconstruct dicts == `to_dicts()`)
 - [ ] Unit test: `_extract_parsed_data` reads both old `"data"` and new `"rows"` formats
-- [ ] Unit test: `_normalise_thai_mass_update` renames all 7 columns correctly (including `คลัง` → `Stok`)
+- [ ] Unit test: `_normalise_thai_mass_update` renames all 6 explicit columns + stock wildcard (`คลัง` → `Stok`, `คลัง 2` → `Stok 2`)
 - [ ] Unit test: `validate_columns` passes after Thai normalisation on the Cintage file
 - [ ] Unit test: incremental ZIP concat produces same result as batch concat
 - [ ] Integration: upload the Cintage order export ZIP locally, verify processing succeeds under 1Gi
