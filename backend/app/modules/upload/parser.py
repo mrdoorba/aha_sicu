@@ -261,13 +261,16 @@ def dataframe_to_json(
 ) -> dict[str, Any]:
     """Convert a Polars DataFrame to a JSON-serializable dict for JSONB storage.
 
+    Uses columnar rows format (list-of-lists) instead of list-of-dicts
+    to avoid repeating column names for every row.
+
     Args:
         df: The DataFrame to convert.
-        source_language: ``"en"`` or ``"id"`` — detected CSV language.
+        source_language: ``"en"``, ``"id"``, or ``"th"`` — detected language.
     """
     return {
         "columns": df.columns,
-        "data": df.to_dicts(),
+        "rows": [list(r) for r in df.rows()],
         "row_count": len(df),
         "source_language": source_language,
     }

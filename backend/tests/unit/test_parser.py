@@ -140,20 +140,49 @@ def test_validate_columns_unknown_file_type():
 # DataFrame → JSON
 # ---------------------------------------------------------------------------
 
-def test_dataframe_to_json():
-    df = pl.DataFrame({"name": ["a", "b"], "value": [1, 2]})
-    result = dataframe_to_json(df)
-    assert result["columns"] == ["name", "value"]
-    assert result["row_count"] == 2
-    assert len(result["data"]) == 2
-    assert result["data"][0] == {"name": "a", "value": 1}
-    assert result["source_language"] == "id"
+class TestDataframeToJson:
+    """Tests for dataframe_to_json columnar format."""
 
+    def test_produces_rows_format(self):
+        df = pl.DataFrame({"A": [1, 2], "B": ["x", "y"]})
+        result = dataframe_to_json(df)
+        assert "rows" in result
+        assert "data" not in result
+        assert result["columns"] == ["A", "B"]
+        assert result["rows"] == [list(r) for r in df.rows()]
+        assert result["row_count"] == 2
 
-def test_dataframe_to_json_english():
-    df = pl.DataFrame({"name": ["a"], "value": [1]})
-    result = dataframe_to_json(df, source_language="en")
-    assert result["source_language"] == "en"
+    def test_round_trip_equivalence(self):
+        """Reconstructed dicts from rows format == to_dicts() output."""
+        df = pl.DataFrame({
+            "Name": ["Alice", "Bob"],
+            "Age": [30, 25],
+            "Score": [9.5, 8.0],
+        })
+        result = dataframe_to_json(df)
+        columns = result["columns"]
+        reconstructed = [dict(zip(columns, row)) for row in result["rows"]]
+        assert reconstructed == df.to_dicts()
+
+    def test_preserves_source_language(self):
+        df = pl.DataFrame({"A": [1]})
+        result = dataframe_to_json(df, source_language="th")
+        assert result["source_language"] == "th"
+
+    def test_empty_dataframe(self):
+        df = pl.DataFrame({"A": pl.Series([], dtype=pl.Int64)})
+        result = dataframe_to_json(df)
+        assert result["rows"] == []
+        assert result["row_count"] == 0
+        assert result["columns"] == ["A"]
+
+    def test_wide_dataframe_no_repeated_keys(self):
+        """59-column DataFrame should not repeat column names in rows."""
+        cols = {f"Col_{i}": [i] for i in range(59)}
+        df = pl.DataFrame(cols)
+        result = dataframe_to_json(df)
+        assert len(result["rows"][0]) == 59
+        assert not isinstance(result["rows"][0], dict)
 
 
 # ---------------------------------------------------------------------------
