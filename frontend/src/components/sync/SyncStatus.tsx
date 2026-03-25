@@ -1,9 +1,11 @@
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { RefreshCw, CheckCircle2, XCircle, Clock } from 'lucide-react';
 import { toast } from 'sonner';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
 import { useSyncStatus, useTriggerSync } from '../../hooks/useSync';
 
 /** Format ISO timestamp as relative time. Assumes server returns UTC timestamps. */
@@ -28,11 +30,20 @@ export const SyncStatus = () => {
   const { t } = useTranslation();
   const { data: syncStatus, isLoading, isError } = useSyncStatus();
   const triggerSync = useTriggerSync();
+  const [driftError, setDriftError] = useState<{
+    marketplace: string;
+    missing: string[];
+    unexpected: string[];
+  } | null>(null);
 
   const handleSyncNow = () => {
     triggerSync.mutate(undefined, {
-      onSuccess: () => {
-        toast.success(t('sync.startSuccess'));
+      onSuccess: (data: any) => {
+        if (data?.column_drift_errors?.length > 0) {
+          setDriftError(data.column_drift_errors[0]);
+        } else {
+          toast.success(t('sync.startSuccess'));
+        }
       },
       onError: (error) => {
         toast.error(error.message);
@@ -93,22 +104,13 @@ export const SyncStatus = () => {
 
           {syncStatus?.sync_details && syncStatus.status !== 'in_progress' && (
             <div className="flex gap-4 text-xs text-muted-foreground">
-              {syncStatus.sync_details.vp_sheet && (
-                <span>
-                  {t('sync.vpBrands', { count: syncStatus.sync_details.vp_sheet.rows_synced })}{' '}
-                  {syncStatus.sync_details.vp_sheet.status === 'success'
-                    ? '\u2713'
-                    : '\u2717'}
+              {Object.entries(syncStatus.sync_details).map(([key, detail]) => (
+                <span key={key}>
+                  {key.toUpperCase()}: {detail.rows_synced ?? 0}{' '}
+                  {detail.status === 'success' ? '\u2713' :
+                   detail.status === 'column_drift' ? '\u26A0' : '\u2717'}
                 </span>
-              )}
-              {syncStatus.sync_details.meeting_sheet && (
-                <span>
-                  {t('sync.m1Brands', { count: syncStatus.sync_details.meeting_sheet.rows_synced })}{' '}
-                  {syncStatus.sync_details.meeting_sheet.status === 'success'
-                    ? '\u2713'
-                    : '\u2717'}
-                </span>
-              )}
+              ))}
             </div>
           )}
 
@@ -132,6 +134,26 @@ export const SyncStatus = () => {
           )}
         </Button>
       </CardContent>
+
+      <Dialog open={!!driftError} onOpenChange={() => setDriftError(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t('sync.columnDrift.title', { defaultValue: 'Column Mismatch Detected' })}</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-2 text-sm">
+            <p>{t('sync.columnDrift.marketplace', { defaultValue: 'Marketplace' })}: <strong>{driftError?.marketplace}</strong></p>
+            {driftError?.missing.length ? (
+              <p>{t('sync.columnDrift.missing', { defaultValue: 'Missing columns' })}: {driftError.missing.join(', ')}</p>
+            ) : null}
+            {driftError?.unexpected.length ? (
+              <p>{t('sync.columnDrift.unexpected', { defaultValue: 'Unexpected columns' })}: {driftError.unexpected.join(', ')}</p>
+            ) : null}
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setDriftError(null)}>OK</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </Card>
   );
 };
