@@ -13,7 +13,20 @@ export const BrandsPage = () => {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
+  const [activeMarketplaces, setActiveMarketplaces] = useState<string[]>(['ID', 'TH']);
   const limit = 20;
+
+  const toggleMarketplace = (mp: string) => {
+    setActiveMarketplaces((prev) => {
+      if (prev.includes(mp)) {
+        // Don't allow deselecting all
+        if (prev.length === 1) return prev;
+        return prev.filter((m) => m !== mp);
+      }
+      return [...prev, mp];
+    });
+    setPage(1);
+  };
 
   // Debounce search input (300ms)
   useEffect(() => {
@@ -24,7 +37,7 @@ export const BrandsPage = () => {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { data, isLoading, isError } = useBrands(page, limit, debouncedSearch);
+  const { data, isLoading, isError } = useBrands(page, limit, debouncedSearch, activeMarketplaces);
 
   const totalPages = data?.pages ?? 0;
   const hasBrands = (data?.total ?? 0) > 0;
@@ -39,6 +52,24 @@ export const BrandsPage = () => {
         {/* Sync Status */}
         <div className="mb-6">
           <SyncStatus />
+        </div>
+
+        {/* Marketplace Filters */}
+        <div className="mb-4 flex gap-2">
+          <Button
+            variant={activeMarketplaces.includes('ID') ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => toggleMarketplace('ID')}
+          >
+            {t('brands.filterID', { defaultValue: '\ud83c\uddee\ud83c\udde9 Indonesia' })}
+          </Button>
+          <Button
+            variant={activeMarketplaces.includes('TH') ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => toggleMarketplace('TH')}
+          >
+            {t('brands.filterTH', { defaultValue: '\ud83c\uddf9\ud83c\udded Thailand' })}
+          </Button>
         </div>
 
         {/* Search */}
