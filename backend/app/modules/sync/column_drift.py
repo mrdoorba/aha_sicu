@@ -47,13 +47,62 @@ def validate_headers(
 # Expected headers per marketplace (defined in code, not config)
 # =============================================================================
 
-# Indonesia VP sheet columns A-Y
-# TODO: Fill in the complete list during Task 13 by reading the actual sheet
-EXPECTED_HEADERS_VP_ID: list[str] = []
+# Indonesia VP sheet columns A-Y (column X is empty)
+EXPECTED_HEADERS_VP_ID: list[str] = [
+    "Nama Brand",
+    "BD",
+    "Timestamp",
+    "Link Shopee Mall / LazMall",
+    "Kategori",
+    ">= 25 Produk in stock",
+    "Shopee Mall",
+    "Umur toko >5 tahun",
+    "No OPEX Issue",
+    "Lokasi Jabodetabek",
+    "Terdaftar DJKI",
+    "Omset >100jt",
+    "LBS",
+    "Leader Approval",
+    "Score\nVP",
+    "Approach",
+    "Nama Perusahaan/Perorangan*",
+    "Nama PIC/ Jabatan*",
+    "No WA*",
+    "Email",
+    "Alamat*",
+    "Kirim surat fisik",
+    "SICU",
+    "",
+    "Signed up",
+]
 
 # Thailand VP sheet columns A-W
-# TODO: Fill in the complete list during Task 13 by reading the actual sheet
-EXPECTED_HEADERS_VP_TH: list[str] = []
+EXPECTED_HEADERS_VP_TH: list[str] = [
+    "Brand",
+    "BD",
+    "Timestamp",
+    "Shopee Link",
+    "Product\nCategory",
+    "\u2265 25 Product Live",
+    "ShopeeMall",
+    "Store \u2265 5 Years",
+    "No OPEX Issue",
+    "GMV (THB) >200K",
+    "LBS",
+    "Leader Approval",
+    "VP",
+    "Approach",
+    "Company",
+    "Instagram",
+    "PIC",
+    "Contact Number",
+    "Email",
+    "Address",
+    "Printed Letter",
+    "SHCU",
+    "Signed Up",
+]
 
 # Indonesia Meeting sheet columns A-D
+# TODO: Populate when meeting sheet headers are provided
 EXPECTED_HEADERS_MEETING_ID: list[str] = []

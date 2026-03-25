@@ -22,11 +22,17 @@ def mock_db():
 
 @pytest.fixture
 def mock_sheets_client():
-    """Mock Google Sheets client."""
+    """Mock Google Sheets client.
+
+    fetch_headers returns the expected ID headers by default so drift
+    detection passes. Tests that need drift behaviour can override.
+    """
+    from app.modules.sync.column_drift import EXPECTED_HEADERS_VP_ID
+
     with patch("app.modules.sync.service.GoogleSheetsClient") as mock:
         instance = MagicMock()
         instance.fetch_sheet_data = AsyncMock()
-        instance.fetch_headers = AsyncMock(return_value=[])
+        instance.fetch_headers = AsyncMock(return_value=EXPECTED_HEADERS_VP_ID)
         instance.fetch_meeting_data = AsyncMock()
         mock.return_value = instance
         yield instance
