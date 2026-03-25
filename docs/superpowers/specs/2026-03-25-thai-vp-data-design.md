@@ -171,6 +171,25 @@ No downstream changes needed — emails and UI display consume `BrandRawData` fi
 
 Full expected headers list (all A-W columns) to be provided during implementation.
 
+## 8. Infrastructure (Terraform)
+
+The new Thai env vars follow the same pattern as existing Indonesia spreadsheet config — plain-text Cloud Run environment variables (not secrets).
+
+**Files to update:**
+
+| File | Change |
+|------|--------|
+| `infrastructure/terraform/variables.tf` | Add 3 root variables: `gsheets_vp_spreadsheet_id_th`, `gsheets_vp_range_th`, `gsheets_vp_brand_column_th` |
+| `infrastructure/terraform/modules/environment/variables.tf` | Add same 3 as module variables |
+| `infrastructure/terraform/modules/environment/main.tf` | Add 3 `env {}` blocks to Cloud Run service definition |
+| `infrastructure/terraform/main.tf` | Pass the 3 vars to both dev and prod module blocks |
+| `environments/dev.tfvars` | Set Thai spreadsheet ID for dev |
+| `environments/prod.tfvars` | Set Thai spreadsheet ID for prod |
+
+**No new Cloud Scheduler job needed** — the existing daily sync (`POST /api/v1/sync`) handles all configured spreadsheets at runtime.
+
+**Service account access:** The existing `sheets-sa` service account must be granted read access to the Thai Google Sheet (done in Google Sheets sharing UI, not Terraform).
+
 ## Out of Scope
 
 - Thai meeting sheet (does not exist yet)
