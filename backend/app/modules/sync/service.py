@@ -310,7 +310,7 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
                 }
 
         if meeting_result:
-            sync_details["meeting_id"] = {
+            sync_details["m1_id"] = {
                 "rows_synced": meeting_result.rows_synced,
                 "rows_skipped": meeting_result.rows_skipped,
                 "errors": [e.model_dump() for e in meeting_result.errors],

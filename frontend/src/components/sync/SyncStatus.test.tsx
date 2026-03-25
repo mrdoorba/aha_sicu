@@ -48,7 +48,7 @@ describe('SyncStatus', () => {
         error_message: null,
         sync_details: {
           vp_id: { rows_synced: 80, rows_skipped: 0, status: 'success' },
-          meeting_id: { rows_synced: 20, rows_skipped: 0, status: 'success' },
+          m1_id: { rows_synced: 20, rows_skipped: 0, status: 'success' },
         },
       },
       isLoading: false,
@@ -58,7 +58,7 @@ describe('SyncStatus', () => {
 
     expect(screen.getByText(/terakhir disinkronkan/i)).toBeInTheDocument();
     expect(screen.getByText(/VP_ID: 80/)).toBeInTheDocument();
-    expect(screen.getByText(/MEETING_ID: 20/)).toBeInTheDocument();
+    expect(screen.getByText(/M1_ID: 20/)).toBeInTheDocument();
   });
 
   it('renders "Menyinkronkan..." for in_progress state', () => {
