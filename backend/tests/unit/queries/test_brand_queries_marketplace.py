@@ -1,7 +1,7 @@
 """Unit tests for marketplace-aware brand queries."""
 
 import pytest
-from unittest.mock import AsyncMock, MagicMock
+from unittest.mock import AsyncMock
 
 
 @pytest.mark.asyncio
@@ -70,7 +70,7 @@ async def test_get_brands_count_filters_by_marketplace():
     mock_conn = AsyncMock()
     mock_conn.fetchval = AsyncMock(return_value=5)
 
-    result = await get_brands_count_with_search(
+    await get_brands_count_with_search(
         mock_conn, search=None, marketplaces=["ID", "TH"]
     )
 

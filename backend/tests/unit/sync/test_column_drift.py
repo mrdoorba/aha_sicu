@@ -1,7 +1,6 @@
 """Unit tests for column drift detection."""
 
-import pytest
-from app.modules.sync.column_drift import validate_headers, ColumnDriftError
+from app.modules.sync.column_drift import validate_headers
 
 
 def test_validate_headers_passes_when_exact_match():

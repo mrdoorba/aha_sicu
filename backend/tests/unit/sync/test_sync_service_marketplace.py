@@ -2,7 +2,6 @@
 
 import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
-from app.modules.sync.schemas import SheetSyncResult
 
 
 @pytest.mark.asyncio
@@ -20,7 +19,7 @@ async def test_sync_sheet_to_table_passes_marketplace():
         mock_db.connection.return_value.__aenter__.return_value = mock_conn
         mock_bq.batch_upsert_brand_data = AsyncMock(return_value=1)
 
-        result = await _sync_sheet_to_table(
+        await _sync_sheet_to_table(
             rows=[{"Brand": "Test"}],
             table="brand_vp_data",
             brand_column="Brand",

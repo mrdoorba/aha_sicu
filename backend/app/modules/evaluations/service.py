@@ -18,22 +18,6 @@ from app.db.queries import calculator_results as calc_queries
 from app.db.queries import email_history as email_history_queries
 from app.db.queries import evaluations as eval_queries
 from app.db.queries import rules as rules_queries
-# Per-marketplace mapping from raw_data column names to BrandRawData fields
-_BRAND_RAW_DATA_COLUMNS: dict[str, dict[str, str]] = {
-    "ID": {
-        "email": "Email",
-        "pic_name": "Nama PIC/ Jabatan*",
-        "store_link": "Link Shopee Mall / LazMall",
-        "kategori": "Kategori",
-    },
-    "TH": {
-        "email": "Email",
-        "pic_name": "PIC",
-        "store_link": "Shopee Link",
-        "kategori": "Product Category",
-    },
-}
-
 from app.calculators.scoring.models import TranslatableText
 from app.modules.evaluations.schemas import (
     BrandEvaluationItem,
@@ -57,7 +41,24 @@ from app.modules.evaluations.schemas import (
     SingleCalculatorStatus,
     TranslatableTextSchema,
 )
+
 logger = logging.getLogger(__name__)
+
+# Per-marketplace mapping from raw_data column names to BrandRawData fields
+_BRAND_RAW_DATA_COLUMNS: dict[str, dict[str, str]] = {
+    "ID": {
+        "email": "Email",
+        "pic_name": "Nama PIC/ Jabatan*",
+        "store_link": "Link Shopee Mall / LazMall",
+        "kategori": "Kategori",
+    },
+    "TH": {
+        "email": "Email",
+        "pic_name": "PIC",
+        "store_link": "Shopee Link",
+        "kategori": "Product Category",
+    },
+}
 
 
 def _to_schema(t: TranslatableText | None) -> TranslatableTextSchema | None:

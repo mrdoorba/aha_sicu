@@ -1,6 +1,5 @@
 """Unit tests for marketplace-aware BrandRawData extraction."""
 
-import pytest
 
 
 def test_brand_raw_data_uses_thai_columns_when_marketplace_th():
