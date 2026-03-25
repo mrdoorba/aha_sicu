@@ -313,6 +313,41 @@ class GoogleSheetsClient:
         )
         await asyncio.to_thread(batch_request.execute)
 
+    async def fetch_headers(
+        self,
+        spreadsheet_id: str,
+        sheet_name: str,
+    ) -> list[str]:
+        """Fetch only the header row (row 1) from a sheet.
+
+        Args:
+            spreadsheet_id: The Google Sheets spreadsheet ID.
+            sheet_name: Tab name (e.g., "VP"). Fetches range "{sheet_name}!1:1".
+
+        Returns:
+            List of header strings from the first row.
+
+        Raises:
+            SyncException: If fetch fails.
+        """
+        if not spreadsheet_id:
+            raise SyncException(
+                code="SYNC_CREDENTIALS_MISSING",
+                detail="Spreadsheet ID not provided",
+            )
+
+        service = self._get_service()
+        range_name = f"{sheet_name}!1:1"
+        request = service.spreadsheets().values().get(
+            spreadsheetId=spreadsheet_id,
+            range=range_name,
+        )
+        result = await asyncio.to_thread(request.execute)
+        rows = result.get("values", [])
+        if not rows:
+            return []
+        return rows[0]
+
     async def fetch_vp_data(self) -> list[dict[str, Any]]:
         """Fetch VP brand data from configured spreadsheet."""
         return await self.fetch_sheet_data(
