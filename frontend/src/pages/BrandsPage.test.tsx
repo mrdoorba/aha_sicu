@@ -150,7 +150,7 @@ describe('BrandsPage', () => {
 
     // Wait for debounce (300ms) and verify useBrands was called with search term
     await waitFor(() => {
-      expect(mockUseBrands).toHaveBeenCalledWith(1, 20, 'ABC');
+      expect(mockUseBrands).toHaveBeenCalledWith(1, 20, 'ABC', ['ID', 'TH']);
     });
   });
 
@@ -175,7 +175,7 @@ describe('BrandsPage', () => {
     await user.click(nextButton);
 
     await waitFor(() => {
-      expect(mockUseBrands).toHaveBeenCalledWith(2, 20, '');
+      expect(mockUseBrands).toHaveBeenCalledWith(2, 20, '', ['ID', 'TH']);
     });
   });
 
