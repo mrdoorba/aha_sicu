@@ -9,6 +9,7 @@ from app.modules.upload.parser import (
     SHOPEE_CSV_SKIP_ROWS,
     _normalise_english_columns,
     _normalise_thai_columns,
+    _normalise_thai_mass_update,
     dataframe_to_json,
     parse_csv,
     parse_excel,
@@ -470,3 +471,74 @@ class TestEnglishMassUpdateNormalisation:
         result, _ = _normalise_english_columns(df)
         stok_cols = [c for c in result.columns if c.startswith("Stok")]
         assert len(stok_cols) == 3
+
+
+# ---------------------------------------------------------------------------
+# Thai mass update normalisation
+# ---------------------------------------------------------------------------
+
+def _thai_mass_update_df(**overrides: list) -> pl.DataFrame:
+    """Build a DataFrame with Thai mass update headers."""
+    base = {
+        "รหัสสินค้า": ["P1", "P2"],
+        "ชื่อสินค้า": ["Product A", "Product B"],
+        "รหัสตัวเลือกสินค้า": ["V1", "V2"],
+        "ชื่อตัวเลือกสินค้า": ["Red", "Blue"],
+        "เลข SKU": ["SKU1", "SKU2"],
+        "ราคา": [100, 200],
+        "คลัง": [50, 30],
+    }
+    base.update(overrides)
+    return pl.DataFrame(base)
+
+
+class TestThaiMassUpdateNormalisation:
+    """Tests for _normalise_thai_mass_update."""
+
+    def test_renames_all_columns_to_indonesian(self):
+        df = _thai_mass_update_df()
+        result, was_thai = _normalise_thai_mass_update(df)
+
+        assert was_thai is True
+        assert "Kode Produk" in result.columns
+        assert "Nama Produk" in result.columns
+        assert "Kode Variasi" in result.columns
+        assert "Nama Variasi" in result.columns
+        assert "SKU" in result.columns
+        assert "Harga" in result.columns
+        assert "Stok" in result.columns
+
+    def test_validates_after_normalisation(self):
+        """Thai mass update passes column validation after normalisation."""
+        df = _thai_mass_update_df()
+        result, _ = _normalise_thai_mass_update(df)
+        validate_columns(result, "mass_update")  # should not raise
+
+    def test_stock_wildcard_multi_warehouse(self):
+        """คลัง, คลัง 2, คลัง 3 → Stok, Stok 2, Stok 3."""
+        df = _thai_mass_update_df(**{
+            "คลัง 2": [10, 20],
+            "คลัง 3": [5, 15],
+        })
+        result, was_thai = _normalise_thai_mass_update(df)
+        assert was_thai is True
+        assert "Stok" in result.columns
+        assert "Stok 2" in result.columns
+        assert "Stok 3" in result.columns
+        assert "คลัง" not in result.columns
+        assert "คลัง 2" not in result.columns
+        assert "คลัง 3" not in result.columns
+
+    def test_indonesian_passthrough(self):
+        """Indonesian DataFrames pass through unchanged."""
+        cols = REQUIRED_COLUMNS["mass_update"]
+        df = pl.DataFrame({col: ["x"] for col in cols})
+        result, was_thai = _normalise_thai_mass_update(df)
+        assert was_thai is False
+        assert result.columns == df.columns
+
+    def test_preserves_extra_columns(self):
+        """Non-mapped columns are kept as-is."""
+        df = _thai_mass_update_df(**{"GTIN": ["123", "456"]})
+        result, _ = _normalise_thai_mass_update(df)
+        assert "GTIN" in result.columns
