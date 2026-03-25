@@ -67,9 +67,9 @@ resource "google_project_iam_member" "deploy_cloudsql_client" {
   member  = "serviceAccount:${google_service_account.deploy.email}"
 }
 
-resource "google_project_iam_member" "deploy_cloudsql_editor" {
+resource "google_project_iam_member" "deploy_cloudsql_admin" {
   project = var.project_id
-  role    = "roles/cloudsql.editor"
+  role    = "roles/cloudsql.admin"
   member  = "serviceAccount:${google_service_account.deploy.email}"
 }
 
