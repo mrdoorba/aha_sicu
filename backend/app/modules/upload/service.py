@@ -19,6 +19,7 @@ from app.modules.upload.gcs_client import get_storage_client, make_object_name
 from app.modules.upload.parser import (
     _normalise_english_columns,
     _normalise_thai_columns,
+    _normalise_thai_mass_update,
     dataframe_to_json,
     parse_csv,
     parse_excel,
@@ -68,9 +69,14 @@ def _parse_file(
         if was_english:
             source_language = "en"
 
-    # Normalise Thai columns → Indonesian (order_export only for now)
+    # Normalise Thai columns → Indonesian (gated by file_type)
     if source_language != "en":  # Thai and English are mutually exclusive
-        df, was_thai = _normalise_thai_columns(df)
+        if file_type == "order_export":
+            df, was_thai = _normalise_thai_columns(df)
+        elif file_type == "mass_update":
+            df, was_thai = _normalise_thai_mass_update(df)
+        else:
+            was_thai = False
         if was_thai:
             source_language = "th"
 

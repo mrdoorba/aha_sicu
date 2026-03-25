@@ -542,3 +542,35 @@ class TestThaiMassUpdateNormalisation:
         df = _thai_mass_update_df(**{"GTIN": ["123", "456"]})
         result, _ = _normalise_thai_mass_update(df)
         assert "GTIN" in result.columns
+
+
+from tests.unit.conftest import make_excel_bytes
+
+
+class TestParseFileThaiGating:
+    """Verify _parse_file gates Thai normalisation by file_type."""
+
+    def test_thai_mass_update_gets_mass_update_mapping(self):
+        """Thai mass_update file should use _normalise_thai_mass_update, not _normalise_thai_columns."""
+        from app.modules.upload.service import _parse_file
+
+        df = _thai_mass_update_df()
+        file_bytes = make_excel_bytes(df, header_row=2)
+        result_df, lang = _parse_file(file_bytes, "test.xlsx", "mass_update")
+
+        assert lang == "th"
+        assert "Kode Produk" in result_df.columns
+        assert "Nama Produk" in result_df.columns
+        # Should NOT have order_export columns like "No. Pesanan"
+        assert "No. Pesanan" not in result_df.columns
+
+    def test_thai_order_export_gets_order_export_mapping(self):
+        """Thai order_export file should still use _normalise_thai_columns."""
+        from app.modules.upload.service import _parse_file
+
+        df = _thai_order_df()
+        file_bytes = make_excel_bytes(df)
+        result_df, lang = _parse_file(file_bytes, "test.xlsx", "order_export")
+
+        assert lang == "th"
+        assert "No. Pesanan" in result_df.columns
