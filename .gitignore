@@ -58,6 +58,7 @@ override.tf.json
 
 # Design/Plan Docs (skill-generated)
 docs/plans/
+docs/superpowers/
 
 # AI Tools
 .agent/
