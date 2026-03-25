@@ -142,7 +142,7 @@ module "prod" {
   cloud_sql_instance_connection_name = google_sql_database_instance.main.connection_name
 
   github_repo         = var.github_repo
-  wif_allowed_branch  = "main"
+  wif_allowed_branch  = "production"
   firebase_project_id = var.firebase_project_id
   cloud_run_image     = var.cloud_run_image
 

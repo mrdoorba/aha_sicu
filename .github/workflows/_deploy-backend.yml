@@ -145,6 +145,21 @@ jobs:
           cache-from: type=gha
           cache-to: type=gha,mode=max
 
+      - name: Validate secrets have at least one version
+        run: |
+          SECRETS=("${{ vars.DB_SECRET_NAME }}" "${{ vars.SMTP_SECRET_NAME }}")
+          for SECRET in "${SECRETS[@]}"; do
+            COUNT=$(gcloud secrets versions list "$SECRET" \
+              --project=${{ vars.GCP_PROJECT_ID }} \
+              --filter="state=ENABLED" \
+              --format="value(name)" --limit=1 | wc -l | tr -d ' ')
+            if [ "$COUNT" -eq 0 ]; then
+              echo "::error::Secret '$SECRET' has no enabled versions. Cloud Run deploy will fail."
+              exit 1
+            fi
+            echo "✓ $SECRET has enabled version(s)"
+          done
+
       - name: Deploy to Cloud Run
         id: deploy
         uses: google-github-actions/deploy-cloudrun@v3

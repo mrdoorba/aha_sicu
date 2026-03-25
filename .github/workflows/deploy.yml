@@ -1,6 +1,7 @@
 # Store ICU - Deploy Workflow
 # Single orchestrator: runs CI once, then deploys backend + frontend in parallel.
-# Dev: auto-deploys on push to develop.  Prod: requires environment protection approval.
+# Dev: auto-deploys on push to develop.  Prod: always deploys on push to production
+# (merge commits have no diff vs develop, so paths-filter would skip them).
 # Skips entirely for docs-only changes.  Skips individual deploys when only the
 # other side changed (e.g. frontend-only push won't redeploy backend).
 
@@ -24,6 +25,9 @@ concurrency:
 
 jobs:
   # Detect which parts of the codebase changed so we can skip unnecessary deploys.
+  # NOTE: On production branch, paths-filter compares develop...production which
+  # shows 0 changes after a merge. The deploy jobs handle this via the
+  # "always deploy on production" condition.
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
@@ -48,7 +52,10 @@ jobs:
 
   deploy-backend:
     needs: [ci, changes]
-    if: needs.changes.outputs.backend == 'true' || github.event_name == 'workflow_dispatch'
+    if: >-
+      needs.changes.outputs.backend == 'true'
+      || github.event_name == 'workflow_dispatch'
+      || github.ref == 'refs/heads/production'
     uses: ./.github/workflows/_deploy-backend.yml
     permissions:
       contents: read
@@ -58,7 +65,10 @@ jobs:
 
   deploy-frontend:
     needs: [ci, changes]
-    if: needs.changes.outputs.frontend == 'true' || github.event_name == 'workflow_dispatch'
+    if: >-
+      needs.changes.outputs.frontend == 'true'
+      || github.event_name == 'workflow_dispatch'
+      || github.ref == 'refs/heads/production'
     uses: ./.github/workflows/_deploy-frontend.yml
     permissions:
       contents: read
