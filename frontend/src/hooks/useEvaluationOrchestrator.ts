@@ -38,6 +38,13 @@ export function useEvaluationOrchestrator(brandId: number) {
   const [marketplace, setMarketplace] = useState<string>('ID');
   const currency = marketplace === 'TH' ? 'THB' : 'IDR';
 
+  // Sync marketplace from brand data when it loads
+  useEffect(() => {
+    if (brand?.marketplace) {
+      setMarketplace(brand.marketplace);
+    }
+  }, [brand?.marketplace]);
+
   // --- Section navigation ---
   const [activeSection, setActiveSection] = useState('section-1');
 
