@@ -213,6 +213,7 @@ def test_process_valid_csv(client):
         patch("app.modules.upload.service.db") as mock_svc_db,
         patch("app.modules.upload.service.pending_queries") as mock_pending_queries,
         patch("app.modules.upload.service.brand_queries") as mock_brand_queries,
+        patch("app.modules.upload.service.upload_queries") as mock_upload_queries,
         patch("app.modules.upload.service.get_storage_client") as mock_storage_fn,
         patch("app.modules.upload.service.clear_dependent_results") as mock_clear,
         patch("app.modules.upload.service.run_calculators_for_upload") as mock_run,
@@ -225,14 +226,19 @@ def test_process_valid_csv(client):
         # Brand mock for filename prefix
         mock_brand_queries.get_brand_by_id = AsyncMock(return_value={"id": 123, "brand_name": "TestBrand"})
 
+        # Lightweight storage path check (no existing file to delete)
+        mock_upload_queries.get_storage_path_by_type = AsyncMock(return_value=None)
+        # Upsert returns the stored upload row
+        mock_upload_queries.upsert_upload = AsyncMock(return_value=SAMPLE_UPLOAD)
+
         # Storage mock
         mock_storage = MagicMock()
         mock_storage.download_file.return_value = _make_csv_bytes()
         mock_storage.delete_file.return_value = None
         mock_storage_fn.return_value = mock_storage
 
-        # DB mock: first fetchrow for get_upload_by_type (existing check), second for upsert
-        mock_svc_conn = _make_transactional_conn(fetchrow_side_effect=[None, SAMPLE_UPLOAD])
+        # DB mock with transaction support
+        mock_svc_conn = _make_transactional_conn()
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
 
         # Engine mocks
@@ -259,14 +265,14 @@ def test_process_valid_csv(client):
         mock_pending_queries.claim_pending_upload.assert_called_once()
 
         # Verify filename was prefixed with brand name before upsert
-        upsert_call_args = mock_svc_conn.fetchrow.call_args_list[-1]
-        assert "TestBrand_report.csv" in upsert_call_args.args
+        upsert_call = mock_upload_queries.upsert_upload.call_args
+        assert upsert_call.kwargs["filename"] == "TestBrand_report.csv"
 
         # File should NOT be deleted after processing (kept for download)
         mock_storage.delete_file.assert_not_called()
 
         # storage_path should be passed to upsert
-        assert f"uploads/{upload_id}/report.csv" in upsert_call_args.args
+        assert upsert_call.kwargs["storage_path"] == f"uploads/{upload_id}/report.csv"
 
 
 def test_process_missing_columns(client):
@@ -280,6 +286,7 @@ def test_process_missing_columns(client):
         patch("app.modules.upload.service.db") as mock_svc_db,
         patch("app.modules.upload.service.pending_queries") as mock_pending_queries,
         patch("app.modules.upload.service.brand_queries") as mock_brand_queries,
+        patch("app.modules.upload.service.upload_queries") as mock_upload_queries,
         patch("app.modules.upload.service.get_storage_client") as mock_storage_fn,
     ):
         _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
@@ -294,6 +301,7 @@ def test_process_missing_columns(client):
 
         # Brand mock for filename prefix
         mock_brand_queries.get_brand_by_id = AsyncMock(return_value={"id": 123, "brand_name": "TestBrand"})
+        mock_upload_queries.get_storage_path_by_type = AsyncMock(return_value=None)
         mock_svc_conn = AsyncMock()
         mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
 

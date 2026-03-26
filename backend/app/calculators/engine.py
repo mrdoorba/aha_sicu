@@ -1,5 +1,6 @@
 """Calculator orchestration engine — decides when to run calculators."""
 
+import asyncio
 import logging
 from dataclasses import dataclass
 from typing import Any, Callable
@@ -198,18 +199,30 @@ async def run_ready_calculators(
 
 
 async def run_calculators_for_upload(
-    brand_id: int, file_type: str, conn: Connection,
+    brand_id: int,
+    file_type: str,
+    conn: Connection,
+    *,
+    upload_cache: dict[str, dict] | None = None,
 ) -> list[dict]:
     """Run only the calculators affected by a specific file upload.
 
     Used by the upload pipeline for targeted auto-execute.
+
+    Args:
+        upload_cache: Optional mapping of file_type → upload-like dict with
+            ``parsed_data`` key.  When provided, calculator runners skip
+            re-fetching the large JSONB from the database.
     """
     affected_calculators = FILE_TO_CALCULATORS.get(file_type, [])
     if not affected_calculators:
         return []
 
     readiness = await check_calculator_readiness(brand_id, conn)
-    results: list[dict] = []
+
+    # Separate ready vs skipped calculators
+    skipped: list[dict] = []
+    ready_calcs: list[str] = []
 
     for calc_type in affected_calculators:
         status_info = readiness.get(calc_type)
@@ -219,33 +232,41 @@ async def run_calculators_for_upload(
                 if status_info
                 else f"Unknown calculator: {calc_type}"
             )
-            results.append({
+            skipped.append({
                 "calculator_type": calc_type,
                 "status": "skipped",
                 "reason": reason,
             })
-            continue
+        else:
+            ready_calcs.append(calc_type)
 
+    # Run ready calculators concurrently
+    async def _run_one(calc_type: str) -> dict:
         try:
             runner = CALCULATOR_REGISTRY[calc_type].runner
-            result = await runner(brand_id)
-            results.append({
+            result = await runner(brand_id, upload_cache=upload_cache)
+            return {
                 "calculator_type": calc_type,
                 "status": "success",
                 "result": result.model_dump(mode="json"),
-            })
+            }
         except Exception as e:
             logger.warning(
                 "Calculator %s failed for brand %d after upload: %s",
                 calc_type, brand_id, e, exc_info=True,
             )
-            results.append({
+            return {
                 "calculator_type": calc_type,
                 "status": "error",
                 "reason": f"Calculator execution failed: {calc_type}",
-            })
+            }
 
-    return results
+    if ready_calcs:
+        ready_results = await asyncio.gather(*[_run_one(ct) for ct in ready_calcs])
+    else:
+        ready_results = []
+
+    return list(ready_results) + skipped
 
 
 async def clear_dependent_results(

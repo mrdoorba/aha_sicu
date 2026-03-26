@@ -17,6 +17,8 @@ from app.modules.evaluations.schemas import CalculatorResultResponse
 
 async def run_ads_keyword_calculator(
     brand_id: int,
+    *,
+    upload_cache: dict[str, dict] | None = None,
 ) -> CalculatorResultResponse:
     """Execute the Ads Keyword Calculator for a brand.
 
@@ -39,20 +41,32 @@ async def run_ads_keyword_calculator(
                     status_code=404,
                 )
 
-            # Load CPC Ad Report
-            cpc_upload = await upload_queries.get_upload_by_type(
-                conn, brand_id, "cpc_ad_report"
+            # Load CPC Ad Report — use cache if available
+            cpc_upload = (
+                upload_cache.get("cpc_ad_report")
+                if upload_cache
+                else None
             )
+            if not cpc_upload:
+                cpc_upload = await upload_queries.get_upload_by_type(
+                    conn, brand_id, "cpc_ad_report"
+                )
             if not cpc_upload:
                 raise CalculatorException(
                     code="CALC_MISSING_DATA",
                     detail="CPC Ad Report (cpc_ad_report) has not been uploaded for this brand",
                 )
 
-            # Load Keyword/Placement Report
-            keyword_upload = await upload_queries.get_upload_by_type(
-                conn, brand_id, "keyword_report"
+            # Load Keyword/Placement Report — use cache if available
+            keyword_upload = (
+                upload_cache.get("keyword_report")
+                if upload_cache
+                else None
             )
+            if not keyword_upload:
+                keyword_upload = await upload_queries.get_upload_by_type(
+                    conn, brand_id, "keyword_report"
+                )
             if not keyword_upload:
                 raise CalculatorException(
                     code="CALC_MISSING_DATA",
@@ -290,11 +304,17 @@ def _extract_total_products(eval_inputs: dict | None) -> int:
 
 async def run_discount_calculator(
     brand_id: int,
+    *,
+    upload_cache: dict[str, dict] | None = None,
 ) -> CalculatorResultResponse:
     """Execute the Discount Check Calculator for a brand.
 
     Loads order_export parsed data from brand_uploads,
     runs the pure calculator function, and stores the result.
+
+    Args:
+        upload_cache: Optional mapping of file_type → upload-like dict.
+            When provided, skips re-fetching large JSONB from database.
 
     Raises:
         CalculatorException: BRAND_NOT_FOUND if brand doesn't exist.
@@ -312,10 +332,16 @@ async def run_discount_calculator(
                     status_code=404,
                 )
 
-            # Load Order Export
-            order_upload = await upload_queries.get_upload_by_type(
-                conn, brand_id, "order_export"
+            # Load Order Export — use cache if available
+            order_upload = (
+                upload_cache.get("order_export")
+                if upload_cache
+                else None
             )
+            if not order_upload:
+                order_upload = await upload_queries.get_upload_by_type(
+                    conn, brand_id, "order_export"
+                )
             if not order_upload:
                 raise CalculatorException(
                     code="CALC_MISSING_DATA",
@@ -361,11 +387,17 @@ async def run_discount_calculator(
 
 async def run_top_sku_calculator(
     brand_id: int,
+    *,
+    upload_cache: dict[str, dict] | None = None,
 ) -> CalculatorResultResponse:
     """Execute the Top SKU Calculator for a brand.
 
     Loads order_export and mass_update parsed data from brand_uploads,
     runs the pure calculator function, and stores the result.
+
+    Args:
+        upload_cache: Optional mapping of file_type → upload-like dict.
+            When provided, skips re-fetching large JSONB from database.
 
     Raises:
         CalculatorException: BRAND_NOT_FOUND if brand doesn't exist.
@@ -383,20 +415,32 @@ async def run_top_sku_calculator(
                     status_code=404,
                 )
 
-            # Load Order Export
-            order_upload = await upload_queries.get_upload_by_type(
-                conn, brand_id, "order_export"
+            # Load Order Export — use cache if available
+            order_upload = (
+                upload_cache.get("order_export")
+                if upload_cache
+                else None
             )
+            if not order_upload:
+                order_upload = await upload_queries.get_upload_by_type(
+                    conn, brand_id, "order_export"
+                )
             if not order_upload:
                 raise CalculatorException(
                     code="CALC_MISSING_DATA",
                     detail="Order Export (order_export) has not been uploaded for this brand",
                 )
 
-            # Load Mass Update
-            mass_update_upload = await upload_queries.get_upload_by_type(
-                conn, brand_id, "mass_update"
+            # Load Mass Update — use cache if available
+            mass_update_upload = (
+                upload_cache.get("mass_update")
+                if upload_cache
+                else None
             )
+            if not mass_update_upload:
+                mass_update_upload = await upload_queries.get_upload_by_type(
+                    conn, brand_id, "mass_update"
+                )
             if not mass_update_upload:
                 raise CalculatorException(
                     code="CALC_MISSING_DATA",
