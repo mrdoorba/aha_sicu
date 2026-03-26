@@ -187,6 +187,27 @@ resource "google_secret_manager_secret_iam_member" "deploy_sa_db_password" {
   project   = var.project_id
 }
 
+resource "google_secret_manager_secret_iam_member" "deploy_sa_db_password_viewer" {
+  secret_id = google_secret_manager_secret.db_password.secret_id
+  role      = "roles/secretmanager.viewer"
+  member    = "serviceAccount:${google_service_account.deploy.email}"
+  project   = var.project_id
+}
+
+resource "google_secret_manager_secret_iam_member" "deploy_sa_smtp_password" {
+  secret_id = google_secret_manager_secret.smtp_password.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.deploy.email}"
+  project   = var.project_id
+}
+
+resource "google_secret_manager_secret_iam_member" "deploy_sa_smtp_password_viewer" {
+  secret_id = google_secret_manager_secret.smtp_password.secret_id
+  role      = "roles/secretmanager.viewer"
+  member    = "serviceAccount:${google_service_account.deploy.email}"
+  project   = var.project_id
+}
+
 resource "google_secret_manager_secret_iam_member" "api_sa_gsheets" {
   secret_id = google_secret_manager_secret.gsheets_credentials.secret_id
   role      = "roles/secretmanager.secretAccessor"
