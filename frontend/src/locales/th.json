@@ -450,7 +450,7 @@
   "history.table.noMatchSearch": "ไม่พบการประเมินสำหรับ '{{search}}'",
   "history.table.searchPlaceholder": "ค้นหาชื่อแบรนด์...",
   "history.table.showAll": "แสดงทั้งหมด ({{count}})",
-  "history.table.topScore": "คะแนนสูงสุด",
+  "history.table.topScore": "คะแนนล่าสุด",
   "history.title": "ประวัติการประเมิน",
   "login.bannerAlt": "การรับประกันรายได้และกำไรเพิ่มขึ้น",
   "login.emailInvalid": "ที่อยู่อีเมลไม่ถูกต้อง",

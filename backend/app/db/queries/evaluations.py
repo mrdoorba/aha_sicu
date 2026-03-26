@@ -304,8 +304,8 @@ async def list_grouped_evaluations(
         SELECT e.brand_id,
                b.brand_name,
                COUNT(*) AS evaluation_count,
-               MAX(e.final_score) AS top_score,
-               (ARRAY_AGG(e.verdict ORDER BY e.final_score DESC))[1] AS top_verdict,
+               (ARRAY_AGG(e.final_score ORDER BY e.created_at DESC))[1] AS top_score,
+               (ARRAY_AGG(e.verdict ORDER BY e.created_at DESC))[1] AS top_verdict,
                MAX(e.created_at) AS latest_date
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id

@@ -20,6 +20,15 @@ import { useGroupedEvaluations, type GroupedEvaluationItem } from '../../hooks/u
 import { useBrandEvaluations } from '../../hooks/useBrandEvaluations';
 import { getIntlLocale } from '../../lib/languages';
 
+const VERDICT_LABEL_KEYS: Record<string, string> = {
+  '✔️': 'verdict.approved',
+  '❌': 'verdict.rejected',
+  '❌ Non Mall': 'verdict.nonMall',
+  '❌ No Brand': 'verdict.noBrand',
+  '❌ Opex': 'verdict.opexIssue',
+  '❌ Stock': 'verdict.stockInsufficient',
+};
+
 function SearchInput({
   value,
   onChange,
@@ -176,7 +185,7 @@ function BrandAccordionRow({
         <TableCell>{t('history.table.evaluationCount', { count: brand.evaluation_count })}</TableCell>
         <TableCell>
           <span className="font-mono">
-            {brand.top_score.toFixed(2)} {brand.top_verdict}
+            {brand.top_score.toFixed(2)} {t(VERDICT_LABEL_KEYS[brand.top_verdict] ?? brand.top_verdict)}
           </span>
         </TableCell>
         <TableCell>{dateFormatter.format(new Date(brand.latest_date))}</TableCell>
@@ -209,7 +218,7 @@ function BrandAccordionRow({
               <TableCell className="pl-10 text-muted-foreground">—</TableCell>
               <TableCell>
                 <span className="font-mono">
-                  {ev.final_score.toFixed(2)} {ev.verdict}
+                  {ev.final_score.toFixed(2)} {t(VERDICT_LABEL_KEYS[ev.verdict] ?? ev.verdict)}
                 </span>
               </TableCell>
               <TableCell>{ev.evaluator_email}</TableCell>
