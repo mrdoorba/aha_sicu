@@ -64,8 +64,14 @@ variable "gsheets_meeting_spreadsheet_id" {
   default     = ""
 }
 
-variable "gsheets_eval_spreadsheet_id" {
-  description = "Google Sheets spreadsheet ID for evaluated brand status (write-only)"
+variable "dev_gsheets_eval_spreadsheet_id" {
+  description = "Google Sheets spreadsheet ID for evaluated brand status (dev)"
+  type        = string
+  default     = ""
+}
+
+variable "prod_gsheets_eval_spreadsheet_id" {
+  description = "Google Sheets spreadsheet ID for evaluated brand status (prod)"
   type        = string
   default     = ""
 }
@@ -77,19 +83,17 @@ variable "gsheets_vp_spreadsheet_id_th" {
 }
 
 # =============================================================================
-# Email / Brevo Variables
+# Email / SMTP Variables
 # =============================================================================
 
-variable "brevo_sender_name" {
-  description = "Display name for sent emails"
+variable "smtp_user" {
+  description = "SMTP username (Gmail address) for sending emails"
   type        = string
-  default     = "AHA Commerce"
 }
 
-variable "brevo_sender_email" {
-  description = "Verified sender email for Brevo transactional emails"
+variable "smtp_from_email" {
+  description = "Sender email address for outgoing emails"
   type        = string
-  default     = ""
 }
 
 variable "dev_email_enabled" {

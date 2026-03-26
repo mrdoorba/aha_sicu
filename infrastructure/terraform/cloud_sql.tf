@@ -99,11 +99,11 @@ resource "google_project_iam_member" "cloud_sql_scheduler_admin" {
   member  = "serviceAccount:${google_service_account.cloud_sql_scheduler.email}"
 }
 
-# START job — 08:00 WIB, weekdays only
+# START job — 07:45 WIB, weekdays only
 resource "google_cloud_scheduler_job" "cloud_sql_start" {
   name        = "aha-coms-sicu-sql-start"
-  description = "Start Cloud SQL instance at 08:00 WIB"
-  schedule    = "0 8 * * 1-5"
+  description = "Start Cloud SQL instance at 07:45 WIB"
+  schedule    = "45 7 * * 1-5"
   time_zone   = "Asia/Jakarta"
   project     = var.project_id
   region      = var.region
@@ -125,11 +125,11 @@ resource "google_cloud_scheduler_job" "cloud_sql_start" {
   depends_on = [google_project_service.scheduler_api]
 }
 
-# STOP job — 18:30 WIB, weekdays only
+# STOP job — 19:00 WIB, weekdays only
 resource "google_cloud_scheduler_job" "cloud_sql_stop" {
   name        = "aha-coms-sicu-sql-stop"
-  description = "Stop Cloud SQL instance at 18:30 WIB"
-  schedule    = "30 18 * * 1-5"
+  description = "Stop Cloud SQL instance at 19:00 WIB"
+  schedule    = "0 19 * * 1-5"
   time_zone   = "Asia/Jakarta"
   project     = var.project_id
   region      = var.region
