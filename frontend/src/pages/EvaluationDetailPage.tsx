@@ -677,6 +677,9 @@ export function EvaluationDetailPage() {
                     <h1 className="text-2xl font-bold">{evaluation.brand_name}</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {evaluation.evaluator_email} &middot; {formatDate(evaluation.created_at, getIntlLocale(i18n.language))}
+                      {evaluation.period && (
+                        <> &middot; {t('scoring.period')}: {evaluation.period}</>
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
