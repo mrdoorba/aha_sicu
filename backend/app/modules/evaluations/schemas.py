@@ -123,7 +123,7 @@ class RunAllResponse(BaseModel):
 # ---------------------------------------------------------------------------
 
 
-VerdictType = Literal["✔️", "❌", "❌ Non Mall", "❌ No Brand", "❌ Opex"]
+VerdictType = Literal["✔️", "❌", "❌ Non Mall", "❌ No Brand", "❌ Opex", "❌ Stock"]
 
 
 class ScoringRequest(BaseModel):

@@ -29,8 +29,8 @@ describe('VerdictSelector', () => {
     }
   });
 
-  it('has exactly 5 verdict options', () => {
-    expect(VERDICT_OPTIONS).toHaveLength(5);
+  it('has exactly 6 verdict options', () => {
+    expect(VERDICT_OPTIONS).toHaveLength(6);
   });
 
   it('calls onChange when an option is selected', async () => {
