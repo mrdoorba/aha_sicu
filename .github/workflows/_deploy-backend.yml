@@ -133,18 +133,6 @@ jobs:
       - name: Copy locale files into backend build context
         run: cp -r frontend/src/locales backend/locales
 
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: backend
-          file: backend/Dockerfile
-          push: true
-          tags: |
-            ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
-            ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
-
       - name: Validate secrets have at least one version
         run: |
           SECRETS=("${{ vars.DB_SECRET_NAME }}" "${{ vars.SMTP_SECRET_NAME }}")
@@ -159,6 +147,18 @@ jobs:
             fi
             echo "✓ $SECRET has enabled version(s)"
           done
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v7
+        with:
+          context: backend
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
+            ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
 
       - name: Deploy to Cloud Run
         id: deploy
