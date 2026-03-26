@@ -12,7 +12,7 @@ prod_cloud_run_url      = "https://aha-coms-sicu-prod-api-45tyczfska-et.a.run.ap
 cloud_run_image         = "us-docker.pkg.dev/cloudrun/container/hello"
 cloud_run_min_instances = 0
 cloud_run_max_instances = 2
-cloud_run_memory        = "1Gi"
+cloud_run_memory        = "512Mi"
 cloud_run_cpu           = "1"
 
 # Google Sheets spreadsheet IDs (shared)
