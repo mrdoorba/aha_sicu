@@ -1,5 +1,5 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState, useCallback, useEffect } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import client from '../services/apiClient';
 import type { TranslatableText } from '../utils/renderTranslatable';
 
@@ -61,9 +61,11 @@ export function useScoring(brandId: number, preStep?: () => Promise<void>) {
   const [isStale, setIsStale] = useState(false);
   const [lastPeriod, setLastPeriod] = useState('');
   const [step, setStep] = useState<ScoringStep>('idle');
+  const isMutatingRef = useRef(false);
 
   const mutation = useMutation({
     mutationFn: async (request: ScoringRequest) => {
+      isMutatingRef.current = true;
       setLastPeriod(request.period);
 
       // Run pre-step (recalculate all calculators) if provided
@@ -89,9 +91,13 @@ export function useScoring(brandId: number, preStep?: () => Promise<void>) {
       setIsStale(false);
       setStep('idle');
       queryClient.setQueryData(['scoring', brandId], data);
+      // Delay clearing the flag so late-arriving cache updates from
+      // preStep (invalidateQueries refetches) are still suppressed.
+      setTimeout(() => { isMutatingRef.current = false; }, 500);
     },
     onError: () => {
       setStep('idle');
+      isMutatingRef.current = false;
     },
   });
 
@@ -101,12 +107,14 @@ export function useScoring(brandId: number, preStep?: () => Promise<void>) {
     }
   }, [scoringResult]);
 
-  // Mark stale when manual data or calculator results change
+  // Mark stale when manual data or calculator results change.
+  // Suppress during mutation to avoid false positives from preStep cache updates.
   useEffect(() => {
     const unsub = queryClient.getQueryCache().subscribe((event) => {
       if (
         event.type === 'updated' &&
         scoringResult &&
+        !isMutatingRef.current &&
         (event.query.queryKey[0] === 'evaluationState' ||
           event.query.queryKey[0] === 'calculatorResults')
       ) {
