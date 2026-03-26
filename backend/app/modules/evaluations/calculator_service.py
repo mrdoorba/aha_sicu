@@ -1,5 +1,6 @@
 """Calculator service — orchestrates I/O for calculator execution."""
 
+from collections.abc import Iterator
 from typing import Any
 
 from app.calculators.ads_keyword import calculate_ads_keyword
@@ -146,12 +147,41 @@ def _extract_source_language(upload: dict) -> str:
     return "id"
 
 
-def _extract_parsed_data(upload: dict, file_type: str) -> list[dict[str, Any]]:
+class ColumnarRows:
+    """Lazy dict-like access to columnar data without full materialization.
+
+    Converts each row to a dict on-the-fly during iteration instead of
+    building a full ``list[dict]`` upfront.  Supports ``len()``, repeated
+    iteration, and truthiness — everything calculators need.
+    """
+
+    __slots__ = ("_columns", "_rows")
+
+    def __init__(self, columns: list[str], rows: list[list]) -> None:
+        self._columns = columns
+        self._rows = rows
+
+    def __iter__(self) -> Iterator[dict[str, Any]]:
+        columns = self._columns
+        for row in self._rows:
+            yield dict(zip(columns, row))
+
+    def __len__(self) -> int:
+        return len(self._rows)
+
+    def __bool__(self) -> bool:
+        return len(self._rows) > 0
+
+
+def _extract_parsed_data(upload: dict, file_type: str) -> ColumnarRows | list[dict[str, Any]]:
     """Extract and validate parsed_data from a brand upload record.
 
     Supports both formats:
-    - New: ``{"columns": [...], "rows": [[v1, v2], ...]}``
-    - Old: ``{"columns": [...], "data": [{"col": v1}, ...]}``
+    - New: ``{"columns": [...], "rows": [[v1, v2], ...]}`` → ``ColumnarRows``
+    - Old: ``{"columns": [...], "data": [{"col": v1}, ...]}`` → ``list[dict]``
+
+    Returns a ``ColumnarRows`` for the new format, which lazily converts
+    each row to a dict during iteration — avoiding full materialization.
 
     Raises:
         CalculatorException: CALC_MISSING_DATA if parsed_data structure is invalid.
@@ -169,11 +199,11 @@ def _extract_parsed_data(upload: dict, file_type: str) -> list[dict[str, Any]]:
             detail=f"Upload '{file_type}' has invalid parsed_data structure",
         )
 
-    # New columnar format: reconstruct list[dict] from columns + rows
+    # New columnar format: return lazy wrapper instead of full list[dict]
     rows = parsed_data.get("rows")
     if isinstance(rows, list):
         columns = parsed_data.get("columns", [])
-        return [dict(zip(columns, row)) for row in rows]
+        return ColumnarRows(columns, rows)
 
     # Old row-dict format: return as-is
     data = parsed_data.get("data")

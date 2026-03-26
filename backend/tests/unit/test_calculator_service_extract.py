@@ -3,7 +3,7 @@
 import pytest
 
 from app.core.exceptions import CalculatorException
-from app.modules.evaluations.calculator_service import _extract_parsed_data
+from app.modules.evaluations.calculator_service import ColumnarRows, _extract_parsed_data
 
 
 class TestExtractParsedData:
@@ -18,7 +18,8 @@ class TestExtractParsedData:
             }
         }
         result = _extract_parsed_data(upload, "order_export")
-        assert result == [{"A": 1, "B": "x"}, {"A": 2, "B": "y"}]
+        assert isinstance(result, ColumnarRows)
+        assert list(result) == [{"A": 1, "B": "x"}, {"A": 2, "B": "y"}]
 
     def test_reads_old_data_format(self):
         upload = {
@@ -29,6 +30,7 @@ class TestExtractParsedData:
             }
         }
         result = _extract_parsed_data(upload, "order_export")
+        assert isinstance(result, list)
         assert result == [{"A": 1, "B": "x"}, {"A": 2, "B": "y"}]
 
     def test_prefers_rows_over_data(self):
@@ -42,7 +44,7 @@ class TestExtractParsedData:
             }
         }
         result = _extract_parsed_data(upload, "order_export")
-        assert result == [{"A": 1}]
+        assert list(result) == [{"A": 1}]
 
     def test_empty_rows(self):
         upload = {
@@ -53,7 +55,9 @@ class TestExtractParsedData:
             }
         }
         result = _extract_parsed_data(upload, "order_export")
-        assert result == []
+        assert isinstance(result, ColumnarRows)
+        assert len(result) == 0
+        assert list(result) == []
 
     def test_invalid_parsed_data_raises(self):
         upload = {"parsed_data": None}
@@ -83,4 +87,31 @@ class TestExtractParsedData:
             })
         }
         result = _extract_parsed_data(upload, "order_export")
-        assert result == [{"A": 1}, {"A": 2}]
+        assert list(result) == [{"A": 1}, {"A": 2}]
+
+
+class TestColumnarRows:
+    """ColumnarRows lazily converts rows and supports re-iteration."""
+
+    def test_iteration_yields_dicts(self):
+        cr = ColumnarRows(["a", "b"], [[1, 2], [3, 4]])
+        assert list(cr) == [{"a": 1, "b": 2}, {"a": 3, "b": 4}]
+
+    def test_len(self):
+        cr = ColumnarRows(["a"], [[1], [2], [3]])
+        assert len(cr) == 3
+
+    def test_bool_true(self):
+        cr = ColumnarRows(["a"], [[1]])
+        assert bool(cr) is True
+
+    def test_bool_false(self):
+        cr = ColumnarRows(["a"], [])
+        assert bool(cr) is False
+
+    def test_re_iteration(self):
+        """Can iterate multiple times (important for calculators)."""
+        cr = ColumnarRows(["x"], [[1], [2]])
+        first = list(cr)
+        second = list(cr)
+        assert first == second == [{"x": 1}, {"x": 2}]
