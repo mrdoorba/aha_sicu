@@ -450,7 +450,7 @@
   "history.table.noMatchSearch": "No evaluations found for '{{search}}'",
   "history.table.searchPlaceholder": "Search brand name...",
   "history.table.showAll": "Show all ({{count}})",
-  "history.table.topScore": "Top Score",
+  "history.table.topScore": "Latest Score",
   "history.title": "Evaluation History",
   "login.bannerAlt": "Revenue and Profit Growth Guarantee",
   "login.emailInvalid": "Invalid email address",

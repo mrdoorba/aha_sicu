@@ -175,27 +175,39 @@ function AdsKeywordSection({ data, t }: { data: Record<string, unknown>; t: TFun
   const details = isRecord(data.details) ? data.details : undefined;
   const hasI18n = details?.ak2_i18n != null;
 
-  if (!hasI18n || !details) {
+  const hasDetailFields = details && (details.ak2 != null || hasI18n);
+
+  if (!hasDetailFields) {
     return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{text}</pre>;
   }
 
   const parts: string[] = [];
-  parts.push(renderTranslatable('', details.ak2_i18n as TranslatableI18n | null, t));
-  parts.push(renderTranslatable('', details.ak3_i18n as TranslatableI18n | null, t));
-  if (details.ak4_i18n != null) {
-    parts.push(renderFlagList('', details.ak4_i18n as TranslatableI18n[] | null, t));
-  }
-  parts.push(renderAdList('', details.al2_i18n as AdListI18n | null, t));
-  parts.push(renderTranslatable('', details.al3_i18n as TranslatableI18n | null, t));
-  parts.push(renderAdList('', details.al5_i18n as AdListI18n | null, t));
-  for (const key of ['al6_i18n', 'al7_i18n', 'al8_i18n', 'al9_i18n']) {
-    if (details[key] != null) {
-      parts.push(renderTranslatable('', details[key] as TranslatableI18n | null, t));
-    }
+  const str = (k: string) => (typeof details![k] === 'string' ? (details![k] as string) : '');
+
+  parts.push(renderTranslatable(str('ak2'), details.ak2_i18n as TranslatableI18n | null, t));
+  parts.push(renderTranslatable(str('ak3'), details.ak3_i18n as TranslatableI18n | null, t));
+
+  const ak4Text = renderFlagList(str('ak4'), details.ak4_i18n as TranslatableI18n[] | null, t);
+  if (ak4Text) parts.push(ak4Text);
+
+  const al2Text = renderAdList(str('al2'), details.al2_i18n as AdListI18n | null, t);
+  if (al2Text) parts.push(al2Text);
+
+  const al3Text = renderTranslatable(str('al3'), details.al3_i18n as TranslatableI18n | null, t);
+  if (al3Text) parts.push(al3Text);
+
+  const al5Text = renderAdList(str('al5'), details.al5_i18n as AdListI18n | null, t);
+  if (al5Text) parts.push(al5Text);
+
+  for (const key of ['al6', 'al7', 'al8', 'al9']) {
+    const i18nKey = `${key}_i18n`;
+    const fallback = str(key);
+    const val = renderTranslatable(fallback, details[i18nKey] as TranslatableI18n | null, t);
+    if (val) parts.push(val);
   }
 
-  const translated = parts.filter(Boolean).join('\n');
-  return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{translated}</pre>;
+  const rendered = parts.filter(Boolean).join('\n\n');
+  return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{rendered}</pre>;
 }
 
 function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>; t: (key: string) => string; marketplace?: string }) {
@@ -665,6 +677,9 @@ export function EvaluationDetailPage() {
                     <h1 className="text-2xl font-bold">{evaluation.brand_name}</h1>
                     <p className="mt-1 text-sm text-muted-foreground">
                       {evaluation.evaluator_email} &middot; {formatDate(evaluation.created_at, getIntlLocale(i18n.language))}
+                      {evaluation.period && (
+                        <> &middot; {t('scoring.period')}: {evaluation.period}</>
+                      )}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">

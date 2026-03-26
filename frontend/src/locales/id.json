@@ -450,7 +450,7 @@
   "history.table.noMatchSearch": "Tidak ada evaluasi ditemukan untuk '{{search}}'",
   "history.table.searchPlaceholder": "Cari nama brand...",
   "history.table.showAll": "Tampilkan semua ({{count}})",
-  "history.table.topScore": "Skor Tertinggi",
+  "history.table.topScore": "Skor Terbaru",
   "history.title": "Riwayat Evaluasi",
   "login.bannerAlt": "Garansi Omzet dan Profit Naik",
   "login.emailInvalid": "Alamat email tidak valid",
