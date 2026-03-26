@@ -194,7 +194,7 @@ function AdsKeywordSection({ data, t }: { data: Record<string, unknown>; t: TFun
     }
   }
 
-  const translated = parts.filter(Boolean).join('\n');
+  const translated = parts.filter(Boolean).join('\n\n');
   return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{translated}</pre>;
 }
 
