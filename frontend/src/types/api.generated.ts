@@ -894,7 +894,7 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
+            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex" | "❌ Stock";
             /**
              * Template
              * @enum {string}
@@ -1159,7 +1159,7 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
+            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex" | "❌ Stock";
             /**
              * Template
              * @enum {string}
@@ -1232,7 +1232,7 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
+            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex" | "❌ Stock";
             /**
              * Template
              * @enum {string}
@@ -1300,7 +1300,7 @@ export interface components {
              * Top Verdict
              * @enum {string}
              */
-            top_verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
+            top_verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex" | "❌ Stock";
             /**
              * Latest Date
              * Format: date-time
@@ -1418,7 +1418,7 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
+            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex" | "❌ Stock";
             /** Score Breakdown */
             score_breakdown: {
                 [key: string]: unknown;
@@ -1464,7 +1464,7 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
+            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex" | "❌ Stock";
             /**
              * Template
              * @enum {string}
@@ -1495,7 +1495,7 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
+            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex" | "❌ Stock";
             /**
              * Store Name
              * @default
@@ -1527,7 +1527,7 @@ export interface components {
              * Verdict
              * @enum {string}
              */
-            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex";
+            verdict: "✔️" | "❌" | "❌ Non Mall" | "❌ No Brand" | "❌ Opex" | "❌ Stock";
             /** Conclusion */
             conclusion: string;
             /** Marketing Estimation */

@@ -67,17 +67,6 @@ variable "cloud_run_service_name" {
   default     = ""
 }
 
-variable "brevo_sender_name" {
-  description = "Display name for sent emails"
-  type        = string
-  default     = "AHA Commerce"
-}
-
-variable "brevo_sender_email" {
-  description = "Verified sender email for Brevo transactional emails"
-  type        = string
-}
-
 variable "gsheets_vp_spreadsheet_id" {
   description = "Google Sheets spreadsheet ID for VP brand data"
   type        = string
@@ -103,6 +92,16 @@ variable "cloud_run_url" {
   description = "Cloud Run service URL override for scheduler"
   type        = string
   default     = ""
+}
+
+variable "smtp_user" {
+  description = "SMTP username (Gmail address)"
+  type        = string
+}
+
+variable "smtp_from_email" {
+  description = "Sender email address for outgoing emails"
+  type        = string
 }
 
 variable "email_enabled" {

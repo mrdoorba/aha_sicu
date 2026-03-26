@@ -13,6 +13,7 @@ const VERDICT_CONFIG: Record<string, { icon: typeof CheckCircle; color: string; 
   '❌ Non Mall': { icon: XCircle, color: 'text-destructive', labelKey: 'finalScore.verdict.nonMall' },
   '❌ No Brand': { icon: XCircle, color: 'text-destructive', labelKey: 'finalScore.verdict.noBrand' },
   '❌ Opex': { icon: XCircle, color: 'text-destructive', labelKey: 'finalScore.verdict.opexIssue' },
+  '❌ Stock': { icon: XCircle, color: 'text-destructive', labelKey: 'finalScore.verdict.stockInsufficient' },
 };
 
 export const FinalScoreDisplay = ({ totalScore, verdict }: FinalScoreDisplayProps) => {

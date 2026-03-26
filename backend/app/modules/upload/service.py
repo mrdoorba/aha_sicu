@@ -278,10 +278,15 @@ async def _store_and_auto_execute(
                 storage_path=storage_path,
             )
 
+        # Build in-memory cache so calculators skip re-fetching large JSONB
+        upload_cache = {
+            file_type: {"parsed_data": parsed_data, "brand_id": brand_id, "file_type": file_type},
+        }
+
         try:
             await clear_dependent_results(brand_id, file_type, conn)
             auto_calc_raw = await run_calculators_for_upload(
-                brand_id, file_type, conn
+                brand_id, file_type, conn, upload_cache=upload_cache,
             )
         except Exception as e:
             logger.warning(
@@ -302,35 +307,37 @@ async def process_upload(
     """Download file from storage, parse, validate, store parsed data, auto-execute calculators."""
     _validate_file_type(file_type)
 
-    # Atomically claim the pending upload (DELETE...RETURNING prevents races)
+    # Single connection for claim + brand lookup + old storage path check
     async with db.connection() as conn:
         pending = await _claim_pending_upload(conn, upload_id)
 
-    # Validate brand_id/file_type match after claim
-    if pending.brand_id != brand_id or pending.file_type != file_type:
-        raise UploadException(
-            code="UPLOAD_PROCESSING_FAILED",
-            detail="Upload ID does not match brand_id/file_type",
+        # Validate brand_id/file_type match after claim
+        if pending.brand_id != brand_id or pending.file_type != file_type:
+            raise UploadException(
+                code="UPLOAD_PROCESSING_FAILED",
+                detail="Upload ID does not match brand_id/file_type",
+            )
+
+        brand = await brand_queries.get_brand_by_id(conn, brand_id)
+        if not brand:
+            raise AppException(
+                code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
+            )
+
+        # Lightweight query — only fetch storage_path, skip large parsed_data
+        old_storage_path = await upload_queries.get_storage_path_by_type(
+            conn, brand_id, file_type
         )
 
-    # Fetch brand to prefix filename
-    async with db.connection() as conn:
-        brand = await brand_queries.get_brand_by_id(conn, brand_id)
-    if not brand:
-        raise AppException(
-            code="BRAND_NOT_FOUND", detail="Brand not found", status_code=404
-        )
     pending.filename = f"{brand['brand_name']}_{pending.filename}"
 
     parsed_data, file_size, row_count = await _download_and_parse(pending, file_type)
 
     # Delete old file from storage if replacing
-    async with db.connection() as conn:
-        existing = await upload_queries.get_upload_by_type(conn, brand_id, file_type)
-    if existing and existing.get("storage_path"):
+    if old_storage_path:
         storage = get_storage_client()
         try:
-            await asyncio.to_thread(storage.delete_file, existing["storage_path"])
+            await asyncio.to_thread(storage.delete_file, old_storage_path)
         except Exception as e:
             logger.warning("Failed to delete old file from storage: %s", e)
 

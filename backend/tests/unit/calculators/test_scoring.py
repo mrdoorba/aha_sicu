@@ -950,6 +950,10 @@ class TestG73:
         result = _compute_g73("❌ Opex", 0.15, 200_000_000)
         assert result == ""
 
+    def test_rejected_stock_suppressed(self):
+        result = _compute_g73("❌ Stock", 0.15, 200_000_000)
+        assert result == ""
+
 
 # ---------------------------------------------------------------------------
 # G75 closing message tests
@@ -981,6 +985,15 @@ class TestG75:
     def test_opex_verdict(self):
         msg = _compute_g75("❌ Opex")
         assert "keterlambatan" in msg.lower()
+
+    def test_stock_verdict(self):
+        msg = _compute_g75("❌ Stock")
+        assert "stok per varian" in msg.lower()
+
+    def test_stock_verdict_interpolates_store_name(self):
+        msg = _compute_g75("❌ Stock", "BrandX")
+        assert "BrandX" in msg
+        assert msg.count("BrandX") == 2
 
 
 # ---------------------------------------------------------------------------
@@ -2412,6 +2425,7 @@ class TestMessageTemplatesG75:
                 "❌ Non Mall": "CUSTOM NON MALL",
                 "❌ No Brand": "CUSTOM NO BRAND",
                 "❌ Opex": "CUSTOM OPEX",
+                "❌ Stock": "CUSTOM STOCK",
             },
         }}
         assert _compute_g75("✔️", "TestStore", rules) == "CUSTOM APPROVED MESSAGE"
@@ -2419,6 +2433,7 @@ class TestMessageTemplatesG75:
         assert _compute_g75("❌ Non Mall", "TestStore", rules) == "CUSTOM NON MALL"
         assert _compute_g75("❌ No Brand", "TestStore", rules) == "CUSTOM NO BRAND"
         assert _compute_g75("❌ Opex", "TestStore", rules) == "CUSTOM OPEX"
+        assert _compute_g75("❌ Stock", "TestStore", rules) == "CUSTOM STOCK"
 
     def test_custom_closing_with_store_name_placeholder(self):
         rules = {**DEFAULT_RULES, "interpretation": {
@@ -2448,7 +2463,7 @@ class TestMessageTemplatesG75:
             "closing_messages": {
                 "✔️": "CUSTOM CLOSING IN EMAIL",
                 "❌": "", "❌ Non Mall": "", "❌ No Brand": "",
-                "❌ Opex": "",
+                "❌ Opex": "", "❌ Stock": "",
             },
         }}
         result = calculate_score(

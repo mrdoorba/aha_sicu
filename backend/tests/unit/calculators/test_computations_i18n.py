@@ -78,6 +78,13 @@ def test_g75_i18n_rejected():
     assert result.key == "closing.valueAdd"
 
 
+def test_g75_i18n_stock():
+    result = _compute_g75_i18n("❌ Stock", "Toko Salt")
+    assert result is not None
+    assert result.key == "closing.stockInsufficient"
+    assert result.vars["store_name"] == "Toko Salt"
+
+
 def test_g75_i18n_non_mall():
     result = _compute_g75_i18n("❌ Non Mall", "Test")
     assert result is not None

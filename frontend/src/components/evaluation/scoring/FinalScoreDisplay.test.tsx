@@ -31,6 +31,11 @@ describe('FinalScoreDisplay', () => {
     expect(screen.getByText('Disetujui')).toBeInTheDocument();
   });
 
+  it('shows Stok label for stock verdict', () => {
+    render(<FinalScoreDisplay totalScore={50} verdict="❌ Stock" template="fashion" />);
+    expect(screen.getByText('Stok')).toBeInTheDocument();
+  });
+
   it('falls back to Tanpa Keputusan for unknown verdict', () => {
     render(<FinalScoreDisplay totalScore={0} verdict="unknown" template="fashion" />);
     expect(screen.getByText('Tanpa Keputusan')).toBeInTheDocument();

@@ -100,6 +100,23 @@ async def upsert_upload(
     )
 
 
+async def get_storage_path_by_type(
+    conn: Connection, brand_id: int, file_type: str
+) -> str | None:
+    """Return only the storage_path for a brand+file_type, or None."""
+    row = await fetch_one(
+        conn,
+        """
+        SELECT storage_path
+        FROM brand_uploads
+        WHERE brand_id = $1 AND file_type = $2
+        """,
+        brand_id,
+        file_type,
+    )
+    return row["storage_path"] if row else None
+
+
 async def delete_upload(conn: Connection, brand_id: int, file_type: str) -> None:
     """Delete an upload for a brand+file_type pair."""
     await conn.execute(

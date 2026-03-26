@@ -215,6 +215,19 @@ DEFAULT_RULES: dict = {
                 "tingkat keterlambatan <2% dan masa pengemasan dibawah satu hari, kami sangat open untuk "
                 "berdiskusi lebih lanjut untuk kerjasama dengan {store_name}."
             ),
+            "❌ Stock": (
+                "Kami sangat yakin bahwa sistem AHA dapat memberikan nilai tambah kepada toko {store_name} "
+                "secara langsung. Namun, untuk memastikan kerja sama ini berjalan optimal bagi kedua belah "
+                "pihak, kami juga perlu mempertimbangkan kesiapan operasional dari sisi brand.\n\n"
+                "Berdasarkan evaluasi kami, saat ini jumlah stok per varian masih tergolong minim "
+                "(di bawah 24 pcs/varian), sehingga dikhawatirkan dapat membatasi performa penjualan "
+                "dan efektivitas strategi yang dijalankan oleh AHA.\n\n"
+                "Oleh karena itu, dengan berat hati, kami belum dapat bekerja-sama dengan {store_name} "
+                "di tahap sekarang ini.\n\n"
+                "Namun, apabila ke depannya stok per varian sudah dapat ditingkatkan ke level yang lebih "
+                "ideal (minimal 24 pcs/varian), kami sangat terbuka untuk kembali melanjutkan pembahasan "
+                "kerja sama ini."
+            ),
         },
     },
 }

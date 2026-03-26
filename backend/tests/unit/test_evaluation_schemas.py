@@ -108,6 +108,18 @@ class TestEvaluationListItem:
         assert item.verdict == "✔️"
         assert item.template == "fashion"
 
+    def test_accepts_when_stock_verdict(self) -> None:
+        item = EvaluationListItem(
+            id=1,
+            brand_name="Test",
+            final_score=60.0,
+            verdict="❌ Stock",
+            template="fashion",
+            evaluator_email="a@b.com",
+            created_at=datetime.now(),
+        )
+        assert item.verdict == "❌ Stock"
+
     def test_accepts_when_non_fashion_template(self) -> None:
         item = EvaluationListItem(
             id=1,

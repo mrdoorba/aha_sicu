@@ -340,6 +340,7 @@ def _compute_g75_i18n(
         "❌ Non Mall": "closing.directAnalysis",
         "❌ No Brand": "closing.noBrand",
         "❌ Opex": "closing.experience",
+        "❌ Stock": "closing.stockInsufficient",
     }
     key = verdict_key_map.get(verdict)
     if not key:
