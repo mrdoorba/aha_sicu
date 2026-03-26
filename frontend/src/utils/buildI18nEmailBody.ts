@@ -234,7 +234,7 @@ function buildAdsKeywordI18nText(
     }
   }
 
-  return parts.filter(Boolean).join('\n');
+  return parts.filter(Boolean).join('\n\n');
 }
 
 /**
