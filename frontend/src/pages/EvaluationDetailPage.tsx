@@ -212,12 +212,19 @@ function AdsKeywordSection({ data, t }: { data: Record<string, unknown>; t: TFun
 
 function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>; t: (key: string) => string; marketplace?: string }) {
   const details = isRecord(data.details) ? data.details : undefined;
-  const output1 = (isRecordArray(details?.output_1) ? details.output_1 : []).slice(0, 5);
-  const output2 = (isRecordArray(details?.output_2) ? details.output_2 : []).slice(0, 5);
+  const allOutput1 = isRecordArray(details?.output_1) ? details.output_1 : [];
+  const allOutput2 = isRecordArray(details?.output_2) ? details.output_2 : [];
   const avgStock = details?.average_stock;
+  const outOfStockPct = details?.out_of_stock_pct;
   const [isOpen, setIsOpen] = useState(false);
+  const [showAllSku, setShowAllSku] = useState(false);
 
-  if (output1.length === 0 && output2.length === 0) {
+  const PREVIEW_COUNT = 5;
+  const output1 = showAllSku ? allOutput1 : allOutput1.slice(0, PREVIEW_COUNT);
+  const output2 = showAllSku ? allOutput2 : allOutput2.slice(0, PREVIEW_COUNT);
+  const hasMoreItems = allOutput1.length > PREVIEW_COUNT || allOutput2.length > PREVIEW_COUNT;
+
+  if (allOutput1.length === 0 && allOutput2.length === 0) {
     return <p className="text-muted-foreground">{t('common.noData')}</p>;
   }
 
@@ -226,6 +233,11 @@ function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>
       {avgStock !== undefined && avgStock !== null && (
         <p className="text-sm font-medium">
           {t('evaluationDetail.averageStock')}: <span className="font-bold">{String(avgStock)}</span>
+        </p>
+      )}
+      {outOfStockPct !== undefined && outOfStockPct !== null && (
+        <p className="text-sm font-medium">
+          {t('evaluationDetail.stockAvailability')}: <span className="font-bold">{typeof outOfStockPct === 'number' ? `${Math.round(outOfStockPct * 100)}%` : String(outOfStockPct)}</span> {t('evaluationDetail.stockAvailability.suffix')}
         </p>
       )}
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -292,6 +304,22 @@ function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>
                 </TableBody>
               </Table>
             </div>
+          )}
+          {hasMoreItems && (
+            <button
+              type="button"
+              onClick={() => setShowAllSku((prev) => !prev)}
+              className="mt-3 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              {showAllSku ? (
+                <ChevronDown className="size-3.5" />
+              ) : (
+                <ChevronRight className="size-3.5" />
+              )}
+              {showAllSku
+                ? t('topSku.showLess')
+                : t('topSku.showAll', { count: String(Math.max(allOutput1.length, allOutput2.length)) })}
+            </button>
           )}
         </CollapsibleContent>
       </Collapsible>
