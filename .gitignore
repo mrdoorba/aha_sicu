@@ -71,6 +71,7 @@ docs/superpowers/
 _bmad/
 .github/prompts/
 .github/skills/
+.omc/
 
 # Worktrees
 .worktrees/
