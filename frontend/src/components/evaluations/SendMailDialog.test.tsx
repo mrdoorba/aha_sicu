@@ -159,7 +159,7 @@ describe('SendMailDialog', () => {
 describe('buildSubject', () => {
   it('formats subject with brand name and period', () => {
     expect(buildSubject('Salt', 'Jan 2026')).toBe(
-      '\u{1F3E5} AHA Store Internal Check Up (Store ICU) - Salt Jan 2026',
+      '[ID] \u{1F3E5} AHA Store Internal Check Up (Store ICU) - Salt Jan 2026',
     );
   });
 
