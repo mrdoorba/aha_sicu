@@ -210,7 +210,7 @@ function AdsKeywordSection({ data, t }: { data: Record<string, unknown>; t: TFun
   return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{rendered}</pre>;
 }
 
-function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>; t: (key: string) => string; marketplace?: string }) {
+function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>; t: (key: string, vars?: Record<string, string>) => string; marketplace?: string }) {
   const details = isRecord(data.details) ? data.details : undefined;
   const allOutput1 = isRecordArray(details?.output_1) ? details.output_1 : [];
   const allOutput2 = isRecordArray(details?.output_2) ? details.output_2 : [];
