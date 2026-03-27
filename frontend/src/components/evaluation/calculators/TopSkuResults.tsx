@@ -39,7 +39,7 @@ export function TopSkuResults({ result, marketplace = 'ID' }: TopSkuResultsProps
   const [isOpen, setIsOpen] = useState(false);
   const [revSortField, setRevSortField] = useState<keyof TopSkuDetails['output_1'][0]>('total_omzet');
   const [revSortDir, setRevSortDir] = useState<SortDir>('desc');
-  const [stockSortField, setStockSortField] = useState<keyof TopSkuDetails['output_2'][0]>('stok');
+  const [stockSortField, setStockSortField] = useState<keyof TopSkuDetails['output_2'][0] | null>(null);
   const [stockSortDir, setStockSortDir] = useState<SortDir>('desc');
 
   const details: TopSkuDetails | null = isTopSkuDetails(result.details)
@@ -51,10 +51,19 @@ export function TopSkuResults({ result, marketplace = 'ID' }: TopSkuResultsProps
     [details, revSortField, revSortDir],
   );
 
-  const sortedStock = useMemo(
-    () => details ? sortBy(details.output_2 ?? [], stockSortField, stockSortDir).slice(0, TOP_N) : [],
-    [details, stockSortField, stockSortDir],
-  );
+  const sortedStock = useMemo(() => {
+    if (!details) return [];
+    const stockItems = details.output_2 ?? [];
+    if (stockSortField) {
+      return sortBy(stockItems, stockSortField, stockSortDir).slice(0, TOP_N);
+    }
+    // Follow revenue table order by matching kode_variasi
+    const revenueOrder = sortedRevenue.map((r) => r.kode_variasi);
+    const matched = revenueOrder
+      .map((kv) => stockItems.find((s) => s.kode_variasi === kv))
+      .filter(Boolean) as typeof stockItems;
+    return matched.slice(0, TOP_N);
+  }, [details, stockSortField, stockSortDir, sortedRevenue]);
 
   if (!details) {
     return <p className="text-sm text-muted-foreground">Invalid top SKU data</p>;
@@ -67,6 +76,8 @@ export function TopSkuResults({ result, marketplace = 'ID' }: TopSkuResultsProps
       setRevSortField(field);
       setRevSortDir('desc');
     }
+    // Reset stock sort so it follows revenue order
+    setStockSortField(null);
   };
 
   const toggleStockSort = (field: keyof TopSkuDetails['output_2'][0]) => {
