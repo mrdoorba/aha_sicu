@@ -53,6 +53,22 @@ vi.mock('../../config', () => ({
   API_BASE_URL: 'http://localhost:8000',
 }));
 
+const mockFixedT = (key: string, opts?: Record<string, unknown>) => {
+  if (opts) {
+    return Object.entries(opts).reduce(
+      (acc, [k, v]) => acc.replace(`{{${k}}}`, String(v ?? '')),
+      key,
+    );
+  }
+  return key;
+};
+vi.mock('../../i18n', () => ({
+  default: {
+    language: 'id',
+    getFixedT: () => mockFixedT,
+  },
+}));
+
 import { SendEmailDialog } from './SendEmailDialog';
 
 // -- Helpers --
@@ -195,11 +211,13 @@ describe('SendEmailDialog', () => {
     expect(mockMutate.mock.calls[0][0].chartImage).toBe('');
   });
 
-  it('renders note textarea with character count', () => {
+  it('renders note textarea pre-filled with default opening message', () => {
     renderDialog();
-    const textarea = screen.getByPlaceholderText('sendEmail.notePlaceholder');
+    const textarea = screen.getByPlaceholderText('sendEmail.notePlaceholder') as HTMLTextAreaElement;
     expect(textarea).toBeInTheDocument();
-    expect(screen.getByText('0/500')).toBeInTheDocument();
+    expect(textarea.value).toContain('sendMailUtils.salutation');
+    expect(textarea.value).toContain('sendMailUtils.intro');
+    expect(screen.getByText(`${textarea.value.length}/500`)).toBeInTheDocument();
   });
 
   it('updates character count as note is typed', () => {

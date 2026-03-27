@@ -19,6 +19,25 @@ import { EmailChipInput } from './EmailChipInput';
 import { getCurrentUserToken } from '../../firebase/auth';
 import { API_BASE_URL } from '../../config';
 import type { BrandRawData } from '../../hooks/useEvaluationDetail';
+import i18nInstance from '../../i18n';
+
+function buildDefaultNote(
+  brandName: string,
+  brandRawData: BrandRawData,
+  language: string,
+): string {
+  const fixedT = i18nInstance.getFixedT(language);
+  const salutation = fixedT('sendMailUtils.salutation', {
+    brandName,
+    picName: brandRawData.pic_name ?? '',
+  });
+  const intro = fixedT('sendMailUtils.intro', {
+    brandName,
+    storeLink: brandRawData.store_link ?? '',
+    kategori: brandRawData.kategori ?? '',
+  });
+  return `${salutation}\n\n${intro}`;
+}
 
 interface SendEmailDialogProps {
   open: boolean;
@@ -60,7 +79,7 @@ export function SendEmailDialog({
   const [bcc, setBcc] = useState<string[]>([]);
   const [showCc, setShowCc] = useState(initialCc.length > 0);
   const [showBcc, setShowBcc] = useState(false);
-  const [note, setNote] = useState('');
+  const [note, setNote] = useState(() => buildDefaultNote(brandName, brandRawData, i18n.language));
   const [showPreview, setShowPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -114,7 +133,7 @@ export function SendEmailDialog({
       setBcc([]);
       setShowCc(initialCc.length > 0);
       setShowBcc(false);
-      setNote('');
+      setNote(buildDefaultNote(brandName, brandRawData, i18n.language));
       setEmailLanguage(i18n.language);
       setShowPreview(false);
       setPreviewHtml(null);
@@ -238,6 +257,7 @@ export function SendEmailDialog({
             const newCc = DEFAULT_CC[lang] ?? DEFAULT_CC['id'] ?? [];
             setCc(newCc);
             setShowCc(newCc.length > 0);
+            setNote(buildDefaultNote(brandName, brandRawData, lang));
           }} />
 
           {/* Note Section */}
