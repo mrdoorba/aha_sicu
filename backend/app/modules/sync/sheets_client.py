@@ -229,7 +229,7 @@ class GoogleSheetsClient:
             spreadsheetId=spreadsheet_id,
             range=range_name,
             valueInputOption="RAW",
-            insertDataOption="OVERWRITE",
+            insertDataOption="OVERWRITE",  # OVERWRITE avoids shifting existing rows
             body=body,
         )
         result = await asyncio.to_thread(request.execute)
