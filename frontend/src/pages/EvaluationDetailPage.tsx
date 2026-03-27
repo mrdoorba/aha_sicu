@@ -1,6 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, Copy, ClipboardCheck, Trash2, ChevronRight, ChevronDown, Mail } from 'lucide-react';
-import { useState } from 'react';
+import { ArrowLeft, ArrowUpDown, Copy, ClipboardCheck, Trash2, ChevronRight, ChevronDown, Mail } from 'lucide-react';
+import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
 import { toast } from 'sonner';
@@ -210,14 +210,69 @@ function AdsKeywordSection({ data, t }: { data: Record<string, unknown>; t: TFun
   return <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{rendered}</pre>;
 }
 
-function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>; t: (key: string) => string; marketplace?: string }) {
-  const details = isRecord(data.details) ? data.details : undefined;
-  const output1 = (isRecordArray(details?.output_1) ? details.output_1 : []).slice(0, 5);
-  const output2 = (isRecordArray(details?.output_2) ? details.output_2 : []).slice(0, 5);
-  const avgStock = details?.average_stock;
-  const [isOpen, setIsOpen] = useState(false);
+type SortDir = 'asc' | 'desc';
 
-  if (output1.length === 0 && output2.length === 0) {
+function sortRecordArray(data: Record<string, unknown>[], field: string, dir: SortDir): Record<string, unknown>[] {
+  return [...data].sort((a, b) => {
+    const aVal = a[field];
+    const bVal = b[field];
+    if (aVal == null || bVal == null) return 0;
+    if (aVal < bVal) return dir === 'asc' ? -1 : 1;
+    if (aVal > bVal) return dir === 'asc' ? 1 : -1;
+    return 0;
+  });
+}
+
+function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>; t: (key: string, vars?: Record<string, string>) => string; marketplace?: string }) {
+  const details = isRecord(data.details) ? data.details : undefined;
+  const allOutput1 = useMemo(() => isRecordArray(details?.output_1) ? details.output_1 : [], [details]);
+  const allOutput2 = useMemo(() => isRecordArray(details?.output_2) ? details.output_2 : [], [details]);
+  const avgStock = details?.average_stock;
+  const outOfStockPct = details?.out_of_stock_pct;
+  const [isOpen, setIsOpen] = useState(false);
+  const [showAllSku, setShowAllSku] = useState(false);
+  const [revSortField, setRevSortField] = useState<string>('total_omzet');
+  const [revSortDir, setRevSortDir] = useState<SortDir>('desc');
+  const [stockSortField, setStockSortField] = useState<string | null>(null);
+  const [stockSortDir, setStockSortDir] = useState<SortDir>('desc');
+
+  const toggleRevSort = (field: string) => {
+    if (revSortField === field) {
+      setRevSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setRevSortField(field);
+      setRevSortDir('desc');
+    }
+    setStockSortField(null);
+  };
+
+  const toggleStockSort = (field: string) => {
+    if (stockSortField === field) {
+      setStockSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+    } else {
+      setStockSortField(field);
+      setStockSortDir('desc');
+    }
+  };
+
+  const PREVIEW_COUNT = 5;
+  const sortedOutput1 = sortRecordArray(allOutput1, revSortField, revSortDir);
+  const output1 = showAllSku ? sortedOutput1 : sortedOutput1.slice(0, PREVIEW_COUNT);
+
+  const sortedOutput2 = useMemo(() => {
+    if (stockSortField) {
+      return sortRecordArray(allOutput2, stockSortField, stockSortDir);
+    }
+    // Follow revenue table order by matching kode_variasi
+    const revenueOrder = sortedOutput1.map((r) => r.kode_variasi);
+    return revenueOrder
+      .map((kv) => allOutput2.find((s) => s.kode_variasi === kv))
+      .filter(Boolean) as Record<string, unknown>[];
+  }, [allOutput2, stockSortField, stockSortDir, sortedOutput1]);
+  const output2 = showAllSku ? sortedOutput2 : sortedOutput2.slice(0, PREVIEW_COUNT);
+  const hasMoreItems = allOutput1.length > PREVIEW_COUNT || allOutput2.length > PREVIEW_COUNT;
+
+  if (allOutput1.length === 0 && allOutput2.length === 0) {
     return <p className="text-muted-foreground">{t('common.noData')}</p>;
   }
 
@@ -226,6 +281,11 @@ function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>
       {avgStock !== undefined && avgStock !== null && (
         <p className="text-sm font-medium">
           {t('evaluationDetail.averageStock')}: <span className="font-bold">{String(avgStock)}</span>
+        </p>
+      )}
+      {outOfStockPct !== undefined && outOfStockPct !== null && (
+        <p className="text-sm font-medium">
+          {t('evaluationDetail.stockAvailability')}: <span className="font-bold">{typeof outOfStockPct === 'number' ? `${Math.round(outOfStockPct * 100)}%` : String(outOfStockPct)}</span> {t('evaluationDetail.stockAvailability.suffix')}
         </p>
       )}
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
@@ -249,10 +309,18 @@ function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('topSku.kodeVariasi')}</TableHead>
-                    <TableHead>{t('topSku.productName')}</TableHead>
-                    <TableHead className="text-right">{t('topSku.totalOmzet')}</TableHead>
-                    <TableHead className="text-right">{t('topSku.avgPrice')}</TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleRevSort('kode_variasi')}>
+                      {t('topSku.kodeVariasi')} <ArrowUpDown className="ml-1 inline size-3" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleRevSort('product_name')}>
+                      {t('topSku.productName')} <ArrowUpDown className="ml-1 inline size-3" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none text-right" onClick={() => toggleRevSort('total_omzet')}>
+                      {t('topSku.totalOmzet')} <ArrowUpDown className="ml-1 inline size-3" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none text-right" onClick={() => toggleRevSort('rata2_harga_jual')}>
+                      {t('topSku.avgPrice')} <ArrowUpDown className="ml-1 inline size-3" />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -274,10 +342,18 @@ function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('topSku.kodeVariasi')}</TableHead>
-                    <TableHead>{t('topSku.namaProduk')}</TableHead>
-                    <TableHead>{t('topSku.varian')}</TableHead>
-                    <TableHead className="text-right">{t('topSku.stok')}</TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleStockSort('kode_variasi')}>
+                      {t('topSku.kodeVariasi')} <ArrowUpDown className="ml-1 inline size-3" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleStockSort('nama_produk')}>
+                      {t('topSku.namaProduk')} <ArrowUpDown className="ml-1 inline size-3" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none" onClick={() => toggleStockSort('varian')}>
+                      {t('topSku.varian')} <ArrowUpDown className="ml-1 inline size-3" />
+                    </TableHead>
+                    <TableHead className="cursor-pointer select-none text-right" onClick={() => toggleStockSort('stok')}>
+                      {t('topSku.stok')} <ArrowUpDown className="ml-1 inline size-3" />
+                    </TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -292,6 +368,22 @@ function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>
                 </TableBody>
               </Table>
             </div>
+          )}
+          {hasMoreItems && (
+            <button
+              type="button"
+              onClick={() => setShowAllSku((prev) => !prev)}
+              className="mt-3 flex items-center gap-1 text-xs font-medium text-primary hover:underline"
+            >
+              {showAllSku ? (
+                <ChevronDown className="size-3.5" />
+              ) : (
+                <ChevronRight className="size-3.5" />
+              )}
+              {showAllSku
+                ? t('topSku.showLess')
+                : t('topSku.showAll', { count: String(Math.max(allOutput1.length, allOutput2.length)) })}
+            </button>
           )}
         </CollapsibleContent>
       </Collapsible>
