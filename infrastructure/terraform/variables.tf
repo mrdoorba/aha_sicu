@@ -83,16 +83,11 @@ variable "gsheets_vp_spreadsheet_id_th" {
 }
 
 # =============================================================================
-# Email / SMTP Variables
+# Email / SendGrid Variables
 # =============================================================================
 
-variable "smtp_user" {
-  description = "SMTP username (Gmail address) for sending emails"
-  type        = string
-}
-
-variable "smtp_from_email" {
-  description = "Sender email address for outgoing emails"
+variable "email_from_email" {
+  description = "Verified sender email address for outgoing emails (SendGrid)"
   type        = string
 }
 

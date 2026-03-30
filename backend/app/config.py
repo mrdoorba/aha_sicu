@@ -57,17 +57,13 @@ class Settings(BaseSettings):
     # GCS Upload Bucket (empty = local dev fallback)
     gcs_upload_bucket: str = ""
 
-    # Email / SMTP
-    smtp_host: str = "smtp.gmail.com"
-    smtp_port: int = 587
-    smtp_user: str = ""
-    smtp_password: str = ""
-    smtp_from_name: str = "AHA Commerce"
-    smtp_from_email: str = ""
-    smtp_use_tls: bool = True
+    # Email / SendGrid
+    sendgrid_api_key: str = ""
+    email_from_name: str = "AHA Commerce"
+    email_from_email: str = ""
     email_enabled: bool = False
     email_allowed_domains: str = ""
-    brevo_webhook_secret: str = ""
+    sendgrid_webhook_secret: str = ""
 
     # Google Sheets API - Credentials
     gsheets_credentials_path: str | None = None

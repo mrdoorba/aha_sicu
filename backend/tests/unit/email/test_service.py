@@ -1,20 +1,20 @@
-"""Tests for email service: composition, CID images, SMTP send."""
+"""Tests for email service: composition, SendGrid send, CID images."""
 
-import smtplib
-from email.message import EmailMessage
+import base64
 from pathlib import Path
-from unittest.mock import MagicMock, patch
+from unittest.mock import AsyncMock, MagicMock, patch
 
+import httpx
 import pytest
 
 from app.core.exceptions import AppException
 from app.modules.email.service import (
+    _build_sendgrid_payload,
     _decode_chart_image,
     _load_asset,
-    _smtp_send_sync,
     _strip_base64_prefix,
-    build_email_message,
     send_evaluation_email,
+    sendgrid_send,
 )
 
 
@@ -69,12 +69,11 @@ class TestBase64Handling:
 
 
 # ---------------------------------------------------------------------------
-# build_email_message
+# _build_sendgrid_payload
 # ---------------------------------------------------------------------------
-class TestBuildEmailMessage:
-    """Test email message construction with CID images."""
+class TestBuildSendGridPayload:
+    """Test SendGrid API payload construction with CID images."""
 
-    # Minimal 1x1 PNG for valid image attachment
     _PNG = (
         b"\x89PNG\r\n\x1a\n\x00\x00\x00\rIHDR\x00\x00\x00\x01"
         b"\x00\x00\x00\x01\x08\x06\x00\x00\x00\x1f\x15\xc4\x89"
@@ -82,8 +81,8 @@ class TestBuildEmailMessage:
         b"\r\n\xb4\x00\x00\x00\x00IEND\xaeB`\x82"
     )
 
-    def _build_simple_msg(self) -> EmailMessage:
-        return build_email_message(
+    def _build_simple_payload(self) -> dict:
+        return _build_sendgrid_payload(
             subject="Test Subject",
             from_name="AHA Commerce",
             from_email="noreply@aha.com",
@@ -97,21 +96,21 @@ class TestBuildEmailMessage:
             ],
         )
 
-    def test_subject_header(self) -> None:
-        msg = self._build_simple_msg()
-        assert msg["Subject"] == "Test Subject"
+    def test_subject_set(self) -> None:
+        payload = self._build_simple_payload()
+        assert payload["subject"] == "Test Subject"
 
-    def test_from_header_with_display_name(self) -> None:
-        msg = self._build_simple_msg()
-        assert "AHA Commerce" in msg["From"]
-        assert "noreply@aha.com" in msg["From"]
+    def test_from_fields(self) -> None:
+        payload = self._build_simple_payload()
+        assert payload["from"]["email"] == "noreply@aha.com"
+        assert payload["from"]["name"] == "AHA Commerce"
 
-    def test_to_header_single(self) -> None:
-        msg = self._build_simple_msg()
-        assert msg["To"] == "recipient@example.com"
+    def test_to_recipients(self) -> None:
+        payload = self._build_simple_payload()
+        assert payload["personalizations"][0]["to"] == [{"email": "recipient@example.com"}]
 
-    def test_to_header_multiple(self) -> None:
-        msg = build_email_message(
+    def test_multiple_to_recipients(self) -> None:
+        payload = _build_sendgrid_payload(
             subject="Test",
             from_name="AHA",
             from_email="noreply@aha.com",
@@ -120,10 +119,12 @@ class TestBuildEmailMessage:
             text_content="Hi",
             images=[],
         )
-        assert msg["To"] == "a@example.com, b@example.com, c@example.com"
+        to_list = payload["personalizations"][0]["to"]
+        assert len(to_list) == 3
+        assert {"email": "a@example.com"} in to_list
 
-    def test_cc_header_set_when_provided(self) -> None:
-        msg = build_email_message(
+    def test_cc_set_when_provided(self) -> None:
+        payload = _build_sendgrid_payload(
             subject="Test",
             from_name="AHA",
             from_email="noreply@aha.com",
@@ -133,10 +134,11 @@ class TestBuildEmailMessage:
             text_content="Hi",
             images=[],
         )
-        assert msg["Cc"] == "cc1@example.com, cc2@example.com"
+        cc_list = payload["personalizations"][0]["cc"]
+        assert len(cc_list) == 2
 
-    def test_bcc_header_not_set(self) -> None:
-        msg = build_email_message(
+    def test_bcc_set_when_provided(self) -> None:
+        payload = _build_sendgrid_payload(
             subject="Test",
             from_name="AHA",
             from_email="noreply@aha.com",
@@ -146,156 +148,173 @@ class TestBuildEmailMessage:
             text_content="Hi",
             images=[],
         )
-        assert msg["Bcc"] is None
+        bcc_list = payload["personalizations"][0]["bcc"]
+        assert bcc_list == [{"email": "bcc@example.com"}]
 
-    def test_no_cc_header_when_empty(self) -> None:
-        msg = self._build_simple_msg()
-        assert msg["Cc"] is None
+    def test_no_cc_when_empty(self) -> None:
+        payload = self._build_simple_payload()
+        assert "cc" not in payload["personalizations"][0]
 
-    def test_has_html_alternative(self) -> None:
-        msg = self._build_simple_msg()
-        # Walk the message parts - should find text/html
-        html_found = False
-        for part in msg.walk():
-            if part.get_content_type() == "text/html":
-                html_found = True
-                break
-        assert html_found, "No text/html part found in message"
+    def test_has_html_and_text_content(self) -> None:
+        payload = self._build_simple_payload()
+        content_types = [c["type"] for c in payload["content"]]
+        assert "text/plain" in content_types
+        assert "text/html" in content_types
 
-    def test_has_text_fallback(self) -> None:
-        msg = self._build_simple_msg()
-        text_found = False
-        for part in msg.walk():
-            if part.get_content_type() == "text/plain":
-                text_found = True
-                break
-        assert text_found, "No text/plain part found in message"
+    def test_attaches_three_inline_images(self) -> None:
+        payload = self._build_simple_payload()
+        assert len(payload["attachments"]) == 3
 
-    def test_attaches_three_cid_images(self) -> None:
-        msg = self._build_simple_msg()
-        image_parts = [
-            p for p in msg.walk() if p.get_content_type() == "image/png"
-        ]
-        assert len(image_parts) == 3
+    def test_attachments_have_inline_disposition(self) -> None:
+        payload = self._build_simple_payload()
+        for att in payload["attachments"]:
+            assert att["disposition"] == "inline"
+            assert att["type"] == "image/png"
+            assert att["content_id"] in ("header-cid", "footer-cid", "chart-cid")
 
-    def test_cid_references_match(self) -> None:
-        msg = self._build_simple_msg()
-        cids_found = []
-        for part in msg.walk():
-            if part.get_content_type() == "image/png":
-                content_id = part.get("Content-ID", "")
-                # Strip angle brackets for comparison
-                cid = content_id.strip("<>")
-                cids_found.append(cid)
-        assert "header-cid" in cids_found
-        assert "footer-cid" in cids_found
-        assert "chart-cid" in cids_found
+    def test_attachment_content_is_base64(self) -> None:
+        payload = self._build_simple_payload()
+        for att in payload["attachments"]:
+            decoded = base64.b64decode(att["content"])
+            assert decoded[:4] == b"\x89PNG"
 
-    def test_from_formatted_as_display_name_email(self) -> None:
-        msg = build_email_message(
+    def test_no_attachments_when_no_images(self) -> None:
+        payload = _build_sendgrid_payload(
             subject="Test",
-            from_name="My Brand",
-            from_email="brand@example.com",
-            to_emails=["to@example.com"],
+            from_name="AHA",
+            from_email="noreply@aha.com",
+            to_emails=["a@example.com"],
             html_content="<p>Hi</p>",
             text_content="Hi",
             images=[],
         )
-        from_header = msg["From"]
-        assert "My Brand" in from_header
-        assert "brand@example.com" in from_header
+        assert "attachments" not in payload
 
 
 # ---------------------------------------------------------------------------
-# _smtp_send_sync
+# sendgrid_send
 # ---------------------------------------------------------------------------
-class TestSmtpSendSync:
-    """Test synchronous SMTP send with error categorization."""
+class TestSendGridSend:
+    """Test SendGrid API call via httpx."""
 
-    def test_calls_starttls_login_send(self, mock_smtp: tuple) -> None:
-        mock_class, mock_instance = mock_smtp
-        msg = EmailMessage()
-        msg["Message-ID"] = "<test123@ahacommerce.id>"
-
-        with patch("app.modules.email.service.settings") as mock_settings:
-            mock_settings.smtp_host = "smtp.gmail.com"
-            mock_settings.smtp_port = 587
-            mock_settings.smtp_user = "user@gmail.com"
-            mock_settings.smtp_password = "secret"
-            mock_class.return_value = mock_instance
-
-            _smtp_send_sync(msg)
-
-        mock_class.assert_called_once_with("smtp.gmail.com", 587, timeout=30)
-        mock_instance.starttls.assert_called_once()
-        mock_instance.login.assert_called_once_with("user@gmail.com", "secret")
-        mock_instance.send_message.assert_called_once_with(msg, to_addrs=None)
-
-    def test_sends_with_explicit_to_addrs(self, mock_smtp: tuple) -> None:
-        mock_class, mock_instance = mock_smtp
-        msg = EmailMessage()
-        msg["Message-ID"] = "<test123@ahacommerce.id>"
-        all_addrs = ["a@example.com", "b@example.com", "bcc@example.com"]
-
-        with patch("app.modules.email.service.settings") as mock_settings:
-            mock_settings.smtp_host = "smtp.gmail.com"
-            mock_settings.smtp_port = 587
-            mock_settings.smtp_user = "user@gmail.com"
-            mock_settings.smtp_password = "secret"
-            mock_class.return_value = mock_instance
-
-            _smtp_send_sync(msg, to_addrs=all_addrs)
-
-        mock_instance.send_message.assert_called_once_with(msg, to_addrs=all_addrs)
-
-    def test_raises_smtp_auth_error(self, mock_smtp: tuple) -> None:
-        mock_class, mock_instance = mock_smtp
-        mock_instance.login.side_effect = smtplib.SMTPAuthenticationError(
-            535, b"Authentication failed"
+    async def test_returns_message_id_on_success(self) -> None:
+        mock_response = httpx.Response(
+            202,
+            headers={"X-Message-Id": "sg-msg-123"},
+            request=httpx.Request("POST", "https://api.sendgrid.com/v3/mail/send"),
         )
-        msg = EmailMessage()
 
-        with patch("app.modules.email.service.settings") as mock_settings:
-            mock_settings.smtp_host = "smtp.gmail.com"
-            mock_settings.smtp_port = 587
-            mock_settings.smtp_user = "user@gmail.com"
-            mock_settings.smtp_password = "wrong"
-            mock_class.return_value = mock_instance
+        with patch("app.modules.email.service.httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.post.return_value = mock_response
+            mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
 
-            with pytest.raises(AppException) as exc_info:
-                _smtp_send_sync(msg)
-            assert exc_info.value.code == "SMTP_AUTH_ERROR"
-            assert exc_info.value.status_code == 502
+            with patch("app.modules.email.service.settings") as mock_settings:
+                mock_settings.sendgrid_api_key = "SG.test-key"
 
-    def test_raises_smtp_connection_error(self, mock_smtp: tuple) -> None:
-        mock_class, _ = mock_smtp
-        mock_class.side_effect = smtplib.SMTPConnectError(
-            421, b"Connection refused"
+                result = await sendgrid_send({"test": "payload"})
+
+        assert result == "sg-msg-123"
+        mock_client.post.assert_called_once()
+        call_kwargs = mock_client.post.call_args
+        assert "Bearer SG.test-key" in call_kwargs[1]["headers"]["Authorization"]
+
+    async def test_raises_auth_error_on_401(self) -> None:
+        mock_response = httpx.Response(
+            401,
+            request=httpx.Request("POST", "https://api.sendgrid.com/v3/mail/send"),
         )
-        msg = EmailMessage()
 
-        with patch("app.modules.email.service.settings") as mock_settings:
-            mock_settings.smtp_host = "smtp.gmail.com"
-            mock_settings.smtp_port = 587
+        with patch("app.modules.email.service.httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.post.return_value = mock_response
+            mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
 
-            with pytest.raises(AppException) as exc_info:
-                _smtp_send_sync(msg)
-            assert exc_info.value.code == "SMTP_CONNECTION_ERROR"
-            assert exc_info.value.status_code == 502
+            with patch("app.modules.email.service.settings") as mock_settings:
+                mock_settings.sendgrid_api_key = "SG.bad-key"
 
-    def test_raises_smtp_timeout(self, mock_smtp: tuple) -> None:
-        mock_class, _ = mock_smtp
-        mock_class.side_effect = TimeoutError("Connection timed out")
-        msg = EmailMessage()
+                with pytest.raises(AppException) as exc_info:
+                    await sendgrid_send({"test": "payload"})
 
-        with patch("app.modules.email.service.settings") as mock_settings:
-            mock_settings.smtp_host = "smtp.gmail.com"
-            mock_settings.smtp_port = 587
+        assert exc_info.value.code == "SENDGRID_AUTH_ERROR"
+        assert exc_info.value.status_code == 502
 
-            with pytest.raises(AppException) as exc_info:
-                _smtp_send_sync(msg)
-            assert exc_info.value.code == "SMTP_TIMEOUT"
-            assert exc_info.value.status_code == 504
+    async def test_raises_rate_limit_on_429(self) -> None:
+        mock_response = httpx.Response(
+            429,
+            request=httpx.Request("POST", "https://api.sendgrid.com/v3/mail/send"),
+        )
+
+        with patch("app.modules.email.service.httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.post.return_value = mock_response
+            mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+
+            with patch("app.modules.email.service.settings") as mock_settings:
+                mock_settings.sendgrid_api_key = "SG.test-key"
+
+                with pytest.raises(AppException) as exc_info:
+                    await sendgrid_send({"test": "payload"})
+
+        assert exc_info.value.code == "SENDGRID_RATE_LIMIT"
+        assert exc_info.value.status_code == 429
+
+    async def test_raises_api_error_on_500(self) -> None:
+        mock_response = httpx.Response(
+            500,
+            text="Internal Server Error",
+            request=httpx.Request("POST", "https://api.sendgrid.com/v3/mail/send"),
+        )
+
+        with patch("app.modules.email.service.httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.post.return_value = mock_response
+            mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+
+            with patch("app.modules.email.service.settings") as mock_settings:
+                mock_settings.sendgrid_api_key = "SG.test-key"
+
+                with pytest.raises(AppException) as exc_info:
+                    await sendgrid_send({"test": "payload"})
+
+        assert exc_info.value.code == "SENDGRID_API_ERROR"
+        assert exc_info.value.status_code == 502
+
+    async def test_raises_timeout_error(self) -> None:
+        with patch("app.modules.email.service.httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.post.side_effect = httpx.TimeoutException("timed out")
+            mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+
+            with patch("app.modules.email.service.settings") as mock_settings:
+                mock_settings.sendgrid_api_key = "SG.test-key"
+
+                with pytest.raises(AppException) as exc_info:
+                    await sendgrid_send({"test": "payload"})
+
+        assert exc_info.value.code == "SENDGRID_TIMEOUT"
+        assert exc_info.value.status_code == 504
+
+    async def test_raises_connection_error(self) -> None:
+        with patch("app.modules.email.service.httpx.AsyncClient") as mock_client_cls:
+            mock_client = AsyncMock()
+            mock_client.post.side_effect = httpx.ConnectError("connection refused")
+            mock_client_cls.return_value.__aenter__ = AsyncMock(return_value=mock_client)
+            mock_client_cls.return_value.__aexit__ = AsyncMock(return_value=False)
+
+            with patch("app.modules.email.service.settings") as mock_settings:
+                mock_settings.sendgrid_api_key = "SG.test-key"
+
+                with pytest.raises(AppException) as exc_info:
+                    await sendgrid_send({"test": "payload"})
+
+        assert exc_info.value.code == "SENDGRID_CONNECTION_ERROR"
+        assert exc_info.value.status_code == 502
 
 
 # ---------------------------------------------------------------------------
@@ -318,8 +337,8 @@ class TestSendEvaluationEmail:
     ) -> None:
         with patch("app.modules.email.service.settings") as mock_settings:
             mock_settings.email_enabled = False
-            mock_settings.smtp_from_name = "AHA Commerce"
-            mock_settings.smtp_from_email = "noreply@aha.com"
+            mock_settings.email_from_name = "AHA Commerce"
+            mock_settings.email_from_email = "noreply@aha.com"
 
             await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -342,8 +361,8 @@ class TestSendEvaluationEmail:
     ) -> None:
         with patch("app.modules.email.service.settings") as mock_settings:
             mock_settings.email_enabled = False
-            mock_settings.smtp_from_name = "AHA Commerce"
-            mock_settings.smtp_from_email = "noreply@aha.com"
+            mock_settings.email_from_name = "AHA Commerce"
+            mock_settings.email_from_email = "noreply@aha.com"
 
             result = await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -363,8 +382,8 @@ class TestSendEvaluationEmail:
     ) -> None:
         with patch("app.modules.email.service.settings") as mock_settings:
             mock_settings.email_enabled = False
-            mock_settings.smtp_from_name = "AHA Commerce"
-            mock_settings.smtp_from_email = "noreply@aha.com"
+            mock_settings.email_from_name = "AHA Commerce"
+            mock_settings.email_from_email = "noreply@aha.com"
 
             result = await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -382,7 +401,7 @@ class TestSendEvaluationEmail:
         content = preview_path.read_text()
         assert "Rendered email" in content
 
-    async def test_sends_via_smtp_when_enabled(
+    async def test_sends_via_sendgrid_when_enabled(
         self,
         sample_evaluation_data: dict,
         sample_base64_png: str,
@@ -390,12 +409,12 @@ class TestSendEvaluationEmail:
     ) -> None:
         with (
             patch("app.modules.email.service.settings") as mock_settings,
-            patch("app.modules.email.service.smtp_send") as mock_send,
+            patch("app.modules.email.service.sendgrid_send") as mock_send,
         ):
             mock_settings.email_enabled = True
-            mock_settings.smtp_from_name = "AHA Commerce"
-            mock_settings.smtp_from_email = "noreply@aha.com"
-            mock_send.return_value = "<msg123@ahacommerce.id>"
+            mock_settings.email_from_name = "AHA Commerce"
+            mock_settings.email_from_email = "noreply@aha.com"
+            mock_send.return_value = "sg-msg-123"
 
             result = await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -405,7 +424,7 @@ class TestSendEvaluationEmail:
             )
 
         assert result.success is True
-        assert result.message_id == "<msg123@ahacommerce.id>"
+        assert result.message_id == "sg-msg-123"
         mock_send.assert_called_once()
 
     async def test_subject_auto_generated_format(
@@ -417,18 +436,14 @@ class TestSendEvaluationEmail:
         """Subject should be 'Laporan Evaluasi Brand: [Brand] - [Period]'."""
         with (
             patch("app.modules.email.service.settings") as mock_settings,
-            patch("app.modules.email.service.smtp_send") as mock_send,
-            patch(
-                "app.modules.email.service.build_email_message"
-            ) as mock_build,
+            patch("app.modules.email.service.sendgrid_send") as mock_send,
+            patch("app.modules.email.service._build_sendgrid_payload") as mock_build,
         ):
             mock_settings.email_enabled = True
-            mock_settings.smtp_from_name = "AHA Commerce"
-            mock_settings.smtp_from_email = "noreply@aha.com"
-            mock_send.return_value = "<msg@test>"
-
-            mock_msg = MagicMock()
-            mock_build.return_value = mock_msg
+            mock_settings.email_from_name = "AHA Commerce"
+            mock_settings.email_from_email = "noreply@aha.com"
+            mock_send.return_value = "sg-msg-123"
+            mock_build.return_value = {"test": "payload"}
 
             await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -449,8 +464,8 @@ class TestSendEvaluationEmail:
     ) -> None:
         with patch("app.modules.email.service.settings") as mock_settings:
             mock_settings.email_enabled = False
-            mock_settings.smtp_from_name = "AHA Commerce"
-            mock_settings.smtp_from_email = "noreply@aha.com"
+            mock_settings.email_from_name = "AHA Commerce"
+            mock_settings.email_from_email = "noreply@aha.com"
 
             await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -471,14 +486,14 @@ class TestSendEvaluationEmail:
     ) -> None:
         with (
             patch("app.modules.email.service.settings") as mock_settings,
-            patch("app.modules.email.service.smtp_send") as mock_send,
-            patch("app.modules.email.service.build_email_message") as mock_build,
+            patch("app.modules.email.service.sendgrid_send") as mock_send,
+            patch("app.modules.email.service._build_sendgrid_payload") as mock_build,
         ):
             mock_settings.email_enabled = True
-            mock_settings.smtp_from_name = "AHA Commerce"
-            mock_settings.smtp_from_email = "noreply@aha.com"
-            mock_send.return_value = "<msg@test>"
-            mock_build.return_value = MagicMock()
+            mock_settings.email_from_name = "AHA Commerce"
+            mock_settings.email_from_email = "noreply@aha.com"
+            mock_send.return_value = "sg-msg-123"
+            mock_build.return_value = {"test": "payload"}
 
             result = await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
@@ -489,16 +504,9 @@ class TestSendEvaluationEmail:
                 bcc=["bcc@example.com"],
             )
 
-        # Verify build_email_message called with correct params
         build_kwargs = mock_build.call_args[1]
         assert build_kwargs["to_emails"] == ["a@example.com", "b@example.com"]
         assert build_kwargs["cc_emails"] == ["cc@example.com"]
         assert build_kwargs["bcc_emails"] == ["bcc@example.com"]
-
-        # Verify smtp_send called with all addresses
-        send_call_args = mock_send.call_args
-        # Second positional arg is to_addrs
-        assert "a@example.com" in send_call_args[0][1]
-        assert "bcc@example.com" in send_call_args[0][1]
 
         assert result.recipients == ["a@example.com", "b@example.com"]

@@ -1,4 +1,4 @@
-"""Tests for SMTP configuration and email schemas."""
+"""Tests for SendGrid configuration and email schemas."""
 
 import os
 from unittest.mock import patch
@@ -11,43 +11,43 @@ from app.config import Settings
 from app.modules.email.schemas import SendEmailRequest, SendEmailResponse
 
 
-class TestSmtpConfigDefaults:
-    """Test that SMTP config fields have correct defaults."""
+class TestSendGridConfigDefaults:
+    """Test that SendGrid config fields have correct defaults."""
 
-    def test_smtp_host_default(self) -> None:
+    def test_sendgrid_api_key_default_empty(self) -> None:
         s = Settings(_env_file=None)
-        assert s.smtp_host == "smtp.gmail.com"
+        assert s.sendgrid_api_key == ""
 
-    def test_smtp_from_name_default(self) -> None:
+    def test_email_from_name_default(self) -> None:
         s = Settings(_env_file=None)
-        assert s.smtp_from_name == "AHA Commerce"
+        assert s.email_from_name == "AHA Commerce"
 
-    def test_smtp_from_email_default_empty(self) -> None:
+    def test_email_from_email_default_empty(self) -> None:
         s = Settings(_env_file=None)
-        assert s.smtp_from_email == ""
+        assert s.email_from_email == ""
 
     def test_email_enabled_default(self) -> None:
         s = Settings(_env_file=None)
         assert s.email_enabled is False
 
 
-class TestSmtpConfigEnvOverrides:
-    """Test that all SMTP fields can be overridden via env vars."""
+class TestSendGridConfigEnvOverrides:
+    """Test that all SendGrid fields can be overridden via env vars."""
 
-    def test_smtp_host_override(self) -> None:
-        with patch.dict(os.environ, {"SMTP_HOST": "smtp.custom.com"}):
+    def test_sendgrid_api_key_override(self) -> None:
+        with patch.dict(os.environ, {"SENDGRID_API_KEY": "SG.test-key"}):
             s = Settings(_env_file=None)
-            assert s.smtp_host == "smtp.custom.com"
+            assert s.sendgrid_api_key == "SG.test-key"
 
-    def test_smtp_from_name_override(self) -> None:
-        with patch.dict(os.environ, {"SMTP_FROM_NAME": "My Brand"}):
+    def test_email_from_name_override(self) -> None:
+        with patch.dict(os.environ, {"EMAIL_FROM_NAME": "My Brand"}):
             s = Settings(_env_file=None)
-            assert s.smtp_from_name == "My Brand"
+            assert s.email_from_name == "My Brand"
 
-    def test_smtp_from_email_override(self) -> None:
-        with patch.dict(os.environ, {"SMTP_FROM_EMAIL": "noreply@brand.com"}):
+    def test_email_from_email_override(self) -> None:
+        with patch.dict(os.environ, {"EMAIL_FROM_EMAIL": "noreply@brand.com"}):
             s = Settings(_env_file=None)
-            assert s.smtp_from_email == "noreply@brand.com"
+            assert s.email_from_email == "noreply@brand.com"
 
     def test_email_enabled_override(self) -> None:
         with patch.dict(os.environ, {"EMAIL_ENABLED": "true"}):

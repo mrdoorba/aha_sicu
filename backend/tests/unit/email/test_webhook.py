@@ -1,4 +1,4 @@
-"""Tests for Brevo webhook endpoint."""
+"""Tests for SendGrid Event Webhook endpoint."""
 
 from unittest.mock import patch
 
@@ -11,18 +11,18 @@ def webhook_headers():
     return {"Authorization": "Bearer test-webhook-secret"}
 
 
-class TestBrevoWebhook:
+class TestSendGridWebhook:
     async def test_returns_200_when_valid_event_updates_status(
         self, client, mock_db_conn, webhook_headers
     ) -> None:
         mock_db_conn.execute.return_value = "UPDATE 1"
 
         with patch("app.modules.email.webhook.settings") as mock_settings:
-            mock_settings.brevo_webhook_secret = "test-webhook-secret"
+            mock_settings.sendgrid_webhook_secret = "test-webhook-secret"
 
             response = client.post(
-                "/api/v1/webhooks/brevo",
-                json={"event": "delivered", "message-id": "<brevo-abc>", "email": "r@b.com", "ts_epoch": 1710936000000},
+                "/api/v1/webhooks/sendgrid",
+                json=[{"event": "delivered", "sg_message_id": "sg-abc", "email": "r@b.com", "timestamp": 1710936000}],
                 headers=webhook_headers,
             )
 
@@ -34,8 +34,8 @@ class TestBrevoWebhook:
         self, client, mock_db_conn
     ) -> None:
         response = client.post(
-            "/api/v1/webhooks/brevo",
-            json={"event": "delivered", "message-id": "<brevo-abc>", "email": "r@b.com"},
+            "/api/v1/webhooks/sendgrid",
+            json=[{"event": "delivered", "sg_message_id": "sg-abc", "email": "r@b.com"}],
         )
 
         assert response.status_code == 422  # FastAPI rejects missing required header
@@ -44,11 +44,11 @@ class TestBrevoWebhook:
         self, client, mock_db_conn
     ) -> None:
         with patch("app.modules.email.webhook.settings") as mock_settings:
-            mock_settings.brevo_webhook_secret = "real-secret"
+            mock_settings.sendgrid_webhook_secret = "real-secret"
 
             response = client.post(
-                "/api/v1/webhooks/brevo",
-                json={"event": "delivered", "message-id": "<brevo-abc>", "email": "r@b.com"},
+                "/api/v1/webhooks/sendgrid",
+                json=[{"event": "delivered", "sg_message_id": "sg-abc", "email": "r@b.com"}],
                 headers={"Authorization": "Bearer wrong-secret"},
             )
 
@@ -60,11 +60,11 @@ class TestBrevoWebhook:
         mock_db_conn.execute.return_value = "UPDATE 0"
 
         with patch("app.modules.email.webhook.settings") as mock_settings:
-            mock_settings.brevo_webhook_secret = "test-webhook-secret"
+            mock_settings.sendgrid_webhook_secret = "test-webhook-secret"
 
             response = client.post(
-                "/api/v1/webhooks/brevo",
-                json={"event": "delivered", "message-id": "<unknown>", "email": "r@b.com", "ts_epoch": 1710936000000},
+                "/api/v1/webhooks/sendgrid",
+                json=[{"event": "delivered", "sg_message_id": "unknown-id", "email": "r@b.com", "timestamp": 1710936000}],
                 headers=webhook_headers,
             )
 
@@ -76,15 +76,15 @@ class TestBrevoWebhook:
         mock_db_conn.execute.return_value = "UPDATE 1"
 
         events = [
-            {"event": "delivered", "message-id": "<m1>", "email": "r@b.com", "ts_epoch": 1710936000000},
-            {"event": "opened", "message-id": "<m2>", "email": "r@b.com", "ts_epoch": 1710936001000},
+            {"event": "delivered", "sg_message_id": "m1", "email": "r@b.com", "timestamp": 1710936000},
+            {"event": "open", "sg_message_id": "m2", "email": "r@b.com", "timestamp": 1710936001},
         ]
 
         with patch("app.modules.email.webhook.settings") as mock_settings:
-            mock_settings.brevo_webhook_secret = "test-webhook-secret"
+            mock_settings.sendgrid_webhook_secret = "test-webhook-secret"
 
             response = client.post(
-                "/api/v1/webhooks/brevo",
+                "/api/v1/webhooks/sendgrid",
                 json=events,
                 headers=webhook_headers,
             )
@@ -96,58 +96,61 @@ class TestBrevoWebhook:
         self, client, mock_db_conn, webhook_headers
     ) -> None:
         events = [
-            {"event": "delivered", "message-id": f"<m{i}>", "email": "r@b.com", "ts_epoch": 1710936000000}
+            {"event": "delivered", "sg_message_id": f"m{i}", "email": "r@b.com", "timestamp": 1710936000}
             for i in range(101)
         ]
 
         with patch("app.modules.email.webhook.settings") as mock_settings:
-            mock_settings.brevo_webhook_secret = "test-webhook-secret"
+            mock_settings.sendgrid_webhook_secret = "test-webhook-secret"
 
             response = client.post(
-                "/api/v1/webhooks/brevo",
+                "/api/v1/webhooks/sendgrid",
                 json=events,
                 headers=webhook_headers,
             )
 
         assert response.status_code == 400
 
-    async def test_maps_brevo_event_names_correctly(
+    async def test_maps_sendgrid_event_names_correctly(
         self, client, mock_db_conn, webhook_headers
     ) -> None:
         mock_db_conn.execute.return_value = "UPDATE 1"
 
         mappings = [
-            ("softBounce", "bounced"),
-            ("hardBounce", "bounced"),
-            ("uniqueOpened", "opened"),
+            ("processed", "sent"),
+            ("bounce", "bounced"),
+            ("dropped", "blocked"),
+            ("open", "opened"),
             ("click", "clicked"),
+            ("spamreport", "spam"),
+            ("deferred", "deferred"),
         ]
 
-        for brevo_event, expected_status in mappings:
+        for sg_event, expected_status in mappings:
             mock_db_conn.execute.reset_mock()
 
             with patch("app.modules.email.webhook.settings") as mock_settings:
-                mock_settings.brevo_webhook_secret = "test-webhook-secret"
+                mock_settings.sendgrid_webhook_secret = "test-webhook-secret"
 
                 response = client.post(
-                    "/api/v1/webhooks/brevo",
-                    json={"event": brevo_event, "message-id": "<m1>", "email": "r@b.com", "ts_epoch": 1710936000000},
+                    "/api/v1/webhooks/sendgrid",
+                    json=[{"event": sg_event, "sg_message_id": "m1", "email": "r@b.com", "timestamp": 1710936000}],
                     headers=webhook_headers,
                 )
 
             assert response.status_code == 200
             call_args = mock_db_conn.execute.call_args[0]
-            assert call_args[2] == expected_status, f"{brevo_event} should map to {expected_status}"
+            assert call_args[2] == expected_status, f"{sg_event} should map to {expected_status}"
 
     async def test_rejects_when_webhook_secret_not_configured(
         self, client, mock_db_conn, webhook_headers
     ) -> None:
         with patch("app.modules.email.webhook.settings") as mock_settings:
-            mock_settings.brevo_webhook_secret = ""
+            mock_settings.sendgrid_webhook_secret = ""
 
             response = client.post(
-                "/api/v1/webhooks/brevo",
-                json={"event": "delivered", "message-id": "<brevo-abc>", "email": "r@b.com"},
+                "/api/v1/webhooks/sendgrid",
+                json=[{"event": "delivered", "sg_message_id": "sg-abc", "email": "r@b.com"}],
                 headers=webhook_headers,
             )
 
@@ -159,17 +162,18 @@ class TestBrevoWebhook:
         mock_db_conn.execute.return_value = "UPDATE 1"
 
         with patch("app.modules.email.webhook.settings") as mock_settings:
-            mock_settings.brevo_webhook_secret = "test-webhook-secret"
+            mock_settings.sendgrid_webhook_secret = "test-webhook-secret"
 
             response = client.post(
-                "/api/v1/webhooks/brevo",
-                json={
-                    "event": "hardBounce",
-                    "message-id": "<brevo-abc>",
+                "/api/v1/webhooks/sendgrid",
+                json=[{
+                    "event": "bounce",
+                    "sg_message_id": "sg-abc",
                     "email": "r@b.com",
-                    "ts_epoch": 1710936000000,
+                    "timestamp": 1710936000,
                     "reason": "Mailbox full",
-                },
+                    "type": "blocked",
+                }],
                 headers=webhook_headers,
             )
 

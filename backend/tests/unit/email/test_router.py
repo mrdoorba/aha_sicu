@@ -21,7 +21,7 @@ class TestSendEmailLogsHistory:
 
         mock_response = MagicMock()
         mock_response.success = True
-        mock_response.message_id = "<brevo-123>"
+        mock_response.message_id = "<sg-msg-123>"
         mock_response.recipients = ["recipient@ahacommerce.id"]
 
         with auth_ctx, \
@@ -30,7 +30,7 @@ class TestSendEmailLogsHistory:
              patch("app.modules.email.router.insert_email_history", new_callable=AsyncMock) as mock_insert, \
              patch("app.modules.email.router.settings") as mock_router_settings, \
              patch("app.modules.email.schemas.settings") as mock_schema_settings:
-            mock_router_settings.smtp_from_email = "sender@aha.com"
+            mock_router_settings.email_from_email = "sender@aha.com"
             mock_schema_settings.email_allowed_domains = "ahacommerce.id"
 
             response = client.post(
@@ -47,7 +47,7 @@ class TestSendEmailLogsHistory:
         mock_insert.assert_called_once()
         call_kwargs = mock_insert.call_args[1]
         assert call_kwargs["status"] == "sent"
-        assert call_kwargs["message_id"] == "<brevo-123>"
+        assert call_kwargs["message_id"] == "<sg-msg-123>"
 
     async def test_logs_failure_to_history(
         self, client, mock_db_conn, auth_headers
@@ -64,11 +64,11 @@ class TestSendEmailLogsHistory:
 
         with auth_ctx, \
              patch("app.modules.email.router.get_evaluation_detail", new_callable=AsyncMock, return_value=mock_eval), \
-             patch("app.modules.email.router.send_evaluation_email", new_callable=AsyncMock, side_effect=AppException(code="BREVO_API_ERROR", detail="fail", status_code=502)), \
+             patch("app.modules.email.router.send_evaluation_email", new_callable=AsyncMock, side_effect=AppException(code="SENDGRID_API_ERROR", detail="fail", status_code=502)), \
              patch("app.modules.email.router.insert_email_history", new_callable=AsyncMock) as mock_insert, \
              patch("app.modules.email.router.settings") as mock_router_settings, \
              patch("app.modules.email.schemas.settings") as mock_schema_settings:
-            mock_router_settings.smtp_from_email = "sender@aha.com"
+            mock_router_settings.email_from_email = "sender@aha.com"
             mock_schema_settings.email_allowed_domains = "ahacommerce.id"
 
             response = client.post(
@@ -100,7 +100,7 @@ class TestSendEmailLogsHistory:
 
         mock_response = MagicMock()
         mock_response.success = True
-        mock_response.message_id = "<brevo-123>"
+        mock_response.message_id = "<sg-msg-123>"
         mock_response.recipients = ["recipient@ahacommerce.id"]
 
         with auth_ctx, \
@@ -109,7 +109,7 @@ class TestSendEmailLogsHistory:
              patch("app.modules.email.router.insert_email_history", new_callable=AsyncMock, side_effect=Exception("DB write failed")), \
              patch("app.modules.email.router.settings") as mock_router_settings, \
              patch("app.modules.email.schemas.settings") as mock_schema_settings:
-            mock_router_settings.smtp_from_email = "sender@aha.com"
+            mock_router_settings.email_from_email = "sender@aha.com"
             mock_schema_settings.email_allowed_domains = "ahacommerce.id"
 
             response = client.post(

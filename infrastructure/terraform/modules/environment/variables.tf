@@ -94,13 +94,8 @@ variable "cloud_run_url" {
   default     = ""
 }
 
-variable "smtp_user" {
-  description = "SMTP username (Gmail address)"
-  type        = string
-}
-
-variable "smtp_from_email" {
-  description = "Sender email address for outgoing emails"
+variable "email_from_email" {
+  description = "Verified sender email address for outgoing emails (SendGrid)"
   type        = string
 }
 
