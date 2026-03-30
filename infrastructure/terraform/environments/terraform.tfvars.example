@@ -20,5 +20,6 @@ gsheets_eval_spreadsheet_id    = "YOUR_EVAL_SPREADSHEET_ID"
 
 # Email / SendGrid
 # Create API key at sendgrid.com > Settings > API Keys (Mail Send permission)
-# Store the API key and webhook secret in Google Secret Manager
-email_from_email = "noreply@ahabot.ai"
+email_from_email        = "noreply@ahabot.ai"
+sendgrid_api_key        = "SG.your-api-key-here"
+sendgrid_webhook_secret = ""  # optional, for Event Webhook verification

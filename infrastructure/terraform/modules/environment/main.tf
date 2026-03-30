@@ -169,6 +169,23 @@ resource "google_secret_manager_secret" "sendgrid_webhook_secret" {
   }
 }
 
+resource "google_secret_manager_secret_version" "sendgrid_api_key" {
+  secret      = google_secret_manager_secret.sendgrid_api_key.id
+  secret_data = var.sendgrid_api_key
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
+resource "google_secret_manager_secret_version" "sendgrid_webhook_secret" {
+  secret      = google_secret_manager_secret.sendgrid_webhook_secret.id
+  secret_data = var.sendgrid_webhook_secret != "" ? var.sendgrid_webhook_secret : "placeholder"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
 
 # IAM: Grant Cloud Run SA access to secrets
 

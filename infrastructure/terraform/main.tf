@@ -115,10 +115,12 @@ module "dev" {
   cloud_run_memory        = var.cloud_run_memory
   cloud_run_cpu           = var.cloud_run_cpu
 
-  email_from_email      = var.email_from_email
-  email_enabled         = var.dev_email_enabled
-  email_allowed_domains = var.dev_email_allowed_domains
-  cloud_run_url         = var.dev_cloud_run_url
+  email_from_email        = var.email_from_email
+  email_enabled           = var.dev_email_enabled
+  email_allowed_domains   = var.dev_email_allowed_domains
+  sendgrid_api_key        = var.sendgrid_api_key
+  sendgrid_webhook_secret = var.sendgrid_webhook_secret
+  cloud_run_url           = var.dev_cloud_run_url
 
   gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
   gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id
@@ -150,10 +152,12 @@ module "prod" {
   cloud_run_memory        = var.cloud_run_memory
   cloud_run_cpu           = var.cloud_run_cpu
 
-  email_from_email      = var.email_from_email
-  email_enabled         = var.prod_email_enabled
-  email_allowed_domains = var.prod_email_allowed_domains
-  cloud_run_url         = var.prod_cloud_run_url
+  email_from_email        = var.email_from_email
+  email_enabled           = var.prod_email_enabled
+  email_allowed_domains   = var.prod_email_allowed_domains
+  sendgrid_api_key        = var.sendgrid_api_key
+  sendgrid_webhook_secret = var.sendgrid_webhook_secret
+  cloud_run_url           = var.prod_cloud_run_url
 
   gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
   gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id

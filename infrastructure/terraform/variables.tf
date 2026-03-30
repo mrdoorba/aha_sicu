@@ -91,6 +91,19 @@ variable "email_from_email" {
   type        = string
 }
 
+variable "sendgrid_api_key" {
+  description = "SendGrid API key for sending emails"
+  type        = string
+  sensitive   = true
+}
+
+variable "sendgrid_webhook_secret" {
+  description = "SendGrid Event Webhook verification key"
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "dev_email_enabled" {
   description = "Whether to enable the send-email feature in dev"
   type        = bool
