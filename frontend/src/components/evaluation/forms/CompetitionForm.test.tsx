@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { CompetitionForm } from './CompetitionForm';
-import { buildShopeeSearchUrl } from './competitionUtils';
+import { buildShopeeSearchUrl, localizeShopeeLink } from './competitionUtils';
 import type { CompetitionData } from './formConfig';
 
 const emptyData: CompetitionData = {
@@ -16,6 +16,13 @@ describe('buildShopeeSearchUrl', () => {
     const url = buildShopeeSearchUrl(85000, 'kaos polos');
     expect(url).toBe(
       'https://shopee.co.id/search?keyword=kaos+polos&maxPrice=93500&minPrice=63750&noCorrection=true&page=0&ratingFilter=4&sortBy=sales',
+    );
+  });
+
+  it('returns thailand domain when marketplace is TH', () => {
+    const url = buildShopeeSearchUrl(85000, 'kaos polos', 'TH');
+    expect(url).toBe(
+      'https://shopee.co.th/search?keyword=kaos+polos&maxPrice=93500&minPrice=63750&noCorrection=true&page=0&ratingFilter=4&sortBy=sales',
     );
   });
 
@@ -47,6 +54,14 @@ describe('buildShopeeSearchUrl', () => {
     // 33333 * 0.75 = 24999.75 → 25000
     expect(url).toContain('maxPrice=36666');
     expect(url).toContain('minPrice=25000');
+  });
+});
+
+describe('localizeShopeeLink', () => {
+  it('rewrites existing buyer links to thailand domain', () => {
+    expect(localizeShopeeLink('https://shopee.co.id/search?keyword=test', 'TH')).toBe(
+      'https://shopee.co.th/search?keyword=test',
+    );
   });
 });
 
@@ -203,6 +218,18 @@ describe('CompetitionForm', () => {
     expect(link).toHaveAttribute('href', 'https://shopee.co.id/search?keyword=test');
     expect(link).toHaveAttribute('target', '_blank');
     expect(link).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('renders thailand marketplace links with shopee.co.th', () => {
+    const data: CompetitionData = {
+      product1: { productName: null, sellingPrice: 100000, keyword: 'test', link: 'https://shopee.co.id/search?keyword=test', marketPrice: null },
+      product2: { productName: null, sellingPrice: null, keyword: null, link: null, marketPrice: null },
+      product3: { productName: null, sellingPrice: null, keyword: null, link: null, marketPrice: null },
+    };
+    render(<CompetitionForm data={data} marketplace="TH" onChange={vi.fn()} onBlur={vi.fn()} />);
+
+    const link = screen.getByText('Lihat di Shopee');
+    expect(link).toHaveAttribute('href', 'https://shopee.co.th/search?keyword=test');
   });
 
   it('renders placeholder text when link is null', () => {

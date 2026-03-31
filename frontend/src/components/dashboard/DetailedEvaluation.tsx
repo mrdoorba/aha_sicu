@@ -27,9 +27,10 @@ interface CategoryBreakdown {
 
 interface DetailedEvaluationProps {
   scoreBreakdown: CategoryBreakdown[];
+  marketplace?: string;
 }
 
-export const DetailedEvaluation = ({ scoreBreakdown }: DetailedEvaluationProps) => {
+export const DetailedEvaluation = ({ scoreBreakdown, marketplace }: DetailedEvaluationProps) => {
   const { t } = useTranslation();
   const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set([scoreBreakdown[0]?.category ?? '']));
 
@@ -80,6 +81,7 @@ export const DetailedEvaluation = ({ scoreBreakdown }: DetailedEvaluationProps) 
                               value_i18n={row.value_i18n}
                               message_i18n={row.message_i18n}
                               benchmark_i18n={row.benchmark_i18n}
+                              marketplace={marketplace}
                             />
                           </div>
                         );

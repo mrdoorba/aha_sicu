@@ -2,13 +2,14 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent } from '../../ui/card';
 import { Input } from '../../ui/input';
 import { Label } from '../../ui/label';
-import { buildShopeeSearchUrl } from './competitionUtils';
+import { buildShopeeSearchUrl, localizeShopeeLink } from './competitionUtils';
 import { CurrencyField } from './CurrencyField';
 import type { CompetitionData, CompetitionProduct } from './formConfig';
 
 interface CompetitionFormProps {
   data: CompetitionData;
   currency?: string;
+  marketplace?: string;
   onChange: (category: 'competition', key: string, value: string | number | null) => void;
   onBlur: () => void;
 }
@@ -44,7 +45,7 @@ function CompetitivenessResult({ product }: { product: CompetitionProduct }) {
   );
 }
 
-export function CompetitionForm({ data, currency = 'IDR', onChange, onBlur }: CompetitionFormProps) {
+export function CompetitionForm({ data, currency = 'IDR', marketplace = 'ID', onChange, onBlur }: CompetitionFormProps) {
   const { t } = useTranslation();
 
   return (
@@ -84,7 +85,7 @@ export function CompetitionForm({ data, currency = 'IDR', onChange, onBlur }: Co
                     value={productData?.sellingPrice ?? null}
                     onChange={(v) => {
                       onChange('competition', `${product.key}.sellingPrice`, v);
-                      onChange('competition', `${product.key}.link`, buildShopeeSearchUrl(v, productData?.keyword ?? null));
+                      onChange('competition', `${product.key}.link`, buildShopeeSearchUrl(v, productData?.keyword ?? null, marketplace));
                     }}
                     onBlur={onBlur}
                   />
@@ -102,7 +103,7 @@ export function CompetitionForm({ data, currency = 'IDR', onChange, onBlur }: Co
                       onChange={(e) => {
                         const kw = e.target.value || null;
                         onChange('competition', `${product.key}.keyword`, kw);
-                        onChange('competition', `${product.key}.link`, buildShopeeSearchUrl(productData?.sellingPrice ?? null, kw));
+                        onChange('competition', `${product.key}.link`, buildShopeeSearchUrl(productData?.sellingPrice ?? null, kw, marketplace));
                       }}
                       onBlur={onBlur}
                       placeholder="—"
@@ -114,7 +115,7 @@ export function CompetitionForm({ data, currency = 'IDR', onChange, onBlur }: Co
                     <Label>{t('forms.competition.link')}</Label>
                     {productData?.link ? (
                       <a
-                        href={productData.link}
+                        href={localizeShopeeLink(productData.link, marketplace)}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="block truncate text-sm text-blue-600 underline"

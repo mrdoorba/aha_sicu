@@ -1,6 +1,7 @@
 import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
 import { renderTranslatable, type TranslatableText } from '../../utils/renderTranslatable';
+import { localizeShopeeLink } from '../evaluation/forms/competitionUtils';
 
 interface CategoryMetricCardProps {
   metric: string;
@@ -13,14 +14,15 @@ interface CategoryMetricCardProps {
   value_i18n?: TranslatableText | null;
   message_i18n?: TranslatableText | null;
   benchmark_i18n?: TranslatableText | null;
+  marketplace?: string;
 }
 
 
-export const CategoryMetricCard = ({ metric, value, benchmark, message, metric_i18n, value_i18n, message_i18n, benchmark_i18n }: CategoryMetricCardProps) => {
+export const CategoryMetricCard = ({ metric, value, benchmark, message, metric_i18n, value_i18n, message_i18n, benchmark_i18n, marketplace }: CategoryMetricCardProps) => {
   const { t } = useTranslation();
   const displayMetric = renderTranslatable(metric, metric_i18n, t);
   const translatedMessage = renderTranslatable(message, message_i18n, t);
-  const i18nLink = message_i18n?.vars?.link;
+  const i18nLink = message_i18n?.vars?.link ? localizeShopeeLink(message_i18n.vars.link, marketplace) : undefined;
   const displayMessage = i18nLink ? `${translatedMessage}\n↪${i18nLink}` : translatedMessage;
   const displayBenchmark = renderTranslatable(benchmark, benchmark_i18n, t);
 
@@ -66,19 +68,20 @@ export const CategoryMetricCard = ({ metric, value, benchmark, message, metric_i
             const parts = displayMessage.split('↪');
             const textPart = parts[0].trim();
             const urlPart = parts[1]?.trim();
+            const localizedUrlPart = urlPart ? localizeShopeeLink(urlPart, marketplace) : undefined;
 
             return (
               <div className="space-y-1">
                 <p className={cn('break-all', colorClass)}>{textPart}</p>
-                {urlPart && (
+                {localizedUrlPart && (
                   <p>
                     <a
-                      href={urlPart}
+                      href={localizedUrlPart}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="text-primary hover:underline break-all"
                     >
-                      ↪ {urlPart}
+                      ↪ {localizedUrlPart}
                     </a>
                   </p>
                 )}

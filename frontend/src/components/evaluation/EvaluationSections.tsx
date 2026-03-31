@@ -273,6 +273,7 @@ export const EvaluationSections = ({
         <CompetitionForm
           data={manualData.competition}
           currency={currency}
+          marketplace={marketplace}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
         />
