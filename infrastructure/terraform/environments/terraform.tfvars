@@ -28,9 +28,8 @@ cloud_sql_tier          = "db-f1-micro"
 cloud_sql_disk_size     = 10
 cloud_sql_instance_name = "aha-sicu-db"
 
-# SMTP (Gmail)
-smtp_user       = "handers.the@ahacommerce.net"
-smtp_from_email = "handers.the@ahacommerce.net"
+# Email / SendGrid
+email_from_email = "noreply@ahabot.ai"
 
 # Feature flags (per-environment)
 dev_email_enabled  = true
