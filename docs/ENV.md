@@ -31,15 +31,16 @@
 |----------|----------|---------|-------------|
 | `FIREBASE_CREDENTIALS_PATH` | Yes* | — | Path to Firebase service account JSON (local dev). Cloud Run uses ADC automatically. |
 
-### Email (Brevo Transactional API)
+### Email (SendGrid)
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `BREVO_API_KEY` | No | — | Brevo API key ([get one here](https://app.brevo.com/settings/keys/api)). Free tier: 300 emails/day. |
-| `BREVO_SENDER_NAME` | No | `AHA Commerce` | Sender display name |
-| `BREVO_SENDER_EMAIL` | No | — | Verified sender email ([verify here](https://app.brevo.com/senders/list)) |
+| `SENDGRID_API_KEY` | No | — | SendGrid API key with Mail Send permission |
+| `EMAIL_FROM_NAME` | No | `AHA Commerce` | Sender display name |
+| `EMAIL_FROM_EMAIL` | No | — | Verified sender email address |
 | `EMAIL_ENABLED` | No | `false` | Enable email sending |
 | `EMAIL_ALLOWED_DOMAINS` | No | `ahacommerce.co.id` | Comma-separated allowed recipient domains |
+| `SENDGRID_WEBHOOK_SECRET` | No | — | Optional Event Webhook verification secret |
 
 ### Google Sheets API
 
@@ -72,14 +73,15 @@
 
 ## Docker Compose (Local Dev)
 
-When using `docker compose up`, environment variables are pre-configured in `docker-compose.yml`. You only need a root `.env` file for SMTP credentials if you want email sending:
+When using `docker compose up`, most backend env vars are already wired in `docker-compose.yml`. Email sending is disabled by default; if you want to exercise real outbound email locally, provide the same SendGrid-backed variables used by the backend:
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `SMTP_USER` | No | — | Gmail SMTP username |
-| `SMTP_PASSWORD` | No | — | Gmail SMTP app password |
-| `SMTP_FROM_EMAIL` | No | `noreply@ahacommerce.local` | Sender email |
+| `SENDGRID_API_KEY` | No | — | SendGrid API key with Mail Send permission |
+| `EMAIL_FROM_NAME` | No | `AHA Commerce` | Sender display name |
+| `EMAIL_FROM_EMAIL` | No | — | Verified sender email address |
 | `EMAIL_ENABLED` | No | `false` | Enable real email sending (otherwise caught by MailHog) |
+| `SENDGRID_WEBHOOK_SECRET` | No | — | Optional Event Webhook verification secret |
 
 ---
 
