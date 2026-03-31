@@ -54,6 +54,23 @@ describe('CategoryMetricCard', () => {
     expect(messageEl).toHaveClass('break-all');
   });
 
+  it('localizes stored shopee buyer links for thailand marketplace', () => {
+    render(
+      <CategoryMetricCard
+        metric="Produk Kompetisi"
+        value={549}
+        verdict="✔️"
+        score={0}
+        benchmark="Benchmark: THB 523"
+        message={'Produk A (THB 549) = ✅[kompetitif]\n↪https://shopee.co.id/search?keyword=test'}
+        marketplace="TH"
+      />,
+    );
+
+    const link = screen.getByRole('link', { name: /https:\/\/shopee\.co\.th\/search\?keyword=test/i });
+    expect(link).toHaveAttribute('href', 'https://shopee.co.th/search?keyword=test');
+  });
+
   // ---------------------------------------------------------------------------
   // BDD Scenario: Message lines color-coded by verdict
   //   Given a message starting with ✔️

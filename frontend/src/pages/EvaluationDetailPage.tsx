@@ -28,6 +28,7 @@ import {
   formatCurrency,
   type FieldDefinition,
 } from '../components/evaluation/forms/formConfig';
+import { localizeShopeeLink } from '../components/evaluation/forms/competitionUtils';
 import { isRecord, isRecordArray } from '../lib/typeGuards';
 import { CATEGORY_MAP } from '../lib/categoryMap';
 import { getIntlLocale } from '../lib/languages';
@@ -99,6 +100,9 @@ function formatNumber(value: unknown, marketplace?: string): string {
 function formatValue(value: unknown, key: string, fieldDef?: FieldDefinition, marketplace?: string): string {
   if (value === null || value === undefined) return '-';
   if (Array.isArray(value)) return value.map((v) => formatNumber(v, marketplace)).join(', ');
+  if (typeof value === 'string' && key.endsWith('.link')) {
+    return localizeShopeeLink(value, marketplace);
+  }
 
   // Metadata-based formatting when field definition is available
   if (fieldDef && typeof value === 'number') {
