@@ -52,11 +52,19 @@ Resources have dependencies. Terraform handles ordering automatically, but for i
 
 ## Quick Setup
 
-Run the interactive setup script — it handles init, plan, apply, and secret injection:
+Run the interactive setup script — it handles init and plan locally. Local apply is
+break-glass only:
 
 ```bash
 cd infrastructure/terraform
 ./setup.sh
+```
+
+If GitHub Actions is unavailable and you must apply locally:
+
+```bash
+cd infrastructure/terraform
+./setup.sh --apply
 ```
 
 ## Manual Setup
@@ -68,14 +76,20 @@ cd infrastructure/terraform
 terraform init -upgrade
 ```
 
-### 2. Plan and Apply
+### 2. Plan locally
 
 ```bash
 terraform plan
-terraform apply
 ```
 
-### 3. Inject secret values (after apply)
+### 3. Apply via GitHub Actions
+
+- Pull requests touching `infrastructure/terraform/**` run `Terraform Plan`
+- Pushes to `develop` or `production` run `Terraform Apply`
+- Manual applies go through `workflow_dispatch`
+- Pull requests never apply infrastructure
+
+### 4. Inject secret values (after apply)
 
 Secret **resources** are created by Terraform, but **values** must be injected manually.
 
@@ -114,6 +128,19 @@ gcloud secrets versions add aha_coms_sicu_prod_firebase_admin \
 echo -n "YOUR_SMTP_PASSWORD" | \
   gcloud secrets versions add aha_coms_sicu_prod_smtp_password --data-file=-
 ```
+
+## CI/CD Contract
+
+Terraform now follows a reviewable delivery contract:
+
+1. **PRs plan only** — `.github/workflows/terraform-plan.yml` runs `fmt`, `validate`,
+   and `plan`, then uploads the rendered plan as an artifact.
+2. **Protected branches apply** — `.github/workflows/terraform-apply.yml` re-plans and
+   applies from `develop` or `production`, or from an approved manual dispatch.
+3. **Local apply is break-glass** — `./setup.sh --apply` exists for emergencies, not
+   normal workflow.
+4. **Touched environments are explicit** — the PR summary calls out that the shared
+   root config affects both `dev` and `prod`.
 
 ## Resources Created
 

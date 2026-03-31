@@ -18,6 +18,19 @@ on:
   workflow_call:
 
 jobs:
+  workflow-contract:
+    name: Workflow Contract
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Run actionlint
+        uses: rhysd/actionlint@v1
+
+      - name: Verify Terraform workflow contract
+        run: bash scripts/test_terraform_workflows.sh
+
   backend:
     name: Backend Tests & Lint
     runs-on: ubuntu-latest

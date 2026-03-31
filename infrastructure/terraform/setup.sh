@@ -2,7 +2,7 @@
 set -euo pipefail
 
 # Store ICU - Terraform Bootstrap Script
-# Automates: init → apply → secret injection → output summary
+# Default flow: init → plan → stop. Local apply is break-glass only.
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$SCRIPT_DIR"
@@ -18,6 +18,11 @@ info()  { echo -e "${CYAN}[INFO]${NC} $1"; }
 ok()    { echo -e "${GREEN}[OK]${NC} $1"; }
 warn()  { echo -e "${YELLOW}[WARN]${NC} $1"; }
 error() { echo -e "${RED}[ERROR]${NC} $1"; }
+
+APPLY_MODE=false
+if [[ "${1:-}" == "--apply" ]]; then
+  APPLY_MODE=true
+fi
 
 # ─── Step 1: Check prerequisites ───────────────────────────────────────────────
 
@@ -96,9 +101,17 @@ echo ""
 terraform plan -var-file="$TFVARS" -out=tfplan.out
 
 echo ""
-read -rp "Apply this plan? [y/N]: " APPLY_CONFIRM
+if [[ "$APPLY_MODE" != true ]]; then
+  warn "Local apply is break-glass only. Preferred path: open a PR and let GitHub Actions run plan/apply."
+  info "Plan saved to tfplan.out"
+  info "If you really need a local apply, rerun with: ./setup.sh --apply"
+  exit 0
+fi
+
+warn "Break-glass local apply requested. Use only when GitHub Actions is unavailable."
+read -rp "Apply this plan locally? [y/N]: " APPLY_CONFIRM
 if [[ ! "$APPLY_CONFIRM" =~ ^[Yy]$ ]]; then
-  info "Aborted. Plan saved to tfplan.out — apply manually with: terraform apply tfplan.out"
+  info "Aborted. Plan saved to tfplan.out"
   exit 0
 fi
 

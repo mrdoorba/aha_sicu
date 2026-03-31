@@ -15,9 +15,20 @@
 | Trigger | Target | Approval |
 |---------|--------|----------|
 | Push to `develop` | Staging (dev) | Automatic |
-| Push to `main` | Production | Manual approval |
+| Push to `production` | Production | Manual approval |
 
 Pipelines: `.github/workflows/deploy.yml` > `_deploy-backend.yml` / `_deploy-frontend.yml`
+
+### Terraform Changes
+
+| Trigger | Workflow | Behavior |
+|---------|----------|----------|
+| PR touching `infrastructure/terraform/**` | `terraform-plan.yml` | Plan only, upload artifact, no apply |
+| Push to `develop` / `production` touching Terraform | `terraform-apply.yml` | Re-plan and apply using environment protections |
+| Manual emergency run | `terraform-apply.yml` via `workflow_dispatch` | Break-glass apply with environment approval |
+
+Normal path: review Terraform in a pull request, then let the protected branch apply it.
+Local `./setup.sh --apply` is emergency-only.
 
 ### Manual Backend Deploy
 
@@ -164,3 +175,4 @@ firebase deploy --only hosting:${FIREBASE_HOSTING_SITE}
 | Deploy failures | GitHub Actions > workflow runs |
 | Database issues | GCP Cloud SQL > Monitoring |
 | Auth issues | Firebase Console > Authentication |
+| Terraform plan/apply failures | GitHub Actions > Terraform Plan / Terraform Apply |

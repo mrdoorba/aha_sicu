@@ -1,0 +1,84 @@
+name: Terraform Plan
+
+on:
+  pull_request:
+    branches: [develop, production]
+    paths:
+      - '.github/workflows/terraform-*.yml'
+      - 'infrastructure/terraform/**'
+
+jobs:
+  plan:
+    name: Terraform Plan
+    runs-on: ubuntu-latest
+    environment: ${{ github.base_ref == 'production' && 'production' || 'dev' }}
+    permissions:
+      contents: read
+      id-token: write
+      pull-requests: write
+    defaults:
+      run:
+        working-directory: infrastructure/terraform
+    env:
+      TF_IN_AUTOMATION: "true"
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@v3
+
+      - name: Terraform fmt
+        run: terraform fmt -check -recursive
+
+      - name: Terraform init
+        run: terraform init -upgrade -input=false
+
+      - name: Terraform validate
+        run: terraform validate
+
+      - name: Terraform plan
+        run: |
+          terraform plan \
+            -input=false \
+            -out=tfplan \
+            -var="project_id=${{ vars.GCP_PROJECT_ID }}" \
+            -var="region=${{ vars.GCP_REGION }}" \
+            -var="github_repo=${{ github.repository }}" \
+            -var="firebase_project_id=${{ vars.GCP_PROJECT_ID }}" \
+            -var="email_from_email=noreply@ahabot.ai" \
+            -var="sendgrid_api_key=placeholder-sendgrid-key"
+
+      - name: Render plan output
+        run: terraform show -no-color tfplan > tfplan.txt
+
+      - name: Upload plan artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: terraform-plan-${{ github.event.pull_request.number }}
+          path: |
+            infrastructure/terraform/tfplan
+            infrastructure/terraform/tfplan.txt
+          retention-days: 7
+
+      - name: Summarize plan
+        run: |
+          {
+            echo "## Terraform plan"
+            echo ""
+            echo "- Base branch: \`${{ github.base_ref }}\`"
+            echo "- Target environment credentials: \`${{ github.base_ref == 'production' && 'production' || 'dev' }}\`"
+            echo "- Touched environments: \`dev + prod\`"
+            echo "- Contract: PRs plan only. No apply from pull requests."
+            echo ""
+            echo "### Plan preview"
+            echo '```'
+            sed -n '1,120p' tfplan.txt
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
