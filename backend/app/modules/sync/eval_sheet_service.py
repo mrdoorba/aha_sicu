@@ -10,6 +10,7 @@ from typing import Any
 from asyncpg import Connection
 
 from app.config import settings
+from app.core.utils import ensure_dict
 from app.db.connection import db
 from app.modules.sync.sheets_client import GoogleSheetsClient
 
@@ -78,7 +79,7 @@ async def _get_latest_evaluation_for_brand(
 def _normalize_eval_sheet_row(data: dict[str, Any]) -> dict[str, Any]:
     """Fill marketplace-aware sheet fields from a raw evaluation row."""
     normalized = data.copy()
-    raw_data = normalized.get("raw_data") or {}
+    raw_data = ensure_dict(normalized.get("raw_data"))
     marketplace = normalized.get("marketplace") or "ID"
     category_keys = _CATEGORY_COLUMNS.get(marketplace, _CATEGORY_COLUMNS["ID"])
 

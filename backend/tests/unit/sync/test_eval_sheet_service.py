@@ -100,6 +100,21 @@ def test_normalize_eval_sheet_row_uses_legacy_generic_category_key():
     assert normalized["kategori"] == "Sepatu"
 
 
+def test_normalize_eval_sheet_row_parses_json_string_raw_data():
+    """should parse double-encoded raw_data rows before reading category keys"""
+    data = {
+        "period": "Feb 2026",
+        "brand_name": "Digi Living",
+        "marketplace": "ID",
+        "raw_data": '{"Kategori":"Beauty"}',
+        "final_score": 65.0,
+    }
+
+    normalized = _normalize_eval_sheet_row(data)
+
+    assert normalized["kategori"] == "Beauty"
+
+
 # --- HEADER_ROW ---
 
 
