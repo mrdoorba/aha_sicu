@@ -128,9 +128,10 @@ docker compose up backend
 ### Email not sending
 
 1. Check `EMAIL_ENABLED=true`
-2. Verify `BREVO_API_KEY` is set and valid
-3. Verify sender email is verified in Brevo
-4. Local dev: check MailHog at `http://localhost:8025`
+2. Verify `SENDGRID_API_KEY` is set and valid
+3. Verify `EMAIL_FROM_EMAIL` is a verified SendGrid sender
+4. If Event Webhook handling matters, verify `SENDGRID_WEBHOOK_SECRET`
+5. Local dev: if email is disabled, no outbound mail will be attempted
 
 ## Rollback Procedures
 

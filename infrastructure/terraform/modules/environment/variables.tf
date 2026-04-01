@@ -94,14 +94,22 @@ variable "cloud_run_url" {
   default     = ""
 }
 
-variable "smtp_user" {
-  description = "SMTP username (Gmail address)"
+variable "email_from_email" {
+  description = "Verified sender email address for outgoing emails (SendGrid)"
   type        = string
 }
 
-variable "smtp_from_email" {
-  description = "Sender email address for outgoing emails"
+variable "sendgrid_api_key" {
+  description = "SendGrid API key for sending emails"
   type        = string
+  sensitive   = true
+}
+
+variable "sendgrid_webhook_secret" {
+  description = "SendGrid Event Webhook verification key"
+  type        = string
+  sensitive   = true
+  default     = ""
 }
 
 variable "email_enabled" {

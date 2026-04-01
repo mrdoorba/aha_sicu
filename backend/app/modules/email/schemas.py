@@ -2,14 +2,13 @@
 
 from datetime import datetime
 
-from pydantic import BaseModel, ConfigDict, EmailStr, Field, model_validator
+from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from app.config import settings
 
-_KNOWN_BREVO_EVENTS: frozenset[str] = frozenset({
-    "sent", "delivered", "softBounce", "hardBounce",
-    "opened", "uniqueOpened", "click", "spam",
-    "blocked", "invalid", "deferred",
+_KNOWN_SENDGRID_EVENTS: frozenset[str] = frozenset({
+    "processed", "delivered", "bounce", "dropped",
+    "open", "click", "spamreport", "deferred",
 })
 
 
@@ -98,22 +97,18 @@ class DeleteEmailHistoryResponse(BaseModel):
     deleted: int
 
 
-class BrevoWebhookEvent(BaseModel):
-    """Single Brevo webhook event payload."""
-
-    model_config = ConfigDict(populate_by_name=True)
+class SendGridWebhookEvent(BaseModel):
+    """Single SendGrid Event Webhook payload."""
 
     event: str
     email: str = ""
-    message_id: str = Field(default="", alias="message-id")
-    ts_epoch: int = 0
-    date: str = ""
-    subject: str = ""
+    sg_message_id: str = ""
+    timestamp: int = 0
     reason: str = ""
-    tags: list[str] = Field(default_factory=list)
+    type: str = ""
 
     @model_validator(mode="after")
-    def validate_event_type(self) -> "BrevoWebhookEvent":
-        if self.event not in _KNOWN_BREVO_EVENTS:
-            raise ValueError(f"Unknown Brevo event: {self.event}")
+    def validate_event_type(self) -> "SendGridWebhookEvent":
+        if self.event not in _KNOWN_SENDGRID_EVENTS:
+            raise ValueError(f"Unknown SendGrid event: {self.event}")
         return self

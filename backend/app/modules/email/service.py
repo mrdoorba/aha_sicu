@@ -1,13 +1,11 @@
-"""Email composition and SMTP sending service."""
+"""Email composition and SendGrid sending service."""
 
-import asyncio
 import base64
 import logging
-import smtplib
 from collections.abc import Callable
-from email.message import EmailMessage
-from email.utils import make_msgid
 from pathlib import Path
+
+import httpx
 
 from app.config import settings
 from app.core.exceptions import AppException
@@ -17,6 +15,8 @@ from app.modules.email.template import _get_strings
 logger = logging.getLogger(__name__)
 
 ASSETS_DIR = Path(__file__).parent / "assets"
+
+SENDGRID_API_URL = "https://api.sendgrid.com/v3/mail/send"
 
 
 def _load_asset(filename: str) -> bytes:
@@ -57,7 +57,7 @@ def _decode_chart_image(chart_image_b64: str) -> bytes | None:
         ) from exc
 
 
-def build_email_message(
+def _build_sendgrid_payload(
     *,
     subject: str,
     from_name: str,
@@ -68,78 +68,93 @@ def build_email_message(
     html_content: str,
     text_content: str,
     images: list[tuple[bytes, str, str]],
-) -> EmailMessage:
-    """Build a multipart email with CID inline images."""
-    msg = EmailMessage()
-    msg["Subject"] = subject
-    msg["From"] = f"{from_name} <{from_email}>"
-    msg["To"] = ", ".join(to_emails)
-
+) -> dict:
+    """Build a SendGrid v3 Mail Send API payload with inline CID images."""
+    personalization: dict = {
+        "to": [{"email": e} for e in to_emails],
+    }
     if cc_emails:
-        msg["Cc"] = ", ".join(cc_emails)
+        personalization["cc"] = [{"email": e} for e in cc_emails]
+    if bcc_emails:
+        personalization["bcc"] = [{"email": e} for e in bcc_emails]
 
-    msg.set_content(text_content)
-    msg.add_alternative(html_content, subtype="html")
+    payload: dict = {
+        "personalizations": [personalization],
+        "from": {"email": from_email, "name": from_name},
+        "subject": subject,
+        "content": [
+            {"type": "text/plain", "value": text_content},
+            {"type": "text/html", "value": html_content},
+        ],
+    }
 
     if images:
-        # Get the HTML alternative part (second payload in multipart/alternative)
-        alt_parts = msg.get_payload()
-        if len(alt_parts) >= 2:
-            html_part = alt_parts[1]
-            html_part.make_related()
-            for data, subtype, cid in images:
-                html_part.add_related(
-                    data,
-                    maintype="image",
-                    subtype=subtype,
-                    cid=cid,
-                )
+        payload["attachments"] = [
+            {
+                "content": base64.b64encode(data).decode("ascii"),
+                "type": f"image/{subtype}",
+                "filename": f"{cid.split('@')[0]}.{subtype}",
+                "content_id": cid,
+                "disposition": "inline",
+            }
+            for data, subtype, cid in images
+        ]
 
-    return msg
+    return payload
 
 
-def _smtp_send_sync(
-    msg: EmailMessage,
-    *,
-    to_addrs: list[str] | None = None,
+async def sendgrid_send(
+    payload: dict,
 ) -> str:
-    """Send an email message synchronously via SMTP."""
+    """Send an email via SendGrid v3 Mail Send API.
+
+    Returns the X-Message-Id from the response headers.
+    """
+    headers = {
+        "Authorization": f"Bearer {settings.sendgrid_api_key}",
+        "Content-Type": "application/json",
+    }
     try:
-        server = smtplib.SMTP(settings.smtp_host, settings.smtp_port, timeout=30)
-        try:
-            if settings.smtp_use_tls:
-                server.starttls()
-                server.login(settings.smtp_user, settings.smtp_password)
-            server.send_message(msg, to_addrs=to_addrs)
-            return msg.get("Message-ID", "")
-        finally:
-            server.quit()
-    except smtplib.SMTPAuthenticationError as exc:
+        async with httpx.AsyncClient(timeout=30.0) as client:
+            response = await client.post(
+                SENDGRID_API_URL,
+                json=payload,
+                headers=headers,
+            )
+    except httpx.TimeoutException as exc:
         raise AppException(
-            code="SMTP_AUTH_ERROR",
-            detail=f"SMTP authentication failed: {exc}",
-            status_code=502,
-        ) from exc
-    except smtplib.SMTPConnectError as exc:
-        raise AppException(
-            code="SMTP_CONNECTION_ERROR",
-            detail=f"Could not connect to SMTP server: {exc}",
-            status_code=502,
-        ) from exc
-    except TimeoutError as exc:
-        raise AppException(
-            code="SMTP_TIMEOUT",
-            detail=f"SMTP connection timed out: {exc}",
+            code="SENDGRID_TIMEOUT",
+            detail=f"SendGrid request timed out: {exc}",
             status_code=504,
         ) from exc
+    except httpx.ConnectError as exc:
+        raise AppException(
+            code="SENDGRID_CONNECTION_ERROR",
+            detail=f"Could not connect to SendGrid: {exc}",
+            status_code=502,
+        ) from exc
 
+    if response.status_code == 401:
+        raise AppException(
+            code="SENDGRID_AUTH_ERROR",
+            detail="SendGrid authentication failed — check API key",
+            status_code=502,
+        )
+    if response.status_code == 429:
+        raise AppException(
+            code="SENDGRID_RATE_LIMIT",
+            detail="SendGrid rate limit exceeded",
+            status_code=429,
+        )
+    if response.status_code >= 400:
+        body = response.text
+        raise AppException(
+            code="SENDGRID_API_ERROR",
+            detail=f"SendGrid API error ({response.status_code}): {body}",
+            status_code=502,
+        )
 
-async def smtp_send(
-    msg: EmailMessage,
-    to_addrs: list[str] | None = None,
-) -> str:
-    """Async wrapper around synchronous SMTP send."""
-    return await asyncio.to_thread(_smtp_send_sync, msg, to_addrs=to_addrs)
+    return response.headers.get("X-Message-Id", "")
 
 
 async def send_evaluation_email(
@@ -168,6 +183,8 @@ async def send_evaluation_email(
     header_bytes = _load_asset("aha-e-mail-header-2026.png")
     footer_bytes = _load_asset("aha-e-mail-footer-2026.png")
     syb_bytes = _load_asset("syb-color-3.png")
+
+    from email.utils import make_msgid
 
     header_msgid = make_msgid(domain="ahacommerce.id")
     footer_msgid = make_msgid(domain="ahacommerce.id")
@@ -228,10 +245,10 @@ async def send_evaluation_email(
     if chart_bytes and chart_cid:
         images.append((chart_bytes, "png", chart_cid))
 
-    msg = build_email_message(
+    payload = _build_sendgrid_payload(
         subject=subject,
-        from_name=settings.smtp_from_name,
-        from_email=settings.smtp_from_email,
+        from_name=settings.email_from_name,
+        from_email=settings.email_from_email,
         to_emails=recipients,
         cc_emails=cc,
         bcc_emails=bcc,
@@ -240,10 +257,8 @@ async def send_evaluation_email(
         images=images,
     )
 
-    all_addrs = list(recipients) + (cc or []) + (bcc or [])
-
     try:
-        message_id = await smtp_send(msg, all_addrs)
+        message_id = await sendgrid_send(payload)
         return SendEmailResponse(
             success=True,
             message_id=message_id,

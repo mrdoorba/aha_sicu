@@ -7,11 +7,11 @@ import re
 from typing import Any
 
 
-INDO_MONTHS = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
+MONTH_ABBRS = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
 
 def _generate_month_labels(start_month: str | None) -> list[str]:
-    """Given '2026-01', returns ['Jan 2026', 'Des 2025', ...] for 6 months.
+    """Given '2026-01', returns ['Jan 2026', 'Dec 2025', ...] for 6 months.
 
     If None or invalid, returns ['Bulan Ini', 'Bulan -1', ..., 'Bulan -5'].
     """
@@ -27,7 +27,7 @@ def _generate_month_labels(start_month: str | None) -> list[str]:
     for i in range(6):
         month_index = ((month - 1 - i) % 12 + 12) % 12
         year_offset = (month - 1 - i) // 12
-        labels.append(f"{INDO_MONTHS[month_index]} {year + year_offset}")
+        labels.append(f"{MONTH_ABBRS[month_index]} {year + year_offset}")
     return labels
 
 

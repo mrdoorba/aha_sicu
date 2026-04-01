@@ -132,11 +132,11 @@ def full_calculator_results():
 class TestGenerateMonthLabels:
     def test_valid_start_month(self):
         labels = _generate_month_labels("2026-01")
-        assert labels == ["Jan 2026", "Des 2025", "Nov 2025", "Okt 2025", "Sep 2025", "Agu 2025"]
+        assert labels == ["Jan 2026", "Dec 2025", "Nov 2025", "Oct 2025", "Sep 2025", "Aug 2025"]
 
     def test_mid_year(self):
         labels = _generate_month_labels("2026-06")
-        assert labels == ["Jun 2026", "Mei 2026", "Apr 2026", "Mar 2026", "Feb 2026", "Jan 2026"]
+        assert labels == ["Jun 2026", "May 2026", "Apr 2026", "Mar 2026", "Feb 2026", "Jan 2026"]
 
     def test_none_returns_fallback(self):
         labels = _generate_month_labels(None)

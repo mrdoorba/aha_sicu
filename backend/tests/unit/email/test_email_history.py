@@ -33,7 +33,7 @@ class TestInsertEmailHistory:
             "bcc_emails": None,
             "subject": "Test Subject",
             "status": "sent",
-            "message_id": "<brevo-123>",
+            "message_id": "<sg-msg-123>",
             "error_detail": None,
             "sent_at": "2026-03-20T10:00:00+00:00",
             "created_at": "2026-03-20T10:00:00+00:00",
@@ -48,13 +48,13 @@ class TestInsertEmailHistory:
             bcc_emails=None,
             subject="Test Subject",
             status="sent",
-            message_id="<brevo-123>",
+            message_id="<sg-msg-123>",
             error_detail=None,
         )
 
         assert result["id"] == 1
         assert result["status"] == "sent"
-        assert result["message_id"] == "<brevo-123>"
+        assert result["message_id"] == "<sg-msg-123>"
         mock_conn.fetchrow.assert_called_once()
 
     async def test_records_failed_email(self, mock_conn: AsyncMock) -> None:
@@ -68,7 +68,7 @@ class TestInsertEmailHistory:
             "subject": "Test Subject",
             "status": "failed",
             "message_id": None,
-            "error_detail": "Brevo API error (500): Internal Server Error",
+            "error_detail": "SendGrid API error (500): Internal Server Error",
             "sent_at": "2026-03-20T10:00:00+00:00",
             "created_at": "2026-03-20T10:00:00+00:00",
         }
@@ -83,7 +83,7 @@ class TestInsertEmailHistory:
             subject="Test Subject",
             status="failed",
             message_id=None,
-            error_detail="Brevo API error (500): Internal Server Error",
+            error_detail="SendGrid API error (500): Internal Server Error",
         )
 
         assert result["status"] == "failed"
@@ -165,7 +165,7 @@ class TestUpdateEmailStatus:
 
         result = await update_email_status_by_message_id(
             mock_conn,
-            message_id="<brevo-abc>",
+            message_id="<sg-msg-abc>",
             new_status="delivered",
             event_at=datetime(2026, 3, 20, 12, 0, 0, tzinfo=timezone.utc),
         )
@@ -178,7 +178,7 @@ class TestUpdateEmailStatus:
 
         result = await update_email_status_by_message_id(
             mock_conn,
-            message_id="<brevo-abc>",
+            message_id="<sg-msg-abc>",
             new_status="sent",
             event_at=datetime(2026, 3, 20, 12, 0, 0, tzinfo=timezone.utc),
         )
@@ -201,7 +201,7 @@ class TestUpdateEmailStatus:
         with pytest.raises(ValueError, match="Invalid status"):
             await update_email_status_by_message_id(
                 mock_conn,
-                message_id="<brevo-abc>",
+                message_id="<sg-msg-abc>",
                 new_status="hacked",
                 event_at=datetime(2026, 3, 20, 12, 0, 0, tzinfo=timezone.utc),
             )
@@ -211,7 +211,7 @@ class TestUpdateEmailStatus:
 
         result = await update_email_status_by_message_id(
             mock_conn,
-            message_id="<brevo-abc>",
+            message_id="<sg-msg-abc>",
             new_status="delivered",
             event_at=datetime(2026, 3, 20, 12, 0, 0, tzinfo=timezone.utc),
         )
@@ -223,7 +223,7 @@ class TestUpdateEmailStatus:
 
         result = await update_email_status_by_message_id(
             mock_conn,
-            message_id="<brevo-abc>",
+            message_id="<sg-msg-abc>",
             new_status="bounced",
             event_at=datetime(2026, 3, 20, 12, 0, 0, tzinfo=timezone.utc),
             error_detail="Mailbox full",
