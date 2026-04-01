@@ -41,7 +41,13 @@ export function useGroupedEvaluations(
         },
       });
       if (error) throw new Error('Failed to fetch grouped evaluations');
-      return data;
+      return {
+        ...data,
+        items: (data?.items ?? []).map((item) => ({
+          ...item,
+          marketplace: ((item as GroupedEvaluationItem & { marketplace?: 'ID' | 'TH' }).marketplace) ?? 'ID',
+        })),
+      } satisfies GroupedEvaluationListResponse;
     },
     placeholderData: keepPreviousData,
   });
