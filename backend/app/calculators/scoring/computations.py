@@ -146,12 +146,7 @@ def _compute_g73(
     verdict: str, g72_value: float, d13: float,
     rules: dict | None = None,
 ) -> str:
-    """G73: Marketing budget recommendation text.
-
-    Suppressed for ❌ verdicts.
-    """
-    if verdict.startswith("❌"):
-        return ""
+    """G73: Marketing budget recommendation text."""
 
     mkt_rules = _get_rule_category(rules, "marketing")
     display_max = _get_rule_value(mkt_rules, "display_max", "value", 0.25)
@@ -320,9 +315,6 @@ def _compute_g73_i18n(
     rules: dict | None = None,
 ) -> TranslatableText | None:
     """G73 i18n: marketing budget recommendation as TranslatableText."""
-    if verdict.startswith("❌"):
-        return None
-
     mkt_rules = _get_rule_category(rules, "marketing")
     display_max = _get_rule_value(mkt_rules, "display_max", "value", 0.25)
     display_min = _get_rule_value(mkt_rules, "display_min", "value", 0.10)

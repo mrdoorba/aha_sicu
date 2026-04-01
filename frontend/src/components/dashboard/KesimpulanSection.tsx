@@ -23,6 +23,7 @@ function isScoringSummary(value: unknown): value is ScoringSummary {
   const hasContent =
     typeof value.conclusion === 'string' ||
     Array.isArray(value.conclusion_i18n) ||
+    typeof value.marketing_estimation === 'string' ||
     typeof value.marketing_budget === 'string' ||
     typeof value.closing_message === 'string';
   return hasContent;
@@ -74,6 +75,17 @@ export const KesimpulanSection = ({ calculatorResults }: KesimpulanSectionProps)
                 ))}
               </ul>
             ) : null}
+
+            {summary.marketing_estimation && (
+              <div className="rounded-xl border border-border/50 bg-muted/30 p-5">
+                <p className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-2">
+                  {t('emailBody.section.marketingEstimation')}
+                </p>
+                <p className="text-lg font-bold text-primary whitespace-pre-line">
+                  {summary.marketing_estimation}
+                </p>
+              </div>
+            )}
 
             {(summary.marketing_budget || summary.marketing_budget_i18n) && (
               <div className="rounded-xl border border-border/50 bg-muted/30 p-5">

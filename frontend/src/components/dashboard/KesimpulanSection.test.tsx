@@ -19,11 +19,11 @@ describe('KesimpulanSection', () => {
     expect(screen.getByText('Finding A')).toBeInTheDocument();
     expect(screen.getByText('Finding B')).toBeInTheDocument();
     expect(screen.getByText('Finding C')).toBeInTheDocument();
+    expect(screen.getByText('Estimasi persentase biaya marketing sekarang:')).toBeInTheDocument();
+    expect(screen.getByText('22.4% ~ 26.2%')).toBeInTheDocument();
     expect(screen.getByText('Min. Anggaran Marketing')).toBeInTheDocument();
     expect(screen.getByText('23%')).toBeInTheDocument();
     expect(screen.getByText('Kami melihat bahwa potensi dari Toko Test masih belum maksimal.')).toBeInTheDocument();
-    // marketing estimation card should not be rendered
-    expect(screen.queryByText('Est. Biaya Marketing')).not.toBeInTheDocument();
   });
 
   it('should show no data message when scoring_summary is missing', () => {
@@ -50,6 +50,8 @@ describe('KesimpulanSection', () => {
     render(<KesimpulanSection calculatorResults={calculatorResults} />);
 
     expect(screen.getByText('Finding A')).toBeInTheDocument();
+    expect(screen.getByText('Estimasi persentase biaya marketing sekarang:')).toBeInTheDocument();
+    expect(screen.getByText('22.4% ~ 26.2%')).toBeInTheDocument();
     expect(screen.queryByText('Min. Anggaran Marketing')).not.toBeInTheDocument();
     expect(screen.getByText('Some closing message.')).toBeInTheDocument();
   });

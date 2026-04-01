@@ -934,25 +934,30 @@ class TestG73:
         assert "15%" in result
         assert "IDR" not in result  # budget amount removed
 
-    def test_rejected_verdict_suppressed(self):
+    def test_rejected_verdict_still_returns_budget(self):
         result = _compute_g73("❌", 0.15, 200_000_000)
-        assert result == ""
+        assert "💡" in result
+        assert "15%" in result
 
-    def test_rejected_non_mall_suppressed(self):
+    def test_rejected_non_mall_still_returns_budget(self):
         result = _compute_g73("❌ Non Mall", 0.15, 200_000_000)
-        assert result == ""
+        assert "💡" in result
+        assert "15%" in result
 
-    def test_rejected_no_brand_suppressed(self):
+    def test_rejected_no_brand_still_returns_budget(self):
         result = _compute_g73("❌ No Brand", 0.15, 200_000_000)
-        assert result == ""
+        assert "💡" in result
+        assert "15%" in result
 
-    def test_rejected_opex_suppressed(self):
+    def test_rejected_opex_still_returns_budget(self):
         result = _compute_g73("❌ Opex", 0.15, 200_000_000)
-        assert result == ""
+        assert "💡" in result
+        assert "15%" in result
 
-    def test_rejected_stock_suppressed(self):
+    def test_rejected_stock_still_returns_budget(self):
         result = _compute_g73("❌ Stock", 0.15, 200_000_000)
-        assert result == ""
+        assert "💡" in result
+        assert "15%" in result
 
 
 # ---------------------------------------------------------------------------
@@ -1749,10 +1754,12 @@ class TestG73WithRules:
         result = _compute_g73("✔️", 0.15, 200_000_000, rules=rules)
         assert "15%" in result
 
-    def test_suppressed_for_rejected_verdicts_with_rules(self):
-        """Verdict suppression still works with custom rules."""
+    def test_rejected_verdicts_still_return_budget_with_rules(self):
+        """Custom marketing rules still apply for rejected verdicts."""
         rules = {"marketing": {"display_max": {"value": 0.30}, "display_min": {"value": 0.05}}}
-        assert _compute_g73("❌", 0.15, 200_000_000, rules=rules) == ""
+        result = _compute_g73("❌", 0.15, 200_000_000, rules=rules)
+        assert "💡" in result
+        assert "15%" in result
 
 
 # ---------------------------------------------------------------------------

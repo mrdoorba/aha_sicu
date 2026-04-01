@@ -60,9 +60,11 @@ def test_g73_i18n_returns_translatable_text():
     assert "pct" in result.vars
 
 
-def test_g73_i18n_returns_none_for_rejected():
+def test_g73_i18n_returns_translatable_text_for_rejected():
     result = _compute_g73_i18n("❌", 0.15, 200_000_000)
-    assert result is None
+    assert result is not None
+    assert result.key == "marketing.budgetRecommendation"
+    assert result.vars["pct"] == "15%"
 
 
 def test_g75_i18n_returns_translatable_text():
