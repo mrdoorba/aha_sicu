@@ -17,6 +17,10 @@ logger = logging.getLogger(__name__)
 
 HEADER_ROW = ["Periode", "Brand Name", "Kategori", "Score Internal"]
 EVAL_RANGE = "SICU!A:D"
+_CATEGORY_COLUMNS = {
+    "ID": "Kategori",
+    "TH": "Product Category",
+}
 
 
 def _is_configured() -> bool:
@@ -37,14 +41,15 @@ async def _get_latest_evaluation_per_brand(
         SELECT DISTINCT ON (e.brand_id)
                COALESCE(e.period, '') AS period,
                b.brand_name,
-               b.raw_data->>'Kategori' AS kategori,
+               COALESCE(b.marketplace, 'ID') AS marketplace,
+               b.raw_data,
                e.final_score
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
         ORDER BY e.brand_id, e.created_at DESC
         """
     )
-    return [dict(row) for row in rows]
+    return [_normalize_eval_sheet_row(dict(row)) for row in rows]
 
 
 async def _get_latest_evaluation_for_brand(
@@ -56,7 +61,8 @@ async def _get_latest_evaluation_for_brand(
         """
         SELECT COALESCE(e.period, '') AS period,
                b.brand_name,
-               b.raw_data->>'Kategori' AS kategori,
+               COALESCE(b.marketplace, 'ID') AS marketplace,
+               b.raw_data,
                e.final_score
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
@@ -66,7 +72,27 @@ async def _get_latest_evaluation_for_brand(
         """,
         brand_name,
     )
-    return dict(row) if row else None
+    return _normalize_eval_sheet_row(dict(row)) if row else None
+
+
+def _normalize_eval_sheet_row(data: dict[str, Any]) -> dict[str, Any]:
+    """Fill marketplace-aware sheet fields from a raw evaluation row."""
+    normalized = data.copy()
+    raw_data = normalized.get("raw_data") or {}
+    marketplace = normalized.get("marketplace") or "ID"
+    category_key = _CATEGORY_COLUMNS.get(marketplace, _CATEGORY_COLUMNS["ID"])
+
+    kategori = normalized.get("kategori")
+    if not kategori and isinstance(raw_data, dict):
+        kategori = (
+            raw_data.get(category_key)
+            or raw_data.get(_CATEGORY_COLUMNS["ID"])
+            or raw_data.get(_CATEGORY_COLUMNS["TH"])
+            or ""
+        )
+
+    normalized["kategori"] = kategori or ""
+    return normalized
 
 
 def _brand_row(data: dict[str, Any]) -> list[str]:
@@ -99,6 +125,15 @@ async def sync_brand_to_sheet(brand_name: str) -> None:
         client = GoogleSheetsClient()
         spreadsheet_id = settings.gsheets_eval_spreadsheet_id
         tab = settings.gsheets_eval_tab
+
+        headers = await client.fetch_headers(spreadsheet_id, tab)
+        if headers and headers != HEADER_ROW:
+            logger.warning(
+                "Eval sheet header drift detected; running full sync before brand update",
+                extra={"brand_name": brand_name, "headers": headers},
+            )
+            await full_sync_eval_sheet()
+            return
 
         # Read existing brand names from column B
         existing = await client.read_column(spreadsheet_id, f"{tab}!B:B")

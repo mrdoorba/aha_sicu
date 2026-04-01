@@ -6,6 +6,7 @@ from app.modules.sync.eval_sheet_service import (
     EVAL_RANGE,
     HEADER_ROW,
     _brand_row,
+    _normalize_eval_sheet_row,
     full_sync_eval_sheet,
     remove_brand_from_sheet,
     sync_brand_to_sheet,
@@ -37,6 +38,36 @@ def test_brand_row_handles_missing_kategori():
         "final_score": 85.00,
     }
     assert _brand_row(data) == ["Feb 2026", "Adidas", "", "85.0"]
+
+
+def test_normalize_eval_sheet_row_uses_th_category_key():
+    """should resolve Product Category for Thailand marketplace rows"""
+    data = {
+        "period": "Feb 2026",
+        "brand_name": "Cintage",
+        "marketplace": "TH",
+        "raw_data": {"Product Category": "Cardigan"},
+        "final_score": 82.0,
+    }
+
+    normalized = _normalize_eval_sheet_row(data)
+
+    assert normalized["kategori"] == "Cardigan"
+
+
+def test_normalize_eval_sheet_row_falls_back_to_id_category_key():
+    """should still read Kategori when marketplace-specific key is absent"""
+    data = {
+        "period": "Feb 2026",
+        "brand_name": "Nike",
+        "marketplace": "ID",
+        "raw_data": {"Kategori": "Sepatu"},
+        "final_score": 82.0,
+    }
+
+    normalized = _normalize_eval_sheet_row(data)
+
+    assert normalized["kategori"] == "Sepatu"
 
 
 # --- HEADER_ROW ---
@@ -74,6 +105,7 @@ async def test_sync_brand_to_sheet_appends_new_brand():
     mock_conn.fetchrow = AsyncMock(return_value=mock_data)
 
     mock_client = AsyncMock()
+    mock_client.fetch_headers = AsyncMock(return_value=HEADER_ROW)
     mock_client.read_column = AsyncMock(return_value=["Brand Name", "Adidas"])
 
     with (
@@ -106,6 +138,7 @@ async def test_sync_brand_to_sheet_overwrites_existing_brand():
 
     # Brand Name header at index 0, Nike at index 1
     mock_client = AsyncMock()
+    mock_client.fetch_headers = AsyncMock(return_value=HEADER_ROW)
     mock_client.read_column = AsyncMock(return_value=["Brand Name", "Nike"])
 
     with (
@@ -140,6 +173,7 @@ async def test_sync_brand_to_sheet_writes_header_when_empty():
     mock_conn.fetchrow = AsyncMock(return_value=mock_data)
 
     mock_client = AsyncMock()
+    mock_client.fetch_headers = AsyncMock(return_value=[])
     mock_client.read_column = AsyncMock(return_value=[])
 
     with (
@@ -174,6 +208,38 @@ async def test_sync_brand_to_sheet_skips_when_no_evaluations():
 
         await sync_brand_to_sheet("Unknown")
         # No GoogleSheetsClient instantiated, no exception
+
+
+async def test_sync_brand_to_sheet_runs_full_sync_when_header_is_missing():
+    """should rebuild the sheet when row 1 no longer matches the expected header"""
+    mock_data = {
+        "period": "Feb 2026",
+        "brand_name": "Digi Living",
+        "kategori": "Home",
+        "final_score": 65.0,
+    }
+    mock_conn = AsyncMock()
+    mock_conn.fetchrow = AsyncMock(return_value=mock_data)
+
+    mock_client = AsyncMock()
+    mock_client.fetch_headers = AsyncMock(return_value=["Feb 2026", "Digi Living", "", "65.00"])
+
+    with (
+        patch(f"{MODULE}._is_configured", return_value=True),
+        patch(f"{MODULE}.db") as mock_db,
+        patch(f"{MODULE}.GoogleSheetsClient", return_value=mock_client),
+        patch(f"{MODULE}.settings") as mock_settings,
+        patch(f"{MODULE}.full_sync_eval_sheet", new=AsyncMock()) as mock_full_sync,
+    ):
+        mock_db.connection.return_value.__aenter__.return_value = mock_conn
+        mock_settings.gsheets_eval_spreadsheet_id = "sheet-123"
+        mock_settings.gsheets_eval_tab = "SICU"
+
+        await sync_brand_to_sheet("Digi Living")
+
+        mock_full_sync.assert_awaited_once()
+        mock_client.read_column.assert_not_awaited()
+        mock_client.append_rows.assert_not_awaited()
 
 
 # --- remove_brand_from_sheet ---
