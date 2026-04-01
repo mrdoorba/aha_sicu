@@ -55,6 +55,21 @@ def test_normalize_eval_sheet_row_uses_th_category_key():
     assert normalized["kategori"] == "Cardigan"
 
 
+def test_normalize_eval_sheet_row_uses_th_multiline_category_key():
+    """should resolve Product\\nCategory when the sheet header contains a newline"""
+    data = {
+        "period": "Feb 2026",
+        "brand_name": "Cintage",
+        "marketplace": "TH",
+        "raw_data": {"Product\nCategory": "Cardigan"},
+        "final_score": 82.0,
+    }
+
+    normalized = _normalize_eval_sheet_row(data)
+
+    assert normalized["kategori"] == "Cardigan"
+
+
 def test_normalize_eval_sheet_row_falls_back_to_id_category_key():
     """should still read Kategori when marketplace-specific key is absent"""
     data = {
@@ -62,6 +77,21 @@ def test_normalize_eval_sheet_row_falls_back_to_id_category_key():
         "brand_name": "Nike",
         "marketplace": "ID",
         "raw_data": {"Kategori": "Sepatu"},
+        "final_score": 82.0,
+    }
+
+    normalized = _normalize_eval_sheet_row(data)
+
+    assert normalized["kategori"] == "Sepatu"
+
+
+def test_normalize_eval_sheet_row_uses_legacy_generic_category_key():
+    """should fall back to generic category keys for older brand payloads"""
+    data = {
+        "period": "Feb 2026",
+        "brand_name": "Nike",
+        "marketplace": "ID",
+        "raw_data": {"category": "Sepatu"},
         "final_score": 82.0,
     }
 
