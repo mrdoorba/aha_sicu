@@ -29,6 +29,10 @@ const VERDICT_LABEL_KEYS: Record<string, string> = {
   '❌ Stock': 'verdict.stockInsufficient',
 };
 
+function getMarketplaceFlag(marketplace: 'ID' | 'TH'): string {
+  return marketplace === 'TH' ? '🇹🇭' : '🇮🇩';
+}
+
 function SearchInput({
   value,
   onChange,
@@ -179,7 +183,14 @@ function BrandAccordionRow({
               ? <ChevronUp className="size-4 text-muted-foreground" aria-hidden="true" />
               : <ChevronDown className="size-4 text-muted-foreground" aria-hidden="true" />
             }
-            {brand.brand_name}
+            <span>{brand.brand_name}</span>
+            <span
+              className="inline-flex items-center gap-1 rounded-full border border-border/70 bg-muted px-2 py-0.5 text-xs font-medium text-muted-foreground"
+              aria-label={`Marketplace ${brand.marketplace}`}
+            >
+              <span aria-hidden="true">{getMarketplaceFlag(brand.marketplace)}</span>
+              <span>{brand.marketplace}</span>
+            </span>
           </div>
         </TableCell>
         <TableCell>{t('history.table.evaluationCount', { count: brand.evaluation_count })}</TableCell>

@@ -17,6 +17,7 @@ const MOCK_BRANDS = [
   {
     brand_id: 10,
     brand_name: 'Nike Indonesia',
+    marketplace: 'ID',
     evaluation_count: 5,
     top_score: 82.5,
     top_verdict: '\u2714\uFE0F',
@@ -25,6 +26,7 @@ const MOCK_BRANDS = [
   {
     brand_id: 20,
     brand_name: 'Adidas SEA',
+    marketplace: 'TH',
     evaluation_count: 3,
     top_score: 75.0,
     top_verdict: '\u2714\uFE0F',
@@ -133,9 +135,11 @@ describe('EvaluationHistoryTable — Accordion', () => {
     renderTable();
 
     expect(screen.getByText('Nike Indonesia')).toBeInTheDocument();
+    expect(screen.getByLabelText('Marketplace ID')).toBeInTheDocument();
     expect(screen.getAllByText('history.table.evaluationCount').length).toBeGreaterThan(0);
     expect(screen.getByText(/82\.50/)).toBeInTheDocument();
     expect(screen.getByText('Adidas SEA')).toBeInTheDocument();
+    expect(screen.getByLabelText('Marketplace TH')).toBeInTheDocument();
   });
 
   // --- Expand/Collapse ---

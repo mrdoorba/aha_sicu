@@ -149,12 +149,14 @@ class TestGroupedEvaluationItem:
         item = GroupedEvaluationItem(
             brand_id=1,
             brand_name="Test",
+            marketplace="TH",
             evaluation_count=3,
             top_score=90.0,
             top_verdict="❌ Non Mall",
             latest_date=datetime.now(),
         )
         assert item.top_verdict == "❌ Non Mall"
+        assert item.marketplace == "TH"
 
 
 class TestSaveEvaluationResponse:

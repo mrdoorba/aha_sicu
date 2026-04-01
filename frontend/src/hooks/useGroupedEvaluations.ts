@@ -4,6 +4,7 @@ import client from '../services/apiClient';
 export interface GroupedEvaluationItem {
   brand_id: number;
   brand_name: string;
+  marketplace: 'ID' | 'TH';
   evaluation_count: number;
   top_score: number;
   top_verdict: string;

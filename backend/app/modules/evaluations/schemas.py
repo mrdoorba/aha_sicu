@@ -225,6 +225,7 @@ class GroupedEvaluationItem(BaseModel):
 
     brand_id: int
     brand_name: str
+    marketplace: Literal["ID", "TH"] = "ID"
     evaluation_count: int
     top_score: float
     top_verdict: VerdictType

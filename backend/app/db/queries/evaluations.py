@@ -36,6 +36,7 @@ class EvaluationListRow(TypedDict):
 class GroupedEvaluationRow(TypedDict):
     brand_id: int
     brand_name: str
+    marketplace: str
     evaluation_count: int
     top_score: float
     top_verdict: str
@@ -303,6 +304,7 @@ async def list_grouped_evaluations(
     query = f"""
         SELECT e.brand_id,
                b.brand_name,
+               b.marketplace,
                COUNT(*) AS evaluation_count,
                (ARRAY_AGG(e.final_score ORDER BY e.created_at DESC))[1] AS top_score,
                (ARRAY_AGG(e.verdict ORDER BY e.created_at DESC))[1] AS top_verdict,
@@ -310,7 +312,7 @@ async def list_grouped_evaluations(
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
         {where_clause}
-        GROUP BY e.brand_id, b.brand_name
+        GROUP BY e.brand_id, b.brand_name, b.marketplace
         ORDER BY MAX(e.created_at) DESC
         LIMIT {limit_param} OFFSET {offset_param}
     """
@@ -432,5 +434,4 @@ async def delete_evaluation(
         evaluation_id,
     )
     return result == "DELETE 1"
-
 

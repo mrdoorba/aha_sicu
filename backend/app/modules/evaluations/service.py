@@ -174,6 +174,7 @@ async def list_grouped_evaluations(
         GroupedEvaluationItem(
             brand_id=row["brand_id"],
             brand_name=row["brand_name"],
+            marketplace=row["marketplace"],
             evaluation_count=row["evaluation_count"],
             top_score=float(row["top_score"]),
             top_verdict=row["top_verdict"],

@@ -18,6 +18,7 @@ MOCK_USER = {
 GROUPED_ROW_1 = {
     "brand_id": 10,
     "brand_name": "Nike Indonesia",
+    "marketplace": "ID",
     "evaluation_count": 5,
     "top_score": Decimal("82.50"),
     "top_verdict": "✔️",
@@ -27,6 +28,7 @@ GROUPED_ROW_1 = {
 GROUPED_ROW_2 = {
     "brand_id": 20,
     "brand_name": "Adidas SEA",
+    "marketplace": "TH",
     "evaluation_count": 3,
     "top_score": Decimal("75.00"),
     "top_verdict": "✔️",
@@ -36,6 +38,7 @@ GROUPED_ROW_2 = {
 GROUPED_ROW_3 = {
     "brand_id": 30,
     "brand_name": "Unilever ID",
+    "marketplace": "ID",
     "evaluation_count": 1,
     "top_score": Decimal("60.00"),
     "top_verdict": "❌",
@@ -114,6 +117,7 @@ def test_grouped_evaluations_success(client):
         item = data["items"][0]
         assert item["brand_id"] == 10
         assert item["brand_name"] == "Nike Indonesia"
+        assert item["marketplace"] == "ID"
         assert item["evaluation_count"] == 5
         assert item["top_score"] == 82.5
         assert item["top_verdict"] == "✔️"
