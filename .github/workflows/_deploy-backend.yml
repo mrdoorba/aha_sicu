@@ -9,12 +9,10 @@
 #   DEPLOY_SERVICE_ACCOUNT    – Deploy SA email from terraform output
 #   CLOUD_RUN_SERVICE         – Cloud Run service name (aha-coms-sicu-dev-api / aha-coms-sicu-prod-api)
 #   ARTIFACT_REGISTRY_URL     – Docker push URL from terraform output
-#   DB_SECRET_NAME            – Secret Manager secret name for database password
 #   CLOUD_SQL_INSTANCE_CONNECTION – Cloud SQL instance connection name (project:region:instance)
 #   CLOUD_SQL_INSTANCE_NAME   – Cloud SQL instance name (for backups and start/stop API)
 #   DB_USER                   – Database username
 #   DB_NAME                   – Database name
-#   SENDGRID_API_KEY_SECRET_NAME – Secret Manager secret name for SendGrid API key
 #
 # Google Sheets env vars (set per environment, synced to Cloud Run):
 #   GSHEETS_VP_SPREADSHEET_ID      – VP sheet spreadsheet ID (Indonesia)
@@ -48,6 +46,17 @@ jobs:
 
     steps:
       - uses: actions/checkout@v6
+
+      - name: Derive Secret Manager names
+        id: secret-names
+        run: |
+          if [ "${{ inputs.environment }}" = "production" ]; then
+            SUFFIX=prod
+          else
+            SUFFIX=dev
+          fi
+          echo "db_secret=aha_coms_sicu_${SUFFIX}_db_password" >> "$GITHUB_OUTPUT"
+          echo "sendgrid_secret=aha_coms_sicu_${SUFFIX}_sendgrid_api_key" >> "$GITHUB_OUTPUT"
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v3
@@ -114,7 +123,7 @@ jobs:
           uv python install 3.14
           cd backend && uv sync --all-extras
           export DB_PASSWORD=$(gcloud secrets versions access latest \
-            --secret=${{ vars.DB_SECRET_NAME }} --project=${{ vars.GCP_PROJECT_ID }})
+            --secret=${{ steps.secret-names.outputs.db_secret }} --project=${{ vars.GCP_PROJECT_ID }})
           export DATABASE_URL="postgresql://${{ vars.DB_USER }}:${DB_PASSWORD}@127.0.0.1:5432/${{ vars.DB_NAME }}"
           uv run alembic -c app/db/migrations/alembic.ini upgrade head
 
@@ -133,7 +142,7 @@ jobs:
 
       - name: Validate secrets have at least one version
         run: |
-          SECRETS=("${{ vars.DB_SECRET_NAME }}" "${{ vars.SENDGRID_API_KEY_SECRET_NAME }}")
+          SECRETS=("${{ steps.secret-names.outputs.db_secret }}" "${{ steps.secret-names.outputs.sendgrid_secret }}")
           for SECRET in "${SECRETS[@]}"; do
             COUNT=$(gcloud secrets versions list "$SECRET" \
               --project=${{ vars.GCP_PROJECT_ID }} \
