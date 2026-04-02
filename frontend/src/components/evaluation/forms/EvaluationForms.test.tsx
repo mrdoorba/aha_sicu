@@ -21,6 +21,9 @@ const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false 
 const defaultProps = {
   brandId: 1,
   categoryType: 'non_fashion' as string | null,
+  marketplace: 'ID',
+  currency: 'IDR',
+  onMarketplaceChange: vi.fn(),
   onCategoryChange: vi.fn(),
   onActiveSection: vi.fn(),
   manualData: EMPTY_MANUAL_DATA,
@@ -75,6 +78,13 @@ describe('EvaluationForms Integration', () => {
 
     // No placeholder text
     expect(screen.queryByText('Form fields will be added in Story 3.3')).not.toBeInTheDocument();
+  });
+
+  it('uses THB labels for ads fields when marketplace is Thailand', () => {
+    renderWithProviders({ marketplace: 'TH', currency: 'THB' });
+
+    expect(screen.getByLabelText(/Penjualan Iklan/)).toHaveAccessibleName(/Penjualan Iklan\s*\(THB\)/);
+    expect(screen.getByLabelText(/Biaya Iklan/)).toHaveAccessibleName(/Biaya Iklan\s*\(THB\)/);
   });
 
   it('pre-fills forms when manual_data has saved values', () => {
