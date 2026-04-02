@@ -6,7 +6,7 @@
 #     1. Go to Settings → Branches → Add branch protection rule
 #     2. Branch name pattern: `develop` (repeat for `production`)
 #     3. Enable "Require status checks to pass before merging"
-#     4. Add required checks: "Backend Tests & Lint", "Frontend CI"
+#     4. Add required checks: "Workflow Contracts", "Backend Tests & Lint", "Frontend CI"
 #     5. Enable "Require branches to be up to date before merging"
 
 name: CI
@@ -18,6 +18,16 @@ on:
   workflow_call:
 
 jobs:
+  workflow-contracts:
+    name: Workflow Contracts
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Validate release workflow contract
+        run: python3 scripts/check_release_contract.py
+
   backend:
     name: Backend Tests & Lint
     runs-on: ubuntu-latest
