@@ -15,7 +15,7 @@
 | Trigger | Target | Approval |
 |---------|--------|----------|
 | Push to `develop` | Dev backend build + dev deploy, plus dev frontend deploy when needed | Automatic |
-| Manual `Promote Backend` workflow | Production backend using an existing image digest | Production environment approval |
+| Manual `Promote Backend` workflow | Production backend using a verified `release_sha` from develop | Production environment approval |
 | Push to `production` | Production frontend deploy when needed | Automatic |
 
 Pipelines:
@@ -37,8 +37,14 @@ gcloud run deploy "${CLOUD_RUN_SERVICE}" \
   --region asia-southeast2
 ```
 
-When you use the GitHub workflow path, copy the exact `image` value from the
-`_Build Backend Image` job summary into `Promote Backend`.
+When you use the GitHub workflow path:
+1. Wait for the `develop` backend deploy to finish.
+2. Open the `Verified backend release` summary.
+3. Copy the `release_sha`.
+4. Run `Promote Backend` with that `release_sha`.
+
+The workflow resolves the exact verified image for you from the successful
+`develop` run, so operators do not have to hand-copy long digest strings.
 
 ### Manual Frontend Deploy
 

@@ -206,6 +206,36 @@ jobs:
           SMOKE_BACKEND_URL="${{ steps.deploy.outputs.url }}" \
             npx playwright test tests/backend-health.spec.ts tests/auth-enforcement.spec.ts
 
+      - name: Record verified backend release manifest
+        if: success() && inputs.environment == 'dev'
+        run: |
+          cat > backend-release-manifest.json <<EOF
+          {
+            "release_sha": "${{ github.sha }}",
+            "image": "${{ inputs.image }}",
+            "environment": "${{ inputs.environment }}",
+            "backend_url": "${{ steps.deploy.outputs.url }}",
+            "run_id": "${{ github.run_id }}",
+            "run_attempt": "${{ github.run_attempt }}"
+          }
+          EOF
+          {
+            echo "### Verified backend release"
+            echo
+            echo "- Release SHA: \`${{ github.sha }}\`"
+            echo "- Verified image: \`${{ inputs.image }}\`"
+            echo "- Dev backend URL: \`${{ steps.deploy.outputs.url }}\`"
+            echo "- Promote to production: run \`Promote Backend\` with \`release_sha=${{ github.sha }}\`"
+          } >> "$GITHUB_STEP_SUMMARY"
+
+      - name: Upload verified backend release manifest
+        if: success() && inputs.environment == 'dev'
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-release-manifest
+          path: backend-release-manifest.json
+          retention-days: 14
+
       - name: Rollback on verification failure
         if: failure() && steps.deploy.outcome == 'success'
         run: |

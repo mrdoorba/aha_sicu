@@ -1,18 +1,106 @@
 # Store ICU - Backend Production Promotion
 # Deploys a verified backend image digest to production without rebuilding it.
+# Operators normally provide the release SHA from a successful develop run.
 
 name: Promote Backend
 
 on:
   workflow_dispatch:
     inputs:
+      release_sha:
+        description: "Verified develop commit SHA to promote"
+        required: false
+        type: string
       image:
-        description: "Existing backend image reference to promote (for example asia-southeast2-docker.pkg.dev/.../aha-coms-sicu-backend@sha256:...)"
-        required: true
+        description: "Optional direct backend image reference override"
+        required: false
         type: string
 
 jobs:
+  resolve-release:
+    name: Resolve backend release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      actions: read
+    outputs:
+      image: ${{ steps.resolve.outputs.image }}
+      release_sha: ${{ steps.resolve.outputs.release_sha }}
+
+    steps:
+      - name: Validate promotion input
+        env:
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          IMAGE: ${{ inputs.image }}
+        run: |
+          if [ -z "$RELEASE_SHA" ] && [ -z "$IMAGE" ]; then
+            echo "::error::Provide either release_sha or image"
+            exit 1
+          fi
+
+      - name: Resolve release from verified develop run
+        id: resolve
+        env:
+          GH_TOKEN: ${{ github.token }}
+          RELEASE_SHA: ${{ inputs.release_sha }}
+          IMAGE: ${{ inputs.image }}
+        run: |
+          if [ -n "$IMAGE" ]; then
+            echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
+            echo "release_sha=${RELEASE_SHA:-manual-image}" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Production promotion target"
+              echo
+              echo "- Release source: manual image override"
+              echo "- Image: \`$IMAGE\`"
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          RUN_JSON=$(gh run list \
+            --workflow Deploy \
+            --branch develop \
+            --commit "$RELEASE_SHA" \
+            --limit 20 \
+            --json databaseId,conclusion,url,headSha)
+
+          RUN_ID=$(printf '%s' "$RUN_JSON" | jq -r '.[] | select(.conclusion == "success") | .databaseId' | head -n 1)
+          RUN_URL=$(printf '%s' "$RUN_JSON" | jq -r '.[] | select(.conclusion == "success") | .url' | head -n 1)
+
+          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+            echo "::error::No successful develop Deploy run found for release_sha=$RELEASE_SHA"
+            exit 1
+          fi
+
+          rm -rf release-manifest
+          mkdir -p release-manifest
+          gh run download "$RUN_ID" --name backend-release-manifest --dir release-manifest
+
+          IMAGE_REF=$(jq -r '.image // empty' release-manifest/backend-release-manifest.json)
+          MANIFEST_SHA=$(jq -r '.release_sha // empty' release-manifest/backend-release-manifest.json)
+
+          if [ -z "$IMAGE_REF" ] || [ -z "$MANIFEST_SHA" ]; then
+            echo "::error::Verified backend release manifest is missing image or release_sha"
+            exit 1
+          fi
+
+          if [ "$MANIFEST_SHA" != "$RELEASE_SHA" ]; then
+            echo "::error::Verified backend release manifest SHA ($MANIFEST_SHA) does not match requested release_sha ($RELEASE_SHA)"
+            exit 1
+          fi
+
+          echo "image=$IMAGE_REF" >> "$GITHUB_OUTPUT"
+          echo "release_sha=$MANIFEST_SHA" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Production promotion target"
+            echo
+            echo "- Release SHA: \`$MANIFEST_SHA\`"
+            echo "- Verified image: \`$IMAGE_REF\`"
+            echo "- Source develop run: $RUN_URL"
+          } >> "$GITHUB_STEP_SUMMARY"
+
   promote:
+    needs: resolve-release
     name: Promote backend image to production
     uses: ./.github/workflows/_deploy-backend.yml
     permissions:
@@ -20,4 +108,4 @@ jobs:
       id-token: write
     with:
       environment: production
-      image: ${{ inputs.image }}
+      image: ${{ needs.resolve-release.outputs.image }}

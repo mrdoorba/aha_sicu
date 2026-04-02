@@ -88,6 +88,16 @@ require(
     "tests/backend-health.spec.ts tests/auth-enforcement.spec.ts",
     "selected backend smoke tests",
 )
+require(
+    deploy_backend,
+    "Upload verified backend release manifest",
+    "verified release artifact upload",
+)
+require(
+    deploy_backend,
+    "### Verified backend release",
+    "dev deploy promotion guidance",
+)
 forbid(
     deploy_backend,
     "docker/build-push-action@",
@@ -106,8 +116,18 @@ require(
 )
 require(
     promote_backend,
-    "image: ${{ inputs.image }}",
-    "promotion image input wiring",
+    "release_sha:",
+    "promotion release sha input",
+)
+require(
+    promote_backend,
+    "gh run download \"$RUN_ID\" --name backend-release-manifest",
+    "verified release manifest download",
+)
+require(
+    promote_backend,
+    "image: ${{ needs.resolve-release.outputs.image }}",
+    "resolved promotion image wiring",
 )
 
 if errors:

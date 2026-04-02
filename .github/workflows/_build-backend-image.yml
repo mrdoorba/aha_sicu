@@ -89,7 +89,10 @@ jobs:
           {
             echo "### Backend image ready"
             echo
+            echo "- Release SHA: \`${{ github.sha }}\`"
             echo "- Repository: \`${{ steps.repo.outputs.image_repository }}\`"
             echo "- Digest: \`$IMAGE_DIGEST\`"
             echo "- Image: \`$IMAGE_REF\`"
+            echo
+            echo "This image is only promotion-ready after the dev deploy finishes verification."
           } >> "$GITHUB_STEP_SUMMARY"
