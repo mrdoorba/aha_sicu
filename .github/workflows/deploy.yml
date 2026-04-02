@@ -1,9 +1,8 @@
 # Store ICU - Deploy Workflow
-# Single orchestrator: runs CI once, then deploys backend + frontend in parallel.
-# Dev: auto-deploys on push to develop.  Prod: always deploys on push to production
-# (merge commits have no diff vs develop, so paths-filter would skip them).
-# Skips entirely for docs-only changes.  Skips individual deploys when only the
-# other side changed (e.g. frontend-only push won't redeploy backend).
+# Single orchestrator: runs CI once, then deploys dev backend + frontend in parallel.
+# Backend production promotion is explicit via promote-backend.yml so production
+# never rebuilds inside the deploy path. Frontend stays on its existing branch-
+# based deploy shape for now. Skips entirely for docs-only changes.
 
 name: Deploy
 
@@ -50,18 +49,32 @@ jobs:
     needs: changes
     uses: ./.github/workflows/ci.yml
 
-  deploy-backend:
+  build-backend-image:
     needs: [ci, changes]
     if: >-
-      needs.changes.outputs.backend == 'true'
-      || github.event_name == 'workflow_dispatch'
-      || github.ref == 'refs/heads/production'
+      github.ref == 'refs/heads/develop'
+      && (needs.changes.outputs.backend == 'true'
+      || github.event_name == 'workflow_dispatch')
+    uses: ./.github/workflows/_build-backend-image.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: dev
+
+  deploy-backend:
+    needs: [ci, changes, build-backend-image]
+    if: >-
+      github.ref == 'refs/heads/develop'
+      && (needs.changes.outputs.backend == 'true'
+      || github.event_name == 'workflow_dispatch')
     uses: ./.github/workflows/_deploy-backend.yml
     permissions:
       contents: read
       id-token: write
     with:
-      environment: ${{ github.ref == 'refs/heads/production' && 'production' || 'dev' }}
+      environment: dev
+      image: ${{ needs.build-backend-image.outputs.image }}
 
   deploy-frontend:
     needs: [ci, changes]
