@@ -1,0 +1,23 @@
+# Store ICU - Backend Production Promotion
+# Deploys a verified backend image digest to production without rebuilding it.
+
+name: Promote Backend
+
+on:
+  workflow_dispatch:
+    inputs:
+      image:
+        description: "Existing backend image reference to promote (for example asia-southeast2-docker.pkg.dev/.../aha-coms-sicu-backend@sha256:...)"
+        required: true
+        type: string
+
+jobs:
+  promote:
+    name: Promote backend image to production
+    uses: ./.github/workflows/_deploy-backend.yml
+    permissions:
+      contents: read
+      id-token: write
+    with:
+      environment: production
+      image: ${{ inputs.image }}
