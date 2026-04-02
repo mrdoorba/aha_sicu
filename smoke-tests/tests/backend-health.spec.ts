@@ -10,7 +10,12 @@ test.describe("Backend Health (AC1)", { tag: "@smoke" }, () => {
     expect(response.status()).toBe(200);
 
     const body = await response.json();
-    expect(body).toEqual({ status: "healthy" });
+    expect(body).toMatchObject({
+      status: "healthy",
+      checks: {
+        database: "ok",
+      },
+    });
   });
 
   test("GET /docs returns 200 (FastAPI Swagger UI)", async ({ request }) => {
