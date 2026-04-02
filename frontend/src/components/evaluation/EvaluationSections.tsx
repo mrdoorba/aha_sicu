@@ -260,6 +260,7 @@ export const EvaluationSections = ({
         <AdsForm
           data={manualData.ads}
           salesMonth0={salesMonth0}
+          currency={currency}
           marketplace={marketplace}
           onChange={onFieldChange}
           onBlur={onFieldBlur}
