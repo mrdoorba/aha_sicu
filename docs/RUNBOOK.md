@@ -14,22 +14,31 @@
 
 | Trigger | Target | Approval |
 |---------|--------|----------|
-| Push to `develop` | Staging (dev) | Automatic |
-| Push to `main` | Production | Manual approval |
+| Push to `develop` | Dev backend build + dev deploy, plus dev frontend deploy when needed | Automatic |
+| Manual `Promote Backend` workflow | Production backend using an existing image digest | Production environment approval |
+| Push to `production` | Production frontend deploy when needed | Automatic |
 
-Pipelines: `.github/workflows/deploy.yml` > `_deploy-backend.yml` / `_deploy-frontend.yml`
+Pipelines:
+- `.github/workflows/deploy.yml` -> `_build-backend-image.yml` -> `_deploy-backend.yml` (dev backend)
+- `.github/workflows/deploy.yml` -> `_deploy-frontend.yml` (dev/prod frontend)
+- `.github/workflows/promote-backend.yml` -> `_deploy-backend.yml` (prod backend)
 
 ### Manual Backend Deploy
 
 ```bash
-# Build and push container
-gcloud builds submit --tag ${ARTIFACT_REGISTRY_URL}/backend:latest ./backend
+# Build one immutable backend image
+IMAGE_REPO="${ARTIFACT_REGISTRY_URL}/aha-coms-sicu-backend"
+cp -r frontend/src/locales backend/locales
+gcloud builds submit --tag "${IMAGE_REPO}:${GIT_SHA}" ./backend
 
-# Deploy to Cloud Run
-gcloud run deploy ${CLOUD_RUN_SERVICE} \
-  --image ${ARTIFACT_REGISTRY_URL}/backend:latest \
+# Promote the exact image you already verified
+gcloud run deploy "${CLOUD_RUN_SERVICE}" \
+  --image "${IMAGE_REPO}@${IMAGE_DIGEST}" \
   --region asia-southeast2
 ```
+
+When you use the GitHub workflow path, copy the exact `image` value from the
+`_Build Backend Image` job summary into `Promote Backend`.
 
 ### Manual Frontend Deploy
 
@@ -66,6 +75,10 @@ SMOKE_BACKEND_URL="https://..." \
 SMOKE_FRONTEND_URL="https://..." \
 npx playwright test
 ```
+
+Automatic backend deploys run the cheap gate only:
+- `tests/backend-health.spec.ts`
+- `tests/auth-enforcement.spec.ts`
 
 ## Database
 

@@ -1,0 +1,95 @@
+# Store ICU - Backend Image Build (Reusable)
+# Builds one immutable backend image and pushes it to Artifact Registry.
+#
+# Required GitHub Actions variables (set per environment):
+#   GCP_PROJECT_ID            - GCP project ID
+#   GCP_REGION                - GCP region (asia-southeast2)
+#   WORKLOAD_IDENTITY_PROVIDER - Full WIF provider path from terraform output
+#   DEPLOY_SERVICE_ACCOUNT    - Deploy SA email from terraform output
+#   ARTIFACT_REGISTRY_URL     - Artifact Registry repository root from terraform output
+
+name: _Build Backend Image
+
+on:
+  workflow_call:
+    inputs:
+      environment:
+        required: true
+        type: string
+    outputs:
+      image:
+        description: "Immutable backend image reference"
+        value: ${{ jobs.build.outputs.image }}
+      image_repository:
+        description: "Backend image repository"
+        value: ${{ jobs.build.outputs.image_repository }}
+      image_digest:
+        description: "Backend image digest"
+        value: ${{ jobs.build.outputs.image_digest }}
+
+jobs:
+  build:
+    name: Build backend image for ${{ inputs.environment }}
+    runs-on: ubuntu-latest
+    environment: ${{ inputs.environment }}
+    permissions:
+      contents: read
+      id-token: write
+    outputs:
+      image: ${{ steps.image.outputs.image }}
+      image_repository: ${{ steps.repo.outputs.image_repository }}
+      image_digest: ${{ steps.image.outputs.image_digest }}
+
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Authenticate to GCP
+        uses: google-github-actions/auth@v3
+        with:
+          workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Set backend image repository
+        id: repo
+        run: echo "image_repository=${{ vars.ARTIFACT_REGISTRY_URL }}/aha-coms-sicu-backend" >> "$GITHUB_OUTPUT"
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Copy locale files into backend build context
+        run: cp -r frontend/src/locales backend/locales
+
+      - name: Build and push Docker image
+        id: build
+        uses: docker/build-push-action@v7
+        with:
+          context: backend
+          file: backend/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.repo.outputs.image_repository }}:${{ github.sha }}
+            ${{ steps.repo.outputs.image_repository }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Export immutable image reference
+        id: image
+        run: |
+          IMAGE_DIGEST="${{ steps.build.outputs.digest }}"
+          IMAGE_REF="${{ steps.repo.outputs.image_repository }}@$IMAGE_DIGEST"
+          if [ -z "$IMAGE_DIGEST" ]; then
+            echo "::error::Build completed without an image digest"
+            exit 1
+          fi
+          echo "image_digest=$IMAGE_DIGEST" >> "$GITHUB_OUTPUT"
+          echo "image=$IMAGE_REF" >> "$GITHUB_OUTPUT"
+          {
+            echo "### Backend image ready"
+            echo
+            echo "- Repository: \`${{ steps.repo.outputs.image_repository }}\`"
+            echo "- Digest: \`$IMAGE_DIGEST\`"
+            echo "- Image: \`$IMAGE_REF\`"
+          } >> "$GITHUB_STEP_SUMMARY"

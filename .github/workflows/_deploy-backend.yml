@@ -1,6 +1,6 @@
 # Store ICU - Backend Deploy (Reusable)
-# Called by deploy-backend.yml. Builds Docker image, pushes to Artifact Registry,
-# deploys to Cloud Run. Wakes Cloud SQL if stopped before running migrations.
+# Deploys an existing backend image to Cloud Run. Wakes Cloud SQL if stopped,
+# runs migrations from that same image, then verifies the release.
 #
 # Required GitHub Actions variables (set per environment):
 #   GCP_PROJECT_ID            – GCP project ID
@@ -8,7 +8,6 @@
 #   WORKLOAD_IDENTITY_PROVIDER – Full WIF provider path from terraform output
 #   DEPLOY_SERVICE_ACCOUNT    – Deploy SA email from terraform output
 #   CLOUD_RUN_SERVICE         – Cloud Run service name (aha-coms-sicu-dev-api / aha-coms-sicu-prod-api)
-#   ARTIFACT_REGISTRY_URL     – Docker push URL from terraform output
 #   CLOUD_SQL_INSTANCE_CONNECTION – Cloud SQL instance connection name (project:region:instance)
 #   CLOUD_SQL_INSTANCE_NAME   – Cloud SQL instance name (for backups and start/stop API)
 #   DB_USER                   – Database username
@@ -30,6 +29,9 @@ on:
   workflow_call:
     inputs:
       environment:
+        required: true
+        type: string
+      image:
         required: true
         type: string
 
@@ -63,6 +65,36 @@ jobs:
         with:
           workload_identity_provider: ${{ vars.WORKLOAD_IDENTITY_PROVIDER }}
           service_account: ${{ vars.DEPLOY_SERVICE_ACCOUNT }}
+
+      - name: Validate deploy preflight
+        run: |
+          REQUIRED_SECRETS=("${{ steps.secret-names.outputs.db_secret }}" "${{ steps.secret-names.outputs.sendgrid_secret }}")
+          for SECRET in "${REQUIRED_SECRETS[@]}"; do
+            COUNT=$(gcloud secrets versions list "$SECRET" \
+              --project=${{ vars.GCP_PROJECT_ID }} \
+              --filter="state=ENABLED" \
+              --format="value(name)" --limit=1 | wc -l | tr -d ' ')
+            if [ "$COUNT" -eq 0 ]; then
+              echo "::error::Secret '$SECRET' has no enabled versions. Backend promotion must stop before rollout."
+              exit 1
+            fi
+            echo "✓ $SECRET has enabled version(s)"
+          done
+
+          DB_PASSWORD=$(gcloud secrets versions access latest \
+            --secret=${{ steps.secret-names.outputs.db_secret }} \
+            --project=${{ vars.GCP_PROJECT_ID }} | tr -d '\r')
+          echo "::add-mask::$DB_PASSWORD"
+          if [ -z "$(printf "%s" "$DB_PASSWORD" | tr -d '[:space:]')" ]; then
+            echo "::error::Database secret '${{ steps.secret-names.outputs.db_secret }}' is empty"
+            exit 1
+          fi
+          case "$(printf "%s" "$DB_PASSWORD" | tr '[:upper:]' '[:lower:]')" in
+            placeholder|changeme|change-me|replace-me|replace_me|your-secret-here|todo)
+              echo "::error::Database secret '${{ steps.secret-names.outputs.db_secret }}' still looks like a placeholder"
+              exit 1
+              ;;
+          esac
 
       - name: Ensure Cloud SQL is running
         run: |
@@ -104,11 +136,11 @@ jobs:
             --project=${{ vars.GCP_PROJECT_ID }}
           echo "Backup created successfully"
 
-      - name: Install uv
-        uses: astral-sh/setup-uv@v7
-        with:
-          version: "latest"
-          enable-cache: true
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
+
+      - name: Pull deploy image
+        run: docker pull "${{ inputs.image }}"
 
       - name: Start Cloud SQL Auth Proxy
         run: |
@@ -120,52 +152,18 @@ jobs:
 
       - name: Run database migrations
         run: |
-          uv python install 3.14
-          cd backend && uv sync --all-extras
           export DB_PASSWORD=$(gcloud secrets versions access latest \
             --secret=${{ steps.secret-names.outputs.db_secret }} --project=${{ vars.GCP_PROJECT_ID }})
           export DATABASE_URL="postgresql://${{ vars.DB_USER }}:${DB_PASSWORD}@127.0.0.1:5432/${{ vars.DB_NAME }}"
-          uv run alembic -c app/db/migrations/alembic.ini upgrade head
+          docker run --rm --network host \
+            -e DATABASE_URL \
+            --entrypoint uv \
+            "${{ inputs.image }}" \
+            run alembic -c app/db/migrations/alembic.ini upgrade head
 
       - name: Stop Cloud SQL Auth Proxy
         if: always()
         run: kill $(pgrep -f cloud-sql-proxy) || true
-
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v4
-
-      - name: Configure Docker for Artifact Registry
-        run: gcloud auth configure-docker ${{ vars.GCP_REGION }}-docker.pkg.dev --quiet
-
-      - name: Copy locale files into backend build context
-        run: cp -r frontend/src/locales backend/locales
-
-      - name: Validate secrets have at least one version
-        run: |
-          SECRETS=("${{ steps.secret-names.outputs.db_secret }}" "${{ steps.secret-names.outputs.sendgrid_secret }}")
-          for SECRET in "${SECRETS[@]}"; do
-            COUNT=$(gcloud secrets versions list "$SECRET" \
-              --project=${{ vars.GCP_PROJECT_ID }} \
-              --filter="state=ENABLED" \
-              --format="value(name)" --limit=1 | wc -l | tr -d ' ')
-            if [ "$COUNT" -eq 0 ]; then
-              echo "::error::Secret '$SECRET' has no enabled versions. Cloud Run deploy will fail."
-              exit 1
-            fi
-            echo "✓ $SECRET has enabled version(s)"
-          done
-
-      - name: Build and push Docker image
-        uses: docker/build-push-action@v7
-        with:
-          context: backend
-          file: backend/Dockerfile
-          push: true
-          tags: |
-            ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
-            ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:latest
-          cache-from: type=gha
-          cache-to: type=gha,mode=max
 
       - name: Deploy to Cloud Run
         id: deploy
@@ -173,7 +171,7 @@ jobs:
         with:
           service: ${{ vars.CLOUD_RUN_SERVICE }}
           region: ${{ vars.GCP_REGION }}
-          image: ${{ vars.ARTIFACT_REGISTRY_URL }}/${{ vars.CLOUD_RUN_SERVICE }}:${{ github.sha }}
+          image: ${{ inputs.image }}
           env_vars: |
             GSHEETS_VP_SPREADSHEET_ID=${{ vars.GSHEETS_VP_SPREADSHEET_ID }}
             GSHEETS_VP_SPREADSHEET_ID_TH=${{ vars.GSHEETS_VP_SPREADSHEET_ID_TH }}
@@ -193,6 +191,20 @@ jobs:
             echo "$RESPONSE"
             exit 1
           fi
+
+      - name: Setup Node.js for smoke tests
+        uses: actions/setup-node@v6
+        with:
+          node-version: '20'
+          cache: 'npm'
+          cache-dependency-path: smoke-tests/package-lock.json
+
+      - name: Run selected smoke tests
+        run: |
+          cd smoke-tests
+          npm ci
+          SMOKE_BACKEND_URL="${{ steps.deploy.outputs.url }}" \
+            npx playwright test tests/backend-health.spec.ts tests/auth-enforcement.spec.ts
 
       - name: Rollback on verification failure
         if: failure() && steps.deploy.outcome == 'success'
