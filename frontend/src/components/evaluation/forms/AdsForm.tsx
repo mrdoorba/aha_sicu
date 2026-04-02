@@ -8,12 +8,20 @@ import { ADS_FIELDS, getSectionLinks } from './formConfig';
 interface AdsFormProps {
   data: AdsData;
   salesMonth0: number;
+  currency?: string;
   marketplace?: string;
   onChange: (category: 'ads', key: string, value: number | null) => void;
   onBlur: () => void;
 }
 
-export function AdsForm({ data, salesMonth0, marketplace = 'ID', onChange, onBlur }: AdsFormProps) {
+export function AdsForm({
+  data,
+  salesMonth0,
+  currency = 'IDR',
+  marketplace = 'ID',
+  onChange,
+  onBlur,
+}: AdsFormProps) {
   const { t } = useTranslation();
   const links = getSectionLinks(marketplace);
   const adSales = data.adSales ?? 0;
@@ -39,6 +47,7 @@ export function AdsForm({ data, salesMonth0, marketplace = 'ID', onChange, onBlu
               name={`ads.${field.key}`}
               label={t(field.labelKey!)}
               benchmark={field.benchmark}
+              currency={currency}
               value={data[field.key as keyof AdsData] as number | null}
               onChange={(v) => onChange('ads', field.key, v)}
               onBlur={onBlur}
