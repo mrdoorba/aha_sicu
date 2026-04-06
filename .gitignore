@@ -68,10 +68,9 @@ docs/superpowers/
 .gemini/
 .paul/
 .carl/
-_bmad/
 .github/prompts/
 .github/skills/
-.omc/
+.omx/
 
 # Worktrees
 .worktrees/
