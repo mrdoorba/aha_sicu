@@ -66,8 +66,6 @@ docs/superpowers/
 .claude/
 .cursor/
 .gemini/
-.paul/
-.carl/
 .github/prompts/
 .github/skills/
 .omx/
@@ -80,9 +78,6 @@ my-designs/
 my-documents/
 my-local-resources/
 Memory/
-
-# OpenSpec
-openspec/
 
 # Firebase
 .firebase/
@@ -114,42 +109,6 @@ smoke-tests/smoke-results.json
 
 # OS
 Thumbs.db
-
-# ── GSD baseline (auto-generated) ──
-.gsd/activity/
-.gsd/runtime/
-.gsd/worktrees/
-.gsd/auto.lock
-.gsd/metrics.json
-.gsd/completed-units.json
-.gsd/STATE.md
-.gsd/gsd.db
-.gsd/DISCUSSION-MANIFEST.json
-.gsd/milestones/**/*-CONTINUE.md
-.gsd/milestones/**/continue.md
-*.code-workspace
-.env.*
-!.env.example
-.next/
-*.pyc
-target/
-vendor/
-coverage/
-.cache/
-tmp/
-.bg-shell/
-backend/locales/
-.planning/
-
-# ── GSD baseline (auto-generated) ──
-.gsd/forensics/
-
-# ── GSD baseline (auto-generated) ──
-.gsd/parallel/
-.gitnexus
-
-# AEGIS audit state (generated)
-.aegis/
 
 # BASE workspace state
 .base/
