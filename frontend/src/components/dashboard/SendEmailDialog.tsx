@@ -7,6 +7,7 @@ import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -179,6 +180,9 @@ export function SendEmailDialog({
       <DialogContent className="sm:max-w-xl">
         <DialogHeader>
           <DialogTitle>{t('sendEmail.title')}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {t('sendEmail.description')}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="max-h-[65vh] overflow-y-auto space-y-4 pr-1">

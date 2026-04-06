@@ -714,6 +714,7 @@
   "sendEmail.cancel": "Batal",
   "sendEmail.captureError": "Gagal menangkap grafik. Coba lagi.",
   "sendEmail.cc": "CC",
+  "sendEmail.description": "Tinjau penerima, catatan opsional, dan pratinjau sebelum mengirim laporan email.",
   "sendEmail.duplicateEmail": "Email sudah ditambahkan",
   "sendEmail.error": "Gagal mengirim email. Coba lagi.",
   "sendEmail.invalidEmail": "Format email tidak valid",

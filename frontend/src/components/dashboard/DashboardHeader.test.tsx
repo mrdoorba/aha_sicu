@@ -50,4 +50,26 @@ describe('DashboardHeader', () => {
 
     expect(onSendEmail).toHaveBeenCalledTimes(1);
   });
+
+  it('renders a store link action when the store link is a valid http(s) URL', () => {
+    renderHeader({ storeLink: 'https://shopee.co.id/test-store' });
+
+    const storeLink = screen.getByRole('link', { name: /common\.aria\.openStore/i });
+
+    expect(storeLink).toHaveAttribute('href', 'https://shopee.co.id/test-store');
+    expect(storeLink).toHaveAttribute('target', '_blank');
+    expect(storeLink).toHaveAttribute('rel', 'noopener noreferrer');
+  });
+
+  it('does not render a store link action when the store link is invalid', () => {
+    renderHeader({ storeLink: 'javascript:alert(1)' });
+
+    expect(screen.queryByRole('link', { name: /common\.aria\.openStore/i })).not.toBeInTheDocument();
+  });
+
+  it('does not render a store link action when the store link is missing', () => {
+    renderHeader({ storeLink: null });
+
+    expect(screen.queryByRole('link', { name: /common\.aria\.openStore/i })).not.toBeInTheDocument();
+  });
 });

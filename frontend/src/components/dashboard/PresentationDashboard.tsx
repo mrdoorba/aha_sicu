@@ -100,6 +100,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
         verdict={evaluation.verdict}
         template={evaluation.template}
         period={evaluation.period}
+        storeLink={evaluation.brand_raw_data.store_link}
         onBack={onBack}
         onSendEmail={featureFlags?.email_enabled ? () => setSendDialogOpen(true) : undefined}
       />
