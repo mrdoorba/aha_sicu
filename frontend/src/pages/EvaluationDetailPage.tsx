@@ -97,6 +97,13 @@ function formatNumber(value: unknown, marketplace?: string): string {
   return formatCurrency(value, marketplace);
 }
 
+function formatManualNumber(value: number, options?: Intl.NumberFormatOptions): string {
+  return value.toLocaleString('en-US', {
+    maximumFractionDigits: 2,
+    ...options,
+  });
+}
+
 function formatValue(value: unknown, key: string, fieldDef?: FieldDefinition, marketplace?: string): string {
   if (value === null || value === undefined) return '-';
   if (Array.isArray(value)) return value.map((v) => formatNumber(v, marketplace)).join(', ');
@@ -112,7 +119,10 @@ function formatValue(value: unknown, key: string, fieldDef?: FieldDefinition, ma
     if (fieldDef.inputType === 'number' && fieldDef.unit === '%') {
       return `${value}%`;
     }
-    return formatCurrency(value, marketplace);
+    if (fieldDef.inputType === 'number' && fieldDef.unit === 'count') {
+      return formatManualNumber(value, { maximumFractionDigits: 0 });
+    }
+    return formatManualNumber(value);
   }
 
   // Fallback heuristics for fields not in config
