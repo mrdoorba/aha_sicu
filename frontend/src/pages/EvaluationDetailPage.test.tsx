@@ -208,6 +208,24 @@ describe('EvaluationDetailPage', () => {
     expect(screen.getByText(/96%/)).toBeInTheDocument();
   });
 
+  it('preserves decimals for non-currency manual numeric inputs on the detail page', () => {
+    mockHookReturn = {
+      ...mockHookReturn,
+      evaluation: {
+        ...MOCK_EVALUATION,
+        manual_inputs: {
+          operational: { preparationTime: 1.82, overallRating: 4.88 },
+        },
+      },
+    };
+    renderPage();
+
+    expect(screen.getByText('Masa Pengemasan')).toBeInTheDocument();
+    expect(screen.getByText('Keseluruhan Penilaian')).toBeInTheDocument();
+    expect(screen.getByText('1.82')).toBeInTheDocument();
+    expect(screen.getByText('4.88')).toBeInTheDocument();
+  });
+
   it('formats currency fields using Indonesian locale', () => {
     mockHookReturn = {
       ...mockHookReturn,
