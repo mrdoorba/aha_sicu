@@ -714,6 +714,7 @@
   "sendEmail.cancel": "Cancel",
   "sendEmail.captureError": "Failed to capture chart. Try again.",
   "sendEmail.cc": "CC",
+  "sendEmail.description": "Review recipients, optional note, and preview before sending the email report.",
   "sendEmail.duplicateEmail": "Email already added",
   "sendEmail.error": "Failed to send email. Try again.",
   "sendEmail.invalidEmail": "Invalid email format",

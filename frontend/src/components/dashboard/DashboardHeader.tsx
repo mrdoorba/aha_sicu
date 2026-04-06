@@ -1,4 +1,4 @@
-import { ArrowLeft, Edit3, Calendar, TrendingUp, Mail } from 'lucide-react';
+import { ArrowLeft, Edit3, Calendar, TrendingUp, Mail, ExternalLink } from 'lucide-react';
 import { Button } from '../ui/button';
 import { Badge } from '../ui/badge';
 import { useTranslation } from 'react-i18next';
@@ -12,11 +12,24 @@ interface DashboardHeaderProps {
   period?: string;
   onBack: () => void;
   onSendEmail?: () => void;
+  storeLink?: string | null;
 }
 
-export const DashboardHeader = ({ brandName, brandId, template, period, onBack, onSendEmail }: DashboardHeaderProps) => {
+function getValidStoreLink(storeLink?: string | null): string | null {
+  if (!storeLink) return null;
+
+  try {
+    const parsed = new URL(storeLink);
+    return parsed.protocol === 'http:' || parsed.protocol === 'https:' ? parsed.toString() : null;
+  } catch {
+    return null;
+  }
+}
+
+export const DashboardHeader = ({ brandName, brandId, template, period, onBack, onSendEmail, storeLink }: DashboardHeaderProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const validStoreLink = getValidStoreLink(storeLink);
 
   return (
     <div className="flex items-center justify-between px-2">
@@ -45,6 +58,23 @@ export const DashboardHeader = ({ brandName, brandId, template, period, onBack, 
         </Badge>
       </div>
       <div className="flex items-center gap-3">
+        {validStoreLink && (
+          <Button
+            asChild
+            variant="outline"
+            className="rounded-xl h-10 px-5 font-bold"
+          >
+            <a
+              href={validStoreLink}
+              target="_blank"
+              rel="noopener noreferrer"
+              aria-label={t('common.aria.openStore')}
+            >
+              <ExternalLink className="mr-2 size-4" />
+              {t('evaluationHeader.fieldLabel.linkToko')}
+            </a>
+          </Button>
+        )}
         {onSendEmail && (
           <Button
             variant="outline"

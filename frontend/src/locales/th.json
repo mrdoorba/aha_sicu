@@ -714,6 +714,7 @@
   "sendEmail.cancel": "ยกเลิก",
   "sendEmail.captureError": "ไม่สามารถจับภาพกราฟ ลองอีกครั้ง",
   "sendEmail.cc": "CC",
+  "sendEmail.description": "ตรวจสอบผู้รับ หมายเหตุเพิ่มเติม และตัวอย่างก่อนส่งรายงานอีเมล",
   "sendEmail.duplicateEmail": "อีเมลถูกเพิ่มแล้ว",
   "sendEmail.error": "ไม่สามารถส่งอีเมล ลองอีกครั้ง",
   "sendEmail.invalidEmail": "รูปแบบอีเมลไม่ถูกต้อง",

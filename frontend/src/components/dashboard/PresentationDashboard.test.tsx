@@ -14,6 +14,7 @@ Feature: Partner Dashboard Rata² Penjualan Card
 */
 
 const mockUseFeatureFlags = vi.fn();
+const mockUseEvaluationDetail = vi.fn();
 
 vi.mock('../../hooks/useFeatureFlags', () => ({
     useFeatureFlags: () => mockUseFeatureFlags(),
@@ -28,9 +29,30 @@ vi.mock('../../hooks/useBrandEvaluations', () => ({
 }));
 
 vi.mock('../../hooks/useEvaluationDetail', () => ({
-    useEvaluationDetail: () => ({
-        evaluation: {
+    useEvaluationDetail: () => mockUseEvaluationDetail(),
+}));
+
+vi.mock('./ScoreBreakdownChart', async () => {
+    const React = await import('react');
+
+    return {
+        ScoreBreakdownChart: React.forwardRef<HTMLDivElement, { scoreBreakdown: unknown[] }>((_props, ref) => (
+            <div ref={ref} data-testid="score-breakdown-chart" />
+        )),
+    };
+});
+
+vi.mock('./ScoreOverview', () => ({
+    ScoreOverview: () => <div data-testid="score-overview" />,
+}));
+
+describe('PresentationDashboard BDD', () => {
+    beforeEach(() => {
+        mockUseFeatureFlags.mockReturnValue({ data: { email_enabled: true } });
+        mockUseEvaluationDetail.mockReturnValue({
+            evaluation: {
             id: 1,
+            brand_id: 123,
             brand_name: 'Test Brand',
             final_score: 50,
             verdict: 'Disetujui',
@@ -62,15 +84,15 @@ vi.mock('../../hooks/useEvaluationDetail', () => ({
                 }
             ],
             calculator_results: {},
+            manual_inputs: {},
+            email_output: null,
+            evaluator_email: 'tester@example.com',
+            created_at: '2026-01-01T00:00:00Z',
+            rule_version: 1,
             brand_raw_data: { email: null, pic_name: null, store_link: null, kategori: null }
         },
         isLoading: false
-    }),
-}));
-
-describe('PresentationDashboard BDD', () => {
-    beforeEach(() => {
-        mockUseFeatureFlags.mockReturnValue({ data: { email_enabled: true } });
+    });
     });
 
     it('renders Rata² Penjualan 6 bulan terakhir as an informational card', () => {
@@ -141,5 +163,52 @@ describe('PresentationDashboard BDD', () => {
 
         // Assert
         expect(screen.queryByRole('button', { name: /Kirim Email/i })).not.toBeInTheDocument();
+    });
+
+    it('shows store link action when evaluation has a valid store link', () => {
+        mockUseEvaluationDetail.mockReturnValue({
+            evaluation: {
+                id: 1,
+                brand_id: 123,
+                brand_name: 'Test Brand',
+                final_score: 50,
+                verdict: 'Disetujui',
+                template: 'non_fashion',
+                period: 'Jan 2026',
+                score_breakdown: [],
+                calculator_results: {},
+                manual_inputs: {},
+                email_output: null,
+                evaluator_email: 'tester@example.com',
+                created_at: '2026-01-01T00:00:00Z',
+                rule_version: 1,
+                brand_raw_data: { email: null, pic_name: null, store_link: 'https://shopee.co.id/test-store', kategori: null }
+            },
+            isLoading: false
+        });
+
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        render(
+            <QueryClientProvider client={queryClient}>
+                <MemoryRouter>
+                    <PresentationDashboard brandId={123} onBack={vi.fn()} />
+                </MemoryRouter>
+            </QueryClientProvider>
+        );
+
+        expect(screen.getByRole('link', { name: /Buka toko Shopee/i })).toHaveAttribute('href', 'https://shopee.co.id/test-store');
+    });
+
+    it('hides store link action when evaluation has no store link', () => {
+        const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+        render(
+            <QueryClientProvider client={queryClient}>
+                <MemoryRouter>
+                    <PresentationDashboard brandId={123} onBack={vi.fn()} />
+                </MemoryRouter>
+            </QueryClientProvider>
+        );
+
+        expect(screen.queryByRole('link', { name: /Buka toko Shopee/i })).not.toBeInTheDocument();
     });
 });
