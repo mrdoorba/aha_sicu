@@ -708,6 +708,30 @@ class TestGColumnMessages:
         assert "[Menurun" in g13.message
         assert "❗️" in g13.message  # > 25% decline warning
 
+    def test_g13_tolerated_decline_keeps_score_but_shows_fail_message_and_avg_benchmark(self):
+        data = {
+            "business": {
+                "salesMonth0": 100,
+                "salesMonth1": 110,
+                "salesMonth2": 110,
+                "salesMonth3": 110,
+                "salesMonth4": 110,
+                "salesMonth5": 110,
+            }
+        }
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+        )
+        biz = result.category_scores[1]
+        g13 = next(r for r in biz.rows if r.row == 13)
+        assert g13.verdict == "❌"
+        assert g13.score == 10.0
+        assert "[Menurun" in g13.message
+        assert "toleransi" not in g13.message
+        assert g13.benchmark == ">108"
+
 
 # ---------------------------------------------------------------------------
 # G68 marketing estimation tests
