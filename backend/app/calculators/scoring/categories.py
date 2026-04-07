@@ -136,7 +136,7 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
     # threshold_pct=90 → multiplier=1.10: pass if avg < current × multiplier
     trend_multiplier = (200 - trend_pct) / 100
     e13 = f">{_fmt_idr(avg_6mo)}" if avg_6mo > 0 else "-"
-    f13 = "✔️" if avg_6mo < current_month * trend_multiplier else "❌"
+    f13 = "✔️" if current_month >= avg_6mo and avg_6mo > 0 else "❌"
     h13 = trend_points if avg_6mo < current_month * trend_multiplier else 0.0
     rows.append(RowScore(
         row=13, metric=f"Penjualan Bulan {month_labels[0]}",
