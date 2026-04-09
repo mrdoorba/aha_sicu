@@ -1,23 +1,20 @@
-"""Discount Check Calculator — pure function, no I/O.
+"""Discount Check Calculator — sheet-parity implementation, no I/O.
 
-Processes Order Export data to analyze discount patterns
-and detect potential fake discounts.
-
-Spec: logic/calculator-3-discount-checkup.md
+Implements the business process from the Google Sheet used by the team for
+seller-funded discount / fake-discount detection, while preserving the
+existing backend result contract.
 """
 
 from __future__ import annotations
 
 import math
+import statistics
+from collections import Counter, defaultdict
 from dataclasses import dataclass, field
 from typing import Any
 
 from app.calculators.price_parser import _parse_price
 
-
-# ---------------------------------------------------------------------------
-# Result type
-# ---------------------------------------------------------------------------
 
 @dataclass
 class DiscountResult:
@@ -26,10 +23,6 @@ class DiscountResult:
     output_text: str
     details: dict[str, Any] = field(default_factory=dict)
 
-
-# ---------------------------------------------------------------------------
-# Helpers
-# ---------------------------------------------------------------------------
 
 def _safe_num(value: Any) -> float:
     """Coerce a value to float, treating None/'-'/'' as 0."""
@@ -48,17 +41,17 @@ def _safe_num(value: Any) -> float:
     return 0.0
 
 
-# ---------------------------------------------------------------------------
-# Processing pipeline
-# ---------------------------------------------------------------------------
+def _roundup(value: float, decimals: int) -> float:
+    factor = 10**decimals
+    return math.ceil(value * factor) / factor
+
+
+def _format_pct_1dp(fraction: float) -> str:
+    return f"{fraction * 100:.1f}%"
+
 
 def _calculate_urutan(rows: list[dict]) -> list[int]:
-    """Compute item position (Urutan) within each order.
-
-    Same order number as previous row → increment.
-    Different order number → reset to 1.
-    Empty order number → 0 (skip).
-    """
+    """Legacy helper retained for compatibility with existing imports/tests."""
     result: list[int] = []
     prev_order = None
     counter = 0
@@ -83,18 +76,148 @@ def _calculate_urutan(rows: list[dict]) -> list[int]:
 
 @dataclass
 class LineItem:
-    """Calculated values for a single order line."""
+    """Calculated row values aligned to the Google Sheet process."""
 
+    order_num: str
+    composite_key: str
     harga_awal: float
     harga_setelah_diskon: float
-    voucher: float
-    paket: float
     jumlah: float
-    nama_produk: str
-    total_discount: float  # N
-    discount_pct: float    # O
-    total_paid: float      # P
-    urutan: int
+    seller_discount: float
+    shopee_discount: float
+    voucher: float
+    cashback: float
+    paket: float
+    seller_discount_pct: float | None
+    campaign_discount: float = 0.0
+    total_paid: float = 0.0
+
+
+@dataclass
+class ProductSummary:
+    """Aggregated product stats exposed via the stable result contract."""
+
+    product_name: str
+    qty: float
+    avg_discount_pct: float
+
+
+def _normalize_rows(rows: list[dict], *, marketplace: str = "ID") -> list[LineItem]:
+    items: list[LineItem] = []
+    for row in rows:
+        order_num = str(row.get("No. Pesanan", "") or "").strip()
+        product_name = str(row.get("Nama Produk", "") or "").strip()
+        variant_name = str(row.get("Nama Variasi", "") or "").strip()
+        composite_key = f"{product_name}{variant_name}".strip()
+
+        harga_awal = _parse_price(row.get("Harga Awal"), marketplace)
+        harga_setelah_diskon = _parse_price(row.get("Harga Setelah Diskon"), marketplace)
+        jumlah = _safe_num(row.get("Jumlah"))
+        seller_discount = _parse_price(row.get("Diskon Dari Penjual"), marketplace)
+        shopee_discount = _parse_price(row.get("Diskon Dari Shopee"), marketplace)
+        voucher = _parse_price(row.get("Voucher Ditanggung Penjual"), marketplace)
+        cashback = _parse_price(row.get("Cashback Koin") or row.get("Cashback Coin"), marketplace)
+        paket = _parse_price(
+            row.get("Paket Diskon (Diskon dari Penjual)") or row.get("Paket Diskon"),
+            marketplace,
+        )
+
+        seller_discount_pct: float | None = None
+        if seller_discount > 0 and harga_awal > 0 and harga_setelah_diskon > 0 and jumlah > 0:
+            seller_discount_pct = (seller_discount / jumlah) / harga_awal
+
+        items.append(
+            LineItem(
+                order_num=order_num,
+                composite_key=composite_key,
+                harga_awal=harga_awal,
+                harga_setelah_diskon=harga_setelah_diskon,
+                jumlah=jumlah,
+                seller_discount=seller_discount,
+                shopee_discount=shopee_discount,
+                voucher=voucher,
+                cashback=cashback,
+                paket=paket,
+                seller_discount_pct=seller_discount_pct,
+            )
+        )
+
+    return items
+
+
+def _compute_fake_discount_gate(items: list[LineItem]) -> bool:
+    values = [item.seller_discount_pct for item in items if item.seller_discount_pct is not None]
+    if not values:
+        return False
+    return (sum(values) / len(values)) > 0.20
+
+
+def _build_reference_price_map(
+    items: list[LineItem],
+    *,
+    fake_discount_gate: bool,
+) -> dict[str, float]:
+    values_by_key: dict[str, list[float]] = defaultdict(list)
+
+    for item in items:
+        if not item.composite_key:
+            continue
+
+        value = item.harga_setelah_diskon if fake_discount_gate else item.harga_awal
+        if value != 0:
+            values_by_key[item.composite_key].append(value)
+
+    reference_price_by_key: dict[str, float] = {}
+    for key, values in values_by_key.items():
+        median_value = statistics.median(values)
+        upper_bound = median_value * 1.4
+        filtered = [value for value in values if value <= upper_bound]
+        reference_price_by_key[key] = max(filtered) if filtered else 0.0
+
+    return reference_price_by_key
+
+
+def _apply_sheet_metrics(items: list[LineItem], *, fake_discount_gate: bool) -> list[LineItem]:
+    reference_price_by_key = _build_reference_price_map(items, fake_discount_gate=fake_discount_gate)
+    order_counts = Counter(item.order_num for item in items if item.order_num)
+    first_by_order: dict[str, LineItem] = {}
+    for item in items:
+        if item.order_num and item.order_num not in first_by_order:
+            first_by_order[item.order_num] = item
+
+    for item in items:
+        if not item.composite_key:
+            item.campaign_discount = 0.0
+            item.total_paid = 0.0
+            continue
+
+        reference_price = reference_price_by_key.get(item.composite_key, 0.0)
+        order_count = order_counts.get(item.order_num, 0)
+        order_anchor = first_by_order.get(item.order_num)
+        voucher_alloc = (order_anchor.voucher / order_count) if order_anchor and order_count else 0.0
+        paket_alloc = (order_anchor.paket / order_count) if order_anchor and order_count else 0.0
+        cashback_alloc = (order_anchor.cashback / order_count) if order_anchor and order_count else 0.0
+        shopee_component = (item.shopee_discount / item.jumlah) if item.jumlah > 0 else 0.0
+
+        gate_base = item.harga_setelah_diskon if fake_discount_gate else item.harga_awal
+        adjustment = 0.0
+        if gate_base > 0:
+            adjustment = (
+                -(item.harga_setelah_diskon * item.jumlah)
+                + voucher_alloc
+                + paket_alloc
+                - cashback_alloc
+                - shopee_component
+            )
+        item.campaign_discount = (reference_price * item.jumlah) + adjustment
+
+        if item.harga_setelah_diskon <= 0:
+            item.total_paid = 0.0
+        else:
+            paid_base = item.harga_setelah_diskon if fake_discount_gate else item.harga_awal
+            item.total_paid = paid_base - item.campaign_discount
+
+    return items
 
 
 def _calculate_line_items(
@@ -103,180 +226,89 @@ def _calculate_line_items(
     *,
     marketplace: str = "ID",
 ) -> list[LineItem]:
-    """Compute N (total discount), O (discount %), P (total paid) per line."""
-    items: list[LineItem] = []
-
-    for row, urutan in zip(rows, urutan_list):
-        if urutan == 0:
-            continue
-
-        harga_awal = _parse_price(row.get("Harga Awal"), marketplace)
-        harga_setelah_diskon = _parse_price(row.get("Harga Setelah Diskon"), marketplace)
-        jumlah = _safe_num(row.get("Jumlah"))
-        nama_produk = str(row.get("Nama Produk", "") or "").strip()
-
-        # Voucher and Paket only applied at Urutan=1
-        if urutan == 1:
-            voucher = _parse_price(row.get("Voucher Ditanggung Penjual"), marketplace)
-            paket = _parse_price(row.get("Paket Diskon (Diskon dari Penjual)"), marketplace)
-        else:
-            voucher = 0.0
-            paket = 0.0
-
-        # N = (Harga Awal - Harga Setelah Diskon) + Voucher + Paket
-        total_discount = (harga_awal - harga_setelah_diskon) + voucher + paket
-
-        # O = N / Harga Awal
-        discount_pct = total_discount / harga_awal if harga_awal > 0 else 0.0
-
-        # P = Harga Setelah Diskon - Voucher - Paket
-        total_paid = harga_setelah_diskon - voucher - paket
-
-        items.append(LineItem(
-            harga_awal=harga_awal,
-            harga_setelah_diskon=harga_setelah_diskon,
-            voucher=voucher,
-            paket=paket,
-            jumlah=jumlah,
-            nama_produk=nama_produk,
-            total_discount=total_discount,
-            discount_pct=discount_pct,
-            total_paid=total_paid,
-            urutan=urutan,
-        ))
-
-    return items
-
-
-@dataclass
-class ProductSummary:
-    """Aggregated product stats."""
-
-    product_name: str
-    qty: float
-    avg_discount_pct: float
+    """Legacy entry point retained for compatibility; now returns sheet-parity rows."""
+    del urutan_list
+    items = _normalize_rows(rows, marketplace=marketplace)
+    fake_discount_gate = _compute_fake_discount_gate(items)
+    return _apply_sheet_metrics(items, fake_discount_gate=fake_discount_gate)
 
 
 def _build_product_summary(line_items: list[LineItem]) -> list[ProductSummary]:
-    """Group by Nama Produk (exact match), aggregate qty and avg discount %.
-
-    avg_discount_pct per product = sum(N) / sum(J) where N = total_discount
-    and J = harga_awal.  This is a weighted ratio (matches spreadsheet formula
-    ``T = SUMIF(B:B, R2, N:N) / SUMIF(B:B, R2, J:J)``).
-    """
-    groups: dict[str, dict[str, float]] = {}
-
+    ordered_keys: list[str] = []
+    seen: set[str] = set()
     for item in line_items:
-        name = item.nama_produk
-        if not name:
-            continue
-
-        if name not in groups:
-            groups[name] = {"qty": 0.0, "sum_n": 0.0, "sum_j": 0.0}
-
-        groups[name]["qty"] += item.jumlah
-        groups[name]["sum_n"] += item.total_discount
-        groups[name]["sum_j"] += item.harga_awal
+        if item.composite_key and item.harga_setelah_diskon != 0 and item.composite_key not in seen:
+            seen.add(item.composite_key)
+            ordered_keys.append(item.composite_key)
 
     summaries: list[ProductSummary] = []
-    for name, data in groups.items():
-        sum_j = data["sum_j"]
-        avg_disc = data["sum_n"] / sum_j if sum_j > 0 else 0.0
-        summaries.append(ProductSummary(
-            product_name=name,
-            qty=data["qty"],
-            avg_discount_pct=avg_disc,
-        ))
+    for key in ordered_keys:
+        grouped = [item for item in line_items if item.composite_key == key]
+        qty = sum(item.jumlah for item in grouped)
+        denominator = sum(item.harga_setelah_diskon for item in grouped)
+        avg_discount_pct = (
+            sum(item.campaign_discount for item in grouped) / denominator if denominator else 0.0
+        )
+        summaries.append(ProductSummary(product_name=key, qty=qty, avg_discount_pct=avg_discount_pct))
 
     return summaries
 
 
 def _filter_top_sku(product_summary: list[ProductSummary]) -> list[ProductSummary]:
-    """Filter TOP SKU: qty > avg AND avg_disc < 1.0, limit ROUND(unique * 20%).
-
-    Order by qty descending. No minimum floor (differs from Calculator 2).
-    """
     if not product_summary:
         return []
 
-    avg_qty = sum(p.qty for p in product_summary) / len(product_summary)
-
-    # Filter: qty > average AND avg_disc < 1.0 (100%)
+    avg_qty = sum(item.qty for item in product_summary) / len(product_summary)
     filtered = [
-        p for p in product_summary
-        if p.qty > avg_qty and p.avg_discount_pct < 1.0
+        item
+        for item in product_summary
+        if item.qty > avg_qty and item.avg_discount_pct < 1.0
     ]
-
-    # Order by qty descending
-    filtered.sort(key=lambda p: p.qty, reverse=True)
-
-    # Limit = ROUND(unique_products * 20%)
-    unique_count = len(product_summary)
-    limit = round(unique_count * 0.20)
-
+    filtered.sort(key=lambda item: item.qty, reverse=True)
+    limit = round(len(product_summary) * 0.20)
     return filtered[:limit]
 
 
-def _roundup(value: float, decimals: int) -> float:
-    """Round UP to specified decimal places.
-
-    math.ceil works on integers — for decimal places:
-    math.ceil(value * 10^decimals) / 10^decimals
-    """
-    factor = 10 ** decimals
-    return math.ceil(value * factor) / factor
-
-
-def _format_pct_1dp(fraction: float) -> str:
-    """Format fraction as percentage with 1 decimal place: 0.027 → '2.7%'."""
-    return f"{fraction * 100:.1f}%"
+def _first_value_per_order(items: list[LineItem], attr: str) -> float:
+    seen: set[str] = set()
+    total = 0.0
+    for item in items:
+        if item.order_num and item.order_num not in seen:
+            seen.add(item.order_num)
+            total += float(getattr(item, attr))
+    return total
 
 
 def _format_output(
     line_items: list[LineItem],
     top_sku: list[ProductSummary],
 ) -> tuple[str, dict[str, Any]]:
-    """Generate the 5 output values as formatted text.
+    discount_pct_numerator = sum(item.campaign_discount for item in line_items if item.total_paid > 0)
+    sum_total_paid = sum(item.total_paid for item in line_items)
+    discount_pct = discount_pct_numerator / sum_total_paid if sum_total_paid else 0.0
 
-    Returns (output_text, details_dict).
-    """
-    sum_n = sum(item.total_discount for item in line_items)
-    sum_p = sum(item.total_paid for item in line_items)
-    sum_voucher = sum(item.voucher for item in line_items)
-    sum_paket = sum(item.paket for item in line_items)
-    sum_harga_setelah_diskon = sum(item.harga_setelah_diskon for item in line_items)
-
-    # Output 1: % Diskon TOP SKU = SUMIF(P>0, N) / SUM(P)
-    sum_n_where_p_positive = sum(
-        item.total_discount for item in line_items if item.total_paid > 0
-    )
-    discount_pct = sum_n_where_p_positive / sum_p if sum_p != 0 else 0.0
-    output1 = f"% Diskon TOP SKU: {_format_pct_1dp(discount_pct)}"
-
-    # Output 2: Range = ROUNDUP(MIN(top_sku_avg_disc), 3) ~ ROUNDUP(MAX(top_sku_avg_disc), 3)
-    if top_sku:
-        top_disc_values = [p.avg_discount_pct for p in top_sku]
-        range_min = _roundup(min(top_disc_values), 3)
-        range_max = _roundup(max(top_disc_values), 3)
+    top_discount_values = [item.avg_discount_pct for item in top_sku]
+    if top_discount_values:
+        range_min = _roundup(min(top_discount_values), 3)
+        range_max = _roundup(max(top_discount_values), 3)
     else:
         range_min = 0.0
         range_max = 0.0
+
+    sum_voucher = _first_value_per_order(line_items, "voucher")
+    sum_paket = _first_value_per_order(line_items, "paket")
+    sum_harga_setelah_diskon = sum(item.harga_setelah_diskon for item in line_items)
+    voucher_pct = sum_voucher / sum_harga_setelah_diskon if sum_harga_setelah_diskon else 0.0
+    paket_pct = sum_paket / sum_harga_setelah_diskon if sum_harga_setelah_diskon else 0.0
+
+    fake_discount_flag = _compute_fake_discount_gate(line_items)
+
+    output1 = f"% Diskon TOP SKU: {_format_pct_1dp(discount_pct)}"
     output2 = f"Range: {_format_pct_1dp(range_min)} ~ {_format_pct_1dp(range_max)}"
-
-    # Output 3: Voucher % = SUM(voucher) / SUM(harga_setelah_diskon)
-    voucher_pct = sum_voucher / sum_harga_setelah_diskon if sum_harga_setelah_diskon != 0 else 0.0
     output3 = f"Voucher {_format_pct_1dp(voucher_pct)}"
-
-    # Output 4: Paket Diskon % = SUM(paket) / SUM(harga_setelah_diskon)
-    paket_pct = sum_paket / sum_harga_setelah_diskon if sum_harga_setelah_diskon != 0 else 0.0
     output4 = f"Paket Diskon {_format_pct_1dp(paket_pct)}"
-
-    # Output 5: Fake Discount Flag
-    fake_discount_ratio = sum_n / sum_p if sum_p != 0 else 0.0
-    fake_discount_flag = fake_discount_ratio > 0.20
     output5 = "📌 Berpotensi menggunakan 'fake discount'" if fake_discount_flag else ""
 
-    # Combine output
     lines = [output1, output2, output3, output4]
     if output5:
         lines.append(output5)
@@ -311,8 +343,8 @@ def _format_output(
         "fake_discount_flag": fake_discount_flag,
         "i18n": i18n,
         "totals": {
-            "sum_n": sum_n,
-            "sum_p": sum_p,
+            "sum_n": sum(item.campaign_discount for item in line_items),
+            "sum_p": sum_total_paid,
             "sum_voucher": sum_voucher,
             "sum_paket": sum_paket,
             "sum_harga_setelah_diskon": sum_harga_setelah_diskon,
@@ -322,90 +354,70 @@ def _format_output(
     return output_text, details
 
 
-# ---------------------------------------------------------------------------
-# Main calculator entry point
-# ---------------------------------------------------------------------------
+def _empty_result() -> DiscountResult:
+    return DiscountResult(
+        output_text="% Diskon TOP SKU: 0.0%\nRange: 0.0% ~ 0.0%\nVoucher 0.0%\nPaket Diskon 0.0%",
+        details={
+            "discount_pct": "0.0%",
+            "range_min": "0.0%",
+            "range_max": "0.0%",
+            "voucher_pct": "0.0%",
+            "paket_pct": "0.0%",
+            "discount_pct_raw": 0.0,
+            "range_min_raw": 0.0,
+            "range_max_raw": 0.0,
+            "voucher_pct_raw": 0.0,
+            "paket_pct_raw": 0.0,
+            "fake_discount_flag": False,
+            "i18n": {
+                "topSkuDiscount": {"key": "discount.output.topSkuDiscount", "vars": {"value": "0.0%"}},
+                "range": {"key": "discount.output.range", "vars": {"min": "0.0%", "max": "0.0%"}},
+                "voucher": {"key": "discount.output.voucher", "vars": {"value": "0.0%"}},
+                "packageDiscount": {"key": "discount.output.packageDiscount", "vars": {"value": "0.0%"}},
+            },
+            "product_summary": [],
+            "top_sku": [],
+            "totals": {
+                "sum_n": 0.0,
+                "sum_p": 0.0,
+                "sum_voucher": 0.0,
+                "sum_paket": 0.0,
+                "sum_harga_setelah_diskon": 0.0,
+            },
+        },
+    )
+
 
 def calculate_discount(
     order_data: list[dict],
     *,
     marketplace: str = "ID",
 ) -> DiscountResult:
-    """Execute the Discount Check Calculator.
-
-    Pure function — no I/O, no database access.
-
-    Args:
-        order_data: Parsed rows from order_export (list of dicts).
-        marketplace: ``"ID"`` (Indonesian) or ``"TH"`` (Thai) price format.
-
-    Returns:
-        DiscountResult with output_text and details.
-    """
+    """Execute the Discount Check Calculator using the sheet-parity process."""
     if not order_data:
-        return DiscountResult(
-            output_text="% Diskon TOP SKU: 0.0%\nRange: 0.0% ~ 0.0%\nVoucher 0.0%\nPaket Diskon 0.0%",
-            details={
-                "discount_pct": "0.0%",
-                "range_min": "0.0%",
-                "range_max": "0.0%",
-                "voucher_pct": "0.0%",
-                "paket_pct": "0.0%",
-                "discount_pct_raw": 0.0,
-                "range_min_raw": 0.0,
-                "range_max_raw": 0.0,
-                "voucher_pct_raw": 0.0,
-                "paket_pct_raw": 0.0,
-                "fake_discount_flag": False,
-                "i18n": {
-                    "topSkuDiscount": {"key": "discount.output.topSkuDiscount", "vars": {"value": "0.0%"}},
-                    "range": {"key": "discount.output.range", "vars": {"min": "0.0%", "max": "0.0%"}},
-                    "voucher": {"key": "discount.output.voucher", "vars": {"value": "0.0%"}},
-                    "packageDiscount": {"key": "discount.output.packageDiscount", "vars": {"value": "0.0%"}},
-                },
-                "product_summary": [],
-                "top_sku": [],
-                "totals": {
-                    "sum_n": 0,
-                    "sum_p": 0,
-                    "sum_voucher": 0,
-                    "sum_paket": 0,
-                    "sum_harga_setelah_diskon": 0,
-                },
-            },
-        )
+        return _empty_result()
 
-    # Step 1: Calculate Urutan
     urutan_list = _calculate_urutan(order_data)
-
-    # Steps 2-6: Calculate line items (clean prices, apply voucher/paket, compute N/O/P)
     line_items = _calculate_line_items(order_data, urutan_list, marketplace=marketplace)
-
-    # Step 7: Product summary
     product_summary = _build_product_summary(line_items)
-
-    # Step 8: TOP SKU filter
     top_sku = _filter_top_sku(product_summary)
-
-    # Generate output
     output_text, details = _format_output(line_items, top_sku)
 
-    # Add product_summary and top_sku to details
     details["product_summary"] = [
         {
-            "product_name": p.product_name,
-            "qty": p.qty,
-            "avg_discount_pct": p.avg_discount_pct,
+            "product_name": item.product_name,
+            "qty": item.qty,
+            "avg_discount_pct": item.avg_discount_pct,
         }
-        for p in product_summary
+        for item in product_summary
     ]
     details["top_sku"] = [
         {
-            "product_name": p.product_name,
-            "qty": p.qty,
-            "avg_discount_pct": p.avg_discount_pct,
+            "product_name": item.product_name,
+            "qty": item.qty,
+            "avg_discount_pct": item.avg_discount_pct,
         }
-        for p in top_sku
+        for item in top_sku
     ]
 
     return DiscountResult(output_text=output_text, details=details)
