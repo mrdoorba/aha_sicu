@@ -112,12 +112,25 @@ _ORDER_EXPORT_COLUMN_RENAME_TH: dict[str, str] = {
 }
 
 
+def _thai_money_expr(column: str) -> pl.Expr:
+    return (
+        pl.col(column)
+        .cast(pl.Utf8, strict=False)
+        .str.replace_all(",", "")
+        .str.replace_all("฿", "")
+        .str.strip_chars()
+        .cast(pl.Float64, strict=False)
+        .fill_null(0.0)
+    )
+
+
 def _normalise_thai_columns(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
     """Rename Thai Shopee order-export columns to Indonesian.
 
-    Also computes the synthetic ``Jumlah Produk di Pesan`` column which
-    does not exist in Thai exports.  It equals the count of rows sharing
-    the same ``No. Pesanan`` (order number).
+    Also computes synthetic columns which do not exist in Thai exports:
+    ``Jumlah Produk di Pesan`` equals the count of rows sharing the same
+    ``No. Pesanan`` (order number), and ``Diskon Dari Penjual`` equals
+    ``(Harga Awal - Harga Setelah Diskon - Diskon Dari Shopee) * Jumlah``.
 
     Returns:
         Tuple of (normalised DataFrame, was_thai) where was_thai is True
@@ -137,6 +150,19 @@ def _normalise_thai_columns(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
             .count()
             .over("No. Pesanan")
             .alias("Jumlah Produk di Pesan")
+        )
+
+    discount_inputs = {"Harga Awal", "Harga Setelah Diskon", "Diskon Dari Shopee", "Jumlah"}
+    if "Diskon Dari Penjual" not in df.columns and discount_inputs <= set(df.columns):
+        df = df.with_columns(
+            (
+                (
+                    _thai_money_expr("Harga Awal")
+                    - _thai_money_expr("Harga Setelah Diskon")
+                    - _thai_money_expr("Diskon Dari Shopee")
+                )
+                * _thai_money_expr("Jumlah")
+            ).alias("Diskon Dari Penjual")
         )
 
     return df, True
@@ -207,6 +233,7 @@ REQUIRED_COLUMNS: dict[str, list[str]] = {
         "Harga Awal",
         "Harga Setelah Diskon",
         "Jumlah",
+        "Diskon Dari Penjual",
         "Voucher Ditanggung Penjual",
         "Paket Diskon (Diskon dari Penjual)",
         "Nomor Referensi SKU",

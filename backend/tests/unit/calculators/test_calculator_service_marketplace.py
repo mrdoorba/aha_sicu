@@ -33,6 +33,7 @@ def _make_upload(file_type: str) -> dict:
                 "Harga Awal",
                 "Harga Setelah Diskon",
                 "Jumlah",
+                "Diskon Dari Penjual",
                 "Voucher Ditanggung Penjual",
                 "Paket Diskon (Diskon dari Penjual)",
                 "Nomor Referensi SKU",

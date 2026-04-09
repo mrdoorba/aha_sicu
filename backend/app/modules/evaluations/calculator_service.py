@@ -224,7 +224,11 @@ _REQUIRED_COLUMNS: dict[str, frozenset[str]] = {
         "Harga Awal",
         "Harga Setelah Diskon",
         "Jumlah",
+        "Nama Variasi",
+        "Diskon Dari Penjual",
+        "Diskon Dari Shopee",
         "Voucher Ditanggung Penjual",
+        "Cashback Koin",
         "Paket Diskon (Diskon dari Penjual)",
     }),
     "order_export_top_sku": frozenset({
