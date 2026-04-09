@@ -131,7 +131,7 @@ echo -n "YOUR_SENDGRID_WEBHOOK_SECRET" | \
 | Cloud SQL DBs (`aha_coms_sicu_dev` + `aha_coms_sicu_prod`) | `google_sql_database` | Per-environment databases |
 | Artifact Registry (`aha-coms-sicu-{env}-registry`) | `google_artifact_registry_repository` | Docker images |
 | Secret Manager (5 secrets per env) | `google_secret_manager_secret` | DB password, Sheets creds, Firebase creds, SendGrid API key, SendGrid webhook secret |
-| GCS Bucket (`{project_id}-aha-coms-sicu-{env}-uploads`) | `google_storage_bucket` | Temporary file uploads (24h lifecycle) |
+| GCS Bucket (`{project_id}-aha-coms-sicu-{env}-uploads`) | `google_storage_bucket` | Raw uploaded files (kept until user replaces the upload) |
 | Firebase Hosting (`aha-coms-sicu-{env}`) | `google_firebase_hosting_site` | Frontend hosting |
 | Workload Identity Pool (`aha-coms-sicu-{env}-github-pool`) | `google_iam_workload_identity_pool` | GitHub Actions OIDC |
 | Cloud Scheduler (daily sync) | `google_cloud_scheduler_job` | Daily brand sync |
@@ -166,3 +166,4 @@ echo -n "YOUR_SENDGRID_WEBHOOK_SECRET" | \
 - Workload Identity Federation provides keyless GitHub Actions auth (no SA keys for CI/CD)
 - Each service account follows least-privilege principle — no project-wide editor/owner roles
 - GCS bucket uses uniform bucket-level access (no ACLs)
+- Upload bucket has no age-based lifecycle delete; the app deletes the old GCS object when a user replaces a brand/file-type upload

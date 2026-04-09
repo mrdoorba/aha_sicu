@@ -528,14 +528,6 @@ resource "google_storage_bucket" "uploads" {
   public_access_prevention    = "enforced"
   force_destroy               = var.environment == "dev" ? true : false
 
-  lifecycle_rule {
-    condition {
-      age = 1
-    }
-    action {
-      type = "Delete"
-    }
-  }
 
   cors {
     origin          = var.cors_origins
