@@ -179,13 +179,63 @@ jobs:
             GSHEETS_EVAL_SPREADSHEET_ID=${{ vars.GSHEETS_EVAL_SPREADSHEET_ID }}
           flags: ${{ inputs.environment == 'dev' && '--cpu-throttling' || '' }}
 
+      - name: Route traffic to deployed revision
+        id: rollout
+        run: |
+          DEPLOYED_REVISION=$(gcloud run services describe ${{ vars.CLOUD_RUN_SERVICE }} \
+            --region=${{ vars.GCP_REGION }} \
+            --format="value(status.latestCreatedRevisionName)")
+          if [ -z "$DEPLOYED_REVISION" ]; then
+            echo "::error::Cloud Run did not report latestCreatedRevisionName"
+            exit 1
+          fi
+
+          echo "Routing 100% traffic to deployed revision: $DEPLOYED_REVISION"
+          gcloud run services update-traffic ${{ vars.CLOUD_RUN_SERVICE }} \
+            --region=${{ vars.GCP_REGION }} \
+            --to-revisions="$DEPLOYED_REVISION=100"
+
+          READY_REVISION=$(gcloud run services describe ${{ vars.CLOUD_RUN_SERVICE }} \
+            --region=${{ vars.GCP_REGION }} \
+            --format="value(status.latestReadyRevisionName)")
+          TRAFFIC_REVISION=$(gcloud run services describe ${{ vars.CLOUD_RUN_SERVICE }} \
+            --region=${{ vars.GCP_REGION }} \
+            --format="value(status.traffic[0].revisionName)")
+          TRAFFIC_PERCENT=$(gcloud run services describe ${{ vars.CLOUD_RUN_SERVICE }} \
+            --region=${{ vars.GCP_REGION }} \
+            --format="value(status.traffic[0].percent)")
+
+          echo "ready_revision=$READY_REVISION"
+          echo "traffic_revision=$TRAFFIC_REVISION"
+          echo "traffic_percent=$TRAFFIC_PERCENT"
+
+          if [ "$READY_REVISION" != "$DEPLOYED_REVISION" ]; then
+            echo "::error::Deployed revision is not ready. deployed=$DEPLOYED_REVISION ready=$READY_REVISION"
+            exit 1
+          fi
+          if [ "$TRAFFIC_REVISION" != "$DEPLOYED_REVISION" ] || [ "$TRAFFIC_PERCENT" != "100" ]; then
+            echo "::error::Traffic is not routed to the deployed revision. deployed=$DEPLOYED_REVISION traffic=$TRAFFIC_REVISION percent=$TRAFFIC_PERCENT"
+            exit 1
+          fi
+
+          echo "deployed_revision=$DEPLOYED_REVISION" >> "$GITHUB_OUTPUT"
+
       - name: Verify deployment
         run: |
           HEALTH_URL="${{ steps.deploy.outputs.url }}/health"
           RESPONSE=$(curl -s --max-time 30 "$HEALTH_URL" || true)
           STATUS=$(echo "$RESPONSE" | jq -r '.status // empty')
+          TRAFFIC_REVISION=$(gcloud run services describe ${{ vars.CLOUD_RUN_SERVICE }} \
+            --region=${{ vars.GCP_REGION }} \
+            --format="value(status.traffic[0].revisionName)")
+
+          if [ "$TRAFFIC_REVISION" != "${{ steps.rollout.outputs.deployed_revision }}" ]; then
+            echo "::error::Service URL traffic moved before verification. expected=${{ steps.rollout.outputs.deployed_revision }} actual=$TRAFFIC_REVISION"
+            exit 1
+          fi
+
           if [ "$STATUS" = "healthy" ]; then
-            echo "Health check passed at $HEALTH_URL"
+            echo "Health check passed at $HEALTH_URL on revision $TRAFFIC_REVISION"
           else
             echo "::error::Health check failed at $HEALTH_URL"
             echo "$RESPONSE"
