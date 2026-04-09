@@ -151,6 +151,25 @@ class TestSheetStages:
         top = _filter_top_sku(summary)
         assert len(top) == 2
 
+    def test_filter_top_sku_excludes_zero_and_negative_discounts(self):
+        @dataclass
+        class SummaryStub:
+            product_name: str
+            qty: float
+            avg_discount_pct: float
+
+        summary = [
+            SummaryStub("zero", qty=100, avg_discount_pct=0.0),
+            SummaryStub("negative", qty=90, avg_discount_pct=-0.05),
+            SummaryStub("positive", qty=80, avg_discount_pct=0.10),
+            SummaryStub("small", qty=1, avg_discount_pct=0.02),
+            SummaryStub("also_small", qty=1, avg_discount_pct=0.03),
+        ]
+
+        top = _filter_top_sku(summary)
+
+        assert [item.product_name for item in top] == ["positive"]
+
 
 class TestPublicContract:
     def test_empty_data_returns_zero_safe_contract(self):

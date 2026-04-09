@@ -262,7 +262,7 @@ def _filter_top_sku(product_summary: list[ProductSummary]) -> list[ProductSummar
     filtered = [
         item
         for item in product_summary
-        if item.qty > avg_qty and item.avg_discount_pct < 1.0
+        if item.qty > avg_qty and 0 < item.avg_discount_pct < 1.0
     ]
     filtered.sort(key=lambda item: item.qty, reverse=True)
     limit = round(len(product_summary) * 0.20)
