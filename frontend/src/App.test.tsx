@@ -106,7 +106,7 @@ describe('App', () => {
       expect(screen.queryByText('Sistem Tidak Tersedia')).not.toBeInTheDocument();
     });
 
-    it('does not reappear after dismissal on subsequent 500 events', async () => {
+    it('does not reappear after dismissal on subsequent server-error events', async () => {
       const user = userEvent.setup();
       render(<App />);
 

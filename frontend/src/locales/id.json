@@ -172,7 +172,7 @@
   "discount.title": "Kalkulator Pengecekan Diskon",
   "discount.topSkuDiscount": "% Diskon TOP SKU",
   "discount.voucher": "Voucher",
-  "downtime.description": "Sistem mungkin sedang di luar jam operasional. Jam operasional database adalah <bold>08:00 – 18:30 WIB</bold>. Silakan coba lagi dalam jam tersebut.",
+  "downtime.description": "Sistem sedang tidak tersedia sementara. Silakan coba lagi dalam beberapa menit.",
   "downtime.dismiss": "Mengerti",
   "downtime.title": "Sistem Tidak Tersedia",
   "emailHistory.aria.clearSearch": "Hapus pencarian",

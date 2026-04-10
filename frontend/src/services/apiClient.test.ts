@@ -120,13 +120,13 @@ describe('apiClient', () => {
   });
 
   describe('server error middleware', () => {
-    it('dispatches api-server-error event on HTTP 500', async () => {
+    it.each([500, 503])('dispatches api-server-error event on HTTP %i', async (status) => {
       const eventHandler = vi.fn();
       window.addEventListener('api-server-error', eventHandler);
 
       global.fetch = vi.fn().mockResolvedValue(
-        new Response(JSON.stringify({ detail: 'Internal Server Error' }), {
-          status: 500,
+        new Response(JSON.stringify({ detail: 'Server error' }), {
+          status,
           headers: { 'Content-Type': 'application/json' },
         })
       );

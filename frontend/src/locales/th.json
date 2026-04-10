@@ -172,7 +172,7 @@
   "discount.title": "เครื่องคำนวณตรวจสอบส่วนลด",
   "discount.topSkuDiscount": "% ส่วนลด SKU ยอดนิยม",
   "discount.voucher": "คูปอง",
-  "downtime.description": "ระบบอาจอยู่นอกเวลาทำการ เวลาทำการฐานข้อมูลคือ <bold>08:00 – 18:30 WIB</bold> กรุณาลองใหม่ในเวลาดังกล่าว",
+  "downtime.description": "ระบบไม่พร้อมใช้งานชั่วคราว กรุณาลองใหม่อีกครั้งในอีกไม่กี่นาที",
   "downtime.dismiss": "เข้าใจแล้ว",
   "downtime.title": "ระบบไม่พร้อมใช้งาน",
   "emailHistory.aria.clearSearch": "ล้างการค้นหา",

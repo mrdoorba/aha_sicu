@@ -172,7 +172,7 @@
   "discount.title": "Discount Check Calculator",
   "discount.topSkuDiscount": "% Top SKU Discount",
   "discount.voucher": "Voucher",
-  "downtime.description": "The system may be outside operating hours. Database operating hours are <bold>08:00 – 18:30 WIB</bold>. Please try again during those hours.",
+  "downtime.description": "The system is temporarily unavailable. Please try again in a few minutes.",
   "downtime.dismiss": "Understood",
   "downtime.title": "System Unavailable",
   "emailHistory.aria.clearSearch": "Clear search",
