@@ -16,5 +16,7 @@ export default defineConfig({
     environment: 'jsdom',
     setupFiles: './src/test/setup.ts',
     pool: 'forks',
+    // Keep local full-suite runs stable when git hooks run lint/typecheck in parallel.
+    maxWorkers: 1,
   },
 })
