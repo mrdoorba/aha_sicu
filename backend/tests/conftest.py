@@ -31,6 +31,10 @@ def create_test_token(
 def mock_db_conn():
     """Create a mock database connection with transaction support."""
     mock_conn = AsyncMock()
+    mock_conn.fetchrow = AsyncMock(return_value=None)
+    mock_conn.fetch = AsyncMock(return_value=[])
+    mock_conn.fetchval = AsyncMock(return_value=0)
+    mock_conn.execute = AsyncMock(return_value="OK")
 
     @asynccontextmanager
     async def _mock_transaction():
