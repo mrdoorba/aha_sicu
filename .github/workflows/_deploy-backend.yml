@@ -253,8 +253,7 @@ jobs:
         run: |
           cd smoke-tests
           npm ci
-          SMOKE_BACKEND_URL="${{ steps.deploy.outputs.url }}" \
-            npx playwright test tests/backend-health.spec.ts tests/auth-enforcement.spec.ts
+          SMOKE_BACKEND_URL="${{ steps.deploy.outputs.url }}" npm run test:ci
 
       - name: Record verified backend release manifest
         if: success() && inputs.environment == 'dev'
