@@ -330,6 +330,7 @@
   "fields.promoTools.paketDiskon": "Penjualan dari Paket Diskon",
   "fields.promoTools.paketDiskon.benchmark": ">16% dari penjualan",
   "fields.promoTools.programAfiliasi": "Penjualan dari Program Afiliasi",
+  "fields.promoTools.komisiProgramAfiliasi": "Komisi dari Program Afiliasi",
   "fields.promoTools.programAfiliasi.benchmark": ">18% dari penjualan",
   "fields.promoTools.promoToko": "Penjualan dari Promo Toko",
   "fields.promoTools.promoToko.benchmark": ">8% dari penjualan",

@@ -26,10 +26,11 @@ const emptyData: PromoToolsData = {
   gratisOngkir: null,
   chatBroadcast: null,
   programAfiliasi: null,
+  komisiProgramAfiliasi: null,
 };
 
 describe('PromoToolsForm', () => {
-  it('renders all 11 promo tool fields', () => {
+  it('renders all 12 promo tool fields', () => {
     render(<PromoToolsForm data={emptyData} salesMonth0={0} onChange={vi.fn()} onBlur={vi.fn()} />);
 
     expect(screen.getByLabelText(/fields\.promoTools\.promoToko/)).toBeInTheDocument();
@@ -43,6 +44,16 @@ describe('PromoToolsForm', () => {
     expect(screen.getByLabelText(/fields\.promoTools\.gratisOngkir/)).toBeInTheDocument();
     expect(screen.getByLabelText(/fields\.promoTools\.chatBroadcast/)).toBeInTheDocument();
     expect(screen.getByLabelText(/fields\.promoTools\.programAfiliasi/)).toBeInTheDocument();
+    expect(screen.getByLabelText(/fields\.promoTools\.komisiProgramAfiliasi/)).toBeInTheDocument();
+  });
+
+  it('renders affiliate commission immediately after affiliate sales', () => {
+    render(<PromoToolsForm data={emptyData} salesMonth0={0} onChange={vi.fn()} onBlur={vi.fn()} />);
+
+    const affiliateSales = screen.getByLabelText(/fields\.promoTools\.programAfiliasi/);
+    const affiliateCommission = screen.getByLabelText(/fields\.promoTools\.komisiProgramAfiliasi/);
+
+    expect(affiliateSales.compareDocumentPosition(affiliateCommission)).toBe(Node.DOCUMENT_POSITION_FOLLOWING);
   });
 
   it('renders benchmarks for promo tools', () => {
@@ -54,6 +65,7 @@ describe('PromoToolsForm', () => {
     expect(screen.getByText('Benchmark: fields.promoTools.shopeeLive.benchmark')).toBeInTheDocument();
     expect(screen.getByText('Benchmark: fields.promoTools.programAfiliasi.benchmark')).toBeInTheDocument();
     expect(screen.getByText('Benchmark: >0')).toBeInTheDocument();
+    expect(screen.queryByText('Benchmark: fields.promoTools.komisiProgramAfiliasi.benchmark')).not.toBeInTheDocument();
   });
 
   it('renders section title with reference link', () => {
@@ -64,7 +76,7 @@ describe('PromoToolsForm', () => {
   it('renders all fields as currency (IDR) inputs', () => {
     render(<PromoToolsForm data={emptyData} salesMonth0={0} onChange={vi.fn()} onBlur={vi.fn()} />);
     const idrLabels = screen.getAllByText('(IDR)');
-    expect(idrLabels).toHaveLength(11);
+    expect(idrLabels).toHaveLength(12);
   });
 
   it('shows % Efektifitas as dash when salesMonth0 is 0', () => {
@@ -76,7 +88,7 @@ describe('PromoToolsForm', () => {
   });
 
   it('computes % Penggunaan correctly', () => {
-    const dataWith7Tools: PromoToolsData = {
+    const dataWith7MetricTools: PromoToolsData = {
       promoToko: 100,
       paketDiskon: 200,
       komboHemat: 300,
@@ -88,8 +100,9 @@ describe('PromoToolsForm', () => {
       gratisOngkir: null,
       chatBroadcast: null,
       programAfiliasi: null,
+      komisiProgramAfiliasi: 800,
     };
-    render(<PromoToolsForm data={dataWith7Tools} salesMonth0={100000000} onChange={vi.fn()} onBlur={vi.fn()} />);
+    render(<PromoToolsForm data={dataWith7MetricTools} salesMonth0={100000000} onChange={vi.fn()} onBlur={vi.fn()} />);
     expect(screen.getByText('64%')).toBeInTheDocument();
   });
 
@@ -97,7 +110,7 @@ describe('PromoToolsForm', () => {
     // salesMonth0 = 1,000,000. promoToko = 600,000 (60% of sales → too dependent, even though > 8%)
     // gratisOngkir = 1 (passes absolute >0 check)
     // chatBroadcast = 20,000 (2% > 1% threshold → passes)
-    // Expected: 2 pass out of 11 = round(18.18%) = 18%
+    // Expected: 2 pass out of 11 metric-bearing tools = round(18.18%) = 18%
     const data: PromoToolsData = {
       promoToko: 600000,      // 60% of sales → too dependent → ❌
       paketDiskon: null,
@@ -110,6 +123,7 @@ describe('PromoToolsForm', () => {
       gratisOngkir: 1,        // >0 → ✔️
       chatBroadcast: 20000,   // 2% > 1% → ✔️
       programAfiliasi: null,
+      komisiProgramAfiliasi: 5000,
     };
     render(<PromoToolsForm data={data} salesMonth0={1000000} onChange={vi.fn()} onBlur={vi.fn()} />);
     expect(screen.getByText('18%')).toBeInTheDocument();

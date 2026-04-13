@@ -37,6 +37,7 @@ export interface PromoToolsData {
   gratisOngkir: number | null;
   chatBroadcast: number | null;
   programAfiliasi: number | null;
+  komisiProgramAfiliasi: number | null;
 }
 
 export interface ProductsData {

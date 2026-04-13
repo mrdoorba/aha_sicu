@@ -91,6 +91,7 @@ export const PROMO_TOOLS_FIELDS: FieldDefinition[] = [
   { key: 'gratisOngkir', label: 'Penjualan dari Gratis Ongkir XTRA', labelKey: 'fields.promoTools.gratisOngkir', inputType: 'currency', unit: 'IDR', benchmark: '>0', threshold: 0, link: 'https://seller.shopee.co.id/portal/marketing/cmt/campaign?tab=2&sort=9' },
   { key: 'chatBroadcast', label: 'Penjualan dari Chat Broadcast', labelKey: 'fields.promoTools.chatBroadcast', inputType: 'currency', unit: 'IDR', benchmark: '>1% dari penjualan', benchmarkKey: 'fields.promoTools.chatBroadcast.benchmark', threshold: 0.01, link: 'https://seller.shopee.co.id/datacenter/services/crm' },
   { key: 'programAfiliasi', label: 'Penjualan dari Program Afiliasi', labelKey: 'fields.promoTools.programAfiliasi', inputType: 'currency', unit: 'IDR', benchmark: '>18% dari penjualan', benchmarkKey: 'fields.promoTools.programAfiliasi.benchmark', threshold: 0.18, link: 'https://seller.shopee.co.id/portal/web-seller-affiliate/dashboard' },
+  { key: 'komisiProgramAfiliasi', label: 'Komisi dari Program Afiliasi', labelKey: 'fields.promoTools.komisiProgramAfiliasi', inputType: 'currency', unit: 'IDR' },
 ];
 
 export const PRODUCTS_FIELDS: FieldDefinition[] = [

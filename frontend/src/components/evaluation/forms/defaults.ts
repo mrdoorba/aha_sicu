@@ -35,6 +35,7 @@ export const EMPTY_MANUAL_DATA: ManualData = {
     gratisOngkir: null,
     chatBroadcast: null,
     programAfiliasi: null,
+    komisiProgramAfiliasi: null,
   },
   products: {
     productCount: null,

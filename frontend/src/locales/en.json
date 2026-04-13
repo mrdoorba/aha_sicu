@@ -330,6 +330,7 @@
   "fields.promoTools.paketDiskon": "Sales from Discount Bundle",
   "fields.promoTools.paketDiskon.benchmark": ">16% of sales",
   "fields.promoTools.programAfiliasi": "Sales from Affiliate Program",
+  "fields.promoTools.komisiProgramAfiliasi": "Commission from Affiliate Program",
   "fields.promoTools.programAfiliasi.benchmark": ">18% of sales",
   "fields.promoTools.promoToko": "Sales from Store Promo",
   "fields.promoTools.promoToko.benchmark": ">8% of sales",

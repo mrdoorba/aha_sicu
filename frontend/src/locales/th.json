@@ -330,6 +330,7 @@
   "fields.promoTools.paketDiskon": "ยอดขายจากแพ็คเกจส่วนลด",
   "fields.promoTools.paketDiskon.benchmark": ">16% ของยอดขาย",
   "fields.promoTools.programAfiliasi": "ยอดขายจากโปรแกรมพันธมิตร",
+  "fields.promoTools.komisiProgramAfiliasi": "ค่าคอมมิชชันจากโปรแกรมพันธมิตร",
   "fields.promoTools.programAfiliasi.benchmark": ">18% ของยอดขาย",
   "fields.promoTools.promoToko": "ยอดขายจากโปรโมชั่นร้านค้า",
   "fields.promoTools.promoToko.benchmark": ">8% ของยอดขาย",
