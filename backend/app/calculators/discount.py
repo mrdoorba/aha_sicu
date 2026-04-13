@@ -123,7 +123,7 @@ def _normalize_rows(rows: list[dict], *, marketplace: str = "ID") -> list[LineIt
         )
 
         seller_discount_pct: float | None = None
-        if seller_discount > 0 and harga_awal > 0 and harga_setelah_diskon > 0 and jumlah > 0:
+        if harga_awal > 0 and harga_setelah_diskon > 0 and jumlah > 0:
             seller_discount_pct = (seller_discount / jumlah) / harga_awal
 
         items.append(

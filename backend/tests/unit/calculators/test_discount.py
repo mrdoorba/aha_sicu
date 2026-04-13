@@ -92,6 +92,22 @@ class TestLegacyHelpers:
 
 
 class TestSheetStages:
+    def test_zero_seller_discount_on_paid_row_yields_zero_pct_not_blank(self):
+        items = _normalize_rows(
+            [
+                _make_row("O1", "Prod", "V1", "100", "100", seller_discount="0"),
+            ]
+        )
+        assert items[0].seller_discount_pct == 0.0
+
+    def test_free_item_keeps_seller_discount_pct_blank(self):
+        items = _normalize_rows(
+            [
+                _make_row("O1", "Gift", "V1", "100", "0", seller_discount="0"),
+            ]
+        )
+        assert items[0].seller_discount_pct is None
+
     def test_reference_price_outlier_cap_excludes_high_value(self):
         items = _normalize_rows(
             [
@@ -209,7 +225,7 @@ class TestPublicContract:
 
 
 class TestEndToEndParityFixtures:
-    def test_fake_gate_uses_average_seller_discount_not_total_ratio(self):
+    def test_fake_gate_uses_average_seller_discount_with_zero_discount_rows_included(self):
         result = calculate_discount(LOW_FLAG_DATA)
         assert result.details["fake_discount_flag"] is False
 
@@ -218,6 +234,12 @@ class TestEndToEndParityFixtures:
             _make_row("H2", "Prod B", "V1", "100", "50", seller_discount="40"),
         ])
         assert high_flag.details["fake_discount_flag"] is True
+
+        mixed_flag = calculate_discount([
+            _make_row("M1", "Prod A", "V1", "100", "50", seller_discount="40"),
+            _make_row("M2", "Prod B", "V1", "100", "100", seller_discount="0"),
+        ])
+        assert mixed_flag.details["fake_discount_flag"] is False
 
     def test_mnd_exact_output_text(self):
         result = calculate_discount(MND_DATA)
