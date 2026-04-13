@@ -1,8 +1,9 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { describe, it, expect, vi } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { EmailOutput } from './EmailOutput';
 import type { ScoringResult, CategoryScore } from '../../../hooks/useScoring';
+import i18n from '../../../i18n';
 
 // Mock buildI18nEmailBody to return predictable content
 vi.mock('../../../utils/buildI18nEmailBody', () => ({
@@ -37,6 +38,7 @@ function makeScoringResult(overrides: Partial<ScoringResult> = {}): ScoringResul
     closing_message: 'Terima kasih',
     closing_message_i18n: { key: 'scoring.closingMessage', vars: {} },
     email_subject: 'Test Subject',
+    email_subject_i18n: { key: 'sendMailUtils.subject', vars: { brandName: 'Test Brand', period: '2026-01' } },
     email_body: 'Original body from backend',
     template: 'fashion',
     rule_version: 1,
@@ -65,6 +67,14 @@ function makeScoringResult(overrides: Partial<ScoringResult> = {}): ScoringResul
 }
 
 describe('EmailOutput', () => {
+  beforeEach(() => {
+    vi.restoreAllMocks();
+  });
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+  });
+
   it('renders subject and body', () => {
     render(<EmailOutput subject="Test Subject" body="Test body content" />);
     expect(screen.getByText('Test Subject')).toBeInTheDocument();
@@ -162,9 +172,9 @@ describe('EmailOutput', () => {
     );
     await user.click(screen.getByRole('button', { name: /salin/i }));
 
-    // The copied text should use the dynamic body, not the original body prop
+    // The copied text should use the rendered subject/body, not the original props
     const copiedText = writeText.mock.calls[0][0] as string;
-    expect(copiedText).toContain('Subject: My Subject');
+    expect(copiedText).toContain('Subject: [ID] 🏥 AHA Store Internal Check Up (Store ICU) - Test Brand 2026-01');
     expect(copiedText).not.toContain('Original body');
   });
 
@@ -196,5 +206,79 @@ describe('EmailOutput', () => {
 
     // Verify body updated
     expect(screen.getByText('Body Thai')).toBeInTheDocument();
+  });
+
+  it('changing language updates the displayed subject text when subject i18n exists', async () => {
+    const user = userEvent.setup();
+    const scoringResult = makeScoringResult();
+
+    vi.spyOn(i18n, 'getFixedT').mockImplementation(((lang: string) => {
+      return ((key: string) => `${lang}:${key}`) as never;
+    }) as typeof i18n.getFixedT);
+
+    render(
+      <EmailOutput
+        subject="Original subject"
+        body="Original body"
+        scoringResult={scoringResult}
+      />,
+    );
+
+    expect(screen.getByText('id:sendMailUtils.subject')).toBeInTheDocument();
+
+    const select = screen.getByTestId('email-language-select');
+    await user.selectOptions(select, 'th');
+
+    expect(screen.getByText('th:sendMailUtils.subject')).toBeInTheDocument();
+  });
+
+  it('passes calculator results through so special email sections can translate', async () => {
+    const scoringResult = makeScoringResult({
+      category_scores: [
+        {
+          category: 'Data Iklan',
+          score: 5,
+          max_score: 5,
+          available: true,
+          rows: [
+            {
+              row: 53,
+              metric: 'Ads',
+              value: '-',
+              benchmark: '-',
+              verdict: '✔️',
+              message: 'Raw Indonesian ads output',
+              score: 5,
+            },
+          ],
+        },
+      ],
+    });
+
+    const calculatorResults = {
+      ads_keyword: {
+        details: {
+          ak2_i18n: { key: 'ads.summary', vars: { active: '1', paused: '0', ended: '0', unique_count: '1', product_pct: '1%', total_products: '1' } },
+        },
+      },
+    };
+
+    render(
+      <EmailOutput
+        subject="Subject"
+        body="Original body"
+        scoringResult={scoringResult}
+        calculatorResults={calculatorResults}
+      />,
+    );
+
+    const { buildI18nEmailBody } = await import('../../../utils/buildI18nEmailBody');
+    const mockFn = vi.mocked(buildI18nEmailBody);
+    expect(mockFn).toHaveBeenCalledWith(
+      scoringResult.category_scores,
+      expect.any(Object),
+      expect.any(Function),
+      calculatorResults,
+    );
   });
 });

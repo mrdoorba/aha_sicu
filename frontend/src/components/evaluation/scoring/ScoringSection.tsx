@@ -27,6 +27,7 @@ interface ScoringSectionProps {
   storeName: string;
   brandName: string;
   scoringStep?: ScoringStep;
+  calculatorResults?: Record<string, unknown>;
 }
 
 export const ScoringSection = ({
@@ -39,6 +40,7 @@ export const ScoringSection = ({
   storeName,
   brandName,
   scoringStep = 'idle',
+  calculatorResults,
 }: ScoringSectionProps) => {
   const { t } = useTranslation();
   const [verdict, setVerdict] = useState('✔️');
@@ -152,6 +154,7 @@ export const ScoringSection = ({
             subject={scoringResult.email_subject}
             body={scoringResult.email_body}
             scoringResult={scoringResult}
+            calculatorResults={calculatorResults}
           />
         </>
       )}

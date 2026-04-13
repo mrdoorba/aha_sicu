@@ -90,8 +90,19 @@ export function useEvaluationOrchestrator(brandId: number) {
   }, [brand]);
 
   // --- Calculator ---
-  useCalculatorResults(brandId);
+  const { data: calculatorResultsData } = useCalculatorResults(brandId);
   const runAllMutation = useRunAllCalculators(brandId);
+
+  const calculatorResults = useMemo(() => {
+    const results: Record<string, unknown> = {};
+    for (const result of calculatorResultsData?.results ?? []) {
+      results[result.calculator_type] = {
+        details: result.details,
+        output_text: result.output_text,
+      };
+    }
+    return results;
+  }, [calculatorResultsData]);
 
   const recalculateAll = useCallback(async () => {
     await runAllMutation.mutateAsync();
@@ -282,6 +293,7 @@ export function useEvaluationOrchestrator(brandId: number) {
     isStale,
     scoringStep,
     scoringError,
+    calculatorResults,
 
     // Save evaluation
     handleSaveEvaluation,

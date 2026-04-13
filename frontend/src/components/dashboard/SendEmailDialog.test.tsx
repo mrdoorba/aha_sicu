@@ -390,4 +390,31 @@ describe('SendEmailDialog', () => {
       expect(fetchUrl).toContain('language=en');
     });
   });
+
+  it('refreshes preview with the new language when selector changes while preview is open', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      text: () => Promise.resolve('<html><body>Preview</body></html>'),
+    });
+    global.fetch = fetchSpy;
+
+    renderDialog();
+
+    const toggleBtn = screen.getByRole('button', { name: /sendEmail\.previewToggle/i });
+    fireEvent.click(toggleBtn);
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      const initialUrl: string = fetchSpy.mock.calls[0][0];
+      expect(initialUrl).toContain('language=id');
+    });
+
+    const langSelect = screen.getByTestId('email-language-select');
+    fireEvent.change(langSelect, { target: { value: 'en' } });
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      const refreshedUrl: string = fetchSpy.mock.calls[1][0];
+      expect(refreshedUrl).toContain('language=en');
+    });
+  });
 });

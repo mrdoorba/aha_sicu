@@ -15,12 +15,27 @@ interface EmailOutputProps {
   subject: string;
   body: string;
   scoringResult?: ScoringResult | null;
+  calculatorResults?: Record<string, unknown>;
 }
 
-export const EmailOutput = ({ subject, body, scoringResult }: EmailOutputProps) => {
+export const EmailOutput = ({
+  subject,
+  body,
+  scoringResult,
+  calculatorResults,
+}: EmailOutputProps) => {
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [emailLanguage, setEmailLanguage] = useState(i18n.language);
+  const fixedT = useMemo(() => i18n.getFixedT(emailLanguage), [emailLanguage]);
+
+  const displaySubject = useMemo(() => {
+    const subjectI18n = scoringResult?.email_subject_i18n;
+    if (subjectI18n) {
+      return fixedT(subjectI18n.key, subjectI18n.vars);
+    }
+    return subject;
+  }, [fixedT, scoringResult?.email_subject_i18n, subject]);
 
   const displayBody = useMemo(() => {
     if (scoringResult) {
@@ -33,18 +48,18 @@ export const EmailOutput = ({ subject, body, scoringResult }: EmailOutputProps) 
         closing_message_i18n: scoringResult.closing_message_i18n,
         marketing_estimation: scoringResult.marketing_estimation,
       };
-      const fixedT = i18n.getFixedT(emailLanguage);
       return buildI18nEmailBody(
         scoringResult.category_scores,
         summary,
         fixedT,
+        calculatorResults,
       );
     }
     return body;
-  }, [scoringResult, emailLanguage, body]);
+  }, [scoringResult, fixedT, body, calculatorResults]);
 
   const handleCopy = async () => {
-    const fullText = `Subject: ${subject}\n\n${displayBody}`;
+    const fullText = `Subject: ${displaySubject}\n\n${displayBody}`;
     await navigator.clipboard.writeText(fullText);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
@@ -72,7 +87,7 @@ export const EmailOutput = ({ subject, body, scoringResult }: EmailOutputProps) 
             </Button>
           </div>
         </div>
-        <p className="mb-2 text-xs text-muted-foreground">{subject}</p>
+        <p className="mb-2 text-xs text-muted-foreground">{displaySubject}</p>
         <pre className="max-h-64 overflow-auto whitespace-pre-wrap rounded-md bg-muted p-3 text-xs">
           {displayBody}
         </pre>

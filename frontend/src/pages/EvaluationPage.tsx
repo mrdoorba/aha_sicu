@@ -40,6 +40,7 @@ export const EvaluationPage = () => {
     isStale,
     scoringStep,
     scoringError,
+    calculatorResults,
     handleSaveEvaluation,
     isSaving,
     saveStep,
@@ -114,6 +115,7 @@ export const EvaluationPage = () => {
                   isStale={isStale}
                   scoringError={scoringError}
                   scoringStep={scoringStep}
+                  calculatorResults={calculatorResults}
                   onSaveEvaluation={handleSaveEvaluation}
                   isSaving={isSaving}
                   saveStep={saveStep}
