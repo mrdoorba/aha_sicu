@@ -183,6 +183,7 @@ def _build_filter_clauses(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    marketplaces: list[str] | None = None,
 ) -> tuple[str, list[Any], int]:
     """Build conditional WHERE clauses for evaluation list/count queries."""
     fb = FilterBuilder()
@@ -192,6 +193,8 @@ def _build_filter_clauses(
         fb.add("e.created_at >= {p}", date_from)
     if date_to:
         fb.add("e.created_at < ({p} + interval '1 day')", date_to)
+    if marketplaces:
+        fb.add("b.marketplace = ANY({p})", marketplaces)
     return fb.where_clause, fb.params, fb.next_idx
 
 
@@ -289,6 +292,8 @@ async def list_grouped_evaluations(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    marketplaces: list[str] | None = None,
+    verdicts: list[str] | None = None,
 ) -> list[GroupedEvaluationRow]:
     """List evaluations grouped by brand with aggregate data.
 
@@ -296,24 +301,45 @@ async def list_grouped_evaluations(
     and latest date. Sorted by latest evaluation date descending.
     Paginated by brand (not by individual evaluation).
     """
-    where_clause, params, param_idx = _build_filter_clauses(search, date_from, date_to)
+    where_clause, params, param_idx = _build_filter_clauses(
+        search,
+        date_from,
+        date_to,
+        marketplaces,
+    )
+    verdict_where_clause = ""
+    if verdicts:
+        verdict_where_clause = f"WHERE grouped.top_verdict = ANY(${param_idx})"
+        params.append(verdicts)
+        param_idx += 1
     limit_param = f"${param_idx}"
     offset_param = f"${param_idx + 1}"
     params.extend([limit, offset])
 
     query = f"""
-        SELECT e.brand_id,
-               b.brand_name,
-               b.marketplace,
-               COUNT(*) AS evaluation_count,
-               (ARRAY_AGG(e.final_score ORDER BY e.created_at DESC))[1] AS top_score,
-               (ARRAY_AGG(e.verdict ORDER BY e.created_at DESC))[1] AS top_verdict,
-               MAX(e.created_at) AS latest_date
-        FROM evaluations e
-        JOIN brand_vp_data b ON e.brand_id = b.id
-        {where_clause}
-        GROUP BY e.brand_id, b.brand_name, b.marketplace
-        ORDER BY MAX(e.created_at) DESC
+        WITH grouped AS (
+            SELECT e.brand_id,
+                   b.brand_name,
+                   b.marketplace,
+                   COUNT(*) AS evaluation_count,
+                   (ARRAY_AGG(e.final_score ORDER BY e.created_at DESC))[1] AS top_score,
+                   (ARRAY_AGG(e.verdict ORDER BY e.created_at DESC))[1] AS top_verdict,
+                   MAX(e.created_at) AS latest_date
+            FROM evaluations e
+            JOIN brand_vp_data b ON e.brand_id = b.id
+            {where_clause}
+            GROUP BY e.brand_id, b.brand_name, b.marketplace
+        )
+        SELECT grouped.brand_id,
+               grouped.brand_name,
+               grouped.marketplace,
+               grouped.evaluation_count,
+               grouped.top_score,
+               grouped.top_verdict,
+               grouped.latest_date
+        FROM grouped
+        {verdict_where_clause}
+        ORDER BY grouped.latest_date DESC
         LIMIT {limit_param} OFFSET {offset_param}
     """
     return await fetch_all(conn, query, *params)
@@ -325,15 +351,33 @@ async def count_grouped_evaluations(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    marketplaces: list[str] | None = None,
+    verdicts: list[str] | None = None,
 ) -> int:
     """Count distinct brands that have evaluations matching the filters."""
-    where_clause, params, _ = _build_filter_clauses(search, date_from, date_to)
+    where_clause, params, param_idx = _build_filter_clauses(
+        search,
+        date_from,
+        date_to,
+        marketplaces,
+    )
+    verdict_where_clause = ""
+    if verdicts:
+        verdict_where_clause = f"WHERE grouped.top_verdict = ANY(${param_idx})"
+        params.append(verdicts)
 
     query = f"""
-        SELECT COUNT(DISTINCT e.brand_id)
-        FROM evaluations e
-        JOIN brand_vp_data b ON e.brand_id = b.id
-        {where_clause}
+        WITH grouped AS (
+            SELECT e.brand_id,
+                   (ARRAY_AGG(e.verdict ORDER BY e.created_at DESC))[1] AS top_verdict
+            FROM evaluations e
+            JOIN brand_vp_data b ON e.brand_id = b.id
+            {where_clause}
+            GROUP BY e.brand_id
+        )
+        SELECT COUNT(*)
+        FROM grouped
+        {verdict_where_clause}
     """
     row = await conn.fetchval(query, *params)
     return row or 0
@@ -434,4 +478,3 @@ async def delete_evaluation(
         evaluation_id,
     )
     return result == "DELETE 1"
-

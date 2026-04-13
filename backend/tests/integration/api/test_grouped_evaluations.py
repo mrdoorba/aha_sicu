@@ -204,6 +204,36 @@ def test_grouped_evaluations_date_filter(client):
         assert data["total"] == 1
 
 
+def test_grouped_evaluations_marketplace_and_verdict_filters(client):
+    """Test grouped history filters map to latest marketplace and verdict constraints."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.evaluations.service.eval_queries") as mock_eq,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+        mock_eq.list_grouped_evaluations = AsyncMock(return_value=[GROUPED_ROW_3])
+        mock_eq.count_grouped_evaluations = AsyncMock(return_value=1)
+
+        response = client.get(
+            "/api/v1/evaluations/grouped?marketplace=ID&verdict=non_approved",
+            headers=AUTH_HEADERS,
+        )
+
+        assert response.status_code == 200
+        data = response.json()
+        assert data["items"][0]["brand_name"] == "Unilever ID"
+
+        list_kwargs = mock_eq.list_grouped_evaluations.await_args.kwargs
+        count_kwargs = mock_eq.count_grouped_evaluations.await_args.kwargs
+
+        assert list_kwargs["marketplaces"] == ["ID"]
+        assert count_kwargs["marketplaces"] == ["ID"]
+        assert list_kwargs["verdicts"] == ["❌", "❌ Non Mall", "❌ No Brand", "❌ Opex", "❌ Stock"]
+        assert count_kwargs["verdicts"] == ["❌", "❌ Non Mall", "❌ No Brand", "❌ Opex", "❌ Stock"]
+
+
 def test_grouped_evaluations_empty(client):
     """Test no matching brands returns empty with correct shape."""
     with (

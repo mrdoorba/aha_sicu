@@ -29,7 +29,7 @@ const MOCK_BRANDS = [
     marketplace: 'TH',
     evaluation_count: 3,
     top_score: 75.0,
-    top_verdict: '\u2714\uFE0F',
+    top_verdict: '\u274C Non Mall',
     latest_date: '2026-02-14T14:00:00Z',
   },
 ];
@@ -261,6 +261,55 @@ describe('EvaluationHistoryTable — Accordion', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('location')).toHaveTextContent('search=Nike');
+    });
+  });
+
+  it('renders marketplace and verdict filter buttons', () => {
+    renderTable();
+
+    expect(screen.getByRole('button', { name: 'history.table.filterMarketplaceId' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'history.table.filterMarketplaceTh' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'history.table.filterVerdictApproved' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'history.table.filterVerdictNonApproved' })).toBeInTheDocument();
+  });
+
+  it('marketplace toggle updates URL and grouped query params', async () => {
+    const user = userEvent.setup();
+    renderTable();
+
+    await user.click(screen.getByRole('button', { name: 'history.table.filterMarketplaceId' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('marketplace=TH');
+      expect(mockUseGrouped).toHaveBeenLastCalledWith(
+        1,
+        20,
+        undefined,
+        undefined,
+        undefined,
+        ['TH'],
+        undefined,
+      );
+    });
+  });
+
+  it('verdict toggle updates URL and grouped query params', async () => {
+    const user = userEvent.setup();
+    renderTable();
+
+    await user.click(screen.getByRole('button', { name: 'history.table.filterVerdictApproved' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('verdict=non_approved');
+      expect(mockUseGrouped).toHaveBeenLastCalledWith(
+        1,
+        20,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        ['non_approved'],
+      );
     });
   });
 

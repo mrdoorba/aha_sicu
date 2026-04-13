@@ -29,8 +29,37 @@ const VERDICT_LABEL_KEYS: Record<string, string> = {
   '❌ Stock': 'verdict.stockInsufficient',
 };
 
+const HISTORY_MARKETPLACES = ['ID', 'TH'] as const;
+const HISTORY_VERDICT_FILTERS = ['approved', 'non_approved'] as const;
+
+type HistoryMarketplaceFilter = (typeof HISTORY_MARKETPLACES)[number];
+type HistoryVerdictFilter = (typeof HISTORY_VERDICT_FILTERS)[number];
+
 function getMarketplaceFlag(marketplace: 'ID' | 'TH'): string {
   return marketplace === 'TH' ? '🇹🇭' : '🇮🇩';
+}
+
+function parseFilterParam<T extends string>(
+  rawValue: string | null,
+  allowedValues: readonly T[],
+): T[] {
+  if (!rawValue) {
+    return [...allowedValues];
+  }
+
+  const selected = rawValue
+    .split(',')
+    .map((value) => value.trim())
+    .filter((value): value is T => allowedValues.includes(value as T));
+
+  return selected.length > 0 ? Array.from(new Set(selected)) : [...allowedValues];
+}
+
+function areAllSelected<T extends string>(
+  selected: T[],
+  allowedValues: readonly T[],
+): boolean {
+  return allowedValues.every((value) => selected.includes(value));
 }
 
 function SearchInput({
@@ -281,6 +310,20 @@ export const EvaluationHistoryTable = () => {
   const searchFromUrl = searchParams.get('search') ?? '';
   const dateFromUrl = searchParams.get('date_from') ?? '';
   const dateToUrl = searchParams.get('date_to') ?? '';
+  const selectedMarketplaces = parseFilterParam<HistoryMarketplaceFilter>(
+    searchParams.get('marketplace'),
+    HISTORY_MARKETPLACES,
+  );
+  const selectedVerdicts = parseFilterParam<HistoryVerdictFilter>(
+    searchParams.get('verdict'),
+    HISTORY_VERDICT_FILTERS,
+  );
+  const activeMarketplaces = areAllSelected(selectedMarketplaces, HISTORY_MARKETPLACES)
+    ? undefined
+    : selectedMarketplaces;
+  const activeVerdicts = areAllSelected(selectedVerdicts, HISTORY_VERDICT_FILTERS)
+    ? undefined
+    : selectedVerdicts;
   const [searchInput, setSearchInput] = useState(searchFromUrl);
   const isInitialMount = useRef(true);
 
@@ -366,6 +409,32 @@ export const EvaluationHistoryTable = () => {
     });
   }, []);
 
+  const toggleMultiFilter = useCallback(
+    <T extends string,>(
+      key: string,
+      value: T,
+      allowedValues: readonly T[],
+    ) => {
+      setSearchParams((prev) => {
+        const p = new URLSearchParams(prev);
+        const current = parseFilterParam<T>(p.get(key), allowedValues);
+        const next = current.includes(value)
+          ? (current.length === 1 ? current : current.filter((item) => item !== value))
+          : allowedValues.filter((item) => current.includes(item) || item === value);
+
+        if (areAllSelected(next, allowedValues)) {
+          p.delete(key);
+        } else {
+          p.set(key, next.join(','));
+        }
+        p.delete('page');
+        return p;
+      }, { replace: true });
+      setExpandedBrands(new Set());
+    },
+    [setSearchParams],
+  );
+
   const {
     brands,
     total,
@@ -380,6 +449,8 @@ export const EvaluationHistoryTable = () => {
     searchFromUrl || undefined,
     dateFromUrl || undefined,
     dateToUrl || undefined,
+    activeMarketplaces,
+    activeVerdicts,
   );
 
   if (isError) {
@@ -398,6 +469,38 @@ export const EvaluationHistoryTable = () => {
 
   const filterBar = (
     <div className="mb-4 flex flex-wrap items-end gap-4">
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={selectedMarketplaces.includes('ID') ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => toggleMultiFilter('marketplace', 'ID', HISTORY_MARKETPLACES)}
+        >
+          {t('history.table.filterMarketplaceId')}
+        </Button>
+        <Button
+          variant={selectedMarketplaces.includes('TH') ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => toggleMultiFilter('marketplace', 'TH', HISTORY_MARKETPLACES)}
+        >
+          {t('history.table.filterMarketplaceTh')}
+        </Button>
+      </div>
+      <div className="flex flex-wrap gap-2">
+        <Button
+          variant={selectedVerdicts.includes('approved') ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => toggleMultiFilter('verdict', 'approved', HISTORY_VERDICT_FILTERS)}
+        >
+          {t('history.table.filterVerdictApproved')}
+        </Button>
+        <Button
+          variant={selectedVerdicts.includes('non_approved') ? 'default' : 'outline'}
+          size="sm"
+          onClick={() => toggleMultiFilter('verdict', 'non_approved', HISTORY_VERDICT_FILTERS)}
+        >
+          {t('history.table.filterVerdictNonApproved')}
+        </Button>
+      </div>
       <SearchInput
         value={searchInput}
         onChange={setSearchInput}
@@ -425,13 +528,22 @@ export const EvaluationHistoryTable = () => {
     </div>
   );
 
+  const hasMarketplaceFilter = !areAllSelected(selectedMarketplaces, HISTORY_MARKETPLACES);
+  const hasVerdictFilter = !areAllSelected(selectedVerdicts, HISTORY_VERDICT_FILTERS);
+  const activeFilterCount = [
+    Boolean(searchFromUrl),
+    Boolean(dateFromUrl || dateToUrl),
+    hasMarketplaceFilter,
+    hasVerdictFilter,
+  ].filter(Boolean).length;
+
   if (!isLoading && brands.length === 0 && total === 0) {
     return (
       <div>
         {filterBar}
         <div className="flex flex-col items-center gap-3 py-16 text-center">
           <p className="text-muted-foreground">
-            {[searchFromUrl, dateFromUrl || dateToUrl].filter(Boolean).length > 1
+            {activeFilterCount > 1
               ? t('history.table.noMatchFilter')
               : searchFromUrl
                 ? t('history.table.noMatchSearch', { search: searchFromUrl })

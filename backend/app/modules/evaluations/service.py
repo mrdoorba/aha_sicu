@@ -44,6 +44,13 @@ from app.modules.evaluations.schemas import (
 
 logger = logging.getLogger(__name__)
 
+_VALID_HISTORY_MARKETPLACES = frozenset({"ID", "TH"})
+_VALID_HISTORY_VERDICT_FILTERS = frozenset({"approved", "non_approved"})
+_HISTORY_VERDICT_MAP = {
+    "approved": ["✔️"],
+    "non_approved": ["❌", "❌ Non Mall", "❌ No Brand", "❌ Opex", "❌ Stock"],
+}
+
 # Per-marketplace mapping from raw_data column names to BrandRawData fields
 _BRAND_RAW_DATA_COLUMNS: dict[str, dict[str, str]] = {
     "ID": {
@@ -145,6 +152,8 @@ async def list_grouped_evaluations(
     search: str | None = None,
     date_from: date | None = None,
     date_to: date | None = None,
+    marketplaces: list[str] | None = None,
+    verdict_filters: list[str] | None = None,
 ) -> GroupedEvaluationListResponse:
     """Return a paginated list of evaluations grouped by brand."""
     if date_from and date_to and date_from > date_to:
@@ -153,6 +162,29 @@ async def list_grouped_evaluations(
             detail="date_from must not be after date_to",
             status_code=422,
         )
+
+    if marketplaces:
+        invalid_marketplaces = sorted(set(marketplaces) - _VALID_HISTORY_MARKETPLACES)
+        if invalid_marketplaces:
+            raise AppException(
+                code="VALIDATION_ERROR",
+                detail=f"Invalid marketplace filter: {', '.join(invalid_marketplaces)}",
+                status_code=422,
+            )
+
+    resolved_verdicts: list[str] | None = None
+    if verdict_filters:
+        invalid_verdict_filters = sorted(set(verdict_filters) - _VALID_HISTORY_VERDICT_FILTERS)
+        if invalid_verdict_filters:
+            raise AppException(
+                code="VALIDATION_ERROR",
+                detail=f"Invalid verdict filter: {', '.join(invalid_verdict_filters)}",
+                status_code=422,
+            )
+        resolved_verdicts = []
+        for verdict_filter in verdict_filters:
+            resolved_verdicts.extend(_HISTORY_VERDICT_MAP[verdict_filter])
+        resolved_verdicts = list(dict.fromkeys(resolved_verdicts))
 
     limit, offset = paginate(page, limit)
 
@@ -163,9 +195,16 @@ async def list_grouped_evaluations(
         search=search,
         date_from=date_from,
         date_to=date_to,
+        marketplaces=marketplaces,
+        verdicts=resolved_verdicts,
     )
     total = await eval_queries.count_grouped_evaluations(
-        conn, search=search, date_from=date_from, date_to=date_to,
+        conn,
+        search=search,
+        date_from=date_from,
+        date_to=date_to,
+        marketplaces=marketplaces,
+        verdicts=resolved_verdicts,
     )
 
     pages = math.ceil(total / limit) if total > 0 else 0

@@ -25,9 +25,14 @@ export function useGroupedEvaluations(
   search?: string,
   dateFrom?: string,
   dateTo?: string,
+  marketplaces?: string[],
+  verdictFilters?: string[],
 ) {
+  const marketplaceParam = marketplaces?.length ? marketplaces.join(',') : undefined;
+  const verdictParam = verdictFilters?.length ? verdictFilters.join(',') : undefined;
+
   const query = useQuery({
-    queryKey: ['evaluations-grouped', page, limit, search, dateFrom, dateTo],
+    queryKey: ['evaluations-grouped', page, limit, search, dateFrom, dateTo, marketplaceParam, verdictParam],
     queryFn: async () => {
       const { data, error } = await client.GET('/api/v1/evaluations/grouped', {
         params: {
@@ -37,6 +42,8 @@ export function useGroupedEvaluations(
             ...(search ? { search } : {}),
             ...(dateFrom ? { date_from: dateFrom } : {}),
             ...(dateTo ? { date_to: dateTo } : {}),
+            ...(marketplaceParam ? { marketplace: marketplaceParam } : {}),
+            ...(verdictParam ? { verdict: verdictParam } : {}),
           },
         },
       });
