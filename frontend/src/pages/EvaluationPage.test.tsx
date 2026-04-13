@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -13,6 +13,7 @@ const mockUseAutoSaveForm = vi.fn();
 const mockUseScoring = vi.fn();
 const mockUseSaveEvaluation = vi.fn();
 const mockUseCalculatorResults = vi.fn();
+const mockUseBrandUploads = vi.fn();
 
 vi.mock('../hooks/useBrandDetail', () => ({
   useBrandDetail: (...args: unknown[]) => mockUseBrandDetail(...args),
@@ -33,6 +34,21 @@ vi.mock('../hooks/useScoring', () => ({
 
 vi.mock('../hooks/useSaveEvaluation', () => ({
   useSaveEvaluation: (...args: unknown[]) => mockUseSaveEvaluation(...args),
+}));
+
+vi.mock('../hooks/useUpload', () => ({
+  useBrandUploads: (...args: unknown[]) => mockUseBrandUploads(...args),
+  useUploadFile: () => ({
+    upload: vi.fn(),
+    progress: 0,
+    status: 'idle',
+    error: null,
+    reset: vi.fn(),
+  }),
+  useDownloadFile: () => ({
+    mutateAsync: vi.fn(),
+    isPending: false,
+  }),
 }));
 
 const mockUseRunAllCalculators = vi.fn();
@@ -109,6 +125,9 @@ function setupMocks() {
   mockUseCalculatorResults.mockReturnValue({
     data: { brand_id: 1, results: [] },
   });
+  mockUseBrandUploads.mockReturnValue({
+    data: { brand_id: 1, uploads: [] },
+  });
   mockUseRunAllCalculators.mockReturnValue({
     mutate: vi.fn(),
     mutateAsync: vi.fn().mockResolvedValue({ results: [] }),
@@ -142,6 +161,45 @@ describe('EvaluationPage', () => {
     expect(nav).toBeInTheDocument();
     const navButtons = nav.querySelectorAll('button');
     expect(navButtons).toHaveLength(6);
+  });
+
+  it('shows step 4 partial progress based on uploaded files', () => {
+    setupMocks();
+    mockUseBrandUploads.mockReturnValue({
+      data: {
+        brand_id: 1,
+        uploads: [
+          { id: 1, file_type: 'cpc_ad_report', filename: 'ads.csv', file_size: 100, row_count: 10, uploaded_at: '2026-02-11T10:00:00Z' },
+          { id: 2, file_type: 'order_export', filename: 'orders.xlsx', file_size: 100, row_count: 10, uploaded_at: '2026-02-11T10:00:00Z' },
+        ],
+      },
+    });
+
+    renderEvaluationPage();
+
+    const step4Button = screen.getByRole('button', { name: /step 4\./i });
+    expect(within(step4Button).getByText('2/4')).toBeInTheDocument();
+  });
+
+  it('shows step 4 green check when all required files are uploaded', () => {
+    setupMocks();
+    mockUseBrandUploads.mockReturnValue({
+      data: {
+        brand_id: 1,
+        uploads: [
+          { id: 1, file_type: 'cpc_ad_report', filename: 'ads.csv', file_size: 100, row_count: 10, uploaded_at: '2026-02-11T10:00:00Z' },
+          { id: 2, file_type: 'keyword_report', filename: 'keywords.csv', file_size: 100, row_count: 10, uploaded_at: '2026-02-11T10:00:00Z' },
+          { id: 3, file_type: 'order_export', filename: 'orders.xlsx', file_size: 100, row_count: 10, uploaded_at: '2026-02-11T10:00:00Z' },
+          { id: 4, file_type: 'mass_update', filename: 'mass.xlsx', file_size: 100, row_count: 10, uploaded_at: '2026-02-11T10:00:00Z' },
+        ],
+      },
+    });
+
+    renderEvaluationPage();
+
+    const step4Button = screen.getByRole('button', { name: /step 4\./i });
+    expect(within(step4Button).getByLabelText('Complete')).toBeInTheDocument();
+    expect(within(step4Button).queryByText('4/4')).not.toBeInTheDocument();
   });
 
   it('renders file upload slot placeholders', () => {

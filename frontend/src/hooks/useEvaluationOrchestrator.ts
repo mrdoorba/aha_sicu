@@ -11,8 +11,10 @@ import { useSaveEvaluation } from './useSaveEvaluation';
 import { useCalculatorResults, useRunAllCalculators } from './useCalculator';
 import type { CalculatorResultsListResponse } from './useCalculator';
 import { useRules } from './useRules';
+import { useBrandUploads } from './useUpload';
 import { toast } from 'sonner';
 import { generatePeriodOptions } from '../components/evaluation/scoring/periodOptions';
+import { REQUIRED_UPLOAD_FILE_TYPES } from '../components/evaluation/fileUploadConfig';
 import { toRecord } from '../lib/typeGuards';
 
 function isCategoryType(value: string): value is CategoryType {
@@ -33,6 +35,7 @@ export function useEvaluationOrchestrator(brandId: number) {
   const { data: brand, isLoading: brandLoading, isError: brandError } = useBrandDetail(brandId);
   const { data: evaluationState } = useEvaluationState(brandId);
   const saveMutation = useSaveEvaluationInputs(brandId);
+  const { data: brandUploads } = useBrandUploads(brandId);
 
   // --- Marketplace state ---
   const [marketplace, setMarketplace] = useState<string>('ID');
@@ -64,7 +67,21 @@ export function useEvaluationOrchestrator(brandId: number) {
   });
 
   // --- Derived data ---
-  const sectionProgress = useMemo(() => computeSectionProgress(manualData), [manualData]);
+  const sectionProgress = useMemo(() => {
+    const progress = computeSectionProgress(manualData);
+    const uploadedFileTypes = new Set(
+      (brandUploads?.uploads ?? [])
+        .map((upload) => upload.file_type)
+        .filter((fileType) => REQUIRED_UPLOAD_FILE_TYPES.includes(fileType)),
+    );
+
+    progress['section-4'] = {
+      filled: uploadedFileTypes.size,
+      total: REQUIRED_UPLOAD_FILE_TYPES.length,
+    };
+
+    return progress;
+  }, [manualData, brandUploads]);
 
   const storeLink = useMemo(() => {
     const raw = brand?.raw_data?.['Link Shopee'];
