@@ -2725,6 +2725,53 @@ class TestComputeG66JutaR026:
         result = _compute_g66([], manual_data, "", marketplace="ID")
         assert "juta" in result, f"Expected 'juta' in ID marketplace g66, got: {result}"
 
+
+
+    def test_compute_g66_uses_updated_indonesian_conclusion_copy(self):
+        from app.calculators.scoring.computations import _compute_g66
+        from app.calculators.scoring.models import CategoryScore, RowScore
+
+        categories = [
+            CategoryScore(
+                category="Kesehatan Operasional Toko",
+                score=0,
+                max_score=10,
+                rows=[RowScore(row=10, metric="Persentase Chat Dibalas", value=90, benchmark=">95%", verdict="❌", message="", score=0)],
+            ),
+            CategoryScore(
+                category="Promo Toko",
+                score=0,
+                max_score=15,
+                rows=[RowScore(row=43, metric="% Efektifitas", value=0.5, benchmark=">80%", verdict="❌", message="", score=0)],
+            ),
+            CategoryScore(
+                category="Partisipasi Campaign",
+                score=0,
+                max_score=10,
+                rows=[RowScore(row=57, metric="Partisipasi", value=0.5, benchmark=">80%", verdict="❌", message="", score=0)],
+            ),
+        ]
+        manual_data = {
+            "business": {
+                "salesMonth0": 50_000_000,
+                "salesMonth1": 80_000_000,
+                "salesMonth2": 60_000_000,
+                "salesMonth3": 70_000_000,
+                "salesMonth4": 90_000_000,
+                "salesMonth5": 100_000_000,
+            }
+        }
+
+        result = _compute_g66(categories, manual_data, "12.0% ~ 18.0%", marketplace="ID")
+
+        assert "Kualitas operasional toko sudah cukup baik, hanya tingkat response chat masih dapat ditingkatkan." in result
+        assert "Nama produk disarankan untuk dimulai dengan nama brand dan mencantumkan FAB produk (Feature, Advantage, & Benefit)." in result
+        assert "Background foto utama disarankan warna putih & menampilkan logo brand." in result
+        assert "Beberapa fitur promosi masih belum optimal." in result
+        assert "Partisipasi Campaign Shopee belum maksimal." in result
+        assert "Pastikan produk yang stoknya habis diarsipkan" in result
+        assert "Range diskon: 12.0% ~ 18.0%" in result
+
     def test_compute_g66_uses_raw_numbers_when_marketplace_is_th(self):
         """R026: TH marketplace sales range displays raw comma-formatted numbers, not juta."""
         from app.calculators.scoring.computations import _compute_g66

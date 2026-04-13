@@ -203,15 +203,15 @@ def _compute_g66(
         lines.append(op_text)
 
     # Standard recommendations
-    lines.append("- Nama produk disarankan untuk dimulai dengan nama brand")
-    lines.append("- Background foto utama disarankan warna putih")
+    lines.append("- Nama produk disarankan untuk dimulai dengan nama brand dan mencantumkan FAB produk (Feature, Advantage, & Benefit).")
+    lines.append("- Background foto utama disarankan warna putih & menampilkan logo brand.")
 
     # Promo effectiveness check
     promo_cat = next((c for c in categories if c.category == "Promo Toko"), None)
     if promo_cat:
         eff_row = next((r for r in promo_cat.rows if r.row == 43), None)
         if eff_row and isinstance(eff_row.value, float) and eff_row.value < 0.80:
-            lines.append("- Beberapa fitur promosi masih belum dimanfaatkan secara efektif")
+            lines.append("- Beberapa fitur promosi masih belum optimal.")
 
     # Campaign check
     campaign_cat = next((c for c in categories if c.category == "Partisipasi Campaign"), None)
@@ -221,12 +221,12 @@ def _compute_g66(
             lines.append("- Partisipasi Campaign Shopee belum maksimal.")
 
     # Stock and archival
-    lines.append("- Banyak produk habis stok tidak diarsipkan.")
+    lines.append("- Pastikan produk yang stoknya habis diarsipkan")
     lines.append("- Banyak produk tidak terjual di 30 hari terakhir.")
 
     # Discount range from G68
     if g68_text:
-        lines.append(f"- Diskon range: {g68_text}")
+        lines.append(f"- Range diskon: {g68_text}")
 
     return "\n".join(lines)
 
