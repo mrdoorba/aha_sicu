@@ -47,6 +47,19 @@ function isDiscountAffiliateRow(row: RowScore): boolean {
     || haystack.includes('komisi afiliasi');
 }
 
+function formatAffiliateCommissionValue(value: unknown): string | null {
+  if (typeof value === 'string' && value.trim()) {
+    return value.trim();
+  }
+
+  if (typeof value === 'number' && Number.isFinite(value)) {
+    const percentage = Math.abs(value) <= 1 ? value * 100 : value;
+    return `${percentage.toFixed(1)}%`;
+  }
+
+  return null;
+}
+
 export const DetailedEvaluation = ({
   scoreBreakdown,
   marketplace,
@@ -91,8 +104,21 @@ export const DetailedEvaluation = ({
     const affiliateRow = discountCategory?.rows?.find(isDiscountAffiliateRow);
     if (!affiliateRow) return null;
 
-    if (typeof affiliateRow.value === 'string' && affiliateRow.value.trim()) {
-      return affiliateRow.value.trim();
+    const directValue = formatAffiliateCommissionValue(affiliateRow.value);
+    if (directValue) return directValue;
+
+    const i18nCandidates = [
+      affiliateRow.value_i18n?.vars?.value,
+      affiliateRow.message_i18n?.vars?.value,
+      affiliateRow.value_i18n?.vars?.affiliateCommissionPct,
+      affiliateRow.message_i18n?.vars?.affiliateCommissionPct,
+      affiliateRow.value_i18n?.vars?.commissionPct,
+      affiliateRow.message_i18n?.vars?.commissionPct,
+    ];
+
+    for (const candidate of i18nCandidates) {
+      const formatted = formatAffiliateCommissionValue(candidate);
+      if (formatted) return formatted;
     }
 
     const match = affiliateRow.message.match(/(\d+(?:[.,]\d+)?)%/);

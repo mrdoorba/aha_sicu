@@ -214,6 +214,46 @@ describe('DetailedEvaluation', () => {
     expect(metricCards).toHaveLength(1);
   });
 
+  it('merges a standalone discount affiliate row when its percent is stored as a numeric value', () => {
+    const discount = [
+      {
+        category: 'Discount',
+        score: 5,
+        max_score: 10,
+        rows: [
+          {
+            ...makeRow('Checkup Diskon'),
+            message_i18n: {
+              key: 'scoring.discountCheckup.fail',
+              vars: {
+                discountPct: '11.0%',
+                rangeMin: '0.1%',
+                rangeMax: '38.1%',
+                voucherPct: '0.0%',
+                paketPct: '0.0%',
+              },
+            },
+          },
+          {
+            ...makeRow('% Komisi Afiliasi'),
+            value: 0.193,
+            message: '',
+          },
+        ],
+      },
+    ];
+
+    const { container } = render(<DetailedEvaluation scoreBreakdown={discount} />);
+
+    const card = screen.getByText('Checkup Diskon').closest('div.rounded-lg');
+    expect(card).not.toBeNull();
+    const cardText = (card as HTMLElement).textContent ?? '';
+    expect(cardText).toContain('% Komisi Afiliasi: 19.3%');
+
+    const metricCards = container.querySelectorAll('.bg-card.p-4.space-y-3');
+    expect(metricCards).toHaveLength(1);
+  });
+
   it('should render separator after ROI in Iklan tab and pair percentage metrics on same row', () => {
     const iklan = [
       {
