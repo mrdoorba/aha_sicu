@@ -21,6 +21,7 @@ function makeResult(fakeDiscountFlag: boolean): CalculatorResult {
       range_max: '6.7%',
       voucher_pct: '0.3%',
       paket_pct: '0.0%',
+      affiliate_commission_pct: '1.5%',
       fake_discount_flag: fakeDiscountFlag,
       product_summary: [],
       top_sku: [],
@@ -31,14 +32,16 @@ function makeResult(fakeDiscountFlag: boolean): CalculatorResult {
 }
 
 describe('DiscountResults', () => {
-  it('renders 5 text values', () => {
+  it('renders affiliate commission alongside other discount values', () => {
     render(<DiscountResults result={makeResult(false)} />);
 
     expect(screen.getByText('2.7%')).toBeInTheDocument();
     expect(screen.getByText('0.0% ~ 6.7%')).toBeInTheDocument();
     expect(screen.getByText('0.3%')).toBeInTheDocument();
     expect(screen.getByText('0.0%')).toBeInTheDocument();
+    expect(screen.getByText('1.5%')).toBeInTheDocument();
     expect(screen.getByText('discount.topSkuDiscount')).toBeInTheDocument();
+    expect(screen.getByText('discount.affiliateCommission')).toBeInTheDocument();
   });
 
   it('renders fake discount warning when flag true', () => {

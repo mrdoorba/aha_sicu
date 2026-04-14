@@ -190,7 +190,13 @@ class TestSheetStages:
 class TestPublicContract:
     def test_empty_data_returns_zero_safe_contract(self):
         result = calculate_discount([])
-        assert result.output_text == "% Diskon TOP SKU: 0.0%\nRange: 0.0% ~ 0.0%\nVoucher 0.0%\nPaket Diskon 0.0%"
+        assert result.output_text == (
+            "% Diskon TOP SKU: 0.0%\n"
+            "Range: 0.0% ~ 0.0%\n"
+            "Voucher 0.0%\n"
+            "Paket Diskon 0.0%\n"
+            "% Komisi Afiliasi: 0.0%"
+        )
         assert result.details["fake_discount_flag"] is False
         assert result.details["top_sku"] == []
         assert result.details["product_summary"] == []
@@ -208,6 +214,8 @@ class TestPublicContract:
             "range_max_raw",
             "voucher_pct_raw",
             "paket_pct_raw",
+            "affiliate_commission_pct",
+            "affiliate_commission_pct_raw",
             "fake_discount_flag",
             "i18n",
             "product_summary",
@@ -217,11 +225,23 @@ class TestPublicContract:
         assert isinstance(result, DiscountResult)
         assert set(result.details.keys()) == expected_keys
 
+    def test_affiliate_commission_pct_uses_current_month_revenue(self):
+        result = calculate_discount(
+            LOW_FLAG_DATA,
+            affiliate_commission=500_000,
+            current_month_revenue=10_000_000,
+        )
+
+        assert result.details["affiliate_commission_pct"] == "5.0%"
+        assert result.details["affiliate_commission_pct_raw"] == pytest.approx(0.05)
+        assert "% Komisi Afiliasi: 5.0%" in result.output_text
+
     def test_i18n_fake_discount_key_only_present_when_flagged(self):
         flagged = calculate_discount(MND_DATA)
         unflagged = calculate_discount(LOW_FLAG_DATA)
         assert flagged.details["i18n"]["fakeDiscount"]["key"] == "discount.output.fakeDiscount"
         assert "fakeDiscount" not in unflagged.details["i18n"]
+        assert unflagged.details["i18n"]["affiliateCommission"]["key"] == "discount.output.affiliateCommission"
 
 
 class TestEndToEndParityFixtures:
@@ -242,23 +262,33 @@ class TestEndToEndParityFixtures:
         assert mixed_flag.details["fake_discount_flag"] is False
 
     def test_mnd_exact_output_text(self):
-        result = calculate_discount(MND_DATA)
+        result = calculate_discount(
+            MND_DATA,
+            affiliate_commission=18_000_000,
+            current_month_revenue=200_000_000,
+        )
         expected = (
             "% Diskon TOP SKU: 21.9%\n"
             "Range: 16.9% ~ 16.9%\n"
             "Voucher 11.4%\n"
             "Paket Diskon 2.3%\n"
+            "% Komisi Afiliasi: 9.0%\n"
             "📌 Berpotensi menggunakan 'fake discount'"
         )
         assert result.output_text == expected
 
     def test_mnd_exact_detail_values_and_totals(self):
-        result = calculate_discount(MND_DATA)
+        result = calculate_discount(
+            MND_DATA,
+            affiliate_commission=18_000_000,
+            current_month_revenue=200_000_000,
+        )
         assert result.details["discount_pct"] == "21.9%"
         assert result.details["range_min"] == "16.9%"
         assert result.details["range_max"] == "16.9%"
         assert result.details["voucher_pct"] == "11.4%"
         assert result.details["paket_pct"] == "2.3%"
+        assert result.details["affiliate_commission_pct"] == "9.0%"
         assert result.details["fake_discount_flag"] is True
         assert result.details["totals"] == {
             "sum_n": pytest.approx(193000.0),

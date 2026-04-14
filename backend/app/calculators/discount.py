@@ -282,6 +282,9 @@ def _first_value_per_order(items: list[LineItem], attr: str) -> float:
 def _format_output(
     line_items: list[LineItem],
     top_sku: list[ProductSummary],
+    *,
+    affiliate_commission: Any = None,
+    current_month_revenue: Any = None,
 ) -> tuple[str, dict[str, Any]]:
     discount_pct_numerator = sum(item.campaign_discount for item in line_items if item.total_paid > 0)
     sum_total_paid = sum(item.total_paid for item in line_items)
@@ -300,6 +303,13 @@ def _format_output(
     sum_harga_setelah_diskon = sum(item.harga_setelah_diskon for item in line_items)
     voucher_pct = sum_voucher / sum_harga_setelah_diskon if sum_harga_setelah_diskon else 0.0
     paket_pct = sum_paket / sum_harga_setelah_diskon if sum_harga_setelah_diskon else 0.0
+    affiliate_commission_value = _safe_num(affiliate_commission)
+    current_month_revenue_value = _safe_num(current_month_revenue)
+    affiliate_commission_pct = (
+        affiliate_commission_value / current_month_revenue_value
+        if affiliate_commission_value > 0 and current_month_revenue_value > 0
+        else 0.0
+    )
 
     fake_discount_flag = _compute_fake_discount_gate(line_items)
 
@@ -307,11 +317,12 @@ def _format_output(
     output2 = f"Range: {_format_pct_1dp(range_min)} ~ {_format_pct_1dp(range_max)}"
     output3 = f"Voucher {_format_pct_1dp(voucher_pct)}"
     output4 = f"Paket Diskon {_format_pct_1dp(paket_pct)}"
-    output5 = "📌 Berpotensi menggunakan 'fake discount'" if fake_discount_flag else ""
+    output5 = f"% Komisi Afiliasi: {_format_pct_1dp(affiliate_commission_pct)}"
+    output6 = "📌 Berpotensi menggunakan 'fake discount'" if fake_discount_flag else ""
 
-    lines = [output1, output2, output3, output4]
-    if output5:
-        lines.append(output5)
+    lines = [output1, output2, output3, output4, output5]
+    if output6:
+        lines.append(output6)
     output_text = "\n".join(lines)
 
     formatted_discount_pct = _format_pct_1dp(discount_pct)
@@ -319,12 +330,17 @@ def _format_output(
     formatted_range_max = _format_pct_1dp(range_max)
     formatted_voucher_pct = _format_pct_1dp(voucher_pct)
     formatted_paket_pct = _format_pct_1dp(paket_pct)
+    formatted_affiliate_commission_pct = _format_pct_1dp(affiliate_commission_pct)
 
     i18n: dict[str, Any] = {
         "topSkuDiscount": {"key": "discount.output.topSkuDiscount", "vars": {"value": formatted_discount_pct}},
         "range": {"key": "discount.output.range", "vars": {"min": formatted_range_min, "max": formatted_range_max}},
         "voucher": {"key": "discount.output.voucher", "vars": {"value": formatted_voucher_pct}},
         "packageDiscount": {"key": "discount.output.packageDiscount", "vars": {"value": formatted_paket_pct}},
+        "affiliateCommission": {
+            "key": "discount.output.affiliateCommission",
+            "vars": {"value": formatted_affiliate_commission_pct},
+        },
     }
     if fake_discount_flag:
         i18n["fakeDiscount"] = {"key": "discount.output.fakeDiscount", "vars": {}}
@@ -340,6 +356,8 @@ def _format_output(
         "range_max_raw": range_max,
         "voucher_pct_raw": voucher_pct,
         "paket_pct_raw": paket_pct,
+        "affiliate_commission_pct": formatted_affiliate_commission_pct,
+        "affiliate_commission_pct_raw": affiliate_commission_pct,
         "fake_discount_flag": fake_discount_flag,
         "i18n": i18n,
         "totals": {
@@ -356,24 +374,30 @@ def _format_output(
 
 def _empty_result() -> DiscountResult:
     return DiscountResult(
-        output_text="% Diskon TOP SKU: 0.0%\nRange: 0.0% ~ 0.0%\nVoucher 0.0%\nPaket Diskon 0.0%",
+        output_text="% Diskon TOP SKU: 0.0%\nRange: 0.0% ~ 0.0%\nVoucher 0.0%\nPaket Diskon 0.0%\n% Komisi Afiliasi: 0.0%",
         details={
             "discount_pct": "0.0%",
             "range_min": "0.0%",
             "range_max": "0.0%",
             "voucher_pct": "0.0%",
             "paket_pct": "0.0%",
+            "affiliate_commission_pct": "0.0%",
             "discount_pct_raw": 0.0,
             "range_min_raw": 0.0,
             "range_max_raw": 0.0,
             "voucher_pct_raw": 0.0,
             "paket_pct_raw": 0.0,
+            "affiliate_commission_pct_raw": 0.0,
             "fake_discount_flag": False,
             "i18n": {
                 "topSkuDiscount": {"key": "discount.output.topSkuDiscount", "vars": {"value": "0.0%"}},
                 "range": {"key": "discount.output.range", "vars": {"min": "0.0%", "max": "0.0%"}},
                 "voucher": {"key": "discount.output.voucher", "vars": {"value": "0.0%"}},
                 "packageDiscount": {"key": "discount.output.packageDiscount", "vars": {"value": "0.0%"}},
+                "affiliateCommission": {
+                    "key": "discount.output.affiliateCommission",
+                    "vars": {"value": "0.0%"},
+                },
             },
             "product_summary": [],
             "top_sku": [],
@@ -392,6 +416,8 @@ def calculate_discount(
     order_data: list[dict],
     *,
     marketplace: str = "ID",
+    affiliate_commission: Any = None,
+    current_month_revenue: Any = None,
 ) -> DiscountResult:
     """Execute the Discount Check Calculator using the sheet-parity process."""
     if not order_data:
@@ -401,7 +427,12 @@ def calculate_discount(
     line_items = _calculate_line_items(order_data, urutan_list, marketplace=marketplace)
     product_summary = _build_product_summary(line_items)
     top_sku = _filter_top_sku(product_summary)
-    output_text, details = _format_output(line_items, top_sku)
+    output_text, details = _format_output(
+        line_items,
+        top_sku,
+        affiliate_commission=affiliate_commission,
+        current_month_revenue=current_month_revenue,
+    )
 
     details["product_summary"] = [
         {

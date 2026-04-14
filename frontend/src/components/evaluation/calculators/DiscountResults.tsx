@@ -43,6 +43,12 @@ export function DiscountResults({ result }: DiscountResultsProps) {
           <span className="text-muted-foreground">{t('discount.packageDiscount')}</span>
           <span className="font-medium">{details.paket_pct}</span>
         </div>
+        {details.affiliate_commission_pct && (
+          <div className="flex justify-between">
+            <span className="text-muted-foreground">{t('discount.affiliateCommission')}</span>
+            <span className="font-medium">{details.affiliate_commission_pct}</span>
+          </div>
+        )}
         {details.fake_discount_flag && (
           <Badge variant="destructive" className="mt-1 gap-1">
             <AlertTriangle className="size-3" />

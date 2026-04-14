@@ -647,6 +647,7 @@ describe('EvaluationDetailPage', () => {
                 range: { key: 'discount.output.range', vars: { min: '0%', max: '10%' } },
                 voucher: { key: 'discount.output.voucher', vars: { value: '5%' } },
                 packageDiscount: { key: 'discount.output.packageDiscount', vars: { value: '3%' } },
+                affiliateCommission: { key: 'discount.output.affiliateCommission', vars: { value: '1.5%' } },
               },
             },
           },
@@ -660,6 +661,7 @@ describe('EvaluationDetailPage', () => {
     // i18n renders: "% Diskon TOP SKU: 2.7%" from discount.output.topSkuDiscount key
     expect(screen.getByText(/Diskon TOP SKU.*2\.7%/)).toBeInTheDocument();
     expect(screen.getByText(/Voucher.*5%/)).toBeInTheDocument();
+    expect(screen.getByText(/Komisi Afiliasi.*1\.5%/)).toBeInTheDocument();
   });
 
   it('renders raw output_text for discount when i18n dict absent', () => {
