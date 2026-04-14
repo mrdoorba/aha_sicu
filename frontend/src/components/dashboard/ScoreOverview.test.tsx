@@ -1,5 +1,17 @@
+import type { ReactNode } from 'react';
 import { render, screen } from '@testing-library/react';
-import { describe, it, expect } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
+
+vi.mock('recharts', async () => {
+  const actual = await vi.importActual<typeof import('recharts')>('recharts');
+  return {
+    ...actual,
+    ResponsiveContainer: ({ children }: { children: ReactNode }) => (
+      <div style={{ width: 224, height: 224 }}>{children}</div>
+    ),
+  };
+});
+
 import { ScoreOverview } from './ScoreOverview';
 
 /**
