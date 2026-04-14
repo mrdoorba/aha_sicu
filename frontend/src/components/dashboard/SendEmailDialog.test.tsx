@@ -104,6 +104,8 @@ function renderDialog(overrides: Record<string, unknown> = {}) {
 // -- Tests --
 
 describe('SendEmailDialog', () => {
+  let consoleErrorSpy: ReturnType<typeof vi.spyOn>;
+
   beforeEach(() => {
     queryClient = new QueryClient({
       defaultOptions: { queries: { retry: false } },
@@ -118,10 +120,13 @@ describe('SendEmailDialog', () => {
     mockReset.mockReset();
     mockCaptureChart.mockReset();
     mockToastSuccess.mockReset();
+    consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
 
   afterEach(() => {
     queryClient.clear();
+    consoleErrorSpy.mockRestore();
+    vi.unstubAllGlobals();
   });
 
   it('renders with title "sendEmail.title" when open', () => {
@@ -209,6 +214,7 @@ describe('SendEmailDialog', () => {
     });
     // Chart image should be empty string when capture fails
     expect(mockMutate.mock.calls[0][0].chartImage).toBe('');
+    expect(consoleErrorSpy).toHaveBeenCalled();
   });
 
   it('renders note textarea pre-filled with default opening message', () => {
@@ -233,19 +239,18 @@ describe('SendEmailDialog', () => {
     expect(textarea.maxLength).toBe(500);
   });
 
-  it('preview toggle shows preview section', () => {
-    // Mock the fetch for preview
-    global.fetch = vi.fn().mockResolvedValue({
+  it('preview toggle shows preview section', async () => {
+    vi.stubGlobal('fetch', vi.fn().mockResolvedValue({
       text: () => Promise.resolve('<html><body>Preview</body></html>'),
-    });
+    }));
 
     renderDialog();
     const toggleBtn = screen.getByRole('button', { name: /sendEmail\.previewToggle/i });
-    expect(toggleBtn).toBeInTheDocument();
-    fireEvent.click(toggleBtn);
+    await act(async () => {
+      fireEvent.click(toggleBtn);
+    });
 
-    // Should show loading or preview container
-    expect(screen.getByText('sendEmail.previewLoading')).toBeInTheDocument();
+    expect(await screen.findByTitle('Email Preview')).toBeInTheDocument();
   });
 
   it('sends correct payload shape with recipients array, cc, bcc, note', async () => {
@@ -372,7 +377,7 @@ describe('SendEmailDialog', () => {
     const fetchSpy = vi.fn().mockResolvedValue({
       text: () => Promise.resolve('<html><body>Preview</body></html>'),
     });
-    global.fetch = fetchSpy;
+    vi.stubGlobal('fetch', fetchSpy);
 
     renderDialog();
 
@@ -388,6 +393,33 @@ describe('SendEmailDialog', () => {
       expect(fetchSpy).toHaveBeenCalled();
       const fetchUrl: string = fetchSpy.mock.calls[0][0];
       expect(fetchUrl).toContain('language=en');
+    });
+  });
+
+  it('refreshes preview with the new language when selector changes while preview is open', async () => {
+    const fetchSpy = vi.fn().mockResolvedValue({
+      text: () => Promise.resolve('<html><body>Preview</body></html>'),
+    });
+    vi.stubGlobal('fetch', fetchSpy);
+
+    renderDialog();
+
+    const toggleBtn = screen.getByRole('button', { name: /sendEmail\.previewToggle/i });
+    fireEvent.click(toggleBtn);
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledTimes(1);
+      const initialUrl: string = fetchSpy.mock.calls[0][0];
+      expect(initialUrl).toContain('language=id');
+    });
+
+    const langSelect = screen.getByTestId('email-language-select');
+    fireEvent.change(langSelect, { target: { value: 'en' } });
+
+    await waitFor(() => {
+      expect(fetchSpy).toHaveBeenCalledTimes(2);
+      const refreshedUrl: string = fetchSpy.mock.calls[1][0];
+      expect(refreshedUrl).toContain('language=en');
     });
   });
 });

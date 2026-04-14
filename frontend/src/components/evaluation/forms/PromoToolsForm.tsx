@@ -17,18 +17,20 @@ interface PromoToolsFormProps {
 export function PromoToolsForm({ data, salesMonth0, currency = 'IDR', marketplace = 'ID', onChange, onBlur }: PromoToolsFormProps) {
   const { t } = useTranslation();
   const links = getSectionLinks(marketplace);
-  // % Penggunaan: count of tools with value > 0 / 11
-  const usageCount = PROMO_TOOLS_FIELDS.filter((f) => {
+  const metricFields = PROMO_TOOLS_FIELDS.filter((field) => field.key !== 'komisiProgramAfiliasi');
+
+  // % Penggunaan: count of metric-bearing tools with value > 0
+  const usageCount = metricFields.filter((f) => {
     const val = data[f.key as keyof PromoToolsData];
     return val != null && val > 0;
   }).length;
-  const usagePct = Math.round((usageCount / PROMO_TOOLS_FIELDS.length) * 100);
+  const usagePct = Math.round((usageCount / metricFields.length) * 100);
 
-  // % Efektifitas: count of tools exceeding threshold / 11
+  // % Efektifitas: count of metric-bearing tools exceeding threshold
   // Mirrors backend _promo_verdict(): D=0→❌, D/D13≥50%→❌ (too dependent), then benchmark check
   const effectivenessResult = (() => {
     if (!salesMonth0) return null; // 0 or null → show "—"
-    const passingCount = PROMO_TOOLS_FIELDS.filter((f) => {
+    const passingCount = metricFields.filter((f) => {
       const val = data[f.key as keyof PromoToolsData] ?? 0;
       if (f.threshold == null) return false;
       if (val === 0) return false;
@@ -38,7 +40,7 @@ export function PromoToolsForm({ data, salesMonth0, currency = 'IDR', marketplac
       if (val / salesMonth0 >= 0.5) return false;
       return val >= salesMonth0 * f.threshold;
     }).length;
-    return Math.round((passingCount / PROMO_TOOLS_FIELDS.length) * 100);
+    return Math.round((passingCount / metricFields.length) * 100);
   })();
 
   return (

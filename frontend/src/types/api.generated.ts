@@ -2316,6 +2316,8 @@ export interface operations {
                 search?: string | null;
                 date_from?: string | null;
                 date_to?: string | null;
+                marketplace?: string | null;
+                verdict?: string | null;
             };
             header?: never;
             path?: never;

@@ -29,7 +29,7 @@ const MOCK_BRANDS = [
     marketplace: 'TH',
     evaluation_count: 3,
     top_score: 75.0,
-    top_verdict: '\u2714\uFE0F',
+    top_verdict: '\u274C Non Mall',
     latest_date: '2026-02-14T14:00:00Z',
   },
 ];
@@ -261,6 +261,99 @@ describe('EvaluationHistoryTable — Accordion', () => {
 
     await waitFor(() => {
       expect(screen.getByTestId('location')).toHaveTextContent('search=Nike');
+    });
+  });
+
+  it('renders marketplace and verdict filter buttons', () => {
+    renderTable();
+
+    expect(screen.getByRole('button', { name: 'history.table.filterMarketplaceId' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'history.table.filterMarketplaceTh' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'history.table.filterVerdictApproved' })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: 'history.table.filterVerdictNonApproved' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'history.table.clearFilters' })).not.toBeInTheDocument();
+  });
+
+  it('marketplace filter click applies the selected marketplace first', async () => {
+    const user = userEvent.setup();
+    renderTable();
+
+    await user.click(screen.getByRole('button', { name: 'history.table.filterMarketplaceId' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('marketplace=ID');
+      expect(mockUseGrouped).toHaveBeenLastCalledWith(
+        1,
+        20,
+        undefined,
+        undefined,
+        undefined,
+        ['ID'],
+        undefined,
+      );
+    });
+  });
+
+  it('verdict filter click applies the selected verdict first', async () => {
+    const user = userEvent.setup();
+    renderTable();
+
+    await user.click(screen.getByRole('button', { name: 'history.table.filterVerdictApproved' }));
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('verdict=approved');
+      expect(mockUseGrouped).toHaveBeenLastCalledWith(
+        1,
+        20,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        ['approved'],
+      );
+    });
+  });
+
+  it('clicking the only active filter resets that filter back to all options', async () => {
+    const user = userEvent.setup();
+    renderTable(['/history?marketplace=ID']);
+
+    await user.click(screen.getByRole('button', { name: 'history.table.filterMarketplaceId' }));
+
+    await waitFor(() => {
+      const location = screen.getByTestId('location').textContent ?? '';
+      expect(location).not.toContain('marketplace=');
+      expect(mockUseGrouped).toHaveBeenLastCalledWith(
+        1,
+        20,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
+    });
+  });
+
+  it('shows a clear filters action when any filter is active and clears all filters', async () => {
+    const user = userEvent.setup();
+    renderTable(['/history?search=Nike&marketplace=ID&verdict=approved&date_from=2026-01-01']);
+
+    const clearFiltersButton = screen.getByRole('button', { name: 'history.table.clearFilters' });
+    await user.click(clearFiltersButton);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('/history');
+      expect(screen.getByTestId('location')).not.toHaveTextContent('?');
+      expect(mockUseGrouped).toHaveBeenLastCalledWith(
+        1,
+        20,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
     });
   });
 

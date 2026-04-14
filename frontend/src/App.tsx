@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect, useCallback } from 'react';
+import { lazy, Suspense, useState, useRef, useEffect, useCallback } from 'react';
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
@@ -6,17 +6,18 @@ import { AuthProvider } from './context/AuthContext';
 import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Toaster } from './components/ui/sonner';
 import { DowntimeWarningDialog } from './components/DowntimeWarningDialog';
-import { LoginPage } from './pages/LoginPage';
-import { DashboardPage } from './pages/DashboardPage';
-import { BrandsPage } from './pages/BrandsPage';
-import { EvaluationPage } from './pages/EvaluationPage';
-import { HistoryPage } from './pages/HistoryPage';
-import { EvaluationDetailPage } from './pages/EvaluationDetailPage';
-import { RulesPage } from './pages/RulesPage';
-import { AccountsPage } from './pages/AccountsPage';
-import { EmailHistoryPage } from './pages/EmailHistoryPage';
 import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
-import { MainLayout } from './components/layout/MainLayout';
+
+const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
+const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
+const BrandsPage = lazy(() => import('./pages/BrandsPage').then((module) => ({ default: module.BrandsPage })));
+const EvaluationPage = lazy(() => import('./pages/EvaluationPage').then((module) => ({ default: module.EvaluationPage })));
+const HistoryPage = lazy(() => import('./pages/HistoryPage').then((module) => ({ default: module.HistoryPage })));
+const EvaluationDetailPage = lazy(() => import('./pages/EvaluationDetailPage').then((module) => ({ default: module.EvaluationDetailPage })));
+const RulesPage = lazy(() => import('./pages/RulesPage').then((module) => ({ default: module.RulesPage })));
+const AccountsPage = lazy(() => import('./pages/AccountsPage').then((module) => ({ default: module.AccountsPage })));
+const EmailHistoryPage = lazy(() => import('./pages/EmailHistoryPage').then((module) => ({ default: module.EmailHistoryPage })));
+const MainLayout = lazy(() => import('./components/layout/MainLayout').then((module) => ({ default: module.MainLayout })));
 
 const queryClient = new QueryClient();
 
@@ -51,64 +52,66 @@ function App() {
         </a>
         <AuthProvider>
           <DowntimeWarningDialog open={showDowntimeWarning} onDismiss={handleDismiss} />
-          <Routes>
-            <Route path="/login" element={<LoginPage />} />
-            
-            <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
-              <Route path="/dashboard" element={<DashboardPage />} />
-              <Route path="/brands" element={<BrandsPage />} />
-              <Route path="/evaluation/:brandId" element={<EvaluationPage />} />
-              <Route
-                path="/history/:id"
-                element={
-                  <RoleProtectedRoute allowedRoles={['leader', 'admin']}>
-                    <EvaluationDetailPage />
-                  </RoleProtectedRoute>
-                }
-              />
-              <Route
-                path="/history"
-                element={
-                  <RoleProtectedRoute allowedRoles={['leader', 'admin']}>
-                    <HistoryPage />
-                  </RoleProtectedRoute>
-                }
-              />
-              
-              <Route
-                path="/email-history"
-                element={
-                  <RoleProtectedRoute
-                    allowedRoles={['leader', 'admin']}
-                    accessDeniedMessage={t('auth.accessDeniedEmailHistory')}
-                  >
-                    <EmailHistoryPage />
-                  </RoleProtectedRoute>
-                }
-              />
-              <Route
-                path="/rules"
-                element={
-                  <RoleProtectedRoute allowedRoles={['leader', 'admin']}>
-                    <RulesPage />
-                  </RoleProtectedRoute>
-                }
-              />
-              <Route
-                path="/accounts"
-                element={
-                  <RoleProtectedRoute
-                    allowedRoles={['admin']}
-                    accessDeniedMessage={t('auth.accessDeniedAccounts')}
-                  >
-                    <AccountsPage />
-                  </RoleProtectedRoute>
-                }
-              />
-            </Route>
+          <Suspense fallback={null}>
+            <Routes>
+              <Route path="/login" element={<LoginPage />} />
 
-            <Route path="/" element={<Navigate to="/dashboard" replace />} />
-          </Routes>
+              <Route element={<ProtectedRoute><MainLayout /></ProtectedRoute>}>
+                <Route path="/dashboard" element={<DashboardPage />} />
+                <Route path="/brands" element={<BrandsPage />} />
+                <Route path="/evaluation/:brandId" element={<EvaluationPage />} />
+                <Route
+                  path="/history/:id"
+                  element={
+                    <RoleProtectedRoute allowedRoles={['leader', 'admin']}>
+                      <EvaluationDetailPage />
+                    </RoleProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/history"
+                  element={
+                    <RoleProtectedRoute allowedRoles={['leader', 'admin']}>
+                      <HistoryPage />
+                    </RoleProtectedRoute>
+                  }
+                />
+
+                <Route
+                  path="/email-history"
+                  element={
+                    <RoleProtectedRoute
+                      allowedRoles={['leader', 'admin']}
+                      accessDeniedMessage={t('auth.accessDeniedEmailHistory')}
+                    >
+                      <EmailHistoryPage />
+                    </RoleProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/rules"
+                  element={
+                    <RoleProtectedRoute allowedRoles={['leader', 'admin']}>
+                      <RulesPage />
+                    </RoleProtectedRoute>
+                  }
+                />
+                <Route
+                  path="/accounts"
+                  element={
+                    <RoleProtectedRoute
+                      allowedRoles={['admin']}
+                      accessDeniedMessage={t('auth.accessDeniedAccounts')}
+                    >
+                      <AccountsPage />
+                    </RoleProtectedRoute>
+                  }
+                />
+              </Route>
+
+              <Route path="/" element={<Navigate to="/dashboard" replace />} />
+            </Routes>
+          </Suspense>
           <Toaster />
         </AuthProvider>
       </BrowserRouter>

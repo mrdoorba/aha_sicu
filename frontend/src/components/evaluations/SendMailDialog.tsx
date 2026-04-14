@@ -4,6 +4,7 @@ import { useTranslation } from 'react-i18next';
 import {
   Dialog,
   DialogContent,
+  DialogDescription,
   DialogFooter,
   DialogHeader,
   DialogTitle,
@@ -141,6 +142,9 @@ export function SendMailDialog({
       <DialogContent className="max-h-[calc(100dvh-2rem)] overflow-y-auto sm:max-w-5xl">
         <DialogHeader>
           <DialogTitle>{t('sendMail.title')}</DialogTitle>
+          <DialogDescription className="sr-only">
+            {t('sendMail.description')}
+          </DialogDescription>
         </DialogHeader>
 
         <div className="min-w-0 space-y-4">

@@ -224,7 +224,11 @@ _REQUIRED_COLUMNS: dict[str, frozenset[str]] = {
         "Harga Awal",
         "Harga Setelah Diskon",
         "Jumlah",
+        "Nama Variasi",
+        "Diskon Dari Penjual",
+        "Diskon Dari Shopee",
         "Voucher Ditanggung Penjual",
+        "Cashback Koin",
         "Paket Diskon (Diskon dari Penjual)",
     }),
     "order_export_top_sku": frozenset({
@@ -332,6 +336,14 @@ def _extract_total_products(eval_inputs: dict | None) -> int:
         ) from e
 
 
+def _extract_discount_manual_inputs(eval_inputs: dict | None) -> tuple[float | None, float | None]:
+    """Extract salesMonth0 and komisiProgramAfiliasi from evaluation manual data."""
+    manual_data = ensure_dict((eval_inputs or {}).get("manual_data"))
+    business = ensure_dict(manual_data.get("business"))
+    promo_tools = ensure_dict(manual_data.get("promoTools"))
+    return business.get("salesMonth0"), promo_tools.get("komisiProgramAfiliasi")
+
+
 async def run_discount_calculator(
     brand_id: int,
     *,
@@ -383,6 +395,7 @@ async def run_discount_calculator(
                 conn, brand_id
             )
             marketplace = eval_inputs.get("marketplace", "ID") if eval_inputs else "ID"
+            current_month_revenue, affiliate_commission = _extract_discount_manual_inputs(eval_inputs)
 
             # Extract and validate parsed data structure + required columns
             _validate_columns(order_upload.get("parsed_data", {}), "order_export")
@@ -390,7 +403,12 @@ async def run_discount_calculator(
 
             # Run pure calculator
             try:
-                result = calculate_discount(order_data, marketplace=marketplace)
+                result = calculate_discount(
+                    order_data,
+                    marketplace=marketplace,
+                    affiliate_commission=affiliate_commission,
+                    current_month_revenue=current_month_revenue,
+                )
             except Exception as e:
                 raise CalculatorException(
                     code="CALC_EXECUTION_FAILED",

@@ -33,6 +33,7 @@ def _make_upload(file_type: str) -> dict:
                 "Harga Awal",
                 "Harga Setelah Diskon",
                 "Jumlah",
+                "Diskon Dari Penjual",
                 "Voucher Ditanggung Penjual",
                 "Paket Diskon (Diskon dari Penjual)",
                 "Nomor Referensi SKU",
@@ -48,7 +49,13 @@ def _make_upload(file_type: str) -> dict:
 
 
 def _make_eval_inputs(marketplace: str = "TH") -> dict:
-    return {"marketplace": marketplace, "manual_data": {}}
+    return {
+        "marketplace": marketplace,
+        "manual_data": {
+            "business": {"salesMonth0": 12_500_000},
+            "promoTools": {"komisiProgramAfiliasi": 625_000},
+        },
+    }
 
 
 def _make_result_row() -> dict:
@@ -117,6 +124,8 @@ class TestDiscountCalculatorMarketplace:
             mock_calc.assert_called_once()
             _, kwargs = mock_calc.call_args
             assert kwargs["marketplace"] == "TH"
+            assert kwargs["current_month_revenue"] == 12_500_000
+            assert kwargs["affiliate_commission"] == 625_000
 
 
     async def test_defaults_to_id_when_eval_inputs_is_none(self):
@@ -151,6 +160,8 @@ class TestDiscountCalculatorMarketplace:
             mock_calc.assert_called_once()
             _, kwargs = mock_calc.call_args
             assert kwargs["marketplace"] == "ID"
+            assert kwargs["current_month_revenue"] is None
+            assert kwargs["affiliate_commission"] is None
 
 
 # ---------------------------------------------------------------------------

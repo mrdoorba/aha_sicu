@@ -54,6 +54,7 @@ interface ScoringProps {
   isStale: boolean;
   scoringError: Error | null;
   scoringStep?: ScoringStep;
+  calculatorResults?: Record<string, unknown>;
 }
 
 interface SaveProps {
@@ -96,6 +97,7 @@ export const EvaluationSections = ({
   isStale,
   scoringError,
   scoringStep,
+  calculatorResults,
   onSaveEvaluation,
   isSaving,
   saveStep,
@@ -297,6 +299,7 @@ export const EvaluationSections = ({
             storeName={storeName}
             brandName={brandName}
             scoringStep={scoringStep}
+            calculatorResults={calculatorResults}
           />
         </section>
 

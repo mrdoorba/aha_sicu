@@ -46,12 +46,14 @@ export interface DiscountDetails {
   range_max: string;
   voucher_pct: string;
   paket_pct: string;
+  affiliate_commission_pct?: string;
   fake_discount_flag: boolean;
   discount_pct_raw?: number;
   range_min_raw?: number;
   range_max_raw?: number;
   voucher_pct_raw?: number;
   paket_pct_raw?: number;
+  affiliate_commission_pct_raw?: number;
   i18n?: Record<string, { key: string; vars: Record<string, string> }>;
   product_summary: Array<{
     product_name: string;

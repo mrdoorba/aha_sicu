@@ -417,7 +417,7 @@ function DiscountSection({ data, t }: { data: Record<string, unknown>; t: TFunct
   }
 
   const lines: string[] = [];
-  for (const key of ['topSkuDiscount', 'range', 'voucher', 'packageDiscount', 'fakeDiscount']) {
+  for (const key of ['topSkuDiscount', 'range', 'voucher', 'packageDiscount', 'affiliateCommission', 'fakeDiscount']) {
     const entry = i18nDict[key];
     if (isRecord(entry) && typeof entry.key === 'string') {
       lines.push(t(entry.key as string, entry.vars as Record<string, string>));

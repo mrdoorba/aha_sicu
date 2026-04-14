@@ -84,6 +84,8 @@ async def list_grouped_evaluations_endpoint(
     search: str | None = Query(default=None, max_length=200),
     date_from: date | None = Query(default=None),
     date_to: date | None = Query(default=None),
+    marketplace: str | None = Query(default=None, description="Comma-separated marketplace filter (e.g., 'ID,TH')"),
+    verdict: str | None = Query(default=None, description="Comma-separated grouped verdict filter (approved,non_approved)"),
     current_user: dict = Depends(get_current_user),
     conn: Connection = Depends(get_db_connection),
 ) -> GroupedEvaluationListResponse:
@@ -99,6 +101,8 @@ async def list_grouped_evaluations_endpoint(
         search=search,
         date_from=date_from,
         date_to=date_to,
+        marketplaces=[m.strip() for m in marketplace.split(",")] if marketplace else None,
+        verdict_filters=[v.strip() for v in verdict.split(",")] if verdict else None,
     )
 
 

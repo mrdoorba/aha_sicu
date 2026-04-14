@@ -4,41 +4,7 @@ import { useBrandUploads, useDownloadFile, useUploadFile, type UploadInfo } from
 import { FileUploadSlot, type FileSlotConfig } from './FileUploadSlot';
 import { toast } from 'sonner';
 import { localizeSellerLink } from './forms/formConfig';
-
-const SLOTS: FileSlotConfig[] = [
-  {
-    label: 'fileUpload.slot.cpcAdReport',
-    fileType: 'cpc_ad_report',
-    accept: '.csv',
-    format: '.csv',
-    calculator: 'fileUpload.slot.cpcAdReportCalc',
-    link: 'https://seller.shopee.co.id/portal/marketing/pas/assembly?&type=all&group=last-thirty-days',
-  },
-  {
-    label: 'fileUpload.slot.keywordReport',
-    fileType: 'keyword_report',
-    accept: '.csv',
-    format: '.csv',
-    calculator: 'fileUpload.slot.keywordReportCalc',
-    link: 'https://seller.shopee.co.id/portal/marketing/pas/assembly?&type=all&group=last-thirty-days',
-  },
-  {
-    label: 'fileUpload.slot.orderExport',
-    fileType: 'order_export',
-    accept: '.xlsx,.zip',
-    format: '.xlsx, .zip',
-    calculator: 'fileUpload.slot.orderExportCalc',
-    link: 'https://seller.shopee.co.id/portal/sale/order',
-  },
-  {
-    label: 'fileUpload.slot.massUpdate',
-    fileType: 'mass_update',
-    accept: '.xlsx,.zip',
-    format: '.xlsx, .zip',
-    calculator: 'fileUpload.slot.massUpdateCalc',
-    link: 'https://seller.shopee.co.id/portal/product-mass/mass-update/download',
-  },
-];
+import { FILE_UPLOAD_SLOTS } from './fileUploadConfig';
 
 interface FileUploadSectionProps {
   brandId: number;
@@ -50,7 +16,7 @@ export function FileUploadSection({ brandId, marketplace = 'ID' }: FileUploadSec
 
   return (
     <div className="grid gap-4 sm:grid-cols-2">
-      {SLOTS.map((slot) => (
+      {FILE_UPLOAD_SLOTS.map((slot) => (
         <SlotWrapper
           key={slot.fileType}
           config={{ ...slot, link: slot.link ? localizeSellerLink(slot.link, marketplace) : slot.link }}

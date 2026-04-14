@@ -119,8 +119,10 @@ SAMPLE_ORDER_UPLOAD = {
     "row_count": 3,
     "parsed_data": {
         "columns": ["No. Pesanan", "Nama Produk", "Harga Awal",
-                     "Harga Setelah Diskon", "Jumlah",
-                     "Voucher Ditanggung Penjual", "Paket Diskon (Diskon dari Penjual)"],
+                     "Harga Setelah Diskon", "Jumlah", "Nama Variasi",
+                     "Diskon Dari Penjual", "Diskon Dari Shopee",
+                     "Voucher Ditanggung Penjual", "Cashback Koin",
+                     "Paket Diskon (Diskon dari Penjual)"],
         "data": [
             {
                 "No. Pesanan": "ORD001",
@@ -128,7 +130,11 @@ SAMPLE_ORDER_UPLOAD = {
                 "Harga Awal": "100.000",
                 "Harga Setelah Diskon": "80.000",
                 "Jumlah": "2",
+                "Nama Variasi": "",
+                "Diskon Dari Penjual": "20.000",
+                "Diskon Dari Shopee": "0",
                 "Voucher Ditanggung Penjual": "5.000",
+                "Cashback Koin": "0",
                 "Paket Diskon (Diskon dari Penjual)": "0",
             },
             {
@@ -137,7 +143,11 @@ SAMPLE_ORDER_UPLOAD = {
                 "Harga Awal": "50.000",
                 "Harga Setelah Diskon": "45.000",
                 "Jumlah": "3",
+                "Nama Variasi": "",
+                "Diskon Dari Penjual": "5.000",
+                "Diskon Dari Shopee": "0",
                 "Voucher Ditanggung Penjual": "0",
+                "Cashback Koin": "0",
                 "Paket Diskon (Diskon dari Penjual)": "0",
             },
             {
@@ -146,7 +156,11 @@ SAMPLE_ORDER_UPLOAD = {
                 "Harga Awal": "100.000",
                 "Harga Setelah Diskon": "80.000",
                 "Jumlah": "1",
+                "Nama Variasi": "",
+                "Diskon Dari Penjual": "20.000",
+                "Diskon Dari Shopee": "0",
                 "Voucher Ditanggung Penjual": "0",
+                "Cashback Koin": "0",
                 "Paket Diskon (Diskon dari Penjual)": "0",
             },
         ],
@@ -587,6 +601,7 @@ def test_run_discount_missing_columns(client):
         # Verify specific missing columns are listed
         assert "Harga Awal" in data["detail"]
         assert "Jumlah" in data["detail"]
+        assert "Diskon Dari Penjual" in data["detail"]
 
 
 def test_run_discount_string_parsed_data(client):

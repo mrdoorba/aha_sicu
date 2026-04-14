@@ -1187,7 +1187,7 @@ class TestConclusionI18n:
             language="th",
         )
         # Thai translation of conclusion.operationalGood
-        assert "สุขภาพการดำเนินงานร้านค้าอยู่ในเกณฑ์ดี" in html
+        assert "คุณภาพการดำเนินงานของร้านค้าอยู่ในเกณฑ์ค่อนข้างดี" in html
         # Raw Indonesian should NOT appear
         assert "Performa toko sangat baik" not in html
 

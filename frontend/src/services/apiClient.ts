@@ -25,7 +25,7 @@ const authMiddleware: Middleware = {
 
 const serverErrorMiddleware: Middleware = {
   async onResponse({ response }) {
-    if (response.status === 500) {
+    if (response.status === 500 || response.status === 503) {
       window.dispatchEvent(new CustomEvent('api-server-error'));
     }
     return response;

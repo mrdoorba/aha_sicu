@@ -1,4 +1,4 @@
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect, useRef } from 'react';
 import { Mail, Loader2, ChevronDown, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { EmailLanguageSelector } from '../shared/EmailLanguageSelector';
@@ -85,6 +85,7 @@ export function SendEmailDialog({
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [captureError, setCaptureError] = useState(false);
+  const previousEmailLanguage = useRef(emailLanguage);
 
   const totalRecipients = recipients.length + cc.length + bcc.length;
   const sendDisabled = recipients.length === 0 || isPending;
@@ -124,6 +125,16 @@ export function SendEmailDialog({
     setPreviewHtml(null);
     fetchPreview();
   };
+
+  useEffect(() => {
+    if (previousEmailLanguage.current === emailLanguage) return;
+    previousEmailLanguage.current = emailLanguage;
+
+    setPreviewHtml(null);
+    if (showPreview) {
+      fetchPreview();
+    }
+  }, [emailLanguage, fetchPreview, showPreview]);
 
   const handleClose = (nextOpen: boolean) => {
     if (!nextOpen) {

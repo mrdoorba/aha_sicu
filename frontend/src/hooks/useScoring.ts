@@ -39,6 +39,7 @@ export interface ScoringResult {
   closing_message: string;
   closing_message_i18n?: TranslatableText;
   email_subject: string;
+  email_subject_i18n?: TranslatableText;
   email_body: string;
   template: string;
   rule_version: number;

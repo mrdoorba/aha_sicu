@@ -112,7 +112,12 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
         scoreBreakdown={scoreBreakdown}
       />
 
-      <DetailedEvaluation scoreBreakdown={scoreBreakdown} marketplace={evaluation.marketplace} />
+      <DetailedEvaluation
+        scoreBreakdown={scoreBreakdown}
+        marketplace={evaluation.marketplace}
+        manualInputs={evaluation.manual_inputs}
+        calculatorResults={evaluation.calculator_results}
+      />
 
       <ScoreBreakdownChart ref={chartRef} scoreBreakdown={scoreBreakdown} />
 

@@ -124,6 +124,17 @@ def test_validate_columns_order_export_success():
     validate_columns(df, "order_export")
 
 
+def test_validate_columns_order_export_requires_seller_discount():
+    cols = [col for col in REQUIRED_COLUMNS["order_export"] if col != "Diskon Dari Penjual"]
+    df = pl.DataFrame({col: ["x"] for col in cols})
+
+    with pytest.raises(UploadException) as exc:
+        validate_columns(df, "order_export")
+
+    assert exc.value.code == "UPLOAD_MISSING_COLUMNS"
+    assert "Diskon Dari Penjual" in exc.value.detail
+
+
 def test_validate_columns_mass_update_success():
     cols = REQUIRED_COLUMNS["mass_update"]
     df = pl.DataFrame({col: ["x"] for col in cols})
@@ -292,7 +303,7 @@ def _thai_order_df(**overrides: list) -> pl.DataFrame:
 class TestThaiOrderExportNormalisation:
     """Tests for _normalise_thai_columns."""
 
-    def test_renames_all_columns_to_indonesian(self):
+    def test_renames_and_generates_all_columns_to_indonesian(self):
         df = _thai_order_df()
         result, was_thai = _normalise_thai_columns(df)
 
@@ -307,6 +318,7 @@ class TestThaiOrderExportNormalisation:
         assert "Nomor Referensi SKU" in result.columns
         assert "Nama Variasi" in result.columns
         assert "Cashback Koin" in result.columns
+        assert "Diskon Dari Penjual" in result.columns
         assert "Diskon Dari Shopee" in result.columns
 
     def test_computes_jumlah_produk_di_pesan(self):
@@ -337,6 +349,17 @@ class TestThaiOrderExportNormalisation:
         })
         result, _ = _normalise_thai_columns(df)
         assert result.to_dicts()[0]["Jumlah Produk di Pesan"] == 1
+
+    def test_computes_diskon_dari_penjual(self):
+        df = _thai_order_df(**{
+            "ราคาตั้งต้น": ["100", "2,000", "฿300"],
+            "ราคาขาย": ["80", "1,500", "250"],
+            "ส่วนลดจาก Shopee": ["5", "100", "฿10"],
+            "จำนวน": ["1", "2", "3"],
+        })
+        result, _ = _normalise_thai_columns(df)
+
+        assert result["Diskon Dari Penjual"].to_list() == [15.0, 800.0, 120.0]
 
     def test_validates_after_normalisation(self):
         """Thai order export passes column validation after normalisation."""

@@ -9,6 +9,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => {
       const map: Record<string, string> = {
         'sendMail.title': 'Kirim Email',
+        'sendMail.description': 'Dialog kirim email',
         'sendMail.to': 'Kepada',
         'sendMail.picEmail': 'Email PIC',
         'sendMail.subject': 'Subjek',
@@ -101,7 +102,7 @@ describe('SendMailDialog', () => {
 
   it('opens mailto URL via window.open on "Kirim Email" click', async () => {
     const onOpenChange = vi.fn();
-    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => ({ closed: false } as Window));
     const user = userEvent.setup();
     renderDialog({ onOpenChange });
 
@@ -125,7 +126,7 @@ describe('SendMailDialog', () => {
 
   it('uses edited "Kepada" value in mailto URL', async () => {
     const onOpenChange = vi.fn();
-    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => ({ closed: false } as Window));
     const user = userEvent.setup();
     renderDialog({ onOpenChange });
 
@@ -324,4 +325,3 @@ describe('SendMailDialog — language selector', () => {
     expect(onOpenChange).toHaveBeenCalledWith(false);
   });
 });
-
