@@ -28,11 +28,19 @@ interface CategoryBreakdown {
 interface DetailedEvaluationProps {
   scoreBreakdown: CategoryBreakdown[];
   marketplace?: string;
+  manualInputs?: Record<string, unknown>;
 }
 
-export const DetailedEvaluation = ({ scoreBreakdown, marketplace }: DetailedEvaluationProps) => {
+export const DetailedEvaluation = ({ scoreBreakdown, marketplace, manualInputs }: DetailedEvaluationProps) => {
   const { t } = useTranslation();
   const [visitedTabs, setVisitedTabs] = useState<Set<string>>(new Set([scoreBreakdown[0]?.category ?? '']));
+
+  const affiliateCommission = (() => {
+    const promoTools = manualInputs?.promoTools;
+    if (!promoTools || typeof promoTools !== 'object') return null;
+    const value = (promoTools as Record<string, unknown>).komisiProgramAfiliasi;
+    return typeof value === 'number' ? value : null;
+  })();
 
   const handleTabChange = (value: string) => {
     setVisitedTabs((prev) => new Set(prev).add(value));
@@ -68,7 +76,7 @@ export const DetailedEvaluation = ({ scoreBreakdown, marketplace }: DetailedEval
                   {cat.rows && cat.rows.length > 0 ? (
                     <div className="grid gap-3 sm:grid-cols-2">
                       {cat.rows.flatMap((row, idx) => {
-                        const card = (
+                        const cards = [
                           <div key={idx}>
                             <CategoryMetricCard
                               metric={row.metric}
@@ -84,15 +92,36 @@ export const DetailedEvaluation = ({ scoreBreakdown, marketplace }: DetailedEval
                               marketplace={marketplace}
                             />
                           </div>
+                        ];
+                        const shouldShowAffiliateCommission = (
+                          affiliateCommission !== null
+                          && (row.metric_i18n?.key === 'scoring.promo.programAfiliasi' || row.metric === 'Program Afiliasi')
                         );
+                        if (shouldShowAffiliateCommission) {
+                          cards.push(
+                            <div key={`affiliate-commission-${idx}`}>
+                              <CategoryMetricCard
+                                metric={t('fields.promoTools.komisiProgramAfiliasi')}
+                                value={affiliateCommission}
+                                verdict="-"
+                                score={0}
+                                benchmark=""
+                                message=""
+                                marketplace={marketplace}
+                              />
+                            </div>,
+                          );
+                        }
                         if (row.metric_i18n?.key === 'scoring.avgSales6mo' || row.metric.startsWith('Rata² Penjualan') || row.metric_i18n?.key === 'scoring.promo.programAfiliasi' || row.metric === 'Program Afiliasi' || row.metric === 'ROI') {
                           return [
-                            card,
-                            <div key={`spacer-${idx}`} className="hidden sm:block" />,
+                            ...cards,
+                            ...(cards.length === 1
+                              ? [<div key={`spacer-${idx}`} className="hidden sm:block" />]
+                              : []),
                             <div key={`separator-${idx}`} className="col-span-2 border-t border-primary/30" />,
                           ];
                         }
-                        return [card];
+                        return cards;
                       })}
                     </div>
                   ) : (

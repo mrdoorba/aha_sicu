@@ -87,6 +87,32 @@ describe('DetailedEvaluation', () => {
     expect(separators.length).toBe(1);
   });
 
+  it('shows affiliate commission in the promo tab when manual inputs include it', () => {
+    const alatPromo = [
+      {
+        category: 'Alat Promo',
+        score: 15,
+        max_score: 20,
+        rows: [
+          makeRow('Program Afiliasi'),
+          makeRow('% Penggunaan alat promosi'),
+        ],
+      },
+    ];
+
+    render(
+      <DetailedEvaluation
+        scoreBreakdown={alatPromo}
+        manualInputs={{ promoTools: { komisiProgramAfiliasi: 123456 } }}
+      />,
+    );
+
+    expect(
+      screen.getByText(/fields\.promoTools\.komisiProgramAfiliasi|Komisi dari Program Afiliasi|Commission from Affiliate Program/),
+    ).toBeInTheDocument();
+    expect(screen.getByText('123,456')).toBeInTheDocument();
+  });
+
   it('should render separator after ROI in Iklan tab and pair percentage metrics on same row', () => {
     const iklan = [
       {
