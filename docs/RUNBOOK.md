@@ -38,13 +38,22 @@ gcloud run deploy "${CLOUD_RUN_SERVICE}" \
 ```
 
 When you use the GitHub workflow path:
-1. Wait for the `develop` backend deploy to finish.
-2. Open the `Verified backend release` summary.
-3. Copy the `release_sha`.
-4. Run `Promote Backend` with that `release_sha`.
+1. Merge `develop` into `production`.
+2. Wait for the verified `develop` backend deploy to finish.
+3. Run `Promote Backend` **from the `production` branch**.
+
+Default path:
+- Leave both `release_sha` and `image` empty.
+- The workflow auto-resolves the newest verified develop backend release that is
+  reachable from the current `production` HEAD.
+
+Optional overrides:
+- Provide `release_sha` to promote a specific verified develop backend release.
+- Provide `image` to force a direct immutable image reference override.
 
 The workflow resolves the exact verified image for you from the successful
-`develop` run, so operators do not have to hand-copy long digest strings.
+`develop` run, so operators do not have to hand-copy long digest strings in the
+normal promotion flow.
 
 ### Manual Frontend Deploy
 

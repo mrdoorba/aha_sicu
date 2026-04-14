@@ -1,6 +1,9 @@
 # Store ICU - Backend Production Promotion
 # Deploys a verified backend image digest to production without rebuilding it.
-# Operators normally provide the release SHA from a successful develop run.
+# In the normal flow, operators merge develop into production first, then run
+# this workflow from the production branch. When no inputs are provided, the
+# workflow auto-resolves the newest verified develop backend release that is an
+# ancestor of the current production HEAD.
 
 name: Promote Backend
 
@@ -28,76 +31,181 @@ jobs:
       release_sha: ${{ steps.resolve.outputs.release_sha }}
 
     steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+
       - name: Validate promotion input
         env:
           RELEASE_SHA: ${{ inputs.release_sha }}
           IMAGE: ${{ inputs.image }}
+          REF_NAME: ${{ github.ref_name }}
         run: |
-          if [ -z "$RELEASE_SHA" ] && [ -z "$IMAGE" ]; then
-            echo "::error::Provide either release_sha or image"
-            exit 1
+          if [ -n "$RELEASE_SHA" ] || [ -n "$IMAGE" ]; then
+            exit 0
           fi
+
+          if [ "$REF_NAME" = "production" ]; then
+            echo "Auto-resolving release from production branch ancestry"
+            exit 0
+          fi
+
+          echo "::error::Provide either release_sha or image, or run this workflow from the production branch after merging develop"
+          exit 1
 
       - name: Resolve release from verified develop run
         id: resolve
         env:
           GH_TOKEN: ${{ github.token }}
+          GH_REPO: ${{ github.repository }}
           RELEASE_SHA: ${{ inputs.release_sha }}
           IMAGE: ${{ inputs.image }}
+          REF_NAME: ${{ github.ref_name }}
+          HEAD_SHA: ${{ github.sha }}
         run: |
-          if [ -n "$IMAGE" ]; then
-            echo "image=$IMAGE" >> "$GITHUB_OUTPUT"
-            echo "release_sha=${RELEASE_SHA:-manual-image}" >> "$GITHUB_OUTPUT"
+          set -euo pipefail
+
+          download_manifest() {
+            local run_id="$1"
+            local artifact_id
+
+            artifact_id="$(gh api "/repos/${GH_REPO}/actions/runs/${run_id}/artifacts" \
+              --jq '.artifacts[] | select(.name == "backend-release-manifest" and .expired == false) | .id' \
+              | head -n 1)"
+
+            if [ -z "$artifact_id" ]; then
+              return 1
+            fi
+
+            rm -rf release-manifest
+            mkdir -p release-manifest
+            gh api -H "Accept: application/vnd.github+json" \
+              "/repos/${GH_REPO}/actions/artifacts/${artifact_id}/zip" > release-manifest/manifest.zip
+            unzip -p release-manifest/manifest.zip backend-release-manifest.json > release-manifest/backend-release-manifest.json
+          }
+
+          emit_manual_image() {
+            local image_ref="$1"
+            local release_label="$2"
+            echo "image=$image_ref" >> "$GITHUB_OUTPUT"
+            echo "release_sha=$release_label" >> "$GITHUB_OUTPUT"
             {
               echo "### Production promotion target"
               echo
               echo "- Release source: manual image override"
-              echo "- Image: \`$IMAGE\`"
+              echo "- Image: \`$image_ref\`"
             } >> "$GITHUB_STEP_SUMMARY"
+          }
+
+          emit_verified_release() {
+            local run_url="$1"
+            local manifest_sha="$2"
+            local image_ref="$3"
+            echo "image=$image_ref" >> "$GITHUB_OUTPUT"
+            echo "release_sha=$manifest_sha" >> "$GITHUB_OUTPUT"
+            {
+              echo "### Production promotion target"
+              echo
+              echo "- Release SHA: \`$manifest_sha\`"
+              echo "- Verified image: \`$image_ref\`"
+              echo "- Source develop run: $run_url"
+            } >> "$GITHUB_STEP_SUMMARY"
+          }
+
+          if [ -n "$IMAGE" ]; then
+            emit_manual_image "$IMAGE" "${RELEASE_SHA:-manual-image}"
             exit 0
           fi
 
-          RUN_JSON=$(gh run list \
+          if [ -n "$RELEASE_SHA" ]; then
+            RUN_JSON="$(gh run list \
+              --workflow Deploy \
+              --branch develop \
+              --commit "$RELEASE_SHA" \
+              --limit 20 \
+              --json databaseId,conclusion,url,headSha)"
+
+            RUN_ID="$(printf '%s' "$RUN_JSON" | jq -r '.[] | select(.conclusion == "success") | .databaseId' | head -n 1)"
+            RUN_URL="$(printf '%s' "$RUN_JSON" | jq -r '.[] | select(.conclusion == "success") | .url' | head -n 1)"
+
+            if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
+              echo "::error::No successful develop Deploy run found for release_sha=$RELEASE_SHA"
+              exit 1
+            fi
+
+            if ! download_manifest "$RUN_ID"; then
+              echo "::error::No backend-release-manifest artifact found for run_id=$RUN_ID release_sha=$RELEASE_SHA"
+              exit 1
+            fi
+
+            IMAGE_REF="$(jq -r '.image // empty' release-manifest/backend-release-manifest.json)"
+            MANIFEST_SHA="$(jq -r '.release_sha // empty' release-manifest/backend-release-manifest.json)"
+
+            if [ -z "$IMAGE_REF" ] || [ -z "$MANIFEST_SHA" ]; then
+              echo "::error::Verified backend release manifest is missing image or release_sha"
+              exit 1
+            fi
+
+            if [ "$MANIFEST_SHA" != "$RELEASE_SHA" ]; then
+              echo "::error::Verified backend release manifest SHA ($MANIFEST_SHA) does not match requested release_sha ($RELEASE_SHA)"
+              exit 1
+            fi
+
+            emit_verified_release "$RUN_URL" "$MANIFEST_SHA" "$IMAGE_REF"
+            exit 0
+          fi
+
+          if [ "$REF_NAME" != "production" ]; then
+            echo "::error::Automatic release resolution is only supported from the production branch"
+            exit 1
+          fi
+
+          CANDIDATES="$(gh run list \
             --workflow Deploy \
             --branch develop \
-            --commit "$RELEASE_SHA" \
-            --limit 20 \
-            --json databaseId,conclusion,url,headSha)
+            --limit 50 \
+            --json databaseId,conclusion,url,headSha,createdAt)"
 
-          RUN_ID=$(printf '%s' "$RUN_JSON" | jq -r '.[] | select(.conclusion == "success") | .databaseId' | head -n 1)
-          RUN_URL=$(printf '%s' "$RUN_JSON" | jq -r '.[] | select(.conclusion == "success") | .url' | head -n 1)
+          FOUND_RUN_ID=""
+          FOUND_RUN_URL=""
+          FOUND_IMAGE=""
+          FOUND_SHA=""
 
-          if [ -z "$RUN_ID" ] || [ "$RUN_ID" = "null" ]; then
-            echo "::error::No successful develop Deploy run found for release_sha=$RELEASE_SHA"
+          while IFS=$'\t' read -r run_id run_sha run_url; do
+            [ -n "$run_id" ] || continue
+
+            if ! git merge-base --is-ancestor "$run_sha" "$HEAD_SHA"; then
+              continue
+            fi
+
+            if ! download_manifest "$run_id"; then
+              continue
+            fi
+
+            manifest_sha="$(jq -r '.release_sha // empty' release-manifest/backend-release-manifest.json)"
+            manifest_image="$(jq -r '.image // empty' release-manifest/backend-release-manifest.json)"
+
+            if [ -z "$manifest_sha" ] || [ -z "$manifest_image" ]; then
+              continue
+            fi
+
+            if [ "$manifest_sha" != "$run_sha" ]; then
+              continue
+            fi
+
+            FOUND_RUN_ID="$run_id"
+            FOUND_RUN_URL="$run_url"
+            FOUND_IMAGE="$manifest_image"
+            FOUND_SHA="$manifest_sha"
+            break
+          done < <(printf '%s' "$CANDIDATES" | jq -r '.[] | select(.conclusion == "success") | [.databaseId, .headSha, .url] | @tsv')
+
+          if [ -z "$FOUND_RUN_ID" ]; then
+            echo "::error::No verified develop backend release with a manifest artifact is reachable from production HEAD ($HEAD_SHA)"
             exit 1
           fi
 
-          rm -rf release-manifest
-          mkdir -p release-manifest
-          gh run download "$RUN_ID" --name backend-release-manifest --dir release-manifest
-
-          IMAGE_REF=$(jq -r '.image // empty' release-manifest/backend-release-manifest.json)
-          MANIFEST_SHA=$(jq -r '.release_sha // empty' release-manifest/backend-release-manifest.json)
-
-          if [ -z "$IMAGE_REF" ] || [ -z "$MANIFEST_SHA" ]; then
-            echo "::error::Verified backend release manifest is missing image or release_sha"
-            exit 1
-          fi
-
-          if [ "$MANIFEST_SHA" != "$RELEASE_SHA" ]; then
-            echo "::error::Verified backend release manifest SHA ($MANIFEST_SHA) does not match requested release_sha ($RELEASE_SHA)"
-            exit 1
-          fi
-
-          echo "image=$IMAGE_REF" >> "$GITHUB_OUTPUT"
-          echo "release_sha=$MANIFEST_SHA" >> "$GITHUB_OUTPUT"
-          {
-            echo "### Production promotion target"
-            echo
-            echo "- Release SHA: \`$MANIFEST_SHA\`"
-            echo "- Verified image: \`$IMAGE_REF\`"
-            echo "- Source develop run: $RUN_URL"
-          } >> "$GITHUB_STEP_SUMMARY"
+          emit_verified_release "$FOUND_RUN_URL" "$FOUND_SHA" "$FOUND_IMAGE"
 
   promote:
     needs: resolve-release
