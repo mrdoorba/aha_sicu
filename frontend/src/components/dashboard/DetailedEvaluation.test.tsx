@@ -172,6 +172,48 @@ describe('DetailedEvaluation', () => {
     expect(metricCards).toHaveLength(1);
   });
 
+  it('merges a standalone discount affiliate row into the main discount card', () => {
+    const discount = [
+      {
+        category: 'Discount',
+        score: 5,
+        max_score: 10,
+        rows: [
+          {
+            ...makeRow('Checkup Diskon'),
+            message_i18n: {
+              key: 'scoring.discountCheckup.fail',
+              vars: {
+                discountPct: '11.0%',
+                rangeMin: '0.1%',
+                rangeMax: '38.1%',
+                voucherPct: '0.0%',
+                paketPct: '0.0%',
+              },
+            },
+          },
+          {
+            ...makeRow('% Komisi Afiliasi'),
+            value: '19.3%',
+            message: '% Komisi Afiliasi: 19.3%',
+          },
+        ],
+      },
+    ];
+
+    const { container } = render(<DetailedEvaluation scoreBreakdown={discount} />);
+
+    const card = screen.getByText('Checkup Diskon').closest('div.rounded-lg');
+    expect(card).not.toBeNull();
+    const cardText = (card as HTMLElement).textContent ?? '';
+    expect(cardText).toContain('% Komisi Afiliasi: 19.3%');
+    expect(cardText.indexOf('Paket Diskon 0.0%')).toBeLessThan(cardText.indexOf('% Komisi Afiliasi: 19.3%'));
+    expect(cardText.indexOf('% Komisi Afiliasi: 19.3%')).toBeLessThan(cardText.indexOf('📌 Berpotensi menggunakan \'fake discount\''));
+
+    const metricCards = container.querySelectorAll('.bg-card.p-4.space-y-3');
+    expect(metricCards).toHaveLength(1);
+  });
+
   it('should render separator after ROI in Iklan tab and pair percentage metrics on same row', () => {
     const iklan = [
       {

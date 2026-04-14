@@ -32,6 +32,21 @@ interface DetailedEvaluationProps {
   calculatorResults?: Record<string, unknown>;
 }
 
+function isDiscountAffiliateRow(row: RowScore): boolean {
+  const haystack = [
+    row.metric,
+    row.message,
+    typeof row.value === 'string' ? row.value : '',
+    row.metric_i18n?.key ?? '',
+    row.message_i18n?.key ?? '',
+    row.value_i18n?.key ?? '',
+  ].join(' ').toLowerCase();
+
+  return haystack.includes('affiliatecommission')
+    || haystack.includes('affiliate commission')
+    || haystack.includes('komisi afiliasi');
+}
+
 export const DetailedEvaluation = ({
   scoreBreakdown,
   marketplace,
@@ -69,14 +84,29 @@ export const DetailedEvaluation = ({
     return typeof value === 'string' && value.trim() ? value : null;
   })();
 
+  const mergedDiscountAffiliateCommission = useMemo(() => {
+    if (discountAffiliateCommission) return discountAffiliateCommission;
+
+    const discountCategory = scoreBreakdown.find((cat) => cat.category === 'Discount');
+    const affiliateRow = discountCategory?.rows?.find(isDiscountAffiliateRow);
+    if (!affiliateRow) return null;
+
+    if (typeof affiliateRow.value === 'string' && affiliateRow.value.trim()) {
+      return affiliateRow.value.trim();
+    }
+
+    const match = affiliateRow.message.match(/(\d+(?:[.,]\d+)?)%/);
+    return match ? `${match[1]}%` : null;
+  }, [discountAffiliateCommission, scoreBreakdown]);
+
   const handleTabChange = (value: string) => {
     setVisitedTabs((prev) => new Set(prev).add(value));
   };
 
   const injectDiscountAffiliateCommission = useCallback((message: string): string => {
-    if (!discountAffiliateCommission) return message;
+    if (!mergedDiscountAffiliateCommission) return message;
 
-    const affiliateLine = t('discount.output.affiliateCommission', { value: discountAffiliateCommission });
+    const affiliateLine = t('discount.output.affiliateCommission', { value: mergedDiscountAffiliateCommission });
     if (!affiliateLine || message.includes(affiliateLine)) return message;
 
     const lines = message.split('\n');
@@ -91,7 +121,7 @@ export const DetailedEvaluation = ({
       affiliateLine,
       ...lines.slice(fakeDiscountIndex),
     ].filter(Boolean).join('\n');
-  }, [discountAffiliateCommission, t]);
+  }, [mergedDiscountAffiliateCommission, t]);
 
   const discountMessageByIndex = useMemo(() => {
     const discountCategory = scoreBreakdown.find((cat) => cat.category === 'Discount');
@@ -100,6 +130,8 @@ export const DetailedEvaluation = ({
     const messages = new Map<number, string>();
 
     discountCategory.rows.forEach((row, idx) => {
+      if (isDiscountAffiliateRow(row)) return;
+
       const translatedMessage = row.message_i18n
         ? t(row.message_i18n.key, row.message_i18n.vars)
         : row.message;
@@ -142,6 +174,10 @@ export const DetailedEvaluation = ({
                 <>
                   {(() => {
                     const cards = cat.rows?.flatMap((row, idx) => {
+                      if (cat.category === 'Discount' && isDiscountAffiliateRow(row)) {
+                        return [];
+                      }
+
                       const mergedDiscountMessage = cat.category === 'Discount'
                         ? (discountMessageByIndex.get(idx) ?? row.message)
                         : row.message;
