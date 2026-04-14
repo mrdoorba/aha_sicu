@@ -135,6 +135,35 @@ function TopSkuContent({ data, t, marketplace }: { data: Record<string, unknown>
   );
 }
 
+function DiscountContent({ data, t }: { data: Record<string, unknown>; t: TFunction }) {
+  const text = typeof data.output_text === 'string' ? data.output_text : '';
+  if (!text) return <p className="text-sm text-muted-foreground py-6 text-center">{t('common.noData')}</p>;
+
+  const details = isRecord(data.details) ? data.details : undefined;
+  const i18nDict = isRecord(details?.i18n) ? details.i18n : undefined;
+
+  if (!i18nDict) {
+    return (
+      <pre className="whitespace-pre-wrap break-words rounded-lg bg-muted/50 p-4 text-sm font-mono leading-relaxed border border-border/50">
+        {text}
+      </pre>
+    );
+  }
+
+  const lines: string[] = [];
+  for (const key of ['topSkuDiscount', 'range', 'voucher', 'packageDiscount', 'affiliateCommission', 'fakeDiscount']) {
+    const entry = i18nDict[key];
+    if (isRecord(entry) && typeof entry.key === 'string') {
+      lines.push(t(entry.key as string, entry.vars as Record<string, string>));
+    }
+  }
+
+  return (
+    <pre className="whitespace-pre-wrap break-words rounded-lg bg-muted/50 p-4 text-sm font-mono leading-relaxed border border-border/50">
+      {lines.join('\n')}
+    </pre>
+  );
+}
 
 export const DataIntelligence = ({ calculatorResults, marketplace }: DataIntelligenceProps) => {
   const { t } = useTranslation();
@@ -145,6 +174,7 @@ export const DataIntelligence = ({ calculatorResults, marketplace }: DataIntelli
   };
 
   const adsData = isRecord(calculatorResults.ads_keyword) ? calculatorResults.ads_keyword : {};
+  const discountData = isRecord(calculatorResults.discount) ? calculatorResults.discount : {};
   const skuData = isRecord(calculatorResults.top_sku) ? calculatorResults.top_sku : {};
 
   return (
@@ -158,11 +188,15 @@ export const DataIntelligence = ({ calculatorResults, marketplace }: DataIntelli
         <Tabs defaultValue="ads" onValueChange={handleTabChange}>
           <TabsList variant="line" className="mb-6">
             <TabsTrigger value="ads">{t('presentation.intelligence.adsAnalysis')}</TabsTrigger>
+            <TabsTrigger value="discount">{t('presentation.intelligence.discount')}</TabsTrigger>
             <TabsTrigger value="sku">{t('presentation.intelligence.topSku')}</TabsTrigger>
           </TabsList>
 
           <TabsContent value="ads">
             {visitedTabs.has('ads') && <AdsContent data={adsData} t={t} />}
+          </TabsContent>
+          <TabsContent value="discount">
+            {visitedTabs.has('discount') && <DiscountContent data={discountData} t={t} />}
           </TabsContent>
           <TabsContent value="sku">
             {visitedTabs.has('sku') && <TopSkuContent data={skuData} t={t} marketplace={marketplace} />}
