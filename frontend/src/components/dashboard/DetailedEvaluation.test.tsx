@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { render, screen, within } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { DetailedEvaluation } from './DetailedEvaluation';
 
@@ -111,6 +111,45 @@ describe('DetailedEvaluation', () => {
       screen.getByText(/fields\.promoTools\.komisiProgramAfiliasi|Komisi dari Program Afiliasi|Commission from Affiliate Program/),
     ).toBeInTheDocument();
     expect(screen.getByText('123,456')).toBeInTheDocument();
+  });
+
+  it('shows discount affiliate commission inside the existing discount card when calculator results include it', () => {
+    const discount = [
+      {
+        category: 'Discount',
+        score: 5,
+        max_score: 10,
+        rows: [
+          { ...makeRow('Checkup Diskon'), message: '% Diskon TOP SKU: 2.7%' },
+        ],
+      },
+    ];
+
+    const { container } = render(
+      <DetailedEvaluation
+        scoreBreakdown={discount}
+        calculatorResults={{
+          discount: {
+            details: {
+              i18n: {
+                affiliateCommission: {
+                  key: 'discount.output.affiliateCommission',
+                  vars: { value: '1.5%' },
+                },
+              },
+            },
+          },
+        }}
+      />,
+    );
+
+    const card = screen.getByText('Checkup Diskon').closest('div.rounded-lg');
+    expect(card).not.toBeNull();
+    expect(within(card as HTMLElement).getByText('% Diskon TOP SKU: 2.7%')).toBeInTheDocument();
+    expect(within(card as HTMLElement).getByText(/% Komisi Afiliasi: 1.5%|% Affiliate Commission: 1.5%/i)).toBeInTheDocument();
+
+    const metricCards = container.querySelectorAll('.bg-card.p-4.space-y-3');
+    expect(metricCards).toHaveLength(1);
   });
 
   it('should render separator after ROI in Iklan tab and pair percentage metrics on same row', () => {
