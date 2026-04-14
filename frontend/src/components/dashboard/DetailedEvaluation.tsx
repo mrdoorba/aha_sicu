@@ -33,18 +33,22 @@ interface DetailedEvaluationProps {
 }
 
 function isDiscountAffiliateRow(row: RowScore): boolean {
-  const haystack = [
+  const metricHaystack = [
     row.metric,
-    row.message,
-    typeof row.value === 'string' ? row.value : '',
     row.metric_i18n?.key ?? '',
-    row.message_i18n?.key ?? '',
-    row.value_i18n?.key ?? '',
   ].join(' ').toLowerCase();
 
-  return haystack.includes('affiliatecommission')
-    || haystack.includes('affiliate commission')
-    || haystack.includes('komisi afiliasi');
+  if (
+    metricHaystack.includes('affiliatecommission')
+    || metricHaystack.includes('affiliate commission')
+    || metricHaystack.includes('komisi afiliasi')
+  ) {
+    return true;
+  }
+
+  return [row.message_i18n?.key, row.value_i18n?.key]
+    .filter((key): key is string => typeof key === 'string')
+    .some((key) => key.toLowerCase().includes('affiliatecommission'));
 }
 
 function formatAffiliateCommissionValue(value: unknown): string | null {

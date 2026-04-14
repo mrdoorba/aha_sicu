@@ -254,6 +254,32 @@ describe('DetailedEvaluation', () => {
     expect(metricCards).toHaveLength(1);
   });
 
+  it('does not hide the main discount card when the checkup message already contains affiliate commission text', () => {
+    const discount = [
+      {
+        category: 'Discount',
+        score: 5,
+        max_score: 10,
+        rows: [
+          {
+            ...makeRow('Checkup Diskon'),
+            value: '% Diskon TOP SKU: 11.0%',
+            message: '% Diskon TOP SKU: 11.0%\nRange: 0.1% ~ 38.1%\nVoucher 0.0%\nPaket Diskon 0.0%\n% Komisi Afiliasi: 19.3%\n📌 Berpotensi menggunakan \'fake discount\'',
+          },
+        ],
+      },
+    ];
+
+    const { container } = render(<DetailedEvaluation scoreBreakdown={discount} />);
+
+    expect(screen.getByText('Checkup Diskon')).toBeInTheDocument();
+    expect(screen.getByText(/Komisi Afiliasi: 19.3%/)).toBeInTheDocument();
+    expect(screen.queryByText('Detail metrik tidak tersedia untuk evaluasi ini.')).not.toBeInTheDocument();
+
+    const metricCards = container.querySelectorAll('.bg-card.p-4.space-y-3');
+    expect(metricCards).toHaveLength(1);
+  });
+
   it('should render separator after ROI in Iklan tab and pair percentage metrics on same row', () => {
     const iklan = [
       {
