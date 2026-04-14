@@ -64,6 +64,17 @@ function formatAffiliateCommissionValue(value: unknown): string | null {
   return null;
 }
 
+function looksLikeDiscountSummary(text: string): boolean {
+  const normalized = text.toLowerCase();
+  return normalized.includes('diskon top sku')
+    || normalized.includes('discount top sku')
+    || normalized.includes('range:')
+    || normalized.includes('voucher')
+    || normalized.includes('paket diskon')
+    || normalized.includes('package discount')
+    || normalized.includes('fake discount');
+}
+
 export const DetailedEvaluation = ({
   scoreBreakdown,
   marketplace,
@@ -153,26 +164,33 @@ export const DetailedEvaluation = ({
     ].filter(Boolean).join('\n');
   }, [mergedDiscountAffiliateCommission, t]);
 
-  const discountMessageByIndex = useMemo(() => {
+  const discountContentByIndex = useMemo(() => {
     const discountCategory = scoreBreakdown.find((cat) => cat.category === 'Discount');
-    if (!discountCategory?.rows?.length) return new Map<number, string>();
+    if (!discountCategory?.rows?.length) return new Map<number, { value: unknown; message: string }>();
 
-    const messages = new Map<number, string>();
+    const content = new Map<number, { value: unknown; message: string }>();
 
     discountCategory.rows.forEach((row, idx) => {
       if (isDiscountAffiliateRow(row)) return;
 
+      const translatedValue = row.value_i18n
+        ? t(row.value_i18n.key, row.value_i18n.vars)
+        : row.value;
       const translatedMessage = row.message_i18n
         ? t(row.message_i18n.key, row.message_i18n.vars)
         : row.message;
 
-      messages.set(
-        idx,
-        idx === 0 ? injectDiscountAffiliateCommission(translatedMessage) : translatedMessage,
-      );
+      const valueText = typeof translatedValue === 'string' ? translatedValue : '';
+      const messageText = typeof translatedMessage === 'string' ? translatedMessage : '';
+      const injectIntoValue = looksLikeDiscountSummary(valueText) || !looksLikeDiscountSummary(messageText);
+
+      content.set(idx, {
+        value: idx === 0 && injectIntoValue ? injectDiscountAffiliateCommission(valueText) : translatedValue,
+        message: idx === 0 && !injectIntoValue ? injectDiscountAffiliateCommission(messageText) : messageText,
+      });
     });
 
-    return messages;
+    return content;
   }, [scoreBreakdown, t, injectDiscountAffiliateCommission]);
 
   if (scoreBreakdown.length === 0) return null;
@@ -208,25 +226,24 @@ export const DetailedEvaluation = ({
                         return [];
                       }
 
-                      const mergedDiscountMessage = cat.category === 'Discount'
-                        ? (discountMessageByIndex.get(idx) ?? row.message)
-                        : row.message;
-                      const mergedDiscountMessageI18n = cat.category === 'Discount'
-                        ? undefined
-                        : row.message_i18n;
+                      const mergedDiscountContent = cat.category === 'Discount'
+                        ? discountContentByIndex.get(idx)
+                        : undefined;
+                      const discountValue = mergedDiscountContent?.value ?? row.value;
+                      const discountMessage = mergedDiscountContent?.message ?? row.message;
 
                       const rowCards = [
                         <div key={idx}>
                           <CategoryMetricCard
                             metric={row.metric}
-                            value={row.value}
+                            value={cat.category === 'Discount' ? discountValue : row.value}
                             verdict={row.verdict}
                             score={row.score}
                             benchmark={(row.metric_i18n?.key === 'scoring.adCost' || row.metric === 'Biaya (iklan)') ? '-' : row.benchmark}
-                            message={mergedDiscountMessage}
+                            message={cat.category === 'Discount' ? discountMessage : row.message}
                             metric_i18n={row.metric_i18n}
-                            value_i18n={row.value_i18n}
-                            message_i18n={mergedDiscountMessageI18n}
+                            value_i18n={cat.category === 'Discount' ? undefined : row.value_i18n}
+                            message_i18n={cat.category === 'Discount' ? undefined : row.message_i18n}
                             benchmark_i18n={row.benchmark_i18n}
                             marketplace={marketplace}
                           />

@@ -214,6 +214,53 @@ describe('DetailedEvaluation', () => {
     expect(metricCards).toHaveLength(1);
   });
 
+  it('merges a standalone discount affiliate row into value_i18n content before the fake discount warning', () => {
+    const discount = [
+      {
+        category: 'Discount',
+        score: 5,
+        max_score: 10,
+        rows: [
+          {
+            ...makeRow('Checkup Diskon'),
+            value: '',
+            message: '',
+            value_i18n: {
+              key: 'scoring.discountCheckup.fail',
+              vars: {
+                discountPct: '11.0%',
+                rangeMin: '0.1%',
+                rangeMax: '38.1%',
+                voucherPct: '0.0%',
+                paketPct: '0.0%',
+              },
+            },
+          },
+          {
+            ...makeRow('% Komisi Afiliasi'),
+            value: '19.3%',
+            message: '% Komisi Afiliasi: 19.3%',
+          },
+        ],
+      },
+    ];
+
+    const { container } = render(<DetailedEvaluation scoreBreakdown={discount} />);
+
+    const card = screen.getByText('Checkup Diskon').closest('div.rounded-lg');
+    expect(card).not.toBeNull();
+    const cardText = (card as HTMLElement).textContent ?? '';
+    expect(cardText).toContain('% Komisi Afiliasi: 19.3%');
+    expect(cardText.indexOf('Paket Diskon 0.0%')).toBeLessThan(cardText.indexOf('% Komisi Afiliasi: 19.3%'));
+    expect(cardText.indexOf('% Komisi Afiliasi: 19.3%')).toBeLessThan(cardText.indexOf('📌 Berpotensi menggunakan \'fake discount\''));
+
+    const benchmarkSection = screen.queryByText('% Komisi Afiliasi: 19.3%')?.closest('.text-xs.text-muted-foreground');
+    expect(benchmarkSection).toBeFalsy();
+
+    const metricCards = container.querySelectorAll('.bg-card.p-4.space-y-3');
+    expect(metricCards).toHaveLength(1);
+  });
+
   it('merges a standalone discount affiliate row when its percent is stored as a numeric value', () => {
     const discount = [
       {
