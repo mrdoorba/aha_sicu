@@ -73,6 +73,26 @@ export const DetailedEvaluation = ({
     setVisitedTabs((prev) => new Set(prev).add(value));
   };
 
+  const injectDiscountAffiliateCommission = (message: string): string => {
+    if (!discountAffiliateCommission) return message;
+
+    const affiliateLine = t('discount.output.affiliateCommission', { value: discountAffiliateCommission });
+    if (!affiliateLine || message.includes(affiliateLine)) return message;
+
+    const lines = message.split('\n');
+    const fakeDiscountIndex = lines.findIndex((line) => /fake discount/i.test(line) || line.includes('📌'));
+
+    if (fakeDiscountIndex === -1) {
+      return [...lines, affiliateLine].filter(Boolean).join('\n');
+    }
+
+    return [
+      ...lines.slice(0, fakeDiscountIndex),
+      affiliateLine,
+      ...lines.slice(fakeDiscountIndex),
+    ].filter(Boolean).join('\n');
+  };
+
   if (scoreBreakdown.length === 0) return null;
 
   return (
@@ -102,14 +122,11 @@ export const DetailedEvaluation = ({
                 <>
                   {(() => {
                     const cards = cat.rows?.flatMap((row, idx) => {
-                      const discountAffiliateCommissionLine = (
-                        cat.category === 'Discount'
-                        && idx === 0
-                        && discountAffiliateCommission !== null
-                        && !row.message.includes(discountAffiliateCommission)
+                      const mergedDiscountMessage = (
+                        cat.category === 'Discount' && idx === 0
                       )
-                        ? [t('discount.output.affiliateCommission', { value: discountAffiliateCommission })]
-                        : [];
+                        ? injectDiscountAffiliateCommission(row.message)
+                        : row.message;
 
                       const rowCards = [
                         <div key={idx}>
@@ -119,12 +136,11 @@ export const DetailedEvaluation = ({
                             verdict={row.verdict}
                             score={row.score}
                             benchmark={(row.metric_i18n?.key === 'scoring.adCost' || row.metric === 'Biaya (iklan)') ? '-' : row.benchmark}
-                            message={row.message}
+                            message={mergedDiscountMessage}
                             metric_i18n={row.metric_i18n}
                             value_i18n={row.value_i18n}
                             message_i18n={row.message_i18n}
                             benchmark_i18n={row.benchmark_i18n}
-                            extraDetails={discountAffiliateCommissionLine}
                             marketplace={marketplace}
                           />
                         </div>,

@@ -1,4 +1,4 @@
-import { render, screen, within } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect } from 'vitest';
 import { DetailedEvaluation } from './DetailedEvaluation';
 
@@ -113,14 +113,17 @@ describe('DetailedEvaluation', () => {
     expect(screen.getByText('123,456')).toBeInTheDocument();
   });
 
-  it('shows discount affiliate commission inside the existing discount card when calculator results include it', () => {
+  it('shows discount affiliate commission inline before the fake discount warning in the existing discount card', () => {
     const discount = [
       {
         category: 'Discount',
         score: 5,
         max_score: 10,
         rows: [
-          { ...makeRow('Checkup Diskon'), message: '% Diskon TOP SKU: 2.7%' },
+          {
+            ...makeRow('Checkup Diskon'),
+            message: '% Diskon TOP SKU: 11.0%\nRange: 0.1% ~ 38.1%\nVoucher 0.0%\nPaket Diskon 0.0%\n📌 Berpotensi menggunakan \'fake discount\'',
+          },
         ],
       },
     ];
@@ -145,8 +148,15 @@ describe('DetailedEvaluation', () => {
 
     const card = screen.getByText('Checkup Diskon').closest('div.rounded-lg');
     expect(card).not.toBeNull();
-    expect(within(card as HTMLElement).getByText('% Diskon TOP SKU: 2.7%')).toBeInTheDocument();
-    expect(within(card as HTMLElement).getByText(/% Komisi Afiliasi: 1.5%|% Affiliate Commission: 1.5%/i)).toBeInTheDocument();
+    const cardText = (card as HTMLElement).textContent ?? '';
+    expect(cardText).toContain('% Diskon TOP SKU: 11.0%');
+    expect(cardText).toContain('Range: 0.1% ~ 38.1%');
+    expect(cardText).toContain('Voucher 0.0%');
+    expect(cardText).toContain('Paket Diskon 0.0%');
+    expect(cardText).toContain('% Komisi Afiliasi: 1.5%');
+    expect(cardText).toContain('📌 Berpotensi menggunakan \'fake discount\'');
+    expect(cardText.indexOf('Paket Diskon 0.0%')).toBeLessThan(cardText.indexOf('% Komisi Afiliasi: 1.5%'));
+    expect(cardText.indexOf('% Komisi Afiliasi: 1.5%')).toBeLessThan(cardText.indexOf('📌 Berpotensi menggunakan \'fake discount\''));
 
     const metricCards = container.querySelectorAll('.bg-card.p-4.space-y-3');
     expect(metricCards).toHaveLength(1);
