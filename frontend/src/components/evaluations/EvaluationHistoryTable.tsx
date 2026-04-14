@@ -418,9 +418,11 @@ export const EvaluationHistoryTable = () => {
       setSearchParams((prev) => {
         const p = new URLSearchParams(prev);
         const current = parseFilterParam<T>(p.get(key), allowedValues);
-        const next = current.includes(value)
-          ? (current.length === 1 ? current : current.filter((item) => item !== value))
-          : allowedValues.filter((item) => current.includes(item) || item === value);
+        const next = areAllSelected(current, allowedValues)
+          ? [value]
+          : current.includes(value)
+            ? (current.length === 1 ? [...allowedValues] : current.filter((item) => item !== value))
+            : allowedValues.filter((item) => current.includes(item) || item === value);
 
         if (areAllSelected(next, allowedValues)) {
           p.delete(key);
@@ -434,6 +436,12 @@ export const EvaluationHistoryTable = () => {
     },
     [setSearchParams],
   );
+
+  const clearFilters = useCallback(() => {
+    setSearchInput('');
+    setSearchParams({}, { replace: true });
+    setExpandedBrands(new Set());
+  }, [setSearchParams]);
 
   const {
     brands,
@@ -466,6 +474,15 @@ export const EvaluationHistoryTable = () => {
       </div>
     );
   }
+
+  const hasMarketplaceFilter = !areAllSelected(selectedMarketplaces, HISTORY_MARKETPLACES);
+  const hasVerdictFilter = !areAllSelected(selectedVerdicts, HISTORY_VERDICT_FILTERS);
+  const activeFilterCount = [
+    Boolean(searchFromUrl),
+    Boolean(dateFromUrl || dateToUrl),
+    hasMarketplaceFilter,
+    hasVerdictFilter,
+  ].filter(Boolean).length;
 
   const filterBar = (
     <div className="mb-4 flex flex-wrap items-end gap-4">
@@ -525,17 +542,17 @@ export const EvaluationHistoryTable = () => {
           disableBefore={dateFromUrl ? parseISO(dateFromUrl) : undefined}
         />
       </div>
+      {activeFilterCount > 0 && (
+        <Button
+          variant="ghost"
+          size="sm"
+          onClick={clearFilters}
+        >
+          {t('history.table.clearFilters')}
+        </Button>
+      )}
     </div>
   );
-
-  const hasMarketplaceFilter = !areAllSelected(selectedMarketplaces, HISTORY_MARKETPLACES);
-  const hasVerdictFilter = !areAllSelected(selectedVerdicts, HISTORY_VERDICT_FILTERS);
-  const activeFilterCount = [
-    Boolean(searchFromUrl),
-    Boolean(dateFromUrl || dateToUrl),
-    hasMarketplaceFilter,
-    hasVerdictFilter,
-  ].filter(Boolean).length;
 
   if (!isLoading && brands.length === 0 && total === 0) {
     return (

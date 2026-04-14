@@ -443,6 +443,7 @@
   "history.table.aria.table": "Evaluation history",
   "history.table.brand": "Brand",
   "history.table.brandCount": "{{count}} brands",
+  "history.table.clearFilters": "Clear filters",
   "history.table.emptyState": "No evaluation history yet",
   "history.table.emptyStateHint": "Start evaluating a brand to see history here.",
   "history.table.evaluationCount": "{{count}} evaluations",

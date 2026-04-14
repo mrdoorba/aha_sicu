@@ -443,6 +443,7 @@
   "history.table.aria.table": "Riwayat evaluasi",
   "history.table.brand": "Brand",
   "history.table.brandCount": "{{count}} brand",
+  "history.table.clearFilters": "Hapus filter",
   "history.table.emptyState": "Belum ada riwayat evaluasi",
   "history.table.emptyStateHint": "Mulai evaluasi brand untuk melihat riwayat di sini.",
   "history.table.evaluationCount": "{{count}} evaluasi",

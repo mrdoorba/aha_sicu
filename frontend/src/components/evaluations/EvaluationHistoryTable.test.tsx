@@ -271,36 +271,37 @@ describe('EvaluationHistoryTable — Accordion', () => {
     expect(screen.getByRole('button', { name: 'history.table.filterMarketplaceTh' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'history.table.filterVerdictApproved' })).toBeInTheDocument();
     expect(screen.getByRole('button', { name: 'history.table.filterVerdictNonApproved' })).toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'history.table.clearFilters' })).not.toBeInTheDocument();
   });
 
-  it('marketplace toggle updates URL and grouped query params', async () => {
+  it('marketplace filter click applies the selected marketplace first', async () => {
     const user = userEvent.setup();
     renderTable();
 
     await user.click(screen.getByRole('button', { name: 'history.table.filterMarketplaceId' }));
 
     await waitFor(() => {
-      expect(screen.getByTestId('location')).toHaveTextContent('marketplace=TH');
+      expect(screen.getByTestId('location')).toHaveTextContent('marketplace=ID');
       expect(mockUseGrouped).toHaveBeenLastCalledWith(
         1,
         20,
         undefined,
         undefined,
         undefined,
-        ['TH'],
+        ['ID'],
         undefined,
       );
     });
   });
 
-  it('verdict toggle updates URL and grouped query params', async () => {
+  it('verdict filter click applies the selected verdict first', async () => {
     const user = userEvent.setup();
     renderTable();
 
     await user.click(screen.getByRole('button', { name: 'history.table.filterVerdictApproved' }));
 
     await waitFor(() => {
-      expect(screen.getByTestId('location')).toHaveTextContent('verdict=non_approved');
+      expect(screen.getByTestId('location')).toHaveTextContent('verdict=approved');
       expect(mockUseGrouped).toHaveBeenLastCalledWith(
         1,
         20,
@@ -308,7 +309,50 @@ describe('EvaluationHistoryTable — Accordion', () => {
         undefined,
         undefined,
         undefined,
-        ['non_approved'],
+        ['approved'],
+      );
+    });
+  });
+
+  it('clicking the only active filter resets that filter back to all options', async () => {
+    const user = userEvent.setup();
+    renderTable(['/history?marketplace=ID']);
+
+    await user.click(screen.getByRole('button', { name: 'history.table.filterMarketplaceId' }));
+
+    await waitFor(() => {
+      const location = screen.getByTestId('location').textContent ?? '';
+      expect(location).not.toContain('marketplace=');
+      expect(mockUseGrouped).toHaveBeenLastCalledWith(
+        1,
+        20,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+      );
+    });
+  });
+
+  it('shows a clear filters action when any filter is active and clears all filters', async () => {
+    const user = userEvent.setup();
+    renderTable(['/history?search=Nike&marketplace=ID&verdict=approved&date_from=2026-01-01']);
+
+    const clearFiltersButton = screen.getByRole('button', { name: 'history.table.clearFilters' });
+    await user.click(clearFiltersButton);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('location')).toHaveTextContent('/history');
+      expect(screen.getByTestId('location')).not.toHaveTextContent('?');
+      expect(mockUseGrouped).toHaveBeenLastCalledWith(
+        1,
+        20,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
+        undefined,
       );
     });
   });

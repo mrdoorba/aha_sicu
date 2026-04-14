@@ -443,6 +443,7 @@
   "history.table.aria.table": "ประวัติการประเมิน",
   "history.table.brand": "แบรนด์",
   "history.table.brandCount": "{{count}} แบรนด์",
+  "history.table.clearFilters": "ล้างตัวกรอง",
   "history.table.emptyState": "ยังไม่มีประวัติการประเมิน",
   "history.table.emptyStateHint": "เริ่มประเมินแบรนด์เพื่อดูประวัติที่นี่",
   "history.table.evaluationCount": "{{count}} การประเมิน",
