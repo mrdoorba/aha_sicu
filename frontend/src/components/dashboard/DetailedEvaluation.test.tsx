@@ -122,7 +122,17 @@ describe('DetailedEvaluation', () => {
         rows: [
           {
             ...makeRow('Checkup Diskon'),
-            message: '% Diskon TOP SKU: 11.0%\nRange: 0.1% ~ 38.1%\nVoucher 0.0%\nPaket Diskon 0.0%\n📌 Berpotensi menggunakan \'fake discount\'',
+            message: '',
+            message_i18n: {
+              key: 'scoring.discountCheckup.fail',
+              vars: {
+                discountPct: '11.0%',
+                rangeMin: '0.1%',
+                rangeMax: '38.1%',
+                voucherPct: '0.0%',
+                paketPct: '0.0%',
+              },
+            },
           },
         ],
       },

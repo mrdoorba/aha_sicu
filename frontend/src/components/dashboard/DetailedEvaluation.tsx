@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useCallback, useMemo, useState } from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import { CategoryMetricCard } from './CategoryMetricCard';
@@ -73,7 +73,7 @@ export const DetailedEvaluation = ({
     setVisitedTabs((prev) => new Set(prev).add(value));
   };
 
-  const injectDiscountAffiliateCommission = (message: string): string => {
+  const injectDiscountAffiliateCommission = useCallback((message: string): string => {
     if (!discountAffiliateCommission) return message;
 
     const affiliateLine = t('discount.output.affiliateCommission', { value: discountAffiliateCommission });
@@ -91,7 +91,27 @@ export const DetailedEvaluation = ({
       affiliateLine,
       ...lines.slice(fakeDiscountIndex),
     ].filter(Boolean).join('\n');
-  };
+  }, [discountAffiliateCommission, t]);
+
+  const discountMessageByIndex = useMemo(() => {
+    const discountCategory = scoreBreakdown.find((cat) => cat.category === 'Discount');
+    if (!discountCategory?.rows?.length) return new Map<number, string>();
+
+    const messages = new Map<number, string>();
+
+    discountCategory.rows.forEach((row, idx) => {
+      const translatedMessage = row.message_i18n
+        ? t(row.message_i18n.key, row.message_i18n.vars)
+        : row.message;
+
+      messages.set(
+        idx,
+        idx === 0 ? injectDiscountAffiliateCommission(translatedMessage) : translatedMessage,
+      );
+    });
+
+    return messages;
+  }, [scoreBreakdown, t, injectDiscountAffiliateCommission]);
 
   if (scoreBreakdown.length === 0) return null;
 
@@ -122,11 +142,12 @@ export const DetailedEvaluation = ({
                 <>
                   {(() => {
                     const cards = cat.rows?.flatMap((row, idx) => {
-                      const mergedDiscountMessage = (
-                        cat.category === 'Discount' && idx === 0
-                      )
-                        ? injectDiscountAffiliateCommission(row.message)
+                      const mergedDiscountMessage = cat.category === 'Discount'
+                        ? (discountMessageByIndex.get(idx) ?? row.message)
                         : row.message;
+                      const mergedDiscountMessageI18n = cat.category === 'Discount'
+                        ? undefined
+                        : row.message_i18n;
 
                       const rowCards = [
                         <div key={idx}>
@@ -139,7 +160,7 @@ export const DetailedEvaluation = ({
                             message={mergedDiscountMessage}
                             metric_i18n={row.metric_i18n}
                             value_i18n={row.value_i18n}
-                            message_i18n={row.message_i18n}
+                            message_i18n={mergedDiscountMessageI18n}
                             benchmark_i18n={row.benchmark_i18n}
                             marketplace={marketplace}
                           />

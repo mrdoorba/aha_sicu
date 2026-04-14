@@ -72,7 +72,7 @@ export const CategoryMetricCard = ({ metric, value, benchmark, message, metric_i
 
             return (
               <div className="space-y-1">
-                <p className={cn('break-all', colorClass)}>{textPart}</p>
+                <p className={cn('break-all whitespace-pre-wrap', colorClass)}>{textPart}</p>
                 {localizedUrlPart && (
                   <p>
                     <a
