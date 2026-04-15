@@ -38,7 +38,7 @@ gcloud run deploy "${CLOUD_RUN_SERVICE}" \
 ```
 
 When you use the GitHub workflow path:
-1. Merge `develop` into `production`.
+1. Fast-forward `production` to `develop`.
 2. Wait for the verified `develop` backend deploy to finish.
 3. Run `Promote Backend` **from the `production` branch**.
 
@@ -54,6 +54,19 @@ Optional overrides:
 The workflow resolves the exact verified image for you from the successful
 `develop` run, so operators do not have to hand-copy long digest strings in the
 normal promotion flow.
+
+Recommended branch promotion:
+
+```bash
+git checkout production
+git fetch origin
+git merge --ff-only origin/develop
+git push origin production
+```
+
+If `git merge --ff-only` fails, `production` has drifted from the release flow.
+In that case, move any needed production-only changes back into `develop`, then
+retry the fast-forward promotion instead of creating a merge commit.
 
 ### Manual Frontend Deploy
 

@@ -1,8 +1,9 @@
 # Store ICU - Deploy Workflow
 # Single orchestrator: runs CI once, then deploys dev backend + frontend in parallel.
 # Backend production promotion is explicit via promote-backend.yml so production
-# never rebuilds inside the deploy path. Frontend stays on its existing branch-
-# based deploy shape for now. Skips entirely for docs-only changes.
+# never rebuilds inside the deploy path. The intended release model is that the
+# production branch is fast-forwarded to the exact develop release commit before
+# any production deployment is triggered. Skips entirely for docs-only changes.
 
 name: Deploy
 

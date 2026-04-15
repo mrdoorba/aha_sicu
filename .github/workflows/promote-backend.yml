@@ -1,9 +1,9 @@
 # Store ICU - Backend Production Promotion
 # Deploys a verified backend image digest to production without rebuilding it.
-# In the normal flow, operators merge develop into production first, then run
-# this workflow from the production branch. When no inputs are provided, the
-# workflow auto-resolves the newest verified develop backend release that is an
-# ancestor of the current production HEAD.
+# In the normal flow, operators fast-forward production to the exact develop
+# release commit first, then run this workflow from the production branch. When
+# no inputs are provided, the workflow auto-resolves the newest verified
+# develop backend release that is an ancestor of the current production HEAD.
 
 name: Promote Backend
 
@@ -50,7 +50,7 @@ jobs:
             exit 0
           fi
 
-          echo "::error::Provide either release_sha or image, or run this workflow from the production branch after merging develop"
+          echo "::error::Provide either release_sha or image, or run this workflow from the production branch after fast-forwarding it to develop"
           exit 1
 
       - name: Resolve release from verified develop run
