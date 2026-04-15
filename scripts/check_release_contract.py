@@ -51,6 +51,21 @@ require(
     "image: ${{ needs.build-backend-image.outputs.image }}",
     "backend deploy using build output image",
 )
+require(
+    deploy,
+    "uses: ./.github/workflows/promote-backend.yml",
+    "production backend promotion workflow call",
+)
+require(
+    deploy,
+    "github.ref == 'refs/heads/production'",
+    "production backend auto promotion guard",
+)
+require(
+    deploy,
+    "promote-backend-production:",
+    "named production backend promotion job",
+)
 
 require(
     build_backend,
@@ -108,6 +123,11 @@ require(
     promote_backend,
     "workflow_dispatch:",
     "manual promotion entrypoint",
+)
+require(
+    promote_backend,
+    "workflow_call:",
+    "reusable promotion entrypoint",
 )
 require(
     promote_backend,

@@ -100,6 +100,8 @@ See [docs/ENV.md](ENV.md) for all environment variables.
 
 - The script fetches `origin`, verifies the working tree is clean, fast-forwards
   `production` to `origin/develop`, and pushes `production`.
+- A push to `production` automatically deploys the frontend to production, and
+  automatically promotes the backend when backend-related files changed.
 - If the script stops on `--ff-only`, `production` has drifted and should be
   reconciled back into `develop` before retrying.
 

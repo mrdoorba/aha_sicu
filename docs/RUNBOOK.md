@@ -15,13 +15,14 @@
 | Trigger | Target | Approval |
 |---------|--------|----------|
 | Push to `develop` | Dev backend build + dev deploy, plus dev frontend deploy when needed | Automatic |
+| Push to `production` | Production frontend deploy, plus production backend auto-promotion when backend-related files changed | Automatic + production environment approval for backend if configured |
 | Manual `Promote Backend` workflow | Production backend using a verified `release_sha` from develop | Production environment approval |
-| Push to `production` | Production frontend deploy when needed | Automatic |
 
 Pipelines:
 - `.github/workflows/deploy.yml` -> `_build-backend-image.yml` -> `_deploy-backend.yml` (dev backend)
 - `.github/workflows/deploy.yml` -> `_deploy-frontend.yml` (dev/prod frontend)
-- `.github/workflows/promote-backend.yml` -> `_deploy-backend.yml` (prod backend)
+- `.github/workflows/deploy.yml` -> `promote-backend.yml` -> `_deploy-backend.yml` (prod backend auto-promotion)
+- `.github/workflows/promote-backend.yml` -> `_deploy-backend.yml` (manual prod backend retry/override)
 
 ### Manual Backend Deploy
 
@@ -40,7 +41,8 @@ gcloud run deploy "${CLOUD_RUN_SERVICE}" \
 When you use the GitHub workflow path:
 1. Fast-forward `production` to `develop`.
 2. Wait for the verified `develop` backend deploy to finish.
-3. Run `Promote Backend` **from the `production` branch**.
+3. Push `production`. The production frontend deploy runs automatically, and the
+   backend promotion also runs automatically when backend-related files changed.
 
 Default path:
 - Leave both `release_sha` and `image` empty.
@@ -54,6 +56,9 @@ Optional overrides:
 The workflow resolves the exact verified image for you from the successful
 `develop` run, so operators do not have to hand-copy long digest strings in the
 normal promotion flow.
+
+If you need to retry or override the backend rollout manually, run
+`Promote Backend` from the `production` branch.
 
 Recommended branch promotion:
 
