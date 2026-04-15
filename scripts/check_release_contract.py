@@ -121,8 +121,43 @@ require(
 )
 require(
     promote_backend,
+    "backend-release-manifest",
+    "verified release manifest artifact handling",
+)
+require(
+    promote_backend,
+    "actions/artifacts/${artifact_id}/zip",
+    "artifact zip download path",
+)
+require(
+    promote_backend,
+    "git merge-base --is-ancestor",
+    "production ancestry-based release resolution",
+)
+require(
+    promote_backend,
+    'if [ "$REF_NAME" = "production" ]; then',
+    "production fast-forward auto-resolution gate",
+)
+require(
+    promote_backend,
+    "Provide either release_sha or image, or run this workflow from the production branch after fast-forwarding it to develop",
+    "fast-forward promotion guidance",
+)
+forbid(
+    promote_backend,
     "gh run download \"$RUN_ID\" --name backend-release-manifest",
-    "verified release manifest download",
+    "legacy artifact download implementation",
+)
+forbid(
+    promote_backend,
+    "after merging develop",
+    "stale merge-based release guidance",
+)
+require(
+    promote_backend,
+    "emit_verified_release",
+    "shared verified release summary helper",
 )
 require(
     promote_backend,

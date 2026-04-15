@@ -90,6 +90,19 @@ See [docs/ENV.md](ENV.md) for all environment variables.
 
 <!-- END AUTO-GENERATED -->
 
+## Release Promotion
+
+- Release from `develop` to `production` with a fast-forward only:
+
+```bash
+./scripts/promote-production.sh
+```
+
+- The script fetches `origin`, verifies the working tree is clean, fast-forwards
+  `production` to `origin/develop`, and pushes `production`.
+- If the script stops on `--ff-only`, `production` has drifted and should be
+  reconciled back into `develop` before retrying.
+
 ---
 
 ## Testing

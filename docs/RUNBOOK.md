@@ -64,6 +64,12 @@ git merge --ff-only origin/develop
 git push origin production
 ```
 
+Helper script:
+
+```bash
+./scripts/promote-production.sh
+```
+
 If `git merge --ff-only` fails, `production` has drifted from the release flow.
 In that case, move any needed production-only changes back into `develop`, then
 retry the fast-forward promotion instead of creating a merge commit.
