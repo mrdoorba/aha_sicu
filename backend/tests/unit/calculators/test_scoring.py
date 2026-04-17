@@ -20,7 +20,6 @@ from app.calculators.scoring import (
     _score_ads,
     _score_business,
     _score_campaign,
-    _score_discount_row,
     _score_operational,
     _score_products,
     _score_promo_tools,
@@ -237,10 +236,10 @@ class TestScoreBusiness:
         cat = _score_business(data)
         # avg = 175M, current = 200M, 175M < 200M * 1.10 = 220M → pass (H13=10)
         assert cat.rows[0].score == 10.0
-        # avg = 175M > 100M → pass (H19=10)
+        # avg = 175M > 100M → H19=15 (points_above)
         h19_row = next(r for r in cat.rows if r.row == 19)
-        assert h19_row.score == 10.0
-        assert cat.score == 20.0
+        assert h19_row.score == 15.0
+        assert cat.score == 25.0
 
     def test_declining_sales(self):
         data = {
@@ -256,9 +255,9 @@ class TestScoreBusiness:
         cat = _score_business(data)
         # avg ~175M, 175M >= 50M * 1.10 = 55M → FAIL (H13=0)
         assert cat.rows[0].score == 0.0
-        # avg = 175M > 100M → H19=10
+        # avg = 175M > 100M → H19=15 (points_above)
         h19_row = next(r for r in cat.rows if r.row == 19)
-        assert h19_row.score == 10.0
+        assert h19_row.score == 15.0
 
     def test_low_average(self):
         data = {
@@ -272,9 +271,9 @@ class TestScoreBusiness:
             }
         }
         cat = _score_business(data)
-        # avg = 55M
+        # avg = 55M <= 100M → H19=10 (points_below)
         h19_row = next(r for r in cat.rows if r.row == 19)
-        assert h19_row.score == 0.0  # 55M < 100M
+        assert h19_row.score == 10.0
 
     def test_rata_penjualan_message_is_empty(self):
         from app.calculators.scoring import _generate_business_messages, RowScore, CategoryScore
@@ -290,7 +289,7 @@ class TestScoreBusiness:
         }
         cat = CategoryScore(
             category="Bisnis Analisis",
-            score=10.0, max_score=20.0,
+            score=10.0, max_score=25.0,
             rows=[RowScore(row=19, metric="Rata² Penjualan 6 bulan terakhir", value=120_000_000, benchmark="-", verdict="-", message="", score=10.0)]
         )
         _generate_business_messages(cat, data)
@@ -595,21 +594,56 @@ class TestScoreStock:
         assert cat.rows[1].score == 0.0
 
 
-class TestScoreDiscount:
-    def test_no_fake_discount(self):
-        results = {"discount": {"details": {"fake_discount_flag": False}, "output_text": "test"}}
-        cat = _score_discount_row(results)
-        assert cat.score == 5.0
+class TestScoreH19Thresholds:
+    """H19 uses points_above=15 (strict >) and points_below=10 (<=)."""
 
-    def test_fake_discount(self):
-        results = {"discount": {"details": {"fake_discount_flag": True}, "output_text": "test"}}
-        cat = _score_discount_row(results)
-        assert cat.score == 0.0
+    def test_above_threshold_gets_15_points(self):
+        """avg_6mo = 100_000_001 > 100_000_000 → 15 points."""
+        data = {
+            "business": {
+                "salesMonth0": 100_000_001,
+                "salesMonth1": 100_000_001,
+                "salesMonth2": 100_000_001,
+                "salesMonth3": 100_000_001,
+                "salesMonth4": 100_000_001,
+                "salesMonth5": 100_000_001,
+            }
+        }
+        cat = _score_business(data)
+        h19_row = next(r for r in cat.rows if r.row == 19)
+        assert h19_row.score == 15.0
 
-    def test_missing_data(self):
-        cat = _score_discount_row({})
-        assert cat.available is False
-        assert cat.score == 0.0  # Missing calculator data → unavailable
+    def test_exactly_at_threshold_gets_10_points(self):
+        """avg_6mo = 100_000_000 (not strictly >) → 10 points."""
+        data = {
+            "business": {
+                "salesMonth0": 100_000_000,
+                "salesMonth1": 100_000_000,
+                "salesMonth2": 100_000_000,
+                "salesMonth3": 100_000_000,
+                "salesMonth4": 100_000_000,
+                "salesMonth5": 100_000_000,
+            }
+        }
+        cat = _score_business(data)
+        h19_row = next(r for r in cat.rows if r.row == 19)
+        assert h19_row.score == 10.0
+
+    def test_below_threshold_gets_10_points(self):
+        """avg_6mo = 50_000_000 < 100_000_000 → 10 points."""
+        data = {
+            "business": {
+                "salesMonth0": 50_000_000,
+                "salesMonth1": 50_000_000,
+                "salesMonth2": 50_000_000,
+                "salesMonth3": 50_000_000,
+                "salesMonth4": 50_000_000,
+                "salesMonth5": 50_000_000,
+            }
+        }
+        cat = _score_business(data)
+        h19_row = next(r for r in cat.rows if r.row == 19)
+        assert h19_row.score == 10.0
 
 
 # ---------------------------------------------------------------------------
@@ -1145,10 +1179,8 @@ class TestEdgeCases:
         stock_cat = next(c for c in result.category_scores if c.category == "Stok")
         assert stock_cat.available is False
         assert stock_cat.score == 0.0
-        # Discount should also be unavailable
-        disc_cat = next(c for c in result.category_scores if c.category == "Discount")
-        assert disc_cat.available is False
-        assert disc_cat.score == 0.0
+        # Discount category is no longer part of scoring
+        assert all(c.category != "Discount" for c in result.category_scores)
 
     def test_extreme_operational_values(self):
         data = {"operational": {"unfulfilledOrderRate": 50.0}}  # 50%
@@ -1212,7 +1244,7 @@ class TestCalculateScore:
         assert isinstance(result, ScoringResult)
         assert result.template == "fashion"
         assert result.verdict == "✔️"
-        assert len(result.category_scores) == 10
+        assert len(result.category_scores) == 9
         assert result.email_subject != ""
         assert result.email_body != ""
         assert result.total_score > 0
@@ -1413,36 +1445,6 @@ class TestCustomRulesStock:
         assert cat_custom.score == 10.0  # 10 + 0
 
 
-class TestCustomRulesDiscount:
-    """Custom discount points change category score."""
-
-    def test_custom_no_flag_points(self):
-        results = {"discount": {"details": {"fake_discount_flag": False}, "output_text": "test"}}
-        # Default: no flag = 5 points
-        cat_default = _score_discount_row(results)
-        assert cat_default.score == 5.0
-
-        # Custom: no flag = 10 points
-        custom_rules = {**DEFAULT_RULES, "discount": {
-            "fake_discount_flag": {"points_no_flag": 10, "points_flag": -5},
-        }}
-        cat_custom = _score_discount_row(results, custom_rules)
-        assert cat_custom.score == 10.0
-
-    def test_custom_flag_penalty(self):
-        results = {"discount": {"details": {"fake_discount_flag": True}, "output_text": "test"}}
-        # Default: flag = 0 points
-        cat_default = _score_discount_row(results)
-        assert cat_default.score == 0.0
-
-        # Custom: flag = -5 penalty
-        custom_rules = {**DEFAULT_RULES, "discount": {
-            "fake_discount_flag": {"points_no_flag": 10, "points_flag": -5},
-        }}
-        cat_custom = _score_discount_row(results, custom_rules)
-        assert cat_custom.score == -5.0
-
-
 class TestCustomRulesVisitors:
     """Custom visitor thresholds change scores."""
 
@@ -1571,15 +1573,15 @@ class TestCustomRulesBusiness:
                 "salesMonth5": 30_000_000,
             }
         }
-        # avg = 55M, default threshold=100M → 55M < 100M → fail
+        # avg = 55M, default threshold=100M → 55M <= 100M → points_below=10
         cat_default = _score_business(data)
         h19 = next(r for r in cat_default.rows if r.row == 19)
-        assert h19.score == 0.0
+        assert h19.score == 10.0
 
-        # Custom: threshold=50M → 55M > 50M → pass with 12pts
+        # Custom: threshold=50M, 55M > 50M → points_above=12
         custom_rules = {**DEFAULT_RULES, "business": {
             **DEFAULT_RULES["business"],
-            "six_month_avg_threshold": {"threshold": 50_000_000, "points": 12, "comparison": "gte"},
+            "six_month_avg_threshold": {"threshold": 50_000_000, "points_above": 12, "points_below": 8, "comparison": "gt"},
         }}
         cat_custom = _score_business(data, custom_rules)
         h19 = next(r for r in cat_custom.rows if r.row == 19)

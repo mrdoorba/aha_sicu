@@ -14,7 +14,6 @@ from app.calculators.scoring.categories import (
     _score_business,
     _score_campaign,
     _score_competition,
-    _score_discount_row,
     _score_operational,
     _score_products,
     _score_promo_tools,
@@ -95,7 +94,6 @@ def calculate_score(
     cat_campaign = _score_campaign(manual_data, rules)
     cat_competition = _score_competition(manual_data, calculator_results, marketplace=marketplace)
     cat_stock = _score_stock(calculator_results, rules)
-    cat_discount = _score_discount_row(calculator_results, rules)
 
     # Apply Fashion-specific threshold for conversion rate (row 20)
     biz_rules = _get_rule_category(rules, "business")
@@ -108,7 +106,7 @@ def calculate_score(
     all_categories = [
         cat_operational, cat_business, cat_visitors,
         cat_promo, cat_products, cat_ads, cat_campaign,
-        cat_competition, cat_stock, cat_discount,
+        cat_competition, cat_stock,
     ]
 
     # --- Total score (H4) ---

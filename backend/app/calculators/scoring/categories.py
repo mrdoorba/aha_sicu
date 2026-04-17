@@ -154,8 +154,9 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
 
     # Row 19: Average (computed)
     avg_threshold = _get_rule_value(biz_rules, "six_month_avg_threshold", "threshold", 100_000_000)
-    avg_points = float(_get_rule_value(biz_rules, "six_month_avg_threshold", "points", 10.0))
-    h19 = avg_points if avg_6mo > avg_threshold else 0.0
+    points_above = float(_get_rule_value(biz_rules, "six_month_avg_threshold", "points_above", 15.0))
+    points_below = float(_get_rule_value(biz_rules, "six_month_avg_threshold", "points_below", 10.0))
+    h19 = points_above if avg_6mo > avg_threshold else points_below
     rows.append(RowScore(
         row=19, metric="Rata² Penjualan 6 bulan terakhir",
         value=avg_6mo, benchmark="-", verdict="-", message="", score=h19,
@@ -174,7 +175,7 @@ def _score_business(manual_data: dict, rules: dict | None = None) -> CategorySco
     total = sum(r.score for r in rows)
     return CategoryScore(
         category="Bisnis Analisis",
-        score=total, max_score=20.0, rows=rows,
+        score=total, max_score=25.0, rows=rows,
         category_i18n=TranslatableText(key="category.business", vars={}),
     )
 
@@ -639,66 +640,5 @@ def _score_stock(calculator_results: dict, rules: dict | None = None) -> Categor
         category_i18n=TranslatableText(key="category.stock", vars={}),
     )
 
-
-def _score_discount_row(calculator_results: dict, rules: dict | None = None) -> CategoryScore:
-    """Score row 73: Discount Check Up.
-
-    H73: 5 if no fake discount, 0 if fake discount detected
-    Source: Calculator 3 details.fake_discount_flag
-    """
-    disc_details = _get_nested(calculator_results, "discount", "details")
-    has_data = disc_details is not None
-
-    if not has_data:
-        row = RowScore(
-            row=73, metric="Discount Check Up",
-            value="N/A", benchmark="-", verdict="-",
-            message="Calculator 3 (Discount) belum dijalankan", score=0.0,
-            metric_i18n=TranslatableText(key="scoring.discountCheckup", vars={}),
-        )
-        return CategoryScore(
-            category="Discount",
-            score=0.0, max_score=5.0, rows=[row], available=False,
-            category_i18n=TranslatableText(key="category.discount", vars={}),
-        )
-
-    disc_rules = _get_rule_category(rules, "discount")
-    pts_no_flag = float(_get_rule_value(disc_rules, "fake_discount_flag", "points_no_flag", 5.0))
-    pts_flag = float(_get_rule_value(disc_rules, "fake_discount_flag", "points_flag", 0.0))
-
-    fake_flag = disc_details.get("fake_discount_flag", False)
-    disc_output = _get_nested(calculator_results, "discount", "output_text") or ""
-
-    h73 = pts_flag if fake_flag else pts_no_flag
-    f73 = "❌" if fake_flag else "✔️"
-
-    # Extract structured details for i18n
-    discount_pct = str(disc_details.get("discount_pct", "0.0%"))
-    range_min = str(disc_details.get("range_min", "0.0%"))
-    range_max = str(disc_details.get("range_max", "0.0%"))
-    voucher_pct = str(disc_details.get("voucher_pct", "0.0%"))
-    paket_pct = str(disc_details.get("paket_pct", "0.0%"))
-
-    i18n_key = "scoring.discountCheckup.fail" if fake_flag else "scoring.discountCheckup.pass"
-    i18n_vars = {
-        "discountPct": discount_pct,
-        "rangeMin": range_min,
-        "rangeMax": range_max,
-        "voucherPct": voucher_pct,
-        "paketPct": paket_pct,
-    }
-
-    row = RowScore(
-        row=73, metric="Discount Check Up",
-        value=disc_output, benchmark="-", verdict=f73,
-        message="", score=h73,
-        metric_i18n=TranslatableText(key="scoring.discountCheckup", vars={}),
-        value_i18n=TranslatableText(key=i18n_key, vars=i18n_vars),
-    )
-    return CategoryScore(
-        category="Discount",
-        score=h73, max_score=5.0, rows=[row],
-        category_i18n=TranslatableText(key="category.discount", vars={}),
-    )
 
 

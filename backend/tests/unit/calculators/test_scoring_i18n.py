@@ -8,7 +8,6 @@ from app.calculators.scoring.categories import (
     _score_business,
     _score_campaign,
     _score_competition,
-    _score_discount_row,
     _score_operational,
     _score_products,
     _score_promo_tools,
@@ -355,30 +354,6 @@ def test_stock_no_data_has_i18n():
 
     assert cat.category_i18n is not None
     assert cat.category_i18n.key == "category.stock"
-
-    for row in cat.rows:
-        assert row.metric_i18n is not None, f"Row {row.row} missing metric_i18n"
-
-
-def test_discount_rows_have_i18n():
-    calculator_results = {
-        "discount": {"details": {"fake_discount_flag": False}, "output_text": "OK"},
-    }
-    cat = _score_discount_row(calculator_results)
-
-    assert cat.category_i18n is not None
-    assert cat.category_i18n.key == "category.discount"
-
-    for row in cat.rows:
-        assert row.metric_i18n is not None, f"Row {row.row} missing metric_i18n"
-        assert row.metric_i18n.key == "scoring.discountCheckup"
-
-
-def test_discount_no_data_has_i18n():
-    cat = _score_discount_row({})
-
-    assert cat.category_i18n is not None
-    assert cat.category_i18n.key == "category.discount"
 
     for row in cat.rows:
         assert row.metric_i18n is not None, f"Row {row.row} missing metric_i18n"

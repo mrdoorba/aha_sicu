@@ -28,7 +28,7 @@ FASHION_RULES = {
     },
     "business": {
         "monthly_sales_trend": {"threshold_pct": 90.0, "points": 10, "comparison": "gte"},
-        "six_month_avg_threshold": {"threshold": 100000000, "points": 10, "comparison": "gte"},
+        "six_month_avg_threshold": {"threshold": 100000000, "points_above": 15, "points_below": 10, "comparison": "gt"},
         "conversion_rate": {"threshold": 2.0, "comparison": "gte", "info_only": True},
     },
     "content": {
@@ -58,9 +58,6 @@ FASHION_RULES = {
         "high_threshold": {"threshold": 24, "points": 10, "comparison": "gte"},
         "mid_threshold": {"threshold": 12, "points": 5, "comparison": "gte"},
         "low_penalty": {"threshold": 12, "points": -5, "comparison": "lt"},
-    },
-    "discount": {
-        "fake_discount_flag": {"points_no_flag": 5, "points_flag": 0},
     },
     "interpretation": {
         "ranges": [

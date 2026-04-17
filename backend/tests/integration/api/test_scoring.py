@@ -173,7 +173,7 @@ def test_score_with_full_data(client):
         assert "total_score" in data
         assert "category_scores" in data
         assert isinstance(data["category_scores"], list)
-        assert len(data["category_scores"]) == 10
+        assert len(data["category_scores"]) == 9
         assert data["verdict"] == "✔️"
         assert data["template"] == "fashion"
         assert "email_subject" in data
@@ -212,12 +212,8 @@ def test_score_with_missing_calculator_results(client):
         )
         assert stock_cat["available"] is False
         assert stock_cat["score"] == 0.0
-        # Discount category should also be unavailable
-        disc_cat = next(
-            c for c in data["category_scores"] if c["category"] == "Discount"
-        )
-        assert disc_cat["available"] is False
-        assert disc_cat["score"] == 0.0
+        # Discount category is no longer part of scoring
+        assert all(c["category"] != "Discount" for c in data["category_scores"])
 
 
 def test_score_brand_not_found(client):

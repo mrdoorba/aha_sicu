@@ -46,7 +46,7 @@ DEFAULT_RULES: dict = {
             "message_fail": "❌ Penjualan = {currency} {idr_val} [Menurun {change_pct}% dibandingkan dengan rata² 6 bulan terakhir: {currency} {idr_avg}]",
             "message_fail_severe": "\n❗️ Potensi peningkatan harga jual signifikan atau terdapat event abnormal.",
         },
-        "six_month_avg_threshold": {"threshold": 100000000, "points": 10, "comparison": "gte"},
+        "six_month_avg_threshold": {"threshold": 100000000, "points_above": 15, "points_below": 10, "comparison": "gt"},
         "conversion_rate": {
             "threshold": 3.0, "comparison": "gte", "info_only": True,
             "message_pass": "✔️ Tingkat Konversi = {val_str} [Sudah Baik]",
@@ -129,9 +129,6 @@ DEFAULT_RULES: dict = {
         "mid_threshold": {"threshold": 12, "points": 5, "comparison": "gte"},
         "low_penalty": {"threshold": 12, "points": -5, "comparison": "lt"},
         "out_of_stock": {"threshold": 0.10, "penalty": -5.0},
-    },
-    "discount": {
-        "fake_discount_flag": {"points_no_flag": 5, "points_flag": 0},
     },
     "marketing": {
         "floor": {"value": 0.12},

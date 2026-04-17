@@ -10,7 +10,6 @@ from app.calculators.scoring.categories import (  # noqa: F401
     _score_ads,
     _score_business,
     _score_campaign,
-    _score_discount_row,
     _score_operational,
     _score_products,
     _score_promo_tools,
