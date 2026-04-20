@@ -27,8 +27,9 @@ concurrency:
 jobs:
   # Detect which parts of the codebase changed so we can skip unnecessary deploys.
   # NOTE: On production branch, paths-filter compares develop...production which
-  # shows 0 changes after a merge. The deploy jobs handle this via the
-  # "always deploy on production" condition.
+  # shows 0 changes after a fast-forward. Production deploy jobs that should run
+  # for every release must add an explicit production-branch override instead of
+  # relying on the changes output.
   changes:
     name: Detect changes
     runs-on: ubuntu-latest
@@ -93,10 +94,7 @@ jobs:
 
   promote-backend-production:
     needs: [ci, changes]
-    if: >-
-      github.ref == 'refs/heads/production'
-      && (needs.changes.outputs.backend == 'true'
-      || github.event_name == 'workflow_dispatch')
+    if: github.ref == 'refs/heads/production'
     uses: ./.github/workflows/promote-backend.yml
     permissions:
       contents: read

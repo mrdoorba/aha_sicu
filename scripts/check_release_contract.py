@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 from pathlib import Path
+import re
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -26,10 +27,25 @@ def forbid(text: str, needle: str, label: str) -> None:
         errors.append(f"unexpected {label}: {needle}")
 
 
+def job_block(text: str, job_name: str) -> str:
+    pattern = re.compile(rf"^  {re.escape(job_name)}:\n", re.MULTILINE)
+    match = pattern.search(text)
+    if not match:
+        errors.append(f"missing job block: {job_name}")
+        return ""
+
+    next_match = re.compile(r"^  [a-z0-9][a-z0-9_-]*:\n", re.MULTILINE).search(
+        text, match.end()
+    )
+    end = next_match.start() if next_match else len(text)
+    return text[match.start() : end]
+
+
 deploy = read(".github/workflows/deploy.yml")
 build_backend = read(".github/workflows/_build-backend-image.yml")
 deploy_backend = read(".github/workflows/_deploy-backend.yml")
 promote_backend = read(".github/workflows/promote-backend.yml")
+promote_backend_job = job_block(deploy, "promote-backend-production")
 
 require(
     deploy,
@@ -65,6 +81,16 @@ require(
     deploy,
     "promote-backend-production:",
     "named production backend promotion job",
+)
+require(
+    promote_backend_job,
+    "if: github.ref == 'refs/heads/production'",
+    "unconditional production backend promotion override",
+)
+forbid(
+    promote_backend_job,
+    "needs.changes.outputs.backend",
+    "production backend promotion gated on post-fast-forward path detection",
 )
 
 require(
