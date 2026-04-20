@@ -20,7 +20,7 @@ import {
 import i18n from '../../i18n';
 import type { CategoryScore } from '../../hooks/useScoring';
 import type { BrandRawData } from '../../hooks/useEvaluationDetail';
-import { buildSubject, buildBody } from './sendMailUtils';
+import { buildSubject, buildBody, buildGmailComposeUrl } from './sendMailUtils';
 import { isRecord } from '../../lib/typeGuards';
 
 interface SendMailDialogProps {
@@ -129,10 +129,10 @@ export function SendMailDialog({
   };
 
   const handleSend = () => {
-    const mailtoUrl = `mailto:${encodeURIComponent(to)}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
-    const opened = window.open(mailtoUrl, '_blank');
+    const gmailComposeUrl = buildGmailComposeUrl(to, subject, body);
+    const opened = window.open(gmailComposeUrl, '_blank', 'noopener,noreferrer');
     if (!opened) {
-      window.location.href = mailtoUrl;
+      window.location.href = gmailComposeUrl;
     }
     onOpenChange(false);
   };

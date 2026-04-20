@@ -2,7 +2,7 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SendMailDialog } from './SendMailDialog';
-import { buildSubject, buildBody } from './sendMailUtils';
+import { buildSubject, buildBody, buildGmailComposeUrl } from './sendMailUtils';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -100,7 +100,7 @@ describe('SendMailDialog', () => {
     expect(body).toHaveTextContent('[EMAIL TO: new@brand.com]');
   });
 
-  it('opens mailto URL via window.open on "Kirim Email" click', async () => {
+  it('opens Gmail compose URL via window.open on "Kirim Email" click', async () => {
     const onOpenChange = vi.fn();
     const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => ({ closed: false } as Window));
     const user = userEvent.setup();
@@ -115,16 +115,16 @@ describe('SendMailDialog', () => {
 
     expect(windowOpen).toHaveBeenCalledTimes(1);
     const url = windowOpen.mock.calls[0][0] as string;
-    expect(url).toMatch(/^mailto:/);
-    expect(url).toContain('bot%40ahacommerce.net');
-    expect(url).toContain('subject=');
+    expect(url).toMatch(/^https:\/\/mail\.google\.com\/mail\/\?/);
+    expect(url).toContain('to=bot%40ahacommerce.net');
+    expect(url).toContain('su=');
     expect(url).toContain('body=');
     expect(onOpenChange).toHaveBeenCalledWith(false);
 
     windowOpen.mockRestore();
   });
 
-  it('uses edited "Kepada" value in mailto URL', async () => {
+  it('uses edited "Kepada" value in Gmail compose URL', async () => {
     const onOpenChange = vi.fn();
     const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => ({ closed: false } as Window));
     const user = userEvent.setup();
@@ -154,6 +154,20 @@ describe('SendMailDialog', () => {
     await user.click(cancelButton);
 
     expect(onOpenChange).toHaveBeenCalledWith(false);
+  });
+});
+
+
+describe('buildGmailComposeUrl', () => {
+  it('builds a Gmail compose URL with to, subject, and body', () => {
+    const url = buildGmailComposeUrl('to@example.com', 'Hello World', 'Line 1\nLine 2');
+
+    expect(url).toMatch(/^https:\/\/mail\.google\.com\/mail\/\?/);
+    expect(url).toContain('view=cm');
+    expect(url).toContain('fs=1');
+    expect(url).toContain('to=to%40example.com');
+    expect(url).toContain('su=Hello+World');
+    expect(url).toContain('body=Line+1%0ALine+2');
   });
 });
 
