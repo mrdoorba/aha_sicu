@@ -124,6 +124,24 @@ describe('SendMailDialog', () => {
     windowOpen.mockRestore();
   });
 
+  it('does not fall back to same-tab Gmail navigation when window.open returns null', async () => {
+    const onOpenChange = vi.fn();
+    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
+    const user = userEvent.setup();
+    renderDialog({ onOpenChange });
+
+    const initialHref = window.location.href;
+    const sendButtons = screen.getAllByText('Kirim Email');
+    const sendButton = sendButtons.find((el) => el.closest('button') !== null)!;
+    await user.click(sendButton.closest('button')!);
+
+    expect(windowOpen).toHaveBeenCalledTimes(1);
+    expect(window.location.href).toBe(initialHref);
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+
+    windowOpen.mockRestore();
+  });
+
   it('uses edited "Kepada" value in Gmail compose URL', async () => {
     const onOpenChange = vi.fn();
     const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => ({ closed: false } as Window));

@@ -130,10 +130,11 @@ export function SendMailDialog({
 
   const handleSend = () => {
     const gmailComposeUrl = buildGmailComposeUrl(to, subject, body);
-    const opened = window.open(gmailComposeUrl, '_blank', 'noopener,noreferrer');
-    if (!opened) {
-      window.location.href = gmailComposeUrl;
-    }
+    // Some browsers can return null here when opening a new tab with
+    // noopener/noreferrer even though the tab opened successfully.
+    // Falling back to same-tab navigation causes the current page to
+    // also redirect to Gmail, which is the bug we want to avoid.
+    window.open(gmailComposeUrl, '_blank', 'noopener,noreferrer');
     onOpenChange(false);
   };
 
