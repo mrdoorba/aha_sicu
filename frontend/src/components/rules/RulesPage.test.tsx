@@ -1,4 +1,4 @@
-import { render, screen } from '@testing-library/react';
+import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -140,11 +140,14 @@ const SAMPLE_RULES: ScoringRule[] = [
   },
 ];
 
-const queryClient = new QueryClient({
-  defaultOptions: { queries: { retry: false } },
-});
+function createTestQueryClient() {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
+}
 
 const renderRulesPage = () => {
+  const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
       <MemoryRouter initialEntries={['/rules']}>
@@ -160,6 +163,7 @@ const renderWithRoleGate = (
   authState: { user: object | null; loading: boolean },
   profileState: { profile: { role: string } | null; isLoading: boolean; isError: boolean },
 ) => {
+  const queryClient = createTestQueryClient();
   mockUseAuth.mockReturnValue(authState);
   mockUseCurrentUser.mockReturnValue(profileState);
 
@@ -186,6 +190,7 @@ const renderWithRoleGate = (
 const renderHeader = (
   profileState: { profile: { role: string } | null; isLoading: boolean; isError: boolean },
 ) => {
+  const queryClient = createTestQueryClient();
   mockUseAuth.mockReturnValue({
     user: { email: 'test@example.com' },
     loading: false,
@@ -205,7 +210,6 @@ const renderHeader = (
 
 beforeEach(() => {
   vi.clearAllMocks();
-  queryClient.clear();
   // Default: authenticated leader
   mockUseAuth.mockReturnValue({
     user: { email: 'leader@example.com' },
@@ -219,6 +223,10 @@ beforeEach(() => {
     isError: false,
   });
 });
+
+function setNumberInputValue(input: HTMLElement, value: number | '') {
+  fireEvent.change(input, { target: { value: value === '' ? '' : String(value) } });
+}
 
 describe('RulesPage', () => {
   it('renders rules page with category sections', () => {
@@ -466,7 +474,6 @@ describe('Edit mode', () => {
   });
 
   it('Save Changes enabled after modifying value', async () => {
-    const user = userEvent.setup();
     mockUseRules.mockReturnValue({
       rules: SAMPLE_RULES,
       isLoading: false,
@@ -477,19 +484,17 @@ describe('Edit mode', () => {
 
     renderRulesPage();
 
-    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Modify a threshold — find the first number input and change it
     const firstInput = screen.getAllByRole('spinbutton')[0];
-    await user.clear(firstInput);
-    await user.type(firstInput, '99');
+    setNumberInputValue(firstInput, 99);
 
     const saveBtn = screen.getByRole('button', { name: /simpan perubahan/i });
     expect(saveBtn).toBeEnabled();
   });
 
   it('opens password dialog on Save Changes', async () => {
-    const user = userEvent.setup();
     mockUseRules.mockReturnValue({
       rules: SAMPLE_RULES,
       isLoading: false,
@@ -500,14 +505,13 @@ describe('Edit mode', () => {
 
     renderRulesPage();
 
-    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Modify a value first
     const firstInput = screen.getAllByRole('spinbutton')[0];
-    await user.clear(firstInput);
-    await user.type(firstInput, '99');
+    setNumberInputValue(firstInput, 99);
 
-    await user.click(screen.getByRole('button', { name: /simpan perubahan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /simpan perubahan/i }));
 
     // Password dialog should appear
     expect(screen.getByText('Konfirmasi Password')).toBeInTheDocument();
@@ -515,7 +519,6 @@ describe('Edit mode', () => {
   });
 
   it('successful password confirmation triggers mutation and exits edit mode', async () => {
-    const user = userEvent.setup();
     mockReauthenticateUser.mockResolvedValue(undefined);
     mockUpdateRuleMutateAsync.mockResolvedValue({});
 
@@ -530,32 +533,33 @@ describe('Edit mode', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Modify a value
     const firstInput = screen.getAllByRole('spinbutton')[0];
-    await user.clear(firstInput);
-    await user.type(firstInput, '99');
+    setNumberInputValue(firstInput, 99);
 
     // Click Save Changes
-    await user.click(screen.getByRole('button', { name: /simpan perubahan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /simpan perubahan/i }));
 
     // Enter password in dialog
     const passwordInput = screen.getByLabelText('Password');
-    await user.type(passwordInput, 'mypassword');
+    fireEvent.change(passwordInput, { target: { value: 'mypassword' } });
 
     // Click Confirm
     const confirmBtn = screen.getByRole('button', { name: /^konfirmasi$/i });
-    await user.click(confirmBtn);
+    fireEvent.click(confirmBtn);
 
     // Verify mutation was called
-    expect(mockUpdateRuleMutateAsync).toHaveBeenCalled();
-    // Verify toast
-    expect(mockToastSuccess).toHaveBeenCalledWith('Aturan berhasil diperbarui');
+    await waitFor(() => {
+      expect(mockUpdateRuleMutateAsync).toHaveBeenCalled();
+    });
+    await waitFor(() => {
+      expect(mockToastSuccess).toHaveBeenCalledWith('Aturan berhasil diperbarui');
+    });
   });
 
   it('incorrect password shows error in dialog', async () => {
-    const user = userEvent.setup();
     mockReauthenticateUser.mockRejectedValue(new Error('auth/wrong-password'));
 
     mockUseRules.mockReturnValue({
@@ -569,23 +573,22 @@ describe('Edit mode', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Modify a value
     const firstInput = screen.getAllByRole('spinbutton')[0];
-    await user.clear(firstInput);
-    await user.type(firstInput, '99');
+    setNumberInputValue(firstInput, 99);
 
     // Click Save Changes
-    await user.click(screen.getByRole('button', { name: /simpan perubahan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /simpan perubahan/i }));
 
     // Enter wrong password
     const passwordInput = screen.getByLabelText('Password');
-    await user.type(passwordInput, 'wrongpassword');
+    fireEvent.change(passwordInput, { target: { value: 'wrongpassword' } });
 
     // Click Confirm
     const confirmBtn = screen.getByRole('button', { name: /^konfirmasi$/i });
-    await user.click(confirmBtn);
+    fireEvent.click(confirmBtn);
 
     // Error shown
     expect(await screen.findByText('Password salah')).toBeInTheDocument();
@@ -594,7 +597,6 @@ describe('Edit mode', () => {
   });
 
   it('Cancel exits edit mode without saving', async () => {
-    const user = userEvent.setup();
     mockUseRules.mockReturnValue({
       rules: SAMPLE_RULES,
       isLoading: false,
@@ -606,15 +608,14 @@ describe('Edit mode', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Modify a value
     const firstInput = screen.getAllByRole('spinbutton')[0];
-    await user.clear(firstInput);
-    await user.type(firstInput, '99');
+    setNumberInputValue(firstInput, 99);
 
     // Click Cancel
-    await user.click(screen.getByRole('button', { name: /batal/i }));
+    fireEvent.click(screen.getByRole('button', { name: /batal/i }));
 
     // Back to view mode — Edit Rules button visible again
     expect(screen.getByRole('button', { name: /edit aturan/i })).toBeInTheDocument();
@@ -624,7 +625,6 @@ describe('Edit mode', () => {
   });
 
   it('Save Changes disabled when field is cleared (validation error)', async () => {
-    const user = userEvent.setup();
     mockUseRules.mockReturnValue({
       rules: SAMPLE_RULES,
       isLoading: false,
@@ -636,11 +636,11 @@ describe('Edit mode', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Clear a value to trigger validation error
     const firstInput = screen.getAllByRole('spinbutton')[0];
-    await user.clear(firstInput);
+    setNumberInputValue(firstInput, '');
 
     // Save Changes should be disabled
     const saveBtn = screen.getByRole('button', { name: /simpan perubahan/i });
@@ -651,7 +651,6 @@ describe('Edit mode', () => {
   });
 
   it('shows success toast after save', async () => {
-    const user = userEvent.setup();
     mockReauthenticateUser.mockResolvedValue(undefined);
     mockUpdateRuleMutateAsync.mockResolvedValue({});
 
@@ -665,16 +664,17 @@ describe('Edit mode', () => {
 
     renderRulesPage();
 
-    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit aturan/i }));
     const firstInput = screen.getAllByRole('spinbutton')[0];
-    await user.clear(firstInput);
-    await user.type(firstInput, '99');
-    await user.click(screen.getByRole('button', { name: /simpan perubahan/i }));
+    setNumberInputValue(firstInput, 99);
+    fireEvent.click(screen.getByRole('button', { name: /simpan perubahan/i }));
     const passwordInput = screen.getByLabelText('Password');
-    await user.type(passwordInput, 'mypassword');
-    await user.click(screen.getByRole('button', { name: /^konfirmasi$/i }));
+    fireEvent.change(passwordInput, { target: { value: 'mypassword' } });
+    fireEvent.click(screen.getByRole('button', { name: /^konfirmasi$/i }));
 
-    expect(mockToastSuccess).toHaveBeenCalledWith('Aturan berhasil diperbarui');
+    await waitFor(() => {
+      expect(mockToastSuccess).toHaveBeenCalledWith('Aturan berhasil diperbarui');
+    });
   });
 });
 
@@ -775,7 +775,6 @@ describe('Marketing category', () => {
   });
 
   it('marketing fields are editable in edit mode', async () => {
-    const user = userEvent.setup();
     mockUseRules.mockReturnValue({
       rules: SAMPLE_RULES,
       isLoading: false,
@@ -786,7 +785,7 @@ describe('Marketing category', () => {
 
     renderRulesPage();
 
-    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Find a marketing field input by aria-label
     const floorInput = screen.getByRole('spinbutton', { name: /floor value/i });
@@ -872,7 +871,6 @@ describe('Message templates', () => {
   });
 
   it('expands message templates on toggle click', async () => {
-    const user = userEvent.setup();
     mockUseRules.mockReturnValue({
       rules: RULES_WITH_MESSAGES,
       isLoading: false,
@@ -885,7 +883,7 @@ describe('Message templates', () => {
 
     // Click toggle to expand messages
     const toggleBtn = screen.getByLabelText('Toggle messages for Tingkat Pesanan Tidak Terselesaikan');
-    await user.click(toggleBtn);
+    fireEvent.click(toggleBtn);
 
     // Message text should now be visible
     expect(screen.getByText(/UFO = \{val_str\} OK/)).toBeInTheDocument();
@@ -948,7 +946,6 @@ describe('Message templates', () => {
   });
 
   it('message template edits trigger change detection', async () => {
-    const user = userEvent.setup();
     mockUseRules.mockReturnValue({
       rules: RULES_WITH_MESSAGES,
       isLoading: false,
@@ -960,16 +957,15 @@ describe('Message templates', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Expand messages
     const toggleBtn = screen.getByLabelText('Toggle messages for Tingkat Pesanan Tidak Terselesaikan');
-    await user.click(toggleBtn);
+    fireEvent.click(toggleBtn);
 
     // Edit message template
     const passTextarea = screen.getByLabelText('Tingkat Pesanan Tidak Terselesaikan Lulus');
-    await user.clear(passTextarea);
-    await user.type(passTextarea, 'EDITED PASS MESSAGE');
+    fireEvent.change(passTextarea, { target: { value: 'EDITED PASS MESSAGE' } });
 
     // Save Changes should be enabled now
     const saveBtn = screen.getByRole('button', { name: /simpan perubahan/i });
@@ -1009,7 +1005,6 @@ describe('Message templates', () => {
   });
 
   it('closing messages have textareas in edit mode', async () => {
-    const user = userEvent.setup();
     mockUseRules.mockReturnValue({
       rules: RULES_WITH_MESSAGES,
       isLoading: false,
@@ -1021,7 +1016,7 @@ describe('Message templates', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Closing message textareas should appear
     const closingTextarea = screen.getByLabelText(/closing message for ✔️/i);
@@ -1030,7 +1025,6 @@ describe('Message templates', () => {
   });
 
   it('edited message templates are included in save payload', async () => {
-    const user = userEvent.setup();
     mockReauthenticateUser.mockResolvedValue(undefined);
     mockUpdateRuleMutateAsync.mockResolvedValue({});
 
@@ -1045,24 +1039,25 @@ describe('Message templates', () => {
     renderRulesPage();
 
     // Enter edit mode
-    await user.click(screen.getByRole('button', { name: /edit aturan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /edit aturan/i }));
 
     // Expand and edit message
     const toggleBtn = screen.getByLabelText('Toggle messages for Tingkat Pesanan Tidak Terselesaikan');
-    await user.click(toggleBtn);
+    fireEvent.click(toggleBtn);
 
     const passTextarea = screen.getByLabelText('Tingkat Pesanan Tidak Terselesaikan Lulus');
-    await user.clear(passTextarea);
-    await user.type(passTextarea, 'NEW PASS MSG');
+    fireEvent.change(passTextarea, { target: { value: 'NEW PASS MSG' } });
 
     // Save
-    await user.click(screen.getByRole('button', { name: /simpan perubahan/i }));
+    fireEvent.click(screen.getByRole('button', { name: /simpan perubahan/i }));
     const passwordInput = screen.getByLabelText('Password');
-    await user.type(passwordInput, 'mypassword');
-    await user.click(screen.getByRole('button', { name: /^konfirmasi$/i }));
+    fireEvent.change(passwordInput, { target: { value: 'mypassword' } });
+    fireEvent.click(screen.getByRole('button', { name: /^konfirmasi$/i }));
 
     // Verify the mutation was called with the edited message
-    expect(mockUpdateRuleMutateAsync).toHaveBeenCalled();
+    await waitFor(() => {
+      expect(mockUpdateRuleMutateAsync).toHaveBeenCalled();
+    });
     const callArgs = mockUpdateRuleMutateAsync.mock.calls[0][0];
     expect(callArgs.rules.operational.unfulfilled_order_rate.message_pass).toBe('NEW PASS MSG');
   });
