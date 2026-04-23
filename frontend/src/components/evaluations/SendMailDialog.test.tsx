@@ -2,7 +2,13 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SendMailDialog } from './SendMailDialog';
-import { buildSubject, buildBody, buildGmailComposeUrl } from './sendMailUtils';
+import i18n from '../../i18n';
+import {
+  buildSubject,
+  buildBody,
+  buildGmailComposeUrl,
+  buildGmailComposeRequest,
+} from './sendMailUtils';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -189,6 +195,36 @@ describe('buildGmailComposeUrl', () => {
   });
 });
 
+describe('buildGmailComposeRequest', () => {
+  it('uses GET for the current short compose payloads', () => {
+    const request = buildGmailComposeRequest('to@example.com', 'Hello World', 'Line 1\nLine 2');
+
+    expect(request.method).toBe('get');
+    expect(request.url).toBe(buildGmailComposeUrl('to@example.com', 'Hello World', 'Line 1\nLine 2'));
+  });
+
+  it('uses POST when the encoded Thai compose payload gets too large', () => {
+    const fixedT = i18n.getFixedT('th');
+    const subject = buildSubject('Nike Indonesia', 'Jan 2026', fixedT);
+    const body = buildBody(
+      'pic@nike.com',
+      'Nike Indonesia',
+      'Budi Santoso',
+      'https://shopee.co.id/nike',
+      'Fashion',
+      'Skor akhir: 78.5\nKesimpulan: Layak.',
+      fixedT,
+    );
+
+    const request = buildGmailComposeRequest('bot@ahacommerce.net', subject, body);
+
+    expect(request.method).toBe('post');
+    expect(request.url.length).toBeGreaterThan(700);
+    expect(request.params.su).toContain('[TH]');
+    expect(request.params.body).toContain('เรียน');
+  });
+});
+
 describe('buildSubject', () => {
   it('formats subject with brand name and period', () => {
     expect(buildSubject('Salt', 'Jan 2026')).toBe(
@@ -339,6 +375,68 @@ describe('SendMailDialog — language selector', () => {
     // The body should still contain the standard header from buildBody
     expect(body).toHaveTextContent('[EMAIL TO: pic@nike.com]');
     expect(body).toHaveTextContent('Kepada Pimpinan Nike Indonesia');
+  });
+
+  it('uses form POST handoff for Thai compose payloads', async () => {
+    const scoreBreakdown = [
+      {
+        category: 'Operations',
+        score: 10,
+        max_score: 15,
+        available: true,
+        rows: [
+          {
+            row: 1,
+            metric: 'Test',
+            value: 100,
+            benchmark: '>50',
+            verdict: '✔️',
+            message: 'Good',
+            message_i18n: { key: 'scoring.ops.good', vars: {} },
+            score: 5,
+          },
+        ],
+      },
+    ];
+
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => ({ closed: false } as Window));
+    const submitSpy = vi
+      .spyOn(HTMLFormElement.prototype, 'submit')
+      .mockImplementation(() => undefined);
+
+    renderDialog({ onOpenChange, scoreBreakdown });
+
+    await user.selectOptions(screen.getByTestId('email-language-select'), 'th');
+
+    const sendButtons = screen.getAllByText('Kirim Email');
+    const sendButton = sendButtons.find((el) => el.closest('button') !== null)!;
+    await user.click(sendButton.closest('button')!);
+
+    expect(windowOpen).not.toHaveBeenCalled();
+    expect(submitSpy).toHaveBeenCalledTimes(1);
+
+    const form = submitSpy.mock.instances[0] as HTMLFormElement;
+    const inputs = Array.from(form.querySelectorAll('input')).reduce<Record<string, string>>(
+      (acc, input) => {
+        acc[input.name] = input.value;
+        return acc;
+      },
+      {},
+    );
+
+    expect(form.method.toLowerCase()).toBe('post');
+    expect(form.action).toBe('https://mail.google.com/mail/');
+    expect(inputs.view).toBe('cm');
+    expect(inputs.fs).toBe('1');
+    expect(inputs.to).toBe('bot@ahacommerce.net');
+    expect(inputs.su).toContain('[TH]');
+    expect(inputs.body).toContain('เรียน');
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+
+    submitSpy.mockRestore();
+    windowOpen.mockRestore();
   });
 
   it('resets language when dialog closes', async () => {
