@@ -20,12 +20,7 @@ import {
 import i18n from '../../i18n';
 import type { CategoryScore } from '../../hooks/useScoring';
 import type { BrandRawData } from '../../hooks/useEvaluationDetail';
-import {
-  buildSubject,
-  buildBody,
-  buildGmailComposeRequest,
-  openGmailCompose,
-} from './sendMailUtils';
+import { buildSubject, buildBody, buildGmailComposeUrl } from './sendMailUtils';
 import { isRecord } from '../../lib/typeGuards';
 
 interface SendMailDialogProps {
@@ -134,8 +129,12 @@ export function SendMailDialog({
   };
 
   const handleSend = () => {
-    const gmailComposeRequest = buildGmailComposeRequest(to, subject, body);
-    openGmailCompose(gmailComposeRequest);
+    const gmailComposeUrl = buildGmailComposeUrl(to, subject, body);
+    // Some browsers can return null here when opening a new tab with
+    // noopener/noreferrer even though the tab opened successfully.
+    // Falling back to same-tab navigation causes the current page to
+    // also redirect to Gmail, which is the bug we want to avoid.
+    window.open(gmailComposeUrl, '_blank', 'noopener,noreferrer');
     onOpenChange(false);
   };
 
