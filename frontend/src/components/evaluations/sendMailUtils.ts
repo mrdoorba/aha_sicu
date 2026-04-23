@@ -31,12 +31,12 @@ ${bodyContent}`;
 }
 
 export function buildMailtoUrl(to: string, subject: string, body: string): string {
-  const params = new URLSearchParams({
-    subject,
-    body,
-  });
+  const query = [
+    `subject=${encodeURIComponent(subject)}`,
+    `body=${encodeURIComponent(body)}`,
+  ].join('&');
 
-  return `mailto:${encodeURIComponent(to)}?${params.toString()}`;
+  return `mailto:${encodeURIComponent(to)}?${query}`;
 }
 
 export function openMailto(url: string): void {

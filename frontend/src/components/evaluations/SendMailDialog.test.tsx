@@ -185,8 +185,17 @@ describe('buildMailtoUrl', () => {
 
     expect(url).toMatch(/^mailto:/);
     expect(url).toContain('mailto:to%40example.com');
-    expect(url).toContain('subject=Hello+World');
-    expect(url).toContain('body=Line+1%0ALine+2');
+    expect(url).toContain('subject=Hello%20World');
+    expect(url).toContain('body=Line%201%0ALine%202');
+  });
+
+  it('encodes spaces as %20 so mail clients do not render plus signs', () => {
+    const url = buildMailtoUrl('to@example.com', 'Thai Subject', 'Hello Thai Team');
+
+    expect(url).toContain('subject=Thai%20Subject');
+    expect(url).toContain('body=Hello%20Thai%20Team');
+    expect(url).not.toContain('Thai+Subject');
+    expect(url).not.toContain('Hello+Thai+Team');
   });
 });
 
