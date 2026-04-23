@@ -23,8 +23,8 @@ import type { BrandRawData } from '../../hooks/useEvaluationDetail';
 import {
   buildSubject,
   buildBody,
-  buildGmailComposeLink,
-  openGmailCompose,
+  buildMailtoUrl,
+  openMailto,
 } from './sendMailUtils';
 import { isRecord } from '../../lib/typeGuards';
 
@@ -134,8 +134,8 @@ export function SendMailDialog({
   };
 
   const handleSend = () => {
-    const gmailComposeLink = buildGmailComposeLink(to, subject, body);
-    openGmailCompose(gmailComposeLink);
+    const mailtoUrl = buildMailtoUrl(to, subject, body);
+    openMailto(mailtoUrl);
     onOpenChange(false);
   };
 

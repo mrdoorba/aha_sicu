@@ -2,12 +2,10 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SendMailDialog } from './SendMailDialog';
-import i18n from '../../i18n';
 import {
   buildSubject,
   buildBody,
-  buildGmailComposeUrl,
-  buildGmailComposeLink,
+  buildMailtoUrl,
 } from './sendMailUtils';
 
 vi.mock('react-i18next', () => ({
@@ -106,7 +104,7 @@ describe('SendMailDialog', () => {
     expect(body).toHaveTextContent('[EMAIL TO: new@brand.com]');
   });
 
-  it('opens Gmail compose URL via window.open on "Kirim Email" click', async () => {
+  it('opens mailto URL via window.open on "Kirim Email" click', async () => {
     const onOpenChange = vi.fn();
     const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => ({ closed: false } as Window));
     const user = userEvent.setup();
@@ -121,34 +119,33 @@ describe('SendMailDialog', () => {
 
     expect(windowOpen).toHaveBeenCalledTimes(1);
     const url = windowOpen.mock.calls[0][0] as string;
-    expect(url).toMatch(/^https:\/\/mail\.google\.com\/mail\/\?/);
-    expect(url).toContain('to=bot%40ahacommerce.net');
-    expect(url).toContain('su=');
+    expect(url).toMatch(/^mailto:/);
+    expect(url).toContain('bot%40ahacommerce.net');
+    expect(url).toContain('subject=');
     expect(url).toContain('body=');
+    expect(windowOpen).toHaveBeenCalledWith(url, '_self');
     expect(onOpenChange).toHaveBeenCalledWith(false);
 
     windowOpen.mockRestore();
   });
 
-  it('does not fall back to same-tab Gmail navigation when window.open returns null', async () => {
+  it('still closes dialog when mailto handoff returns null', async () => {
     const onOpenChange = vi.fn();
     const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
     const user = userEvent.setup();
     renderDialog({ onOpenChange });
 
-    const initialHref = window.location.href;
     const sendButtons = screen.getAllByText('Kirim Email');
     const sendButton = sendButtons.find((el) => el.closest('button') !== null)!;
     await user.click(sendButton.closest('button')!);
 
     expect(windowOpen).toHaveBeenCalledTimes(1);
-    expect(window.location.href).toBe(initialHref);
     expect(onOpenChange).toHaveBeenCalledWith(false);
 
     windowOpen.mockRestore();
   });
 
-  it('uses edited "Kepada" value in Gmail compose URL', async () => {
+  it('uses edited "Kepada" value in mailto URL', async () => {
     const onOpenChange = vi.fn();
     const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => ({ closed: false } as Window));
     const user = userEvent.setup();
@@ -163,8 +160,8 @@ describe('SendMailDialog', () => {
     await user.click(sendButton.closest('button')!);
 
     const url = windowOpen.mock.calls[0][0] as string;
-    expect(url).toContain('custom%40recipient.com');
-    expect(url).not.toContain('bot%40ahacommerce.net');
+    expect(url).toContain('mailto:custom%40recipient.com');
+    expect(url).not.toContain('mailto:bot%40ahacommerce.net');
 
     windowOpen.mockRestore();
   });
@@ -182,44 +179,14 @@ describe('SendMailDialog', () => {
 });
 
 
-describe('buildGmailComposeUrl', () => {
-  it('builds a Gmail compose URL with to, subject, and body', () => {
-    const url = buildGmailComposeUrl('to@example.com', 'Hello World', 'Line 1\nLine 2');
+describe('buildMailtoUrl', () => {
+  it('builds a mailto URL with to, subject, and body', () => {
+    const url = buildMailtoUrl('to@example.com', 'Hello World', 'Line 1\nLine 2');
 
-    expect(url).toMatch(/^https:\/\/mail\.google\.com\/mail\/\?/);
-    expect(url).toContain('view=cm');
-    expect(url).toContain('fs=1');
-    expect(url).toContain('to=to%40example.com');
-    expect(url).toContain('su=Hello+World');
+    expect(url).toMatch(/^mailto:/);
+    expect(url).toContain('mailto:to%40example.com');
+    expect(url).toContain('subject=Hello+World');
     expect(url).toContain('body=Line+1%0ALine+2');
-  });
-});
-
-describe('buildGmailComposeLink', () => {
-  it('uses direct strategy for short compose payloads', () => {
-    const link = buildGmailComposeLink('to@example.com', 'Hello World', 'Line 1\nLine 2');
-
-    expect(link.strategy).toBe('direct');
-    expect(link.url).toBe(buildGmailComposeUrl('to@example.com', 'Hello World', 'Line 1\nLine 2'));
-  });
-
-  it('uses staged strategy for large Thai compose payloads', () => {
-    const fixedT = i18n.getFixedT('th');
-    const subject = buildSubject('Nike Indonesia', 'Jan 2026', fixedT);
-    const body = buildBody(
-      'pic@nike.com',
-      'Nike Indonesia',
-      'Budi Santoso',
-      'https://shopee.co.id/nike',
-      'Fashion',
-      'Skor akhir: 78.5\nKesimpulan: Layak.',
-      fixedT,
-    );
-
-    const link = buildGmailComposeLink('bot@ahacommerce.net', subject, body);
-
-    expect(link.strategy).toBe('staged');
-    expect(link.url.length).toBeGreaterThan(700);
   });
 });
 
@@ -375,7 +342,7 @@ describe('SendMailDialog — language selector', () => {
     expect(body).toHaveTextContent('Kepada Pimpinan Nike Indonesia');
   });
 
-  it('uses staged Gmail navigation for large Thai compose payloads', async () => {
+  it('uses mailto handoff for Thai compose payloads', async () => {
     const scoreBreakdown = [
       {
         category: 'Operations',
@@ -399,12 +366,7 @@ describe('SendMailDialog — language selector', () => {
 
     const user = userEvent.setup();
     const onOpenChange = vi.fn();
-    const replace = vi.fn();
-    const stagedWindow = { location: { replace }, opener: window } as unknown as Window;
-    const windowOpen = vi.spyOn(window, 'open').mockImplementation((url?: string | URL) => {
-      if (url === '') return stagedWindow;
-      return ({ closed: false } as Window);
-    });
+    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => ({ closed: false } as Window));
 
     renderDialog({ onOpenChange, scoreBreakdown });
 
@@ -414,10 +376,12 @@ describe('SendMailDialog — language selector', () => {
     const sendButton = sendButtons.find((el) => el.closest('button') !== null)!;
     await user.click(sendButton.closest('button')!);
 
-    expect(windowOpen).toHaveBeenCalledWith('', '_blank');
-    expect(replace).toHaveBeenCalledTimes(1);
-    expect(replace.mock.calls[0][0]).toContain('mail.google.com/mail/?');
-    expect(replace.mock.calls[0][0]).toContain('su=');
+    expect(windowOpen).toHaveBeenCalledTimes(1);
+    const url = windowOpen.mock.calls[0][0] as string;
+    expect(url).toMatch(/^mailto:/);
+    expect(url).toContain('subject=');
+    expect(url).toContain('body=');
+    expect(url).toContain('%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99');
     expect(onOpenChange).toHaveBeenCalledWith(false);
 
     windowOpen.mockRestore();
