@@ -2,7 +2,13 @@ import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { SendMailDialog } from './SendMailDialog';
-import { buildSubject, buildBody, buildGmailComposeUrl } from './sendMailUtils';
+import i18n from '../../i18n';
+import {
+  buildSubject,
+  buildBody,
+  buildGmailComposeUrl,
+  buildGmailComposeLink,
+} from './sendMailUtils';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
@@ -189,6 +195,34 @@ describe('buildGmailComposeUrl', () => {
   });
 });
 
+describe('buildGmailComposeLink', () => {
+  it('uses direct strategy for short compose payloads', () => {
+    const link = buildGmailComposeLink('to@example.com', 'Hello World', 'Line 1\nLine 2');
+
+    expect(link.strategy).toBe('direct');
+    expect(link.url).toBe(buildGmailComposeUrl('to@example.com', 'Hello World', 'Line 1\nLine 2'));
+  });
+
+  it('uses staged strategy for large Thai compose payloads', () => {
+    const fixedT = i18n.getFixedT('th');
+    const subject = buildSubject('Nike Indonesia', 'Jan 2026', fixedT);
+    const body = buildBody(
+      'pic@nike.com',
+      'Nike Indonesia',
+      'Budi Santoso',
+      'https://shopee.co.id/nike',
+      'Fashion',
+      'Skor akhir: 78.5\nKesimpulan: Layak.',
+      fixedT,
+    );
+
+    const link = buildGmailComposeLink('bot@ahacommerce.net', subject, body);
+
+    expect(link.strategy).toBe('staged');
+    expect(link.url.length).toBeGreaterThan(700);
+  });
+});
+
 describe('buildSubject', () => {
   it('formats subject with brand name and period', () => {
     expect(buildSubject('Salt', 'Jan 2026')).toBe(
@@ -339,6 +373,54 @@ describe('SendMailDialog — language selector', () => {
     // The body should still contain the standard header from buildBody
     expect(body).toHaveTextContent('[EMAIL TO: pic@nike.com]');
     expect(body).toHaveTextContent('Kepada Pimpinan Nike Indonesia');
+  });
+
+  it('uses staged Gmail navigation for large Thai compose payloads', async () => {
+    const scoreBreakdown = [
+      {
+        category: 'Operations',
+        score: 10,
+        max_score: 15,
+        available: true,
+        rows: [
+          {
+            row: 1,
+            metric: 'Test',
+            value: 100,
+            benchmark: '>50',
+            verdict: '✔️',
+            message: 'Good',
+            message_i18n: { key: 'scoring.ops.good', vars: {} },
+            score: 5,
+          },
+        ],
+      },
+    ];
+
+    const user = userEvent.setup();
+    const onOpenChange = vi.fn();
+    const replace = vi.fn();
+    const stagedWindow = { location: { replace }, opener: window } as unknown as Window;
+    const windowOpen = vi.spyOn(window, 'open').mockImplementation((url?: string | URL) => {
+      if (url === '') return stagedWindow;
+      return ({ closed: false } as Window);
+    });
+
+    renderDialog({ onOpenChange, scoreBreakdown });
+
+    await user.selectOptions(screen.getByTestId('email-language-select'), 'th');
+
+    const sendButtons = screen.getAllByText('Kirim Email');
+    const sendButton = sendButtons.find((el) => el.closest('button') !== null)!;
+    await user.click(sendButton.closest('button')!);
+
+    expect(windowOpen).toHaveBeenCalledWith('', '_blank');
+    expect(replace).toHaveBeenCalledTimes(1);
+    expect(replace.mock.calls[0][0]).toContain('mail.google.com/mail/?');
+    expect(replace.mock.calls[0][0]).toContain('su=');
+    expect(onOpenChange).toHaveBeenCalledWith(false);
+
+    windowOpen.mockRestore();
   });
 
   it('resets language when dialog closes', async () => {
