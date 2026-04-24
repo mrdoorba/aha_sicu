@@ -89,3 +89,34 @@ removed {
     destroy = false
   }
 }
+
+# Old shared Cloud SQL scheduler resources — manually deleted and intentionally
+# removed from Terraform management. Keep these removed blocks so existing state
+# can be cleaned up without Terraform attempting to recreate or destroy them.
+removed {
+  from = google_service_account.cloud_sql_scheduler
+  lifecycle {
+    destroy = false
+  }
+}
+
+removed {
+  from = google_project_iam_member.cloud_sql_scheduler_admin
+  lifecycle {
+    destroy = false
+  }
+}
+
+removed {
+  from = google_cloud_scheduler_job.cloud_sql_start
+  lifecycle {
+    destroy = false
+  }
+}
+
+removed {
+  from = google_cloud_scheduler_job.cloud_sql_stop
+  lifecycle {
+    destroy = false
+  }
+}

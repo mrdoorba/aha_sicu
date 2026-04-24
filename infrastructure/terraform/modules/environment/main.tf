@@ -20,6 +20,7 @@ resource "google_service_account" "deploy" {
 }
 
 resource "google_service_account" "scheduler" {
+  count        = var.enable_scheduler ? 1 : 0
   account_id   = "aha-coms-sicu-${var.environment}-sched-sa"
   display_name = "Store ICU ${var.environment} Scheduler Service Account"
   description  = "Service account for Cloud Scheduler to invoke Cloud Run sync endpoint"
@@ -275,8 +276,9 @@ resource "google_sql_database" "main" {
 # =============================================================================
 
 locals {
-  cloud_run_service_name = var.cloud_run_service_name != "" ? var.cloud_run_service_name : "aha-coms-sicu-${var.environment}-api"
-  scheduler_target_url   = var.cloud_run_url != "" ? var.cloud_run_url : google_cloud_run_v2_service.api.uri
+  cloud_run_service_name          = var.cloud_run_service_name != "" ? var.cloud_run_service_name : "aha-coms-sicu-${var.environment}-api"
+  scheduler_target_url            = var.cloud_run_url != "" ? var.cloud_run_url : google_cloud_run_v2_service.api.uri
+  scheduler_service_account_email = try(google_service_account.scheduler[0].email, "")
 }
 
 resource "google_cloud_run_v2_service" "api" {
@@ -402,7 +404,7 @@ resource "google_cloud_run_v2_service" "api" {
 
       env {
         name  = "ALLOWED_SCHEDULER_EMAILS"
-        value = google_service_account.scheduler.email
+        value = local.scheduler_service_account_email
       }
 
       env {
@@ -467,10 +469,11 @@ resource "google_cloud_run_v2_service_iam_member" "public_access" {
 
 # Scheduler invoker on Cloud Run v2 service
 resource "google_cloud_run_v2_service_iam_member" "scheduler_invoker_v2" {
+  count    = var.enable_scheduler ? 1 : 0
   name     = google_cloud_run_v2_service.api.name
   location = var.region
   role     = "roles/run.invoker"
-  member   = "serviceAccount:${google_service_account.scheduler.email}"
+  member   = "serviceAccount:${local.scheduler_service_account_email}"
   project  = var.project_id
 }
 
@@ -585,6 +588,7 @@ resource "google_service_account_iam_member" "deploy_wi_user" {
 # =============================================================================
 
 resource "google_cloud_scheduler_job" "daily_sync" {
+  count       = var.enable_scheduler ? 1 : 0
   name        = "aha-coms-sicu-${var.environment}-daily-sync"
   description = "Daily brand data sync from Google Sheets (08:30 WIB, weekdays)"
   schedule    = "30 8 * * 1-5"
@@ -597,7 +601,7 @@ resource "google_cloud_scheduler_job" "daily_sync" {
     uri         = "${local.scheduler_target_url}/api/v1/sync"
 
     oidc_token {
-      service_account_email = google_service_account.scheduler.email
+      service_account_email = local.scheduler_service_account_email
       audience              = local.scheduler_target_url
     }
   }

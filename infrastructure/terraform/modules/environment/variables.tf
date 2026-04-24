@@ -140,3 +140,9 @@ variable "wif_allowed_branch" {
   type        = string
   default     = "main"
 }
+
+variable "enable_scheduler" {
+  description = "Whether to create the daily sync Cloud Scheduler resources for this environment"
+  type        = bool
+  default     = true
+}

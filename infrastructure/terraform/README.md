@@ -33,8 +33,8 @@ infrastructure/terraform/
 A single `terraform apply` provisions both dev and prod environments using the module pattern:
 
 ```hcl
-module "dev"  { source = "./modules/environment"; environment = "dev";  ... }
-module "prod" { source = "./modules/environment"; environment = "prod"; ... }
+module "dev"  { source = "./modules/environment"; environment = "dev";  enable_scheduler = false; ... }
+module "prod" { source = "./modules/environment"; environment = "prod"; enable_scheduler = true;  ... }
 ```
 
 Resources have dependencies. Terraform handles ordering automatically, but for initial understanding:
@@ -48,7 +48,7 @@ Resources have dependencies. Terraform handles ordering automatically, but for i
 7. **Cloud Run** — Service referencing secrets, SA, and image (environment module)
 8. **Workload Identity** — GitHub Actions OIDC federation (environment module)
 9. **Firebase Hosting** — Frontend hosting site (environment module)
-10. **Cloud Scheduler** — Daily sync (environment module) + SQL start/stop (cloud_sql.tf)
+10. **Cloud Scheduler** — Prod daily sync only (environment module)
 
 ## Quick Setup
 
@@ -134,8 +134,7 @@ echo -n "YOUR_SENDGRID_WEBHOOK_SECRET" | \
 | GCS Bucket (`{project_id}-aha-coms-sicu-{env}-uploads`) | `google_storage_bucket` | Raw uploaded files (kept until user replaces the upload) |
 | Firebase Hosting (`aha-coms-sicu-{env}`) | `google_firebase_hosting_site` | Frontend hosting |
 | Workload Identity Pool (`aha-coms-sicu-{env}-github-pool`) | `google_iam_workload_identity_pool` | GitHub Actions OIDC |
-| Cloud Scheduler (daily sync) | `google_cloud_scheduler_job` | Daily brand sync |
-| Cloud Scheduler (SQL start/stop) | `google_cloud_scheduler_job` | Cost optimization |
+| Cloud Scheduler (daily sync, prod only) | `google_cloud_scheduler_job` | Daily brand sync |
 
 ## Service Accounts
 
@@ -143,9 +142,8 @@ echo -n "YOUR_SENDGRID_WEBHOOK_SECRET" | \
 |-----------------|---------|-----------------|
 | `aha-coms-sicu-{env}-api-sa` | Cloud Run runtime | Secret accessor, storage objectAdmin, cloudsql.client, firebaseauth.admin |
 | `aha-coms-sicu-{env}-deploy-sa` | GitHub Actions CI/CD | run.admin, artifactregistry.writer, cloudsql.client, secretmanager.secretAccessor |
-| `aha-coms-sicu-{env}-sched-sa` | Cloud Scheduler sync | run.invoker on Cloud Run service |
+| `aha-coms-sicu-prod-sched-sa` | Cloud Scheduler sync | run.invoker on Cloud Run service |
 | `aha-coms-sicu-{env}-sheets-sa` | Google Sheets API | (Share target Sheet with this SA email) |
-| `aha-coms-sicu-sql-sched-sa` | Cloud SQL start/stop (shared) | cloudsql.admin |
 
 ## Outputs
 

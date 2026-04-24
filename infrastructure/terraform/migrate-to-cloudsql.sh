@@ -238,10 +238,6 @@ phase_terraform() {
       "google_sql_database.dev|projects/${PROJECT_ID}/instances/${INSTANCE_NAME}/databases/aha_sicu_dev"
       "google_sql_database.prod|projects/${PROJECT_ID}/instances/${INSTANCE_NAME}/databases/aha_sicu_prod"
       "google_sql_user.app|${PROJECT_ID}/${INSTANCE_NAME}/${DB_USER}"
-      "google_service_account.cloud_sql_scheduler|projects/${PROJECT_ID}/serviceAccounts/aha-sicu-sql-scheduler-sa@${PROJECT_ID}.iam.gserviceaccount.com"
-      "google_project_iam_member.cloud_sql_scheduler_admin|${PROJECT_ID} roles/cloudsql.admin serviceAccount:aha-sicu-sql-scheduler-sa@${PROJECT_ID}.iam.gserviceaccount.com"
-      "google_cloud_scheduler_job.cloud_sql_start|projects/${PROJECT_ID}/locations/${REGION}/jobs/aha-sicu-cloud-sql-start"
-      "google_cloud_scheduler_job.cloud_sql_stop|projects/${PROJECT_ID}/locations/${REGION}/jobs/aha-sicu-cloud-sql-stop"
     )
 
     for entry in "${imports[@]}"; do
