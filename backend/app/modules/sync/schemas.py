@@ -39,6 +39,31 @@ class SyncResult(BaseModel):
     column_drift_errors: list[dict[str, Any]] = []
 
 
+class ColumnChangeDetail(BaseModel):
+    """Single header mismatch entry."""
+
+    position: int
+    expected: str | None = None
+    actual: str | None = None
+
+
+class SyncDetailResponse(BaseModel):
+    """Per-sheet detail persisted in sync_details JSON."""
+
+    status: str
+    rows_synced: int | None = None
+    rows_skipped: int | None = None
+    errors: list[dict[str, Any]] | None = None
+    error: str | None = None
+    marketplace: str | None = None
+    sheet: str | None = None
+    expected_headers: list[str] | None = None
+    actual_headers: list[str] | None = None
+    missing: list[str] | None = None
+    unexpected: list[str] | None = None
+    changed_columns: list[ColumnChangeDetail] | None = None
+
+
 class EvalSheetSyncResponse(BaseModel):
     """Response model for eval sheet sync endpoint."""
 
@@ -57,11 +82,11 @@ class SyncStatusResponse(BaseModel):
     completed_at: datetime | None
     brands_synced: int
     error_message: str | None
-    sync_details: dict[str, Any] | None = None
+    sync_details: dict[str, SyncDetailResponse] | None = None
 
     @field_validator("sync_details", mode="before")
     @classmethod
-    def parse_jsonb(cls, v: Any) -> dict[str, Any] | None:
+    def parse_jsonb(cls, v: Any) -> dict[str, SyncDetailResponse] | None:
         if v is None:
             return None
         if isinstance(v, str):

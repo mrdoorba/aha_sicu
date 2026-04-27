@@ -27,12 +27,16 @@ def mock_sheets_client():
     fetch_headers returns the expected ID headers by default so drift
     detection passes. Tests that need drift behaviour can override.
     """
-    from app.modules.sync.column_drift import EXPECTED_HEADERS_VP_ID
+    from app.modules.sync.column_drift import EXPECTED_HEADERS_MEETING_ID, EXPECTED_HEADERS_VP_ID
 
     with patch("app.modules.sync.service.GoogleSheetsClient") as mock:
         instance = MagicMock()
         instance.fetch_sheet_data = AsyncMock()
-        instance.fetch_headers = AsyncMock(return_value=EXPECTED_HEADERS_VP_ID)
+        instance.fetch_headers = AsyncMock(
+            side_effect=lambda _spreadsheet_id, sheet_name: (
+                EXPECTED_HEADERS_MEETING_ID if sheet_name == "ZAP: 1st Meeting" else EXPECTED_HEADERS_VP_ID
+            )
+        )
         instance.fetch_meeting_data = AsyncMock()
         mock.return_value = instance
         yield instance
@@ -122,6 +126,38 @@ async def test_run_sync_vp_only(mock_db, mock_sheets_client, mock_queries):
         assert result.vp_results["vp_id"].rows_synced == 1
         assert result.meeting_result is None
         assert result.total_synced == 1
+
+
+async def test_run_sync_records_meeting_column_drift(mock_db, mock_sheets_client, mock_queries, mock_settings):
+    """Meeting drift is surfaced with explicit changed-column evidence."""
+    from app.modules.sync.service import run_sync
+
+    mock_sync, _ = mock_queries
+    mock_sheets_client.fetch_sheet_data.return_value = [{"Nama Brand": "Nike"}]
+    mock_sheets_client.fetch_headers.side_effect = lambda _spreadsheet_id, sheet_name: (
+        ["Brand", "Title", "Minutes", "Timestamp"]
+        if sheet_name == "ZAP: 1st Meeting"
+        else [
+            "Nama Brand", "BD", "Timestamp", "Link Shopee Mall / LazMall", "Kategori",
+            ">= 25 Produk in stock", "Shopee Mall", "Umur brand >5 tahun",
+            "No OPEX Issue", "Lokasi Jabodetabek / Email Domain Perusahaan",
+            "Terdaftar DJKI", "Omset >100jt", "LBS", "Leader Approval", "Score\nVP",
+            "Approach", "Nama Perusahaan/Perorangan*", "Nama PIC/ Jabatan*", "No WA*",
+            "Email", "Alamat*", "Kirim surat fisik", "SICU", "", "Signed up",
+        ]
+    )
+
+    result = await run_sync()
+
+    assert result.meeting_result is None
+    assert result.column_drift_errors[-1]["changed_columns"] == [
+        {"position": 3, "expected": "Duration (mins)", "actual": "Minutes"},
+    ]
+    update_kwargs = mock_sync.update_sync_status.await_args.kwargs
+    assert update_kwargs["sync_details"]["m1_id"]["changed_columns"] == [
+        {"position": 3, "expected": "Duration (mins)", "actual": "Minutes"},
+    ]
+    assert "Duration (mins) → Minutes" in update_kwargs["error_message"]
 
 
 async def test_run_sync_atomic_failure_when_batch_upsert_fails(mock_db, mock_sheets_client, mock_queries, mock_settings):

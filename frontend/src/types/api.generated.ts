@@ -137,10 +137,10 @@ export interface paths {
         };
         /**
          * List Brands
-         * @description Get paginated list of brands with optional search.
+         * @description Get paginated list of brands with optional search and marketplace filter.
          *
          *     Returns brands from VP data enriched with Meeting data when available.
-         *     Supports pagination and case-insensitive brand name search.
+         *     Supports pagination, case-insensitive brand name search, and marketplace filtering.
          */
         get: operations["list_brands_api_v1_brands_get"];
         put?: never;
@@ -207,7 +207,11 @@ export interface paths {
         get: operations["list_history_endpoint_api_v1_email_history_get"];
         put?: never;
         post?: never;
-        delete?: never;
+        /**
+         * Delete History Endpoint
+         * @description Batch-delete email history entries. Requires admin role.
+         */
+        delete: operations["delete_history_endpoint_api_v1_email_history_delete"];
         options?: never;
         head?: never;
         patch?: never;
@@ -821,6 +825,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/webhooks/sendgrid": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Sendgrid Webhook
+         * @description Receive SendGrid Event Webhook events and update email delivery status.
+         */
+        post: operations["sendgrid_webhook_api_v1_webhooks_sendgrid_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/health": {
         parameters: {
             query?: never;
@@ -876,6 +900,11 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /**
+             * Marketplace
+             * @default ID
+             */
+            marketplace: string;
             /** Meeting Raw Data */
             meeting_raw_data?: {
                 [key: string]: unknown;
@@ -941,6 +970,11 @@ export interface components {
              * Format: date-time
              */
             updated_at: string;
+            /**
+             * Marketplace
+             * @default ID
+             */
+            marketplace: string;
             /** Meeting Raw Data */
             meeting_raw_data?: {
                 [key: string]: unknown;
@@ -1064,6 +1098,18 @@ export interface components {
             category_i18n?: components["schemas"]["TranslatableTextSchema"] | null;
         };
         /**
+         * ColumnChangeDetail
+         * @description Single header mismatch entry.
+         */
+        ColumnChangeDetail: {
+            /** Position */
+            position: number;
+            /** Expected */
+            expected?: string | null;
+            /** Actual */
+            actual?: string | null;
+        };
+        /**
          * CreateAccountRequest
          * @description Request body for creating a new account.
          */
@@ -1078,6 +1124,22 @@ export interface components {
              * @enum {string}
              */
             role: "member" | "leader" | "admin";
+        };
+        /**
+         * DeleteEmailHistoryRequest
+         * @description Request body for batch-deleting email history entries.
+         */
+        DeleteEmailHistoryRequest: {
+            /** Ids */
+            ids: number[];
+        };
+        /**
+         * DeleteEmailHistoryResponse
+         * @description Response after deleting email history entries.
+         */
+        DeleteEmailHistoryResponse: {
+            /** Deleted */
+            deleted: number;
         };
         /** DownloadResponse */
         DownloadResponse: {
@@ -1111,7 +1173,10 @@ export interface components {
             message_id?: string | null;
             /** Error Detail */
             error_detail?: string | null;
-            /** Sent At */
+            /**
+             * Sent At
+             * Format: date-time
+             */
             sent_at: string;
         };
         /**
@@ -1292,6 +1357,12 @@ export interface components {
             brand_id: number;
             /** Brand Name */
             brand_name: string;
+            /**
+             * Marketplace
+             * @default ID
+             * @enum {string}
+             */
+            marketplace: "ID" | "TH";
             /** Evaluation Count */
             evaluation_count: number;
             /** Top Score */
@@ -1634,6 +1705,39 @@ export interface components {
             /** Recipients */
             recipients: string[];
         };
+        /**
+         * SendGridWebhookEvent
+         * @description Single SendGrid Event Webhook payload.
+         */
+        SendGridWebhookEvent: {
+            /** Event */
+            event: string;
+            /**
+             * Email
+             * @default
+             */
+            email: string;
+            /**
+             * Sg Message Id
+             * @default
+             */
+            sg_message_id: string;
+            /**
+             * Timestamp
+             * @default 0
+             */
+            timestamp: number;
+            /**
+             * Reason
+             * @default
+             */
+            reason: string;
+            /**
+             * Type
+             * @default
+             */
+            type: string;
+        };
         /** SignedUrlRequest */
         SignedUrlRequest: {
             /** Filename */
@@ -1689,6 +1793,38 @@ export interface components {
             calculated_at?: string | null;
         };
         /**
+         * SyncDetailResponse
+         * @description Per-sheet detail persisted in sync_details JSON.
+         */
+        SyncDetailResponse: {
+            /** Status */
+            status: string;
+            /** Rows Synced */
+            rows_synced?: number | null;
+            /** Rows Skipped */
+            rows_skipped?: number | null;
+            /** Errors */
+            errors?: {
+                [key: string]: unknown;
+            }[] | null;
+            /** Error */
+            error?: string | null;
+            /** Marketplace */
+            marketplace?: string | null;
+            /** Sheet */
+            sheet?: string | null;
+            /** Expected Headers */
+            expected_headers?: string[] | null;
+            /** Actual Headers */
+            actual_headers?: string[] | null;
+            /** Missing */
+            missing?: string[] | null;
+            /** Unexpected */
+            unexpected?: string[] | null;
+            /** Changed Columns */
+            changed_columns?: components["schemas"]["ColumnChangeDetail"][] | null;
+        };
+        /**
          * SyncStatusResponse
          * @description Response model for sync status endpoint.
          */
@@ -1718,7 +1854,7 @@ export interface components {
             error_message: string | null;
             /** Sync Details */
             sync_details?: {
-                [key: string]: unknown;
+                [key: string]: components["schemas"]["SyncDetailResponse"];
             } | null;
         };
         /**
@@ -2055,6 +2191,8 @@ export interface operations {
                 limit?: number;
                 /** @description Search by brand name */
                 search?: string | null;
+                /** @description Comma-separated marketplace filter (e.g., 'ID,TH') */
+                marketplace?: string | null;
             };
             header?: never;
             path?: never;
@@ -2160,6 +2298,39 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["EmailHistoryListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_history_endpoint_api_v1_email_history_delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["DeleteEmailHistoryRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["DeleteEmailHistoryResponse"];
                 };
             };
             /** @description Validation Error */
@@ -2316,7 +2487,9 @@ export interface operations {
                 search?: string | null;
                 date_from?: string | null;
                 date_to?: string | null;
+                /** @description Comma-separated marketplace filter (e.g., 'ID,TH') */
                 marketplace?: string | null;
+                /** @description Comma-separated grouped verdict filter (approved,non_approved) */
                 verdict?: string | null;
             };
             header?: never;
@@ -3072,6 +3245,43 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    sendgrid_webhook_api_v1_webhooks_sendgrid_post: {
+        parameters: {
+            query?: never;
+            header: {
+                authorization: string;
+            };
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendGridWebhookEvent"][];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: unknown;
+                    };
                 };
             };
             /** @description Validation Error */

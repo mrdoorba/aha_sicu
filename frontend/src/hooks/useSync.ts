@@ -1,24 +1,12 @@
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import client from '../services/apiClient';
+import type { components } from '../types/api.generated';
 
-// Keep in sync with apiClient.ts paths['/api/v1/sync/status'] response type
-export interface SyncStatusData {
-  id: number;
-  last_sync: string;
-  status: 'success' | 'failed' | 'in_progress';
-  started_at: string;
-  completed_at: string | null;
-  brands_synced: number;
-  error_message: string | null;
-  sync_details: Record<string, {
-    rows_synced?: number;
-    rows_skipped?: number;
-    status: string;
-    error?: string;
-    missing?: string[];
-    unexpected?: string[];
-  }> | null;
-}
+export type ColumnChangeDetail = components['schemas']['ColumnChangeDetail'];
+export type SyncDetailData = components['schemas']['SyncDetailResponse'];
+
+// Keep in sync with generated OpenAPI schema for /api/v1/sync and /api/v1/sync/status.
+export type SyncStatusData = components['schemas']['SyncStatusResponse'];
 
 export function useSyncStatus() {
   return useQuery({

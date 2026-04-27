@@ -11,9 +11,10 @@ from app.db.queries import brands as brand_queries
 from app.db.queries import sync_status as sync_queries
 from app.modules.sync.column_drift import (
     ColumnDriftError,
-    validate_headers,
+    EXPECTED_HEADERS_MEETING_ID,
     EXPECTED_HEADERS_VP_ID,
     EXPECTED_HEADERS_VP_TH,
+    validate_headers,
 )
 from app.modules.sync.schemas import (
     SheetSyncResult,
@@ -24,6 +25,69 @@ from app.modules.sync.schemas import (
 from app.modules.sync.sheets_client import GoogleSheetsClient
 
 logger = logging.getLogger(__name__)
+
+
+def _summarize_changed_columns(drift: ColumnDriftError) -> str:
+    """Build a compact human-readable summary of header changes."""
+    parts: list[str] = []
+    for change in drift.changed_columns:
+        expected = change.get("expected")
+        actual = change.get("actual")
+        if expected and actual:
+            parts.append(f"{expected} → {actual}")
+        elif expected:
+            parts.append(f"missing {expected}")
+        elif actual:
+            parts.append(f"unexpected {actual}")
+    return "; ".join(parts) or "Header mismatch detected"
+
+
+def _build_drift_sync_detail(drift: ColumnDriftError) -> dict[str, Any]:
+    """Convert a drift error into the persisted sync_details shape."""
+    return {
+        "status": drift.status,
+        "marketplace": drift.marketplace,
+        "sheet": drift.sheet,
+        "error": _summarize_changed_columns(drift),
+        "expected_headers": drift.expected,
+        "actual_headers": drift.actual,
+        "missing": drift.missing,
+        "unexpected": drift.unexpected,
+        "changed_columns": drift.changed_columns,
+    }
+
+
+def _format_drift_error_message(detail: dict[str, Any]) -> str:
+    """Build the high-level sync error message for a drift detail entry."""
+    changed_columns = detail.get("changed_columns", [])
+    changed_summary = "; ".join(
+        (
+            f"{change.get('expected')} → {change.get('actual')}"
+            if change.get("expected") and change.get("actual")
+            else f"missing {change.get('expected')}"
+            if change.get("expected")
+            else f"unexpected {change.get('actual')}"
+        )
+        for change in changed_columns
+    )
+    if not changed_summary:
+        changed_summary = str(detail.get("error") or "Header mismatch detected")
+    return (
+        f"Column drift ({detail.get('sheet')} {detail.get('marketplace')}): "
+        f"{changed_summary}"
+    )
+
+
+def _get_meeting_config() -> dict[str, Any]:
+    """Build Meeting sheet config from settings."""
+    return {
+        "marketplace": "ID",
+        "spreadsheet_id": settings.gsheets_meeting_spreadsheet_id,
+        "range": settings.gsheets_meeting_range,
+        "brand_column": settings.gsheets_meeting_brand_column,
+        "expected_headers": EXPECTED_HEADERS_MEETING_ID,
+        "sheet_name": settings.gsheets_meeting_range.split("!")[0],
+    }
 
 
 async def _sync_sheet_to_table(
@@ -211,17 +275,32 @@ async def _sync_vp_sheets(
 
 async def _sync_meeting_sheet(
     sheets_client: GoogleSheetsClient,
-) -> SheetSyncResult | None:
+) -> SheetSyncResult | ColumnDriftError | None:
     """Fetch and sync Meeting sheet data.
 
     Returns None if Meeting spreadsheet is not configured.
     Raises on unrecoverable fetch errors.
     """
-    if not settings.gsheets_meeting_spreadsheet_id:
+    cfg = _get_meeting_config()
+
+    if not cfg["spreadsheet_id"]:
         logger.info("Meeting spreadsheet not configured, skipping")
         return None
 
     try:
+        actual_headers = await sheets_client.fetch_headers(
+            cfg["spreadsheet_id"], cfg["sheet_name"]
+        )
+        drift = validate_headers(
+            cfg["expected_headers"],
+            actual_headers,
+            marketplace=cfg["marketplace"],
+            sheet="Meeting",
+        )
+        if drift:
+            logger.warning(f"Column drift detected for Meeting: {drift}")
+            return drift
+
         logger.info("Fetching Meeting data...")
         meeting_rows = await sheets_client.fetch_meeting_data()
         logger.info(f"Fetched {len(meeting_rows)} rows from Meeting sheet")
@@ -229,9 +308,9 @@ async def _sync_meeting_sheet(
         result = await _sync_sheet_to_table(
             rows=meeting_rows,
             table="brand_meeting_data",
-            brand_column=settings.gsheets_meeting_brand_column,
+            brand_column=cfg["brand_column"],
             sheet_type="meeting",
-            marketplace="ID",
+            marketplace=cfg["marketplace"],
         )
         logger.info(
             f"Meeting sync: {result.rows_synced} synced, "
@@ -272,7 +351,7 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
     logger.info(f"Starting sync with ID: {sync_id}")
 
     vp_results: dict[str, SheetSyncResult | ColumnDriftError] = {}
-    meeting_result: SheetSyncResult | None = None
+    meeting_result: SheetSyncResult | ColumnDriftError | None = None
     all_errors: list[str] = []
 
     try:
@@ -295,12 +374,7 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
         sync_details: dict[str, Any] = {}
         for key, result in vp_results.items():
             if isinstance(result, ColumnDriftError):
-                sync_details[key] = {
-                    "status": "column_drift",
-                    "error": f"Missing: {result.missing}, Unexpected: {result.unexpected}",
-                    "missing": result.missing,
-                    "unexpected": result.unexpected,
-                }
+                sync_details[key] = _build_drift_sync_detail(result)
             elif isinstance(result, SheetSyncResult):
                 sync_details[key] = {
                     "rows_synced": result.rows_synced,
@@ -309,7 +383,9 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
                     "status": "success" if result.success else "failed",
                 }
 
-        if meeting_result:
+        if isinstance(meeting_result, ColumnDriftError):
+            sync_details["m1_id"] = _build_drift_sync_detail(meeting_result)
+        elif isinstance(meeting_result, SheetSyncResult):
             sync_details["m1_id"] = {
                 "rows_synced": meeting_result.rows_synced,
                 "rows_skipped": meeting_result.rows_skipped,
@@ -324,12 +400,19 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
         vp_errors = sum(
             len(r.errors) for r in vp_results.values() if isinstance(r, SheetSyncResult)
         )
-        meeting_synced = meeting_result.rows_synced if meeting_result else 0
-        meeting_errors = len(meeting_result.errors) if meeting_result else 0
+        meeting_synced = (
+            meeting_result.rows_synced if isinstance(meeting_result, SheetSyncResult) else 0
+        )
+        meeting_errors = (
+            len(meeting_result.errors) if isinstance(meeting_result, SheetSyncResult) else 0
+        )
         drift_errors = [
-            {"marketplace": r.marketplace, "missing": r.missing, "unexpected": r.unexpected}
-            for r in vp_results.values() if isinstance(r, ColumnDriftError)
+            _build_drift_sync_detail(r)
+            for r in vp_results.values()
+            if isinstance(r, ColumnDriftError)
         ]
+        if isinstance(meeting_result, ColumnDriftError):
+            drift_errors.append(_build_drift_sync_detail(meeting_result))
 
         total_synced = vp_synced + meeting_synced
         vp_failures = sum(
@@ -350,10 +433,10 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
             for r in vp_results.values():
                 if isinstance(r, SheetSyncResult) and r.errors:
                     error_parts.append(f"{r.sheet_type}: {len(r.errors)} row errors")
-            if meeting_result and meeting_result.errors:
+            if isinstance(meeting_result, SheetSyncResult) and meeting_result.errors:
                 error_parts.append(f"Meeting: {len(meeting_result.errors)} row errors")
             for d in drift_errors:
-                error_parts.append(f"Column drift ({d['marketplace']})")
+                error_parts.append(_format_drift_error_message(d))
             error_message = "; ".join(error_parts) if error_parts else None
 
         # Update sync status
@@ -374,7 +457,9 @@ async def run_sync(sync_id: int | None = None) -> SyncResult:
         return SyncResult(
             sync_id=sync_id,
             vp_results=vp_results,
-            meeting_result=meeting_result,
+            meeting_result=(
+                meeting_result if isinstance(meeting_result, SheetSyncResult) else None
+            ),
             total_synced=total_synced,
             total_errors=total_errors,
             success=overall_success,

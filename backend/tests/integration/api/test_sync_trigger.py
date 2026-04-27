@@ -43,7 +43,21 @@ MOCK_SYNC_STATUS = SyncStatusResponse(
     completed_at=datetime(2026, 2, 6, 10, 0, 5, tzinfo=timezone.utc),
     brands_synced=42,
     error_message=None,
-    sync_details=None,
+    sync_details={
+        "vp_id": {
+            "status": "column_drift",
+            "marketplace": "ID",
+            "sheet": "VP",
+            "error": "No WA* → No WA",
+            "missing": ["No WA*"],
+            "unexpected": ["No WA"],
+            "changed_columns": [
+                {"position": 19, "expected": "No WA*", "actual": "No WA"},
+            ],
+            "expected_headers": ["Nama Brand", "No WA*"],
+            "actual_headers": ["Nama Brand", "No WA"],
+        },
+    },
 )
 
 
@@ -93,7 +107,7 @@ def test_post_sync_returns_200_with_sync_status(client):
         mock_sync_queries.create_sync_status = AsyncMock(return_value=99)
         mock_run_sync.return_value = SyncResult(
             sync_id=99,
-            vp_result=None,
+            vp_results={},
             meeting_result=None,
             total_synced=42,
             total_errors=0,
@@ -112,6 +126,7 @@ def test_post_sync_returns_200_with_sync_status(client):
         assert data["status"] == "success"
         assert data["brands_synced"] == 42
         assert data["completed_at"] is not None
+        assert data["sync_details"]["vp_id"]["changed_columns"][0]["expected"] == "No WA*"
         mock_run_sync.assert_awaited_once_with(sync_id=99)
 
 
@@ -144,7 +159,7 @@ def test_post_sync_returns_200_with_failed_status_on_sync_error(client):
         mock_sync_queries.create_sync_status = AsyncMock(return_value=99)
         mock_run_sync.return_value = SyncResult(
             sync_id=99,
-            vp_result=None,
+            vp_results={},
             meeting_result=None,
             total_synced=0,
             total_errors=1,
@@ -157,8 +172,20 @@ def test_post_sync_returns_200_with_failed_status_on_sync_error(client):
             started_at=datetime(2026, 2, 6, 10, 0, 0, tzinfo=timezone.utc),
             completed_at=datetime(2026, 2, 6, 10, 0, 5, tzinfo=timezone.utc),
             brands_synced=0,
-            error_message="VP: Google Sheets API error",
-            sync_details=None,
+            error_message="Column drift (VP ID): No WA* → No WA",
+            sync_details={
+                "vp_id": {
+                    "status": "column_drift",
+                    "marketplace": "ID",
+                    "sheet": "VP",
+                    "error": "No WA* → No WA",
+                    "missing": ["No WA*"],
+                    "unexpected": ["No WA"],
+                    "changed_columns": [
+                        {"position": 19, "expected": "No WA*", "actual": "No WA"},
+                    ],
+                },
+            },
         )
 
         response = client.post(
@@ -169,8 +196,9 @@ def test_post_sync_returns_200_with_failed_status_on_sync_error(client):
         assert response.status_code == 200
         data = response.json()
         assert data["status"] == "failed"
-        assert data["error_message"] == "VP: Google Sheets API error"
+        assert "No WA* → No WA" in data["error_message"]
         assert data["brands_synced"] == 0
+        assert data["sync_details"]["vp_id"]["changed_columns"][0]["actual"] == "No WA"
 
 
 def test_post_sync_returns_409_when_sync_in_progress(client):
@@ -271,7 +299,7 @@ def test_post_sync_with_oidc_token_returns_200(client):
         mock_sync_queries.create_sync_status = AsyncMock(return_value=100)
         mock_run_sync.return_value = SyncResult(
             sync_id=100,
-            vp_result=None,
+            vp_results={},
             meeting_result=None,
             total_synced=0,
             total_errors=0,
@@ -365,7 +393,7 @@ def test_post_sync_oidc_skips_db_user_lookup(client):
         mock_sync_queries.create_sync_status = AsyncMock(return_value=101)
         mock_run_sync.return_value = SyncResult(
             sync_id=101,
-            vp_result=None,
+            vp_results={},
             meeting_result=None,
             total_synced=0,
             total_errors=0,
@@ -483,7 +511,7 @@ def test_sync_returns_200_when_admin_role(client):
         mock_in_progress.return_value = False
         mock_sync_queries.create_sync_status = AsyncMock(return_value=200)
         mock_run_sync.return_value = SyncResult(
-            sync_id=200, vp_result=None, meeting_result=None,
+            sync_id=200, vp_results={}, meeting_result=None,
             total_synced=10, total_errors=0, success=True,
         )
         mock_get_status.return_value = MOCK_SYNC_STATUS
@@ -521,7 +549,7 @@ def test_sync_returns_200_when_leader_role(client):
         mock_in_progress.return_value = False
         mock_sync_queries.create_sync_status = AsyncMock(return_value=201)
         mock_run_sync.return_value = SyncResult(
-            sync_id=201, vp_result=None, meeting_result=None,
+            sync_id=201, vp_results={}, meeting_result=None,
             total_synced=5, total_errors=0, success=True,
         )
         mock_get_status.return_value = MOCK_SYNC_STATUS

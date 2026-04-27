@@ -99,6 +99,36 @@ describe('SyncStatus', () => {
     expect(screen.getByText(/sinkronisasi terakhir gagal: connection timeout/i)).toBeInTheDocument();
   });
 
+  it('shows explicit drift summary from sync details', () => {
+    mockUseSyncStatus.mockReturnValue({
+      data: {
+        id: 1,
+        status: 'failed',
+        last_sync: new Date().toISOString(),
+        brands_synced: 0,
+        error_message: 'Column drift',
+        sync_details: {
+          vp_id: {
+            status: 'column_drift',
+            sheet: 'VP',
+            marketplace: 'ID',
+            error: 'No WA* → No WA',
+            changed_columns: [
+              { position: 19, expected: 'No WA*', actual: 'No WA' },
+            ],
+            missing: ['No WA*'],
+            unexpected: ['No WA'],
+          },
+        },
+      },
+      isLoading: false,
+    });
+
+    renderSyncStatus();
+
+    expect(screen.getByRole('button', { name: /no wa\* → no wa/i })).toBeInTheDocument();
+  });
+
   it('renders "Belum pernah disinkronkan" when no sync data exists', () => {
     mockUseSyncStatus.mockReturnValue({
       data: null,
@@ -123,6 +153,102 @@ describe('SyncStatus', () => {
     await user.click(syncButton);
 
     expect(mockMutate).toHaveBeenCalled();
+  });
+
+  it('opens drift dialog from trigger response sync_details', async () => {
+    const user = userEvent.setup();
+    mockUseSyncStatus.mockReturnValue({
+      data: null,
+      isLoading: false,
+    });
+    mockUseTriggerSync.mockReturnValue({
+      isPending: false,
+      mutate: (_arg: unknown, options?: { onSuccess?: (data: unknown) => void }) => {
+        options?.onSuccess?.({
+          id: 1,
+          status: 'failed',
+          last_sync: new Date().toISOString(),
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          brands_synced: 0,
+          error_message: 'Column drift',
+          sync_details: {
+            vp_id: {
+              status: 'column_drift',
+              sheet: 'VP',
+              marketplace: 'ID',
+              error: 'No WA* → No WA',
+              changed_columns: [
+                { position: 19, expected: 'No WA*', actual: 'No WA' },
+              ],
+              expected_headers: ['Nama Brand', 'No WA*'],
+              actual_headers: ['Nama Brand', 'No WA'],
+              missing: ['No WA*'],
+              unexpected: ['No WA'],
+            },
+          },
+        });
+      },
+    });
+
+    renderSyncStatus();
+
+    await user.click(screen.getByRole('button', { name: /sinkronisasi/i }));
+
+    expect(screen.getByText(/column mismatch detected/i)).toBeInTheDocument();
+    expect(screen.getByText(/no wa\* → no wa/i)).toBeInTheDocument();
+    expect(screen.getByText(/expected headers/i)).toBeInTheDocument();
+    expect(screen.getAllByText(/actual headers/i).length).toBeGreaterThanOrEqual(1);
+  });
+
+  it('cycles through multiple drift entries from one trigger response', async () => {
+    const user = userEvent.setup();
+    mockUseSyncStatus.mockReturnValue({
+      data: null,
+      isLoading: false,
+    });
+    mockUseTriggerSync.mockReturnValue({
+      isPending: false,
+      mutate: (_arg: unknown, options?: { onSuccess?: (data: unknown) => void }) => {
+        options?.onSuccess?.({
+          id: 1,
+          status: 'failed',
+          last_sync: new Date().toISOString(),
+          started_at: new Date().toISOString(),
+          completed_at: new Date().toISOString(),
+          brands_synced: 0,
+          error_message: 'Column drift',
+          sync_details: {
+            vp_id: {
+              status: 'column_drift',
+              sheet: 'VP',
+              marketplace: 'ID',
+              error: 'No WA* → No WA',
+              changed_columns: [
+                { position: 19, expected: 'No WA*', actual: 'No WA' },
+              ],
+            },
+            m1_id: {
+              status: 'column_drift',
+              sheet: 'Meeting',
+              marketplace: 'ID',
+              error: 'Duration (mins) → Minutes',
+              changed_columns: [
+                { position: 3, expected: 'Duration (mins)', actual: 'Minutes' },
+              ],
+            },
+          },
+        });
+      },
+    });
+
+    renderSyncStatus();
+
+    await user.click(screen.getByRole('button', { name: /sinkronisasi/i }));
+
+    expect(screen.getByText(/no wa\* → no wa/i)).toBeInTheDocument();
+    await user.click(screen.getByRole('button', { name: /next drift/i }));
+    expect(screen.getByText(/duration \(mins\) → minutes/i)).toBeInTheDocument();
   });
 
   it('"Sinkronisasi" button is disabled while syncing', () => {

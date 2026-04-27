@@ -1,6 +1,7 @@
 """Column drift detection for Google Sheets sync."""
 
 from dataclasses import dataclass, field
+from itertools import zip_longest
 
 
 @dataclass
@@ -14,6 +15,7 @@ class ColumnDriftError:
     actual: list[str] = field(default_factory=list)
     missing: list[str] = field(default_factory=list)
     unexpected: list[str] = field(default_factory=list)
+    changed_columns: list[dict[str, str | int | None]] = field(default_factory=list)
 
 
 def validate_headers(
@@ -32,6 +34,18 @@ def validate_headers(
 
     expected_set = set(expected)
     actual_set = set(actual)
+    changed_columns = [
+        {
+            "position": index,
+            "expected": expected_header,
+            "actual": actual_header,
+        }
+        for index, (expected_header, actual_header) in enumerate(
+            zip_longest(expected, actual),
+            start=1,
+        )
+        if expected_header != actual_header
+    ]
 
     return ColumnDriftError(
         marketplace=marketplace,
@@ -40,6 +54,7 @@ def validate_headers(
         actual=actual,
         missing=sorted(expected_set - actual_set),
         unexpected=sorted(actual_set - expected_set),
+        changed_columns=changed_columns,
     )
 
 

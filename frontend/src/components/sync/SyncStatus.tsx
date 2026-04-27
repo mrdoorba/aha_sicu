@@ -5,8 +5,20 @@ import { toast } from 'sonner';
 import { Card, CardContent } from '../ui/card';
 import { Badge } from '../ui/badge';
 import { Button } from '../ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from '../ui/dialog';
-import { useSyncStatus, useTriggerSync } from '../../hooks/useSync';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from '../ui/dialog';
+import {
+  type SyncDetailData,
+  type SyncStatusData,
+  useSyncStatus,
+  useTriggerSync,
+} from '../../hooks/useSync';
 
 /** Format ISO timestamp as relative time. Assumes server returns UTC timestamps. */
 function formatRelativeTime(dateString: string): string {
@@ -30,18 +42,55 @@ export const SyncStatus = () => {
   const { t } = useTranslation();
   const { data: syncStatus, isLoading, isError } = useSyncStatus();
   const triggerSync = useTriggerSync();
-  const [driftError, setDriftError] = useState<{
-    marketplace: string;
-    missing: string[];
-    unexpected: string[];
-  } | null>(null);
+  const [driftErrors, setDriftErrors] = useState<SyncDetailData[]>([]);
+  const [driftErrorIndex, setDriftErrorIndex] = useState<number | null>(null);
+
+  const columnDriftDetails = (statusData?: SyncStatusData | null) => {
+    if (!statusData?.sync_details) return [];
+    return Object.values(statusData.sync_details).filter((detail) => detail.status === 'column_drift');
+  };
+
+  const openDriftDetails = (details: SyncDetailData[], startIndex = 0) => {
+    if (!details.length) return;
+    setDriftErrors(details);
+    setDriftErrorIndex(startIndex);
+  };
+
+  const closeDriftDialog = () => {
+    setDriftErrors([]);
+    setDriftErrorIndex(null);
+  };
+
+  const formatChangedColumn = (detail: SyncDetailData) => {
+    if (detail.changed_columns?.length) {
+      return detail.changed_columns
+        .slice(0, 2)
+        .map(({ expected, actual }) => {
+          if (expected && actual) return `${expected} → ${actual}`;
+          if (expected) return `Missing ${expected}`;
+          if (actual) return `Unexpected ${actual}`;
+          return 'Header changed';
+        })
+        .join('; ');
+    }
+    if (detail.missing?.length || detail.unexpected?.length) {
+      return [...(detail.missing ?? []), ...(detail.unexpected ?? [])].join(', ');
+    }
+    return detail.error ?? t('sync.columnDrift.summary', { defaultValue: 'Column mismatch detected' });
+  };
+
+  const driftError =
+    driftErrorIndex === null ? null : driftErrors[driftErrorIndex] ?? null;
+  const hasNextDriftError =
+    driftErrorIndex !== null && driftErrorIndex < driftErrors.length - 1;
 
   const handleSyncNow = () => {
     triggerSync.mutate(undefined, {
       onSuccess: (data: unknown) => {
-        const result = data as { column_drift_errors?: Array<{ marketplace: string; missing: string[]; unexpected: string[] }> } | undefined;
-        if (result?.column_drift_errors?.length) {
-          setDriftError(result.column_drift_errors[0]);
+        const result = data as SyncStatusData | undefined;
+        const details = columnDriftDetails(result);
+        if (details.length) {
+          openDriftDetails(details);
         } else {
           toast.success(t('sync.startSuccess'));
         }
@@ -104,13 +153,24 @@ export const SyncStatus = () => {
           </div>
 
           {syncStatus?.sync_details && syncStatus.status !== 'in_progress' && (
-            <div className="flex gap-4 text-xs text-muted-foreground">
+            <div className="flex flex-col gap-2 text-xs text-muted-foreground">
               {Object.entries(syncStatus.sync_details).map(([key, detail]) => (
-                <span key={key}>
-                  {key.toUpperCase()}: {detail.rows_synced ?? 0}{' '}
-                  {detail.status === 'success' ? '\u2713' :
-                   detail.status === 'column_drift' ? '\u26A0' : '\u2717'}
-                </span>
+                <div key={key} className="flex flex-wrap items-center gap-2">
+                  <span>
+                    {key.toUpperCase()}: {detail.rows_synced ?? 0}{' '}
+                    {detail.status === 'success' ? '\u2713' :
+                     detail.status === 'column_drift' ? '\u26A0' : '\u2717'}
+                  </span>
+                  {detail.status === 'column_drift' ? (
+                    <Button
+                      variant="link"
+                      className="h-auto p-0 text-xs text-amber-700"
+                      onClick={() => openDriftDetails([detail])}
+                    >
+                      {formatChangedColumn(detail)}
+                    </Button>
+                  ) : null}
+                </div>
               ))}
             </div>
           )}
@@ -136,22 +196,59 @@ export const SyncStatus = () => {
         </Button>
       </CardContent>
 
-      <Dialog open={!!driftError} onOpenChange={() => setDriftError(null)}>
+      <Dialog open={!!driftError} onOpenChange={(open) => { if (!open) closeDriftDialog(); }}>
         <DialogContent>
           <DialogHeader>
             <DialogTitle>{t('sync.columnDrift.title', { defaultValue: 'Column Mismatch Detected' })}</DialogTitle>
+            <DialogDescription>
+              {t('sync.columnDrift.description', {
+                defaultValue: 'Review the exact expected and actual headers before asking the BD team to fix the sheet.',
+              })}
+            </DialogDescription>
           </DialogHeader>
           <div className="space-y-2 text-sm">
-            <p>{t('sync.columnDrift.marketplace', { defaultValue: 'Marketplace' })}: <strong>{driftError?.marketplace}</strong></p>
-            {driftError?.missing.length ? (
+            {driftError?.sheet ? (
+              <p>{t('sync.columnDrift.sheet', { defaultValue: 'Sheet' })}: <strong>{driftError.sheet}</strong></p>
+            ) : null}
+            {driftError?.marketplace ? (
+              <p>{t('sync.columnDrift.marketplace', { defaultValue: 'Marketplace' })}: <strong>{driftError.marketplace}</strong></p>
+            ) : null}
+            {driftError?.changed_columns?.length ? (
+              <div>
+                <p className="font-medium">{t('sync.columnDrift.changed', { defaultValue: 'Changed columns' })}:</p>
+                <ul className="list-disc pl-5">
+                  {driftError.changed_columns.map((change) => (
+                    <li key={`${change.position}-${change.expected ?? 'none'}-${change.actual ?? 'none'}`}>
+                      {change.expected && change.actual
+                        ? `${change.expected} → ${change.actual}`
+                        : change.expected
+                          ? `Missing ${change.expected}`
+                          : `Unexpected ${change.actual}`}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+            {driftError?.missing?.length ? (
               <p>{t('sync.columnDrift.missing', { defaultValue: 'Missing columns' })}: {driftError.missing.join(', ')}</p>
             ) : null}
-            {driftError?.unexpected.length ? (
+            {driftError?.unexpected?.length ? (
               <p>{t('sync.columnDrift.unexpected', { defaultValue: 'Unexpected columns' })}: {driftError.unexpected.join(', ')}</p>
+            ) : null}
+            {driftError?.expected_headers?.length ? (
+              <p>{t('sync.columnDrift.expected', { defaultValue: 'Expected headers' })}: {driftError.expected_headers.join(' | ')}</p>
+            ) : null}
+            {driftError?.actual_headers?.length ? (
+              <p>{t('sync.columnDrift.actual', { defaultValue: 'Actual headers' })}: {driftError.actual_headers.join(' | ')}</p>
             ) : null}
           </div>
           <DialogFooter>
-            <Button onClick={() => setDriftError(null)}>OK</Button>
+            {hasNextDriftError ? (
+              <Button onClick={() => setDriftErrorIndex((current) => (current === null ? 0 : current + 1))}>
+                {t('sync.columnDrift.next', { defaultValue: 'Next drift' })}
+              </Button>
+            ) : null}
+            <Button onClick={closeDriftDialog}>{hasNextDriftError ? t('common.close', { defaultValue: 'Close' }) : 'OK'}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
