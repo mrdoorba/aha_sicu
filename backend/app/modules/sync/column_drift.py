@@ -56,9 +56,9 @@ EXPECTED_HEADERS_VP_ID: list[str] = [
     "Kategori",
     ">= 25 Produk in stock",
     "Shopee Mall",
-    "Umur toko >5 tahun",
+    "Umur brand >5 tahun",
     "No OPEX Issue",
-    "Lokasi Jabodetabek",
+    "Lokasi Jabodetabek / Email Domain Perusahaan",
     "Terdaftar DJKI",
     "Omset >100jt",
     "LBS",
@@ -99,7 +99,7 @@ EXPECTED_HEADERS_VP_TH: list[str] = [
     "Email",
     "Address",
     "Printed Letter",
-    "SHCU",
+    "SICU",
     "Signed Up",
 ]
 

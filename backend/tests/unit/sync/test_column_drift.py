@@ -1,6 +1,10 @@
 """Unit tests for column drift detection."""
 
-from app.modules.sync.column_drift import validate_headers
+from app.modules.sync.column_drift import (
+    EXPECTED_HEADERS_VP_ID,
+    EXPECTED_HEADERS_VP_TH,
+    validate_headers,
+)
 
 
 def test_validate_headers_passes_when_exact_match():
@@ -37,3 +41,13 @@ def test_validate_headers_detects_reordered_columns():
     actual = ["Email", "Brand", "PIC"]
     result = validate_headers(expected, actual, marketplace="TH", sheet="VP")
     assert result is not None
+
+
+def test_expected_headers_match_latest_business_labels():
+    """Updated business-approved header labels stay in sync with drift checks."""
+    assert "Umur brand >5 tahun" in EXPECTED_HEADERS_VP_ID
+    assert "Umur toko >5 tahun" not in EXPECTED_HEADERS_VP_ID
+    assert "Lokasi Jabodetabek / Email Domain Perusahaan" in EXPECTED_HEADERS_VP_ID
+    assert "Lokasi Jabodetabek" not in EXPECTED_HEADERS_VP_ID
+    assert "SICU" in EXPECTED_HEADERS_VP_TH
+    assert "SHCU" not in EXPECTED_HEADERS_VP_TH
