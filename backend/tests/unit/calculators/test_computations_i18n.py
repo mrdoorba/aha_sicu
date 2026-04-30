@@ -74,6 +74,13 @@ def test_g75_i18n_returns_translatable_text():
     assert result.vars["store_name"] == "Toko Salt"
 
 
+def test_g75_i18n_th_marketplace_uses_th_key():
+    result = _compute_g75_i18n("✔️", "Toko Salt", marketplace="TH")
+    assert result is not None
+    assert result.key == "closing.potentialTh"
+    assert result.vars["store_name"] == "Toko Salt"
+
+
 def test_g75_i18n_rejected():
     result = _compute_g75_i18n("❌", "Toko Salt")
     assert result is not None

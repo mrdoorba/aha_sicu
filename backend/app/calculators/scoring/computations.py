@@ -231,7 +231,28 @@ def _compute_g66(
     return "\n".join(lines)
 
 
-def _compute_g75(verdict: str, store_name: str = "", rules: dict | None = None) -> str:
+ID_APPROVED_CONSULTATION_LINK = "cal-bd2.ahacommerce.net"
+TH_APPROVED_CONSULTATION_LINK = "th-bd2.ahacommerce.net"
+
+
+def _normalize_marketplace(marketplace: str) -> str:
+    return marketplace.upper() if marketplace else "ID"
+
+
+def _apply_approved_consultation_link(message: str, marketplace: str) -> str:
+    """Swap the approved CTA link for TH marketplace without affecting ID."""
+    if _normalize_marketplace(marketplace) != "TH":
+        return message
+    return message.replace(ID_APPROVED_CONSULTATION_LINK, TH_APPROVED_CONSULTATION_LINK)
+
+
+def _compute_g75(
+    verdict: str,
+    store_name: str = "",
+    rules: dict | None = None,
+    *,
+    marketplace: str = "ID",
+) -> str:
     """G75: Closing message based on verdict type.
 
     Templates may contain {store_name} which is interpolated with the store name.
@@ -247,7 +268,13 @@ def _compute_g75(verdict: str, store_name: str = "", rules: dict | None = None) 
         messages = DEFAULT_RULES["interpretation"]["closing_messages"]
         template = messages.get(verdict, "")
 
-    return template.replace("{store_name}", store_name) if template else ""
+    if not template:
+        return ""
+
+    message = template.replace("{store_name}", store_name)
+    if verdict == "✔️":
+        return _apply_approved_consultation_link(message, marketplace)
+    return message
 
 
 def _compute_g66_i18n(
@@ -323,11 +350,15 @@ def _compute_g73_i18n(
 
 
 def _compute_g75_i18n(
-    verdict: str, store_name: str = "", rules: dict | None = None,
+    verdict: str,
+    store_name: str = "",
+    rules: dict | None = None,
+    *,
+    marketplace: str = "ID",
 ) -> TranslatableText | None:
     """G75 i18n: closing message as TranslatableText."""
     verdict_key_map = {
-        "✔️": "closing.potential",
+        "✔️": "closing.potentialTh" if _normalize_marketplace(marketplace) == "TH" else "closing.potential",
         "❌": "closing.valueAdd",
         "❌ Non Mall": "closing.directAnalysis",
         "❌ No Brand": "closing.noBrand",

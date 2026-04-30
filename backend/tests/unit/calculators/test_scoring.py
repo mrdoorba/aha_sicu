@@ -1029,6 +1029,11 @@ class TestG75:
         assert "potensi" in msg.lower()
         assert "cal-bd2" in msg
 
+    def test_approved_th_marketplace_uses_th_link(self):
+        msg = _compute_g75("✔️", marketplace="TH")
+        assert "th-bd2" in msg
+        assert "cal-bd2" not in msg
+
     def test_rejected(self):
         msg = _compute_g75("❌")
         assert "keuntungan" in msg.lower()
@@ -2483,6 +2488,18 @@ class TestMessageTemplatesG75:
         assert "potensi" in msg.lower()
         assert "cal-bd2" in msg
         assert "TestStore" in msg
+
+    def test_g75_th_marketplace_rewrites_default_link_from_rules(self):
+        rules = {**DEFAULT_RULES, "interpretation": {
+            **DEFAULT_RULES["interpretation"],
+            "closing_messages": {
+                **DEFAULT_RULES["interpretation"]["closing_messages"],
+                "✔️": "Meet us at cal-bd2.ahacommerce.net",
+            },
+        }}
+        msg = _compute_g75("✔️", "TestStore", rules=rules, marketplace="TH")
+        assert "th-bd2.ahacommerce.net" in msg
+        assert "cal-bd2.ahacommerce.net" not in msg
 
     def test_g75_rules_missing_closing(self):
         rules = {"interpretation": {}}

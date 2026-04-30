@@ -483,6 +483,9 @@ class TestFullScoringTHB:
         )
         assert isinstance(result, ScoringResult)
         assert result.closing_message != ""
+        assert "th-bd2.ahacommerce.net" in result.closing_message
+        assert result.closing_message_i18n is not None
+        assert result.closing_message_i18n.key == "closing.potentialTh"
 
     def test_calculate_score_thb_business_messages_have_thb(self, thb_manual_data, full_calculator_results):
         result = calculate_score(

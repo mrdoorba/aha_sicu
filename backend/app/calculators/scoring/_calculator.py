@@ -137,12 +137,12 @@ def calculate_score(
     marketing_label = f"📌 Estimasi persentase biaya marketing {brand_name} sekarang:"
 
     g66 = _compute_g66(all_categories, manual_data, g68, marketplace=marketplace)
-    g75 = _compute_g75(verdict, store_name, rules)
+    g75 = _compute_g75(verdict, store_name, rules, marketplace=marketplace)
 
     # --- i18n companions ---
     g66_i18n = _compute_g66_i18n(all_categories, manual_data, g68, marketplace=marketplace)
     g73_i18n = _compute_g73_i18n(verdict, g72, d13, rules)
-    g75_i18n = _compute_g75_i18n(verdict, store_name, rules)
+    g75_i18n = _compute_g75_i18n(verdict, store_name, rules, marketplace=marketplace)
     email_subject_i18n = TranslatableText(
         key="email.subject",
         vars={"store": store_name, "period": period},

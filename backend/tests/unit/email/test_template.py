@@ -1168,7 +1168,7 @@ class TestConclusionI18n:
                     },
                     "closing_message": "Kami melihat potensi toko",
                     "closing_message_i18n": {
-                        "key": "closing.potential",
+                        "key": "closing.potentialTh",
                         "vars": {"store_name": "Test TH"},
                     },
                 },
@@ -1202,8 +1202,22 @@ class TestConclusionI18n:
         )
         # Thai closing.potential contains this
         assert "ศักยภาพ" in html
+        assert "th-bd2.ahacommerce.net" in html
+        assert "cal-bd2.ahacommerce.net" not in html
         # Raw Indonesian should NOT appear
         assert "Kami melihat potensi toko" not in html
+
+    def test_english_th_closing_message_uses_th_link(self, sample_categories: list[dict]) -> None:
+        data = self._make_th_eval(sample_categories)
+        html = render_email_html(
+            evaluation_data=data,
+            chart_src="cid:chart",
+            header_src="cid:header",
+            footer_src="cid:footer",
+            language="en",
+        )
+        assert "th-bd2.ahacommerce.net" in html
+        assert "cal-bd2.ahacommerce.net" not in html
 
     def test_thai_marketing_budget_translated(self, sample_categories: list[dict]) -> None:
         data = self._make_th_eval(sample_categories)
