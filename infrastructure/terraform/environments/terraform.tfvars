@@ -31,7 +31,16 @@ cloud_sql_instance_name = "aha-sicu-db"
 # Email / SendGrid
 email_from_email = "noreply@ahabot.ai"
 
+# Gmail SMTP (evaluation "Send Mail" dialog). The app password is NOT stored
+# here (this file is tracked) — it is already seeded in Secret Manager as
+# aha_coms_sicu_dev_gmail_smtp_app_password and managed via ignore_changes.
+# Import that secret + version into state before applying (see runbook), or
+# pass -var="gmail_smtp_app_password=..." at apply time.
+gmail_smtp_user = "marwahkha@ahacommerce.net"
+
 # Feature flags (per-environment)
-dev_email_enabled  = true
-prod_email_enabled = false
+dev_email_enabled       = true
+prod_email_enabled      = false
+dev_gmail_smtp_enabled  = true
+prod_gmail_smtp_enabled = false
 

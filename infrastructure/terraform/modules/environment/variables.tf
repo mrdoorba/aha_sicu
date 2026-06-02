@@ -124,6 +124,25 @@ variable "email_allowed_domains" {
   default     = ""
 }
 
+variable "gmail_smtp_enabled" {
+  description = "Whether the Gmail SMTP send-plain path is enabled (independent of email_enabled)"
+  type        = bool
+  default     = false
+}
+
+variable "gmail_smtp_user" {
+  description = "Gmail account used as the SMTP sender (also the From address)"
+  type        = string
+  default     = ""
+}
+
+variable "gmail_smtp_app_password" {
+  description = "Gmail App Password for SMTP auth. Seeded out-of-band; ignore_changes preserves rotations."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "cors_origins" {
   description = "Allowed CORS origins for GCS upload bucket"
   type        = list(string)

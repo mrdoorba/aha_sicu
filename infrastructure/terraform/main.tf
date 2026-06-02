@@ -120,6 +120,9 @@ module "dev" {
   email_allowed_domains   = var.dev_email_allowed_domains
   sendgrid_api_key        = var.sendgrid_api_key
   sendgrid_webhook_secret = var.sendgrid_webhook_secret
+  gmail_smtp_user         = var.gmail_smtp_user
+  gmail_smtp_app_password = var.gmail_smtp_app_password
+  gmail_smtp_enabled      = var.dev_gmail_smtp_enabled
   cloud_run_url           = var.dev_cloud_run_url
 
   gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
@@ -158,6 +161,9 @@ module "prod" {
   email_allowed_domains   = var.prod_email_allowed_domains
   sendgrid_api_key        = var.sendgrid_api_key
   sendgrid_webhook_secret = var.sendgrid_webhook_secret
+  gmail_smtp_user         = var.gmail_smtp_user
+  gmail_smtp_app_password = var.gmail_smtp_app_password
+  gmail_smtp_enabled      = var.prod_gmail_smtp_enabled
   cloud_run_url           = var.prod_cloud_run_url
 
   gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id

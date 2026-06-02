@@ -23,3 +23,12 @@ gsheets_eval_spreadsheet_id    = "YOUR_EVAL_SPREADSHEET_ID"
 email_from_email        = "noreply@ahabot.ai"
 sendgrid_api_key        = "SG.your-api-key-here"
 sendgrid_webhook_secret = ""  # optional, for Event Webhook verification
+
+# Gmail SMTP (evaluation "Send Mail" dialog — POST /api/v1/email/send-plain)
+# App Password: https://myaccount.google.com/apppasswords (16 chars, no spaces).
+# The value is seeded out-of-band via gcloud; ignore_changes preserves it, so
+# leaving the placeholder here will NOT overwrite an already-seeded secret.
+gmail_smtp_user         = "your-account@ahacommerce.net"
+gmail_smtp_app_password = "your-16-char-app-password"
+dev_gmail_smtp_enabled  = true
+prod_gmail_smtp_enabled = false

@@ -188,6 +188,27 @@ resource "google_secret_manager_secret_version" "sendgrid_webhook_secret" {
   }
 }
 
+# Gmail SMTP App Password — backs the evaluation "Send Mail" dialog
+# (POST /api/v1/email/send-plain). Value is seeded out-of-band via gcloud;
+# ignore_changes keeps Terraform from clobbering manual rotations.
+resource "google_secret_manager_secret" "gmail_smtp_app_password" {
+  secret_id = "aha_coms_sicu_${var.environment}_gmail_smtp_app_password"
+  project   = var.project_id
+
+  replication {
+    auto {}
+  }
+}
+
+resource "google_secret_manager_secret_version" "gmail_smtp_app_password" {
+  secret      = google_secret_manager_secret.gmail_smtp_app_password.id
+  secret_data = var.gmail_smtp_app_password != "" ? var.gmail_smtp_app_password : "placeholder"
+
+  lifecycle {
+    ignore_changes = [secret_data]
+  }
+}
+
 # IAM: Grant Cloud Run SA access to secrets
 
 resource "google_secret_manager_secret_iam_member" "api_sa_db_password" {
@@ -236,6 +257,27 @@ resource "google_secret_manager_secret_iam_member" "deploy_sa_sendgrid_webhook_s
   secret_id = google_secret_manager_secret.sendgrid_webhook_secret.secret_id
   role      = "roles/secretmanager.viewer"
   member    = "serviceAccount:${google_service_account.deploy.email}"
+  project   = var.project_id
+}
+
+resource "google_secret_manager_secret_iam_member" "deploy_sa_gmail_smtp_app_password" {
+  secret_id = google_secret_manager_secret.gmail_smtp_app_password.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.deploy.email}"
+  project   = var.project_id
+}
+
+resource "google_secret_manager_secret_iam_member" "deploy_sa_gmail_smtp_app_password_viewer" {
+  secret_id = google_secret_manager_secret.gmail_smtp_app_password.secret_id
+  role      = "roles/secretmanager.viewer"
+  member    = "serviceAccount:${google_service_account.deploy.email}"
+  project   = var.project_id
+}
+
+resource "google_secret_manager_secret_iam_member" "api_sa_gmail_smtp_app_password" {
+  secret_id = google_secret_manager_secret.gmail_smtp_app_password.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run.email}"
   project   = var.project_id
 }
 
@@ -377,6 +419,28 @@ resource "google_cloud_run_v2_service" "api" {
         value = var.email_allowed_domains
       }
 
+      # Gmail SMTP transport — gated independently of EMAIL_ENABLED.
+      # Host/port fall back to the app's Settings defaults (smtp.gmail.com:587).
+      env {
+        name  = "GMAIL_SMTP_ENABLED"
+        value = tostring(var.gmail_smtp_enabled)
+      }
+
+      env {
+        name  = "GMAIL_SMTP_USER"
+        value = var.gmail_smtp_user
+      }
+
+      env {
+        name = "GMAIL_SMTP_APP_PASSWORD"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.gmail_smtp_app_password.secret_id
+            version = "latest"
+          }
+        }
+      }
+
       env {
         name  = "GSHEETS_VP_SPREADSHEET_ID"
         value = var.gsheets_vp_spreadsheet_id
@@ -455,6 +519,7 @@ resource "google_cloud_run_v2_service" "api" {
     google_secret_manager_secret_iam_member.api_sa_gsheets,
     google_secret_manager_secret_iam_member.api_sa_sendgrid_api_key,
     google_secret_manager_secret_iam_member.api_sa_sendgrid_webhook_secret,
+    google_secret_manager_secret_iam_member.api_sa_gmail_smtp_app_password,
   ]
 }
 
