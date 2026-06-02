@@ -923,6 +923,7 @@ export function EvaluationDetailPage() {
                 <SendMailDialog
                   open={sendMailDialogOpen}
                   onOpenChange={setSendMailDialogOpen}
+                  evaluationId={evaluation.id}
                   brandName={evaluation.brand_name}
                   period={evaluation.period}
                   emailOutput={evaluation.email_output}

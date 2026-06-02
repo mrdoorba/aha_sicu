@@ -51,6 +51,43 @@ class SendEmailRequest(BaseModel):
         return self
 
 
+class SendPlainEmailRequest(BaseModel):
+    """Request body for sending a plain-text evaluation email via Gmail SMTP."""
+
+    evaluation_id: int
+    recipients: list[EmailStr] = Field(min_length=1, max_length=10)
+    cc: list[EmailStr] = Field(default_factory=list, max_length=10)
+    bcc: list[EmailStr] = Field(default_factory=list, max_length=10)
+    subject: str = Field(min_length=1, max_length=200)
+    body: str = Field(min_length=1, max_length=20_000)
+
+    @model_validator(mode="after")
+    def validate_total_recipients(self) -> "SendPlainEmailRequest":
+        total = len(self.recipients) + len(self.cc) + len(self.bcc)
+        if total > 10:
+            raise ValueError("Total recipients (To + CC + BCC) cannot exceed 10")
+        return self
+
+    @model_validator(mode="after")
+    def validate_recipient_domains(self) -> "SendPlainEmailRequest":
+        allowed_raw = settings.email_allowed_domains
+        if not allowed_raw:
+            return self
+        allowed = {d.strip().lower() for d in allowed_raw.split(",") if d.strip()}
+        all_emails = list(self.recipients) + list(self.cc) + list(self.bcc)
+        blocked = []
+        for e in all_emails:
+            email_str = str(e)
+            parts = email_str.split("@")
+            if len(parts) != 2:
+                continue
+            if parts[1].lower() not in allowed:
+                blocked.append(email_str)
+        if blocked:
+            raise ValueError(f"Recipients outside allowed domains: {', '.join(blocked)}")
+        return self
+
+
 class SendEmailResponse(BaseModel):
     """Response after sending (or previewing) an email."""
 

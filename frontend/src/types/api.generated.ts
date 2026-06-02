@@ -263,6 +263,32 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/email/send-plain": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Send Plain Email Endpoint
+         * @description Send a plain-text evaluation email via Gmail SMTP.
+         *
+         *     Validates the evaluation exists (reusing get_evaluation_detail's access
+         *     control), sends the supplied subject/body verbatim, and logs the result
+         *     to email_history. In debug mode (gmail_smtp_enabled=False), writes the
+         *     body to /tmp instead of dialing SMTP. Independent of email_enabled (the
+         *     SendGrid path's gate).
+         */
+        post: operations["send_plain_email_endpoint_api_v1_email_send_plain_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/email/preview/{evaluation_id}": {
         parameters: {
             query?: never;
@@ -1738,6 +1764,24 @@ export interface components {
              */
             type: string;
         };
+        /**
+         * SendPlainEmailRequest
+         * @description Request body for sending a plain-text evaluation email via Gmail SMTP.
+         */
+        SendPlainEmailRequest: {
+            /** Evaluation Id */
+            evaluation_id: number;
+            /** Recipients */
+            recipients: string[];
+            /** Cc */
+            cc?: string[];
+            /** Bcc */
+            bcc?: string[];
+            /** Subject */
+            subject: string;
+            /** Body */
+            body: string;
+        };
         /** SignedUrlRequest */
         SignedUrlRequest: {
             /** Filename */
@@ -2385,6 +2429,39 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["SendEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SendEmailResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_plain_email_endpoint_api_v1_email_send_plain_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SendPlainEmailRequest"];
             };
         };
         responses: {

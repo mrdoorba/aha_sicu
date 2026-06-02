@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Mail } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { toast } from 'sonner';
 import {
   Dialog,
   DialogContent,
@@ -20,17 +21,14 @@ import {
 import i18n from '../../i18n';
 import type { CategoryScore } from '../../hooks/useScoring';
 import type { BrandRawData } from '../../hooks/useEvaluationDetail';
-import {
-  buildSubject,
-  buildBody,
-  buildMailtoUrl,
-  openMailto,
-} from './sendMailUtils';
+import { buildSubject, buildBody } from './sendMailUtils';
+import { useSendPlainEmail } from '../../hooks/useSendPlainEmail';
 import { isRecord } from '../../lib/typeGuards';
 
 interface SendMailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  evaluationId: number;
   brandName: string;
   period: string;
   emailOutput: string;
@@ -56,6 +54,7 @@ function isScoringSummary(value: unknown): value is ScoringConclusionData {
 export function SendMailDialog({
   open,
   onOpenChange,
+  evaluationId,
   brandName,
   period,
   emailOutput,
@@ -67,6 +66,7 @@ export function SendMailDialog({
   const [to, setTo] = useState('bot@ahacommerce.net');
   const [picEmail, setPicEmail] = useState(brandRawData.email ?? '');
   const [emailLanguage, setEmailLanguage] = useState<string>(i18n.language);
+  const sendMutation = useSendPlainEmail();
 
   // Determine whether we have i18n-capable score data
   const hasI18nData = useMemo(() => {
@@ -134,9 +134,23 @@ export function SendMailDialog({
   };
 
   const handleSend = () => {
-    const mailtoUrl = buildMailtoUrl(to, subject, body);
-    openMailto(mailtoUrl);
-    onOpenChange(false);
+    sendMutation.mutate(
+      { evaluationId, recipients: [to], subject, body },
+      {
+        onSuccess: () => {
+          toast.success(t('sendMail.sendSuccess', { defaultValue: 'Email sent.' }));
+          onOpenChange(false);
+        },
+        onError: (err) => {
+          toast.error(
+            t('sendMail.sendError', {
+              defaultValue: 'Failed to send email.',
+            }) +
+              (err instanceof Error && err.message ? ` (${err.message})` : ''),
+          );
+        },
+      },
+    );
   };
 
   return (
@@ -195,9 +209,11 @@ export function SendMailDialog({
           <Button variant="outline" onClick={() => handleOpenChange(false)}>
             {t('sendMail.cancel')}
           </Button>
-          <Button onClick={handleSend}>
+          <Button onClick={handleSend} disabled={sendMutation.isPending}>
             <Mail className="mr-1.5 size-4" />
-            {t('sendMail.send')}
+            {sendMutation.isPending
+              ? t('sendMail.sending', { defaultValue: 'Sending…' })
+              : t('sendMail.send')}
           </Button>
         </DialogFooter>
       </DialogContent>

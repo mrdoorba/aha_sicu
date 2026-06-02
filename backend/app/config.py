@@ -65,6 +65,16 @@ class Settings(BaseSettings):
     email_allowed_domains: str = ""
     sendgrid_webhook_secret: str = ""
 
+    # Gmail SMTP transport (used by /api/v1/email/send-plain)
+    # Independent of email_enabled — that flag gates the SendGrid path and
+    # the dashboard's Send Email button. This flag gates only the
+    # evaluation-detail Send Mail dialog's SMTP send.
+    gmail_smtp_enabled: bool = False
+    gmail_smtp_user: str = ""
+    gmail_smtp_app_password: str = ""
+    gmail_smtp_host: str = "smtp.gmail.com"
+    gmail_smtp_port: int = 587
+
     # Google Sheets API - Credentials
     gsheets_credentials_path: str | None = None
     gsheets_credentials_json: str | None = None

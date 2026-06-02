@@ -29,16 +29,3 @@ ${intro}
 
 ${bodyContent}`;
 }
-
-export function buildMailtoUrl(to: string, subject: string, body: string): string {
-  const query = [
-    `subject=${encodeURIComponent(subject)}`,
-    `body=${encodeURIComponent(body)}`,
-  ].join('&');
-
-  return `mailto:${encodeURIComponent(to)}?${query}`;
-}
-
-export function openMailto(url: string): void {
-  window.open(url, '_self');
-}

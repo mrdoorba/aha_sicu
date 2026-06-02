@@ -55,6 +55,45 @@ class TestSendGridConfigEnvOverrides:
             assert s.email_enabled is True
 
 
+class TestGmailSmtpConfig:
+    """Test Gmail SMTP settings defaults and env overrides."""
+
+    def test_gmail_smtp_user_default_empty(self) -> None:
+        s = Settings(_env_file=None)
+        assert s.gmail_smtp_user == ""
+
+    def test_gmail_smtp_app_password_default_empty(self) -> None:
+        s = Settings(_env_file=None)
+        assert s.gmail_smtp_app_password == ""
+
+    def test_gmail_smtp_host_defaults_to_gmail(self) -> None:
+        s = Settings(_env_file=None)
+        assert s.gmail_smtp_host == "smtp.gmail.com"
+
+    def test_gmail_smtp_port_defaults_to_starttls(self) -> None:
+        s = Settings(_env_file=None)
+        assert s.gmail_smtp_port == 587
+
+    def test_gmail_smtp_enabled_default_false(self) -> None:
+        s = Settings(_env_file=None)
+        assert s.gmail_smtp_enabled is False
+
+    def test_gmail_smtp_enabled_override(self) -> None:
+        with patch.dict(os.environ, {"GMAIL_SMTP_ENABLED": "true"}):
+            s = Settings(_env_file=None)
+            assert s.gmail_smtp_enabled is True
+
+    def test_gmail_smtp_user_override(self) -> None:
+        with patch.dict(os.environ, {"GMAIL_SMTP_USER": "bot@ahacommerce.net"}):
+            s = Settings(_env_file=None)
+            assert s.gmail_smtp_user == "bot@ahacommerce.net"
+
+    def test_gmail_smtp_app_password_override(self) -> None:
+        with patch.dict(os.environ, {"GMAIL_SMTP_APP_PASSWORD": "abcdefghijklmnop"}):
+            s = Settings(_env_file=None)
+            assert s.gmail_smtp_app_password == "abcdefghijklmnop"
+
+
 class TestSendEmailRequestSchema:
     """Test SendEmailRequest validation."""
 

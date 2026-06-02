@@ -1,16 +1,31 @@
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SendMailDialog } from './SendMailDialog';
-import {
-  buildSubject,
-  buildBody,
-  buildMailtoUrl,
-} from './sendMailUtils';
+import { buildSubject, buildBody } from './sendMailUtils';
+
+const mockMutate = vi.fn();
+const mockToastSuccess = vi.fn();
+const mockToastError = vi.fn();
+
+vi.mock('../../hooks/useSendPlainEmail', () => ({
+  useSendPlainEmail: () => ({
+    mutate: mockMutate,
+    isPending: false,
+  }),
+}));
+
+vi.mock('sonner', () => ({
+  toast: {
+    success: (...args: unknown[]) => mockToastSuccess(...args),
+    error: (...args: unknown[]) => mockToastError(...args),
+  },
+}));
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => {
+    t: (key: string, options?: Record<string, unknown>) => {
       const map: Record<string, string> = {
         'sendMail.title': 'Kirim Email',
         'sendMail.description': 'Dialog kirim email',
@@ -21,7 +36,11 @@ vi.mock('react-i18next', () => ({
         'sendMail.send': 'Kirim Email',
         'sendMail.cancel': 'Batal',
       };
-      return map[key] ?? key;
+      if (map[key]) return map[key];
+      if (options && typeof options.defaultValue === 'string') {
+        return options.defaultValue as string;
+      }
+      return key;
     },
   }),
 }));
@@ -29,6 +48,7 @@ vi.mock('react-i18next', () => ({
 const defaultProps = {
   open: true,
   onOpenChange: vi.fn(),
+  evaluationId: 42,
   brandName: 'Nike Indonesia',
   period: 'Jan 2026',
   emailOutput: 'Skor akhir: 78.5\nKesimpulan: Layak.',
@@ -40,13 +60,29 @@ const defaultProps = {
   },
 };
 
+let queryClient: QueryClient;
+
 const renderDialog = (props = {}) => {
-  return render(<SendMailDialog {...defaultProps} {...props} />);
+  return render(
+    <QueryClientProvider client={queryClient}>
+      <SendMailDialog {...defaultProps} {...props} />
+    </QueryClientProvider>,
+  );
+};
+
+const clickSend = async () => {
+  const user = userEvent.setup();
+  const sendButtons = screen.getAllByText('Kirim Email');
+  const sendButton = sendButtons.find((el) => el.closest('button') !== null)!;
+  await user.click(sendButton.closest('button')!);
 };
 
 describe('SendMailDialog', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+    });
   });
 
   it('renders dialog title', () => {
@@ -104,66 +140,55 @@ describe('SendMailDialog', () => {
     expect(body).toHaveTextContent('[EMAIL TO: new@brand.com]');
   });
 
-  it('opens mailto URL via window.open on "Kirim Email" click', async () => {
-    const onOpenChange = vi.fn();
-    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => ({ closed: false } as Window));
-    const user = userEvent.setup();
-    renderDialog({ onOpenChange });
+  it('fires sendPlainEmail mutation with evaluationId, To, subject, and body on "Kirim Email"', async () => {
+    renderDialog();
+    await clickSend();
 
-    const sendButtons = screen.getAllByText('Kirim Email');
-    // Click the button in the footer (not the dialog title)
-    const sendButton = sendButtons.find(
-      (el) => el.closest('button') !== null,
-    )!;
-    await user.click(sendButton.closest('button')!);
-
-    expect(windowOpen).toHaveBeenCalledTimes(1);
-    const url = windowOpen.mock.calls[0][0] as string;
-    expect(url).toMatch(/^mailto:/);
-    expect(url).toContain('bot%40ahacommerce.net');
-    expect(url).toContain('subject=');
-    expect(url).toContain('body=');
-    expect(windowOpen).toHaveBeenCalledWith(url, '_self');
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-
-    windowOpen.mockRestore();
+    expect(mockMutate).toHaveBeenCalledTimes(1);
+    const [params] = mockMutate.mock.calls[0];
+    expect(params.evaluationId).toBe(42);
+    expect(params.recipients).toEqual(['bot@ahacommerce.net']);
+    expect(params.subject).toContain('Nike Indonesia');
+    expect(params.subject).toContain('Jan 2026');
+    expect(params.body).toContain('[EMAIL TO: pic@nike.com]');
+    expect(params.body).toContain('Skor akhir: 78.5');
   });
 
-  it('still closes dialog when mailto handoff returns null', async () => {
+  it('closes dialog and toasts success on mutation success', async () => {
+    mockMutate.mockImplementation((_params, { onSuccess }) => onSuccess?.());
     const onOpenChange = vi.fn();
-    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => null);
-    const user = userEvent.setup();
     renderDialog({ onOpenChange });
+    await clickSend();
 
-    const sendButtons = screen.getAllByText('Kirim Email');
-    const sendButton = sendButtons.find((el) => el.closest('button') !== null)!;
-    await user.click(sendButton.closest('button')!);
-
-    expect(windowOpen).toHaveBeenCalledTimes(1);
+    expect(mockToastSuccess).toHaveBeenCalledWith('Email sent.');
     expect(onOpenChange).toHaveBeenCalledWith(false);
-
-    windowOpen.mockRestore();
   });
 
-  it('uses edited "Kepada" value in mailto URL', async () => {
+  it('toasts error and keeps dialog open on mutation error', async () => {
+    mockMutate.mockImplementation((_params, { onError }) =>
+      onError?.(new Error('SMTP auth failed')),
+    );
     const onOpenChange = vi.fn();
-    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => ({ closed: false } as Window));
-    const user = userEvent.setup();
     renderDialog({ onOpenChange });
+    await clickSend();
+
+    expect(mockToastError).toHaveBeenCalledTimes(1);
+    expect(mockToastError.mock.calls[0][0]).toContain('Failed to send email');
+    expect(mockToastError.mock.calls[0][0]).toContain('SMTP auth failed');
+    expect(onOpenChange).not.toHaveBeenCalledWith(false);
+  });
+
+  it('uses edited "Kepada" value as the mutation recipient', async () => {
+    const user = userEvent.setup();
+    renderDialog();
 
     const toInput = screen.getByLabelText('Kepada');
     await user.clear(toInput);
     await user.type(toInput, 'custom@recipient.com');
+    await clickSend();
 
-    const sendButtons = screen.getAllByText('Kirim Email');
-    const sendButton = sendButtons.find((el) => el.closest('button') !== null)!;
-    await user.click(sendButton.closest('button')!);
-
-    const url = windowOpen.mock.calls[0][0] as string;
-    expect(url).toContain('mailto:custom%40recipient.com');
-    expect(url).not.toContain('mailto:bot%40ahacommerce.net');
-
-    windowOpen.mockRestore();
+    expect(mockMutate).toHaveBeenCalledTimes(1);
+    expect(mockMutate.mock.calls[0][0].recipients).toEqual(['custom@recipient.com']);
   });
 
   it('calls onOpenChange(false) when cancel button is clicked', async () => {
@@ -178,26 +203,6 @@ describe('SendMailDialog', () => {
   });
 });
 
-
-describe('buildMailtoUrl', () => {
-  it('builds a mailto URL with to, subject, and body', () => {
-    const url = buildMailtoUrl('to@example.com', 'Hello World', 'Line 1\nLine 2');
-
-    expect(url).toMatch(/^mailto:/);
-    expect(url).toContain('mailto:to%40example.com');
-    expect(url).toContain('subject=Hello%20World');
-    expect(url).toContain('body=Line%201%0ALine%202');
-  });
-
-  it('encodes spaces as %20 so mail clients do not render plus signs', () => {
-    const url = buildMailtoUrl('to@example.com', 'Thai Subject', 'Hello Thai Team');
-
-    expect(url).toContain('subject=Thai%20Subject');
-    expect(url).toContain('body=Hello%20Thai%20Team');
-    expect(url).not.toContain('Thai+Subject');
-    expect(url).not.toContain('Hello+Thai+Team');
-  });
-});
 
 describe('buildSubject', () => {
   it('formats subject with brand name and period', () => {
@@ -280,12 +285,10 @@ describe('SendMailDialog — language selector', () => {
 
   it('works without scoreBreakdown (old evaluations) — no regression', () => {
     renderDialog();
-    // Dialog still renders all standard fields
     expect(screen.getByLabelText('Kepada')).toBeInTheDocument();
     expect(screen.getByLabelText('Email PIC')).toBeInTheDocument();
     expect(screen.getByTestId('mail-subject')).toBeInTheDocument();
     expect(screen.getByTestId('mail-body')).toBeInTheDocument();
-    // Original email output is in the body
     expect(screen.getByTestId('mail-body')).toHaveTextContent('Skor akhir: 78.5');
   });
 
@@ -313,7 +316,6 @@ describe('SendMailDialog — language selector', () => {
 
     renderDialog({ scoreBreakdown });
 
-    // Subject should still render — it uses the fixed translation function
     const subject = screen.getByTestId('mail-subject');
     expect(subject).toHaveTextContent('AHA Store Internal Check Up');
     expect(subject).toHaveTextContent('Nike Indonesia');
@@ -343,15 +345,12 @@ describe('SendMailDialog — language selector', () => {
 
     renderDialog({ scoreBreakdown });
 
-    // When i18n data is available, buildI18nEmailBody is used and its output
-    // replaces the original emailOutput in the body
     const body = screen.getByTestId('mail-body');
-    // The body should still contain the standard header from buildBody
     expect(body).toHaveTextContent('[EMAIL TO: pic@nike.com]');
     expect(body).toHaveTextContent('Kepada Pimpinan Nike Indonesia');
   });
 
-  it('uses mailto handoff for Thai compose payloads', async () => {
+  it('Thai language compose still fires the SMTP mutation', async () => {
     const scoreBreakdown = [
       {
         category: 'Operations',
@@ -374,26 +373,16 @@ describe('SendMailDialog — language selector', () => {
     ];
 
     const user = userEvent.setup();
-    const onOpenChange = vi.fn();
-    const windowOpen = vi.spyOn(window, 'open').mockImplementation(() => ({ closed: false } as Window));
-
-    renderDialog({ onOpenChange, scoreBreakdown });
+    renderDialog({ scoreBreakdown });
 
     await user.selectOptions(screen.getByTestId('email-language-select'), 'th');
+    await clickSend();
 
-    const sendButtons = screen.getAllByText('Kirim Email');
-    const sendButton = sendButtons.find((el) => el.closest('button') !== null)!;
-    await user.click(sendButton.closest('button')!);
-
-    expect(windowOpen).toHaveBeenCalledTimes(1);
-    const url = windowOpen.mock.calls[0][0] as string;
-    expect(url).toMatch(/^mailto:/);
-    expect(url).toContain('subject=');
-    expect(url).toContain('body=');
-    expect(url).toContain('%E0%B9%80%E0%B8%A3%E0%B8%B5%E0%B8%A2%E0%B8%99');
-    expect(onOpenChange).toHaveBeenCalledWith(false);
-
-    windowOpen.mockRestore();
+    expect(mockMutate).toHaveBeenCalledTimes(1);
+    const [params] = mockMutate.mock.calls[0];
+    expect(params.evaluationId).toBe(42);
+    expect(params.subject.length).toBeGreaterThan(0);
+    expect(params.body.length).toBeGreaterThan(0);
   });
 
   it('resets language when dialog closes', async () => {
@@ -401,11 +390,9 @@ describe('SendMailDialog — language selector', () => {
     const onOpenChange = vi.fn();
     renderDialog({ onOpenChange });
 
-    // Change language
     const select = screen.getByTestId('email-language-select');
     await user.selectOptions(select, 'th');
 
-    // Close dialog via cancel
     const cancelButton = screen.getByRole('button', { name: /batal/i });
     await user.click(cancelButton);
 

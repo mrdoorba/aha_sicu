@@ -2,6 +2,7 @@
 
 import logging
 from datetime import date
+from pathlib import Path
 
 from asyncpg import Connection
 from fastapi import APIRouter, Depends, Query
@@ -23,8 +24,9 @@ from app.modules.email.schemas import (
     EmailHistoryListResponse,
     SendEmailRequest,
     SendEmailResponse,
+    SendPlainEmailRequest,
 )
-from app.modules.email.service import asset_to_data_uri, send_evaluation_email
+from app.modules.email.service import asset_to_data_uri, gmail_smtp_send, send_evaluation_email
 from app.modules.email.template import _get_strings, render_email_html
 from app.modules.evaluations.service import get_evaluation_detail
 
@@ -163,6 +165,93 @@ async def send_email_endpoint(
             cc_emails=[str(c) for c in body.cc] if body.cc else None,
             bcc_emails=[str(b) for b in body.bcc] if body.bcc else None,
             subject=subject,
+            status="sent",
+            message_id=result.message_id,
+            error_detail=None,
+        )
+    except Exception:
+        logger.exception("Failed to log email success to history")
+
+    return result
+
+
+@router.post("/send-plain", response_model=SendEmailResponse)
+async def send_plain_email_endpoint(
+    body: SendPlainEmailRequest,
+    current_user: dict = Depends(get_current_user),
+    conn: Connection = Depends(get_db_connection),
+) -> SendEmailResponse:
+    """Send a plain-text evaluation email via Gmail SMTP.
+
+    Validates the evaluation exists (reusing get_evaluation_detail's access
+    control), sends the supplied subject/body verbatim, and logs the result
+    to email_history. In debug mode (gmail_smtp_enabled=False), writes the
+    body to /tmp instead of dialing SMTP. Independent of email_enabled (the
+    SendGrid path's gate).
+    """
+    await get_evaluation_detail(conn=conn, evaluation_id=body.evaluation_id)
+
+    recipients = [str(r) for r in body.recipients]
+    cc = [str(c) for c in body.cc] if body.cc else None
+    bcc = [str(b) for b in body.bcc] if body.bcc else None
+    recipient_str = ", ".join(recipients)
+    sender_email = settings.gmail_smtp_user or ""
+
+    if not settings.gmail_smtp_enabled:
+        preview_path = Path(f"/tmp/email_preview_plain_{body.evaluation_id}.txt")
+        preview_path.write_text(
+            f"Subject: {body.subject}\nTo: {recipient_str}\n\n{body.body}",
+            encoding="utf-8",
+        )
+        logger.info("Plain email preview saved to %s", preview_path)
+        result = SendEmailResponse(
+            success=True,
+            message_id="debug-file",
+            recipients=recipients,
+        )
+    else:
+        try:
+            message_id = await gmail_smtp_send(
+                subject=body.subject,
+                body_text=body.body,
+                from_name=settings.email_from_name,
+                from_email=sender_email,
+                to_emails=recipients,
+                cc_emails=cc,
+                bcc_emails=bcc,
+            )
+            result = SendEmailResponse(
+                success=True,
+                message_id=message_id,
+                recipients=recipients,
+            )
+        except Exception as send_exc:
+            try:
+                await insert_email_history(
+                    conn,
+                    evaluation_id=body.evaluation_id,
+                    sender_email=sender_email,
+                    recipient_email=recipient_str,
+                    cc_emails=cc,
+                    bcc_emails=bcc,
+                    subject=body.subject,
+                    status="failed",
+                    message_id=None,
+                    error_detail=str(send_exc),
+                )
+            except Exception:
+                logger.exception("Failed to log email failure to history")
+            raise
+
+    try:
+        await insert_email_history(
+            conn,
+            evaluation_id=body.evaluation_id,
+            sender_email=sender_email,
+            recipient_email=recipient_str,
+            cc_emails=cc,
+            bcc_emails=bcc,
+            subject=body.subject,
             status="sent",
             message_id=result.message_id,
             error_detail=None,

@@ -1,10 +1,14 @@
 """Email composition and SendGrid sending service."""
 
+import asyncio
 import base64
 import logging
 from collections.abc import Callable
+from email.message import EmailMessage
+from email.utils import make_msgid
 from pathlib import Path
 
+import aiosmtplib
 import httpx
 
 from app.config import settings
@@ -155,6 +159,71 @@ async def sendgrid_send(
         )
 
     return response.headers.get("X-Message-Id", "")
+
+
+async def gmail_smtp_send(
+    *,
+    subject: str,
+    body_text: str,
+    from_name: str,
+    from_email: str,
+    to_emails: list[str],
+    cc_emails: list[str] | None = None,
+    bcc_emails: list[str] | None = None,
+) -> str:
+    """Send a plain-text email via Gmail SMTP with App Password auth.
+
+    Returns the Message-ID header value (with angle brackets stripped).
+    """
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = f"{from_name} <{from_email}>" if from_name else from_email
+    message["To"] = ", ".join(to_emails)
+    if cc_emails:
+        message["Cc"] = ", ".join(cc_emails)
+    msgid = make_msgid(domain="ahacommerce.id")
+    message["Message-ID"] = msgid
+    message.set_content(body_text)
+
+    envelope_recipients = list(to_emails) + list(cc_emails or []) + list(bcc_emails or [])
+
+    try:
+        await aiosmtplib.send(
+            message,
+            recipients=envelope_recipients,
+            hostname=settings.gmail_smtp_host,
+            port=settings.gmail_smtp_port,
+            start_tls=True,
+            username=settings.gmail_smtp_user,
+            password=settings.gmail_smtp_app_password,
+            timeout=30.0,
+        )
+    except aiosmtplib.SMTPAuthenticationError as exc:
+        raise AppException(
+            code="GMAIL_SMTP_AUTH_ERROR",
+            detail=f"Gmail SMTP authentication failed — check app password: {exc}",
+            status_code=502,
+        ) from exc
+    except (aiosmtplib.SMTPConnectError, aiosmtplib.SMTPServerDisconnected) as exc:
+        raise AppException(
+            code="GMAIL_SMTP_CONNECTION_ERROR",
+            detail=f"Could not connect to Gmail SMTP: {exc}",
+            status_code=502,
+        ) from exc
+    except asyncio.TimeoutError as exc:
+        raise AppException(
+            code="GMAIL_SMTP_TIMEOUT",
+            detail=f"Gmail SMTP request timed out: {exc}",
+            status_code=504,
+        ) from exc
+    except aiosmtplib.SMTPException as exc:
+        raise AppException(
+            code="GMAIL_SMTP_ERROR",
+            detail=f"Gmail SMTP error: {exc}",
+            status_code=502,
+        ) from exc
+
+    return msgid.strip("<>")
 
 
 async def send_evaluation_email(

@@ -4,6 +4,10 @@ import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EvaluationDetailPage } from './EvaluationDetailPage';
 
+vi.mock('../hooks/useSendPlainEmail', () => ({
+  useSendPlainEmail: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
 const mockRefetch = vi.fn();
 
 const MOCK_EVALUATION = {
