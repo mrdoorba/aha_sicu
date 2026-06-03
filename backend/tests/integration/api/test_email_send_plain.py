@@ -1,7 +1,7 @@
 """Integration tests for POST /api/v1/email/send-plain (Gmail SMTP path)."""
 
 from datetime import datetime, timezone
-from unittest.mock import AsyncMock, MagicMock, patch
+from unittest.mock import AsyncMock, patch
 
 from app.core.exceptions import AppException
 from app.modules.evaluations.schemas import EvaluationDetailResponse
