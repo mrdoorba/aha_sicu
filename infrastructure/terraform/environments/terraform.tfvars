@@ -42,5 +42,5 @@ gmail_smtp_user = "marwahkha@ahacommerce.net"
 dev_email_enabled       = true
 prod_email_enabled      = false
 dev_gmail_smtp_enabled  = true
-prod_gmail_smtp_enabled = false
+prod_gmail_smtp_enabled = true
 
