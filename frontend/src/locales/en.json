@@ -145,7 +145,7 @@
   "conclusion.fakeDiscount": "📌 Potentially using 'fake discount'",
   "conclusion.operationalChatIssue": "Store operational quality is already fairly good, but chat response rate can still be improved.",
   "conclusion.operationalGood": "Store operational quality is already fairly good",
-  "conclusion.photoBackground": "The main product photo background should be white and display the brand logo.",
+  "conclusion.photoBackground": "Main product images should have the brand logo including FAB (Features, Advantage, Benefit).",
   "conclusion.productNaming": "Product names should start with the brand name and include the product FAB (Feature, Advantage, & Benefit).",
   "conclusion.promoUnderutilized": "Some promotional features are still not yet optimal.",
   "conclusion.salesRange": "Store revenue in the range of {{min}} million - {{max}} million per month over the last 6 months",

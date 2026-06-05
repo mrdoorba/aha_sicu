@@ -58,7 +58,7 @@ describe('KesimpulanSection', () => {
 
     expect(screen.getByText('Kualitas operasional toko sudah cukup baik, hanya tingkat response chat masih dapat ditingkatkan.')).toBeInTheDocument();
     expect(screen.getByText('Nama produk disarankan untuk dimulai dengan nama brand dan mencantumkan FAB produk (Feature, Advantage, & Benefit).')).toBeInTheDocument();
-    expect(screen.getByText('Background foto utama disarankan warna putih & menampilkan logo brand.')).toBeInTheDocument();
+    expect(screen.getByText('Gambar produk utama sebaiknya menampilkan logo brand termasuk FAB (Features, Advantage, Benefit).')).toBeInTheDocument();
     expect(screen.getByText('Beberapa fitur promosi masih belum optimal.')).toBeInTheDocument();
     expect(screen.getByText('Partisipasi Campaign Shopee belum maksimal.')).toBeInTheDocument();
     expect(screen.getByText('Pastikan produk yang stoknya habis diarsipkan')).toBeInTheDocument();

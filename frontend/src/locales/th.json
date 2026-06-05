@@ -145,7 +145,7 @@
   "conclusion.fakeDiscount": "📌 อาจใช้ 'ส่วนลดปลอม'",
   "conclusion.operationalChatIssue": "คุณภาพการดำเนินงานของร้านค้าอยู่ในเกณฑ์ค่อนข้างดี แต่ยังสามารถปรับปรุงอัตราการตอบแชทได้อีก",
   "conclusion.operationalGood": "คุณภาพการดำเนินงานของร้านค้าอยู่ในเกณฑ์ค่อนข้างดี",
-  "conclusion.photoBackground": "พื้นหลังภาพสินค้าหลักควรเป็นสีขาวและแสดงโลโก้แบรนด์",
+  "conclusion.photoBackground": "ภาพสินค้าหลักควรมีโลโก้แบรนด์ รวมถึง FAB (Features, Advantage, Benefit)",
   "conclusion.productNaming": "ชื่อสินค้าควรเริ่มด้วยชื่อแบรนด์และระบุ FAB ของสินค้า (Feature, Advantage, & Benefit)",
   "conclusion.promoUnderutilized": "ฟีเจอร์โปรโมชั่นบางอย่างยังไม่เหมาะสมเต็มที่",
   "conclusion.salesRange": "รายได้ร้านค้าอยู่ในช่วง {{min}} ล้าน - {{max}} ล้านต่อเดือนในช่วง 6 เดือนที่ผ่านมา",

@@ -2785,7 +2785,7 @@ class TestComputeG66JutaR026:
 
         assert "Kualitas operasional toko sudah cukup baik, hanya tingkat response chat masih dapat ditingkatkan." in result
         assert "Nama produk disarankan untuk dimulai dengan nama brand dan mencantumkan FAB produk (Feature, Advantage, & Benefit)." in result
-        assert "Background foto utama disarankan warna putih & menampilkan logo brand." in result
+        assert "Gambar produk utama sebaiknya menampilkan logo brand termasuk FAB (Features, Advantage, Benefit)." in result
         assert "Beberapa fitur promosi masih belum optimal." in result
         assert "Partisipasi Campaign Shopee belum maksimal." in result
         assert "Pastikan produk yang stoknya habis diarsipkan" in result

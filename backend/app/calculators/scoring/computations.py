@@ -204,7 +204,7 @@ def _compute_g66(
 
     # Standard recommendations
     lines.append("- Nama produk disarankan untuk dimulai dengan nama brand dan mencantumkan FAB produk (Feature, Advantage, & Benefit).")
-    lines.append("- Background foto utama disarankan warna putih & menampilkan logo brand.")
+    lines.append("- Gambar produk utama sebaiknya menampilkan logo brand termasuk FAB (Features, Advantage, Benefit).")
 
     # Promo effectiveness check
     promo_cat = next((c for c in categories if c.category == "Promo Toko"), None)

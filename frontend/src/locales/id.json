@@ -145,7 +145,7 @@
   "conclusion.fakeDiscount": "📌 Berpotensi menggunakan 'fake discount'",
   "conclusion.operationalChatIssue": "Kualitas operasional toko sudah cukup baik, hanya tingkat response chat masih dapat ditingkatkan.",
   "conclusion.operationalGood": "Kualitas operasional toko sudah cukup baik",
-  "conclusion.photoBackground": "Background foto utama disarankan warna putih & menampilkan logo brand.",
+  "conclusion.photoBackground": "Gambar produk utama sebaiknya menampilkan logo brand termasuk FAB (Features, Advantage, Benefit).",
   "conclusion.productNaming": "Nama produk disarankan untuk dimulai dengan nama brand dan mencantumkan FAB produk (Feature, Advantage, & Benefit).",
   "conclusion.promoUnderutilized": "Beberapa fitur promosi masih belum optimal.",
   "conclusion.salesRange": "Pendapatan toko dalam range {{min}} juta - {{max}} juta per bulan selama 6 bulan terakhir",
