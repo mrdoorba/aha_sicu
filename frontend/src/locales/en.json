@@ -149,6 +149,7 @@
   "conclusion.productNaming": "Product names should start with the brand name and include the product FAB (Feature, Advantage, & Benefit).",
   "conclusion.promoUnderutilized": "Some promotional features are still not yet optimal.",
   "conclusion.salesRange": "Store revenue in the range of {{min}} million - {{max}} million per month over the last 6 months",
+  "conclusion.salesRangeRaw": "Store revenue in the range of {{min}} - {{max}} per month over the last 6 months",
   "conclusion.stockNotArchived": "Ensure out-of-stock products are archived",
   "conclusion.unsoldProducts": "Review and optimize slow-moving products",
   "dashboard.loggedInAs": "You are logged in as",

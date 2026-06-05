@@ -292,8 +292,11 @@ def _compute_g66_i18n(
 
     if valid_sales:
         if marketplace == "TH":
+            # TH revenue is reported in raw THB (no magnitude word) — use the
+            # "Raw" key, which omits the "juta"/"ล้าน"/"million" suffix that the
+            # ID variant pairs with its /1_000_000 scaling.
             items.append(TranslatableText(
-                key="conclusion.salesRange",
+                key="conclusion.salesRangeRaw",
                 vars={"min": f"{min(valid_sales):,.0f}", "max": f"{max(valid_sales):,.0f}"},
             ))
         else:

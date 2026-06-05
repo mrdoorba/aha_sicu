@@ -149,6 +149,7 @@
   "conclusion.productNaming": "Nama produk disarankan untuk dimulai dengan nama brand dan mencantumkan FAB produk (Feature, Advantage, & Benefit).",
   "conclusion.promoUnderutilized": "Beberapa fitur promosi masih belum optimal.",
   "conclusion.salesRange": "Pendapatan toko dalam range {{min}} juta - {{max}} juta per bulan selama 6 bulan terakhir",
+  "conclusion.salesRangeRaw": "Pendapatan toko dalam range {{min}} - {{max}} per bulan selama 6 bulan terakhir",
   "conclusion.stockNotArchived": "Pastikan produk yang stoknya habis diarsipkan",
   "conclusion.unsoldProducts": "Tinjau dan optimalkan produk yang kurang laku",
   "dashboard.loggedInAs": "Anda login sebagai",

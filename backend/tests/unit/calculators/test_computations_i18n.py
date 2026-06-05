@@ -35,6 +35,25 @@ def test_g66_i18n_returns_translatable_list():
     assert "max" in items[0].vars
 
 
+def test_g66_i18n_th_marketplace_uses_raw_key_without_magnitude():
+    """TH conclusion must use the magnitude-less key with RAW (un-divided) THB.
+
+    Regression: the TH branch passed raw THB into ``conclusion.salesRange``,
+    which hardcodes "juta"/"ล้าน"/"million" — yielding nonsense like
+    "707 juta - 425,049 juta". It must use ``conclusion.salesRangeRaw``.
+    """
+    manual = {"business": {
+        "salesMonth0": 425_049, "salesMonth1": 416_872,
+        "salesMonth2": 365_059, "salesMonth3": 143_577,
+        "salesMonth4": 0, "salesMonth5": 707,
+    }}
+    items = _compute_g66_i18n([], manual, "15.3% ~ 22.7%", marketplace="TH")
+    assert items[0].key == "conclusion.salesRangeRaw"
+    # Raw THB, NOT divided by 1,000,000.
+    assert items[0].vars["min"] == "707"
+    assert items[0].vars["max"] == "425,049"
+
+
 def test_g66_i18n_splits_fake_discount_into_separate_bullet_when_flag_present():
     manual = {"business": {"salesMonth0": 200_000_000}}
     g68_with_flag = "20.3% ~ 39.0%\n📌 Berpotensi menggunakan 'fake discount'"

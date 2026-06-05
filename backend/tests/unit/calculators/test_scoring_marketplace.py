@@ -440,7 +440,9 @@ class TestTHBConclusionText:
             },
         }
         items = _compute_g66_i18n(categories, manual_data, "", marketplace="TH")
-        sales_item = next(i for i in items if i.key == "conclusion.salesRange")
+        # TH uses the magnitude-less key (no "juta"/"ล้าน"/"million" suffix),
+        # since the raw THB numbers are passed un-scaled.
+        sales_item = next(i for i in items if i.key == "conclusion.salesRangeRaw")
         # THB: raw formatted numbers, not /1M scaled
         assert sales_item.vars["min"] == "300,000"
         assert sales_item.vars["max"] == "400,000"
