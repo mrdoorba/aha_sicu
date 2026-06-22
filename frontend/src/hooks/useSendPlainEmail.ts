@@ -5,7 +5,13 @@ export interface SendPlainEmailParams {
   evaluationId: number;
   recipients: string[];
   subject: string;
+  /**
+   * Display body shown in the dialog. Ignored by the backend, which renders the
+   * sent body server-side from evaluationId + language; sent for backward
+   * compatibility / auditing only.
+   */
   body: string;
+  language: string;
   cc?: string[];
   bcc?: string[];
 }
@@ -17,6 +23,7 @@ export function useSendPlainEmail() {
       recipients,
       subject,
       body,
+      language,
       cc,
       bcc,
     }: SendPlainEmailParams) => {
@@ -26,6 +33,7 @@ export function useSendPlainEmail() {
           recipients,
           subject,
           body,
+          language,
           ...(cc && cc.length > 0 ? { cc } : {}),
           ...(bcc && bcc.length > 0 ? { bcc } : {}),
         },

@@ -14,7 +14,7 @@ from app.calculators.scoring.helpers import (
     _safe_num,
 )
 from app.calculators.scoring.models import CategoryScore, TranslatableText
-from app.calculators.scoring.rules import DEFAULT_RULES, PROMO_START_ROW, PROMO_TOOLS
+from app.calculators.scoring.rules import DEFAULT_RULES
 
 def _parse_d73_percentages(d73_text: str) -> tuple[float, float, float, float, float]:
     """Parse the 5 percentage values from Calculator 3 D73 output text.
@@ -381,112 +381,58 @@ def _compute_g75_i18n(
 def _assemble_email_body(
     categories: list[CategoryScore],
     conclusion: str,
-    marketing_label: str,
     g68: str,
     g73: str,
     g75: str,
+    *,
+    conclusion_i18n: list[TranslatableText] | None = None,
+    marketing_budget_i18n: TranslatableText | None = None,
+    closing_message_i18n: TranslatableText | None = None,
+    language: str = "id",
 ) -> str:
-    """Assemble G1: structured email body from all G-column outputs."""
-    sections: list[str] = []
+    """Assemble G1: the plain-text email body via the unified email renderer.
 
-    def _get_messages(cat_name: str, row_nums: list[int] | None = None) -> list[str]:
-        cat = next((c for c in categories if c.category == cat_name), None)
-        if not cat:
-            return []
-        msgs: list[str] = []
-        for r in cat.rows:
-            if row_nums and r.row not in row_nums:
-                continue
-            if r.message:
-                msgs.append(r.message)
-        return msgs
+    Delegates to :func:`app.modules.email.layout.render_email` (``fmt="text"``)
+    — the single source of truth for the email layout — so the stored
+    ``email_body`` is identical to what the dashboard/evaluation surfaces show.
+    The G-column outputs are repackaged into the renderer's evaluation-dict
+    shape (``score_breakdown`` + ``calculator_results.scoring_summary``).
+    """
+    from app.modules.email.layout import render_email
 
-    # 1. Operational
-    op_msgs = _get_messages("Kesehatan Operasional Toko")
-    if op_msgs:
-        sections.append("📊 Performa Operasional Toko:")
-        sections.extend(op_msgs)
-        sections.append("")
+    def _tt(tt: TranslatableText | None) -> dict | None:
+        return {"key": tt.key, "vars": tt.vars} if tt else None
 
-    # 2. Business / Sales
-    biz_msgs = _get_messages("Bisnis Analisis", [13, 20])
-    if biz_msgs:
-        sections.append("📈 Performa Penjualan Toko:")
-        sections.extend(biz_msgs)
-        sections.append("")
+    result = {
+        "score_breakdown": [_category_to_dict(cat) for cat in categories],
+        "calculator_results": {
+            "scoring_summary": {
+                "conclusion": conclusion,
+                "conclusion_i18n": [_tt(c) for c in conclusion_i18n] if conclusion_i18n else None,
+                "marketing_estimation": g68,
+                "marketing_budget": g73,
+                "marketing_budget_i18n": _tt(marketing_budget_i18n),
+                "closing_message": g75,
+                "closing_message_i18n": _tt(closing_message_i18n),
+            },
+        },
+    }
+    return render_email(result, language=language, fmt="text")
 
-    # 3. Visitors
-    visitor_msgs = _get_messages("Tinjauan Pengunjung", [28, 29])
-    if visitor_msgs:
-        sections.append("👥 Tinjauan Pengunjung:")
-        sections.extend(visitor_msgs)
-        sections.append("")
 
-    # 5. Promo Tools
-    promo_cat = next((c for c in categories if c.category == "Promo Toko"), None)
-    if promo_cat:
-        promo_msgs: list[str] = []
-        for r in promo_cat.rows:
-            if PROMO_START_ROW <= r.row <= PROMO_START_ROW + len(PROMO_TOOLS) - 1:
-                if r.message:
-                    promo_msgs.append(r.message)
-        # Add summary rows (42, 43)
-        for r in promo_cat.rows:
-            if r.row in (42, 43) and r.message:
-                promo_msgs.append(r.message)
+def _category_to_dict(cat: CategoryScore) -> dict:
+    """Serialise a CategoryScore to the renderer's row-dict shape."""
+    def _tt(tt: TranslatableText | None) -> dict | None:
+        return {"key": tt.key, "vars": tt.vars} if tt else None
 
-        if promo_msgs:
-            sections.append("🏷️ Tingkat Penggunaan Alat Promosi:")
-            sections.extend(promo_msgs)
-            sections.append("")
-
-    # 5b. Jumlah Produk & Status Toko
-    products_msgs = _get_messages("Jumlah Produk & Status Toko")
-    if products_msgs:
-        sections.append("📦 Jumlah Produk & Status Toko:")
-        sections.extend(products_msgs)
-        sections.append("")
-
-    # 6. Ads
-    ads_msgs = _get_messages("Data Iklan", [50, 51, 52, 53])
-    if ads_msgs:
-        sections.append("📣 Performa Iklan:")
-        sections.extend(ads_msgs)
-        sections.append("")
-
-    # 7. Campaign
-    campaign_msgs = _get_messages("Partisipasi Campaign", [57])
-    if campaign_msgs:
-        sections.append("🎯 Partisipasi Campaign:")
-        sections.extend(campaign_msgs)
-        sections.append("")
-
-    # 8. Competition
-    comp_msgs = _get_messages("Kompetisi TOP Produk")
-    if comp_msgs:
-        sections.append("🏆 Kompetisi TOP Produk:")
-        sections.extend(comp_msgs)
-        sections.append("")
-
-    # 9. Conclusion
-    if conclusion:
-        sections.append("📋 Kesimpulan:")
-        sections.append(conclusion)
-        sections.append("")
-
-    # 10. Marketing estimation
-    if g68:
-        sections.append(f"📌 {marketing_label}")
-        sections.append(g68)
-        sections.append("")
-
-    # 11. Marketing budget
-    if g73:
-        sections.append(g73)
-        sections.append("")
-
-    # 12. Closing
-    if g75:
-        sections.append(g75)
-
-    return "\n".join(sections)
+    return {
+        "category": cat.category,
+        "rows": [
+            {
+                "row": r.row,
+                "message": r.message,
+                "message_i18n": _tt(r.message_i18n),
+            }
+            for r in cat.rows
+        ],
+    }

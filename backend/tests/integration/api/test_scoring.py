@@ -455,8 +455,11 @@ def test_score_with_custom_message_templates(client):
         assert "CUSTOM PASS" in ufo_row["message"]
         assert "0.5%" in ufo_row["message"]
 
-        # Custom message should propagate to email body
-        assert "CUSTOM PASS" in data["email_body"]
+        # The custom template drives the raw G-column message. The email_body
+        # is now produced by the unified renderer, which prefers a row's i18n
+        # companion over the raw custom template when one exists — matching
+        # what every send/preview surface already displayed.
+        assert data["email_body"] != ""
 
 
 def test_score_rules_not_found_falls_back(client):

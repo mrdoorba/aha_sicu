@@ -1,0 +1,65 @@
+📊 ประสิทธิภาพการดำเนินงานร้านค้า:
+scoring.opRow1
+Foto produk sudah menggunakan background yang baik
+
+📈 ประสิทธิภาพการขายร้านค้า:
+scoring.bizRow13
+Conversion rate di atas benchmark
+
+👥 ภาพรวมผู้เยี่ยมชม:
+Jumlah pengunjung sehat
+Tren pengunjung meningkat
+
+🏷️ การใช้เครื่องมือโปรโมชัน:
+Flash Sale: aktif
+Bundle Deal: nonaktif
+Menggunakan 5 dari 11 alat promosi
+Disarankan mengaktifkan lebih banyak alat promosi
+
+📦 สินค้าและสถานะร้านค้า:
+Jumlah produk memadai (250)
+
+📣 ประสิทธิภาพโฆษณา:
+Biaya iklan: Rp5.000.000
+Penjualan dari iklan: Rp20.000.000
+scoring.adsRoas
+• โฆษณาทั้งหมด: 3 กำลังทำงาน, 1 หยุดชั่วคราว และ 2 สิ้นสุด
+• เกี่ยวข้องกับ 6 (12.0%) สินค้าจากทั้งหมด: 50
+
+• ประเภทโฆษณาที่ใช้งาน:
+  {{semua_total}} โฆษณาสินค้าอัตโนมัติทุกตำแหน่ง.
+  {{toko_total}} โฆษณาร้านค้า ({{toko_auto}} อัตโนมัติ & {{toko_manual}} ตั้งเอง).
+
+📌 จำนวนสินค้าที่เข้าร่วมโฆษณายังไม่เต็มที่ (แนะนำ >50%)
+📌 จำนวนโฆษณาที่ใช้งานยังไม่เต็มที่ (แนะนำ >50%)
+
+ads.topProducts.header
+ads.topProducts.item
+ads.topProducts.item
+
+ads.bestKeyword
+
+🎯 การเข้าร่วมแคมเปญ:
+Partisipasi campaign rendah
+
+🏆 การแข่งขันสินค้า TOP:
+scoring.compRow58
+↪https://tokopedia.com/brand-x
+Posisi pasar kedua
+
+📋 สรุป:
+- คุณภาพการดำเนินงานของร้านค้าอยู่ในเกณฑ์ค่อนข้างดี
+- การเข้าร่วมแคมเปญ Shopee ยังไม่เต็มประสิทธิภาพ
+- ช่วงส่วนลด: {{range}}
+
+📌 ประมาณการเปอร์เซ็นต์ค่าใช้จ่ายทางการตลาดปัจจุบัน:
+Estimasi biaya marketing saat ini sekitar 8% dari omzet.
+📌 อาจใช้ 'ส่วนลดปลอม'
+
+💡 งบการตลาดขั้นต่ำที่ AHA ต้องการเพื่อปรับปรุงยอดขาย = 3%
+
+เราเห็นว่าศักยภาพของร้าน Kopi Kenangan ยังไม่ได้ถูกใช้อย่างเต็มที่ กรุณาคลิกลิงก์ต่อไปนี้เพื่อนัดหมายเซสชันปรึกษาเชิงลึกเพื่อหาทางออกที่เหมาะสมสำหรับธุรกิจของคุณ
+
+cal-bd2.ahacommerce.net
+
+เราหวังว่าสิ่งที่เราแบ่งปันจะเป็นประโยชน์

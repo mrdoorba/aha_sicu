@@ -5,6 +5,12 @@ import { ScoringSection } from './ScoringSection';
 import { generatePeriodOptions } from './periodOptions';
 import type { ScoringResult } from '../../../hooks/useScoring';
 
+// EmailOutput (rendered when a scoringResult exists) re-renders per language via
+// this query hook; mock it so these tests need no QueryClient/backend.
+vi.mock('../../../hooks/usePreviewEmailTextFromResult', () => ({
+  usePreviewEmailTextFromResult: () => ({ data: undefined }),
+}));
+
 const MOCK_RESULT: ScoringResult = {
   total_score: 82,
   category_scores: [

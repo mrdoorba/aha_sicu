@@ -6,11 +6,19 @@ All images referenced via full src URI (cid: for send, data: for preview).
 
 from __future__ import annotations
 
-import json
 import re
-from functools import lru_cache
-from pathlib import Path
 from typing import Any
+
+# Translation + locale loading live in layout.py (the single source of truth).
+# Re-imported here because the HTML section renderers and _get_strings depend on
+# them, and external callers/tests import these names from this module.
+from app.modules.email.layout import (
+    _load_locale,
+    _resolve_ads_output_text,
+    _resolve_metric_name,
+    _resolve_translatable_text,
+    _translate,  # noqa: F401  re-exported for callers/tests
+)
 
 # ---------------------------------------------------------------------------
 # Constants
@@ -65,22 +73,6 @@ _CATEGORY_KEYS: dict[str, str] = {
 # i18n — shared locale files with frontend
 # ---------------------------------------------------------------------------
 
-# Local dev: resolve relative to source tree.  Docker: /app/locales mount.
-_LOCALES_CANDIDATES = [
-    Path(__file__).resolve().parent.parent.parent.parent.parent / "frontend" / "src" / "locales",
-    Path("/app/locales"),
-]
-_LOCALES_DIR = next((p for p in _LOCALES_CANDIDATES if p.is_dir()), _LOCALES_CANDIDATES[0])
-
-
-@lru_cache(maxsize=4)
-def _load_locale(lang: str) -> dict[str, str]:
-    """Load a frontend locale JSON, returning a flat key→value dict."""
-    path = _LOCALES_DIR / f"{lang}.json"
-    if path.is_file():
-        return json.loads(path.read_text(encoding="utf-8"))
-    return {}
-
 
 def _get_strings(language: str = "id") -> dict[str, str]:
     """Get email string translations from locale file.
@@ -109,104 +101,9 @@ def _get_category_map(language: str = "id") -> dict[str, str]:
     }
 
 
-_DOLLAR_T_RE = re.compile(r'\$t\(([^)]+)\)')
-
-
-def _translate(key: str, vars_: dict[str, str] | None, lang: str) -> str | None:
-    """Resolve an i18n key with {{var}} interpolation, like the frontend's t().
-
-    Also resolves ``$t(otherKey)`` nested references (one level deep),
-    matching the i18next behaviour used in frontend locale files.
-    """
-    locale = _load_locale(lang) or _load_locale("id")
-    template = locale.get(key)
-    if template is None:
-        return None
-    if vars_:
-        for var_name, var_value in vars_.items():
-            template = template.replace(f"{{{{{var_name}}}}}", str(var_value))
-    # Resolve $t(someKey) nested references
-    def _resolve_ref(m: re.Match) -> str:
-        ref_key = m.group(1)
-        return locale.get(ref_key, ref_key)
-    template = _DOLLAR_T_RE.sub(_resolve_ref, template)
-    return template
-
-
-def _resolve_metric_name(row: dict[str, Any], lang: str) -> str:
-    """Get the display name for a metric row, using metric_i18n when available."""
-    i18n = row.get("metric_i18n")
-    if i18n and isinstance(i18n, dict) and i18n.get("key"):
-        translated = _translate(i18n["key"], i18n.get("vars"), lang)
-        if translated:
-            return translated
-    return row.get("metric", "")
-
-
-def _resolve_translatable_text(
-    i18n: dict[str, Any] | None, fallback: str, lang: str,
-) -> str:
-    """Resolve a TranslatableText-style dict to a translated string.
-
-    Falls back to *fallback* when *i18n* is absent, malformed, or the
-    key is missing from the locale file.
-    """
-    if i18n and isinstance(i18n, dict) and i18n.get("key"):
-        translated = _translate(i18n["key"], i18n.get("vars"), lang)
-        if translated is not None:
-            return translated
-    return fallback
-
-
-def _resolve_ads_output_text(details: dict[str, Any], lang: str) -> str | None:
-    """Resolve ads_keyword i18n sections into a single translated text block.
-
-    Returns ``None`` when details lack i18n keys or any section fails
-    (atomic fallback — caller should use raw output_text).
-    """
-    _SECTION_KEYS = ("ak2", "ak3", "ak4", "al2", "al3", "al5", "al6", "al7", "al8", "al9")
-
-    has_any = any(details.get(f"{k}_i18n") for k in _SECTION_KEYS)
-    if not has_any:
-        return None
-
-    sections: list[str] = []
-    for key in _SECTION_KEYS:
-        i18n = details.get(f"{key}_i18n")
-        if not i18n:
-            continue
-
-        # ak4_i18n is a list of flag dicts
-        if isinstance(i18n, list):
-            flag_lines: list[str] = []
-            for item in i18n:
-                t = _resolve_translatable_text(item, "", lang)
-                if not t:
-                    return None  # atomic fallback
-                flag_lines.append(t)
-            sections.append("\n".join(flag_lines))
-
-        # al2_i18n / al5_i18n are complex: {"header": {...}, "ads": [...]}
-        elif isinstance(i18n, dict) and "header" in i18n:
-            header = _resolve_translatable_text(i18n["header"], "", lang)
-            if not header:
-                return None
-            ad_lines: list[str] = []
-            for ad_item in i18n.get("ads", []):
-                t = _resolve_translatable_text(ad_item, "", lang)
-                if not t:
-                    return None
-                ad_lines.append(t)
-            sections.append(header + "\n" + "\n".join(ad_lines) if ad_lines else header)
-
-        # Simple dict: {"key": "...", "vars": {...}}
-        elif isinstance(i18n, dict) and i18n.get("key"):
-            t = _resolve_translatable_text(i18n, "", lang)
-            if not t:
-                return None
-            sections.append(t)
-
-    return "\n\n".join(sections) if sections else None
+# i18n resolution helpers (_translate, _resolve_metric_name,
+# _resolve_translatable_text, _resolve_ads_output_text) live in layout.py and
+# are imported above — the single source of truth for translation.
 
 
 # ---------------------------------------------------------------------------
@@ -1194,7 +1091,43 @@ def render_email_html(
     note: str | None = None,
     language: str = "id",
 ) -> str:
-    """Render complete HTML email from evaluation data and image source URIs.
+    """Render complete HTML email — thin wrapper over the unified renderer.
+
+    Delegates to :func:`app.modules.email.layout.render_email` (``fmt="html"``)
+    so the section ordering and i18n live in the single layout source of truth.
+    Kept as a named entry point because callers (router, send service) pass it
+    by reference.
+    """
+    from app.modules.email.layout import render_email
+
+    return render_email(
+        evaluation_data,
+        language=language,
+        fmt="html",
+        chart_src=chart_src,
+        header_src=header_src,
+        footer_src=footer_src,
+        syb_src=syb_src,
+        note=note,
+    )
+
+
+def render_email_html_body(
+    *,
+    evaluation_data: dict[str, Any],
+    chart_src: str,
+    header_src: str,
+    footer_src: str,
+    syb_src: str = "",
+    note: str | None = None,
+    language: str = "id",
+) -> str:
+    """Assemble the styled HTML document from evaluation data + image URIs.
+
+    The HTML chrome (header image, score overview, breakdown chart, data
+    intelligence, kesimpulan, footer) is HTML-only; the category iteration in
+    the detailed-evaluation section honours the same canonical order as
+    :data:`app.modules.email.layout.EMAIL_SECTIONS`.
 
     Parameters
     ----------

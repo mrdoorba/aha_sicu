@@ -134,8 +134,6 @@ def calculate_score(
     g72 = _compute_g72(g68, d52, d73_text, is_fashion, rules, discount_details=discount_details)
     g73 = _compute_g73(verdict, g72, d13, rules)
 
-    marketing_label = f"📌 Estimasi persentase biaya marketing {brand_name} sekarang:"
-
     g66 = _compute_g66(all_categories, manual_data, g68, marketplace=marketplace)
     g75 = _compute_g75(verdict, store_name, rules, marketplace=marketplace)
 
@@ -151,7 +149,11 @@ def calculate_score(
     # --- Email ---
     email_subject = f"🏥 AHA Store Internal Check Up (Store ICU) - {store_name} {period}"
     email_body = _assemble_email_body(
-        all_categories, g66, marketing_label, g68, g73, g75,
+        all_categories, g66, g68, g73, g75,
+        conclusion_i18n=g66_i18n,
+        marketing_budget_i18n=g73_i18n,
+        closing_message_i18n=g75_i18n,
+        language="id",
     )
 
     return ScoringResult(

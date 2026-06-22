@@ -1,14 +1,11 @@
-import { useState, useMemo } from 'react';
+import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Button } from '../../ui/button';
 import { Card, CardContent } from '../../ui/card';
 import { Copy, Check } from 'lucide-react';
 import { EmailLanguageSelector } from '../../shared/EmailLanguageSelector';
-import {
-  buildI18nEmailBody,
-  type ScoringConclusionData,
-} from '../../../utils/buildI18nEmailBody';
 import i18n from '../../../i18n';
+import { usePreviewEmailTextFromResult } from '../../../hooks/usePreviewEmailTextFromResult';
 import type { ScoringResult } from '../../../hooks/useScoring';
 
 interface EmailOutputProps {
@@ -27,36 +24,19 @@ export const EmailOutput = ({
   const { t } = useTranslation();
   const [copied, setCopied] = useState(false);
   const [emailLanguage, setEmailLanguage] = useState(i18n.language);
-  const fixedT = useMemo(() => i18n.getFixedT(emailLanguage), [emailLanguage]);
 
-  const displaySubject = useMemo(() => {
-    const subjectI18n = scoringResult?.email_subject_i18n;
-    if (subjectI18n) {
-      return fixedT(subjectI18n.key, subjectI18n.vars);
-    }
-    return subject;
-  }, [fixedT, scoringResult?.email_subject_i18n, subject]);
+  // The pre-save scoring screen has no saved evaluation, so it re-renders the
+  // in-memory result via the stateless POST /email/preview endpoint (the one
+  // unified renderer). The score response's email_body (Indonesian) is the
+  // initial/fallback render so there is no flash while the preview loads.
+  const { data: previewBody } = usePreviewEmailTextFromResult(
+    scoringResult,
+    emailLanguage,
+    calculatorResults,
+  );
 
-  const displayBody = useMemo(() => {
-    if (scoringResult) {
-      const summary: ScoringConclusionData = {
-        conclusion: scoringResult.conclusion,
-        conclusion_i18n: scoringResult.conclusion_i18n,
-        marketing_budget: scoringResult.marketing_budget,
-        marketing_budget_i18n: scoringResult.marketing_budget_i18n,
-        closing_message: scoringResult.closing_message,
-        closing_message_i18n: scoringResult.closing_message_i18n,
-        marketing_estimation: scoringResult.marketing_estimation,
-      };
-      return buildI18nEmailBody(
-        scoringResult.category_scores,
-        summary,
-        fixedT,
-        calculatorResults,
-      );
-    }
-    return body;
-  }, [scoringResult, fixedT, body, calculatorResults]);
+  const displaySubject = scoringResult?.email_subject ?? subject;
+  const displayBody = previewBody ?? scoringResult?.email_body ?? body;
 
   const handleCopy = async () => {
     const fullText = `Subject: ${displaySubject}\n\n${displayBody}`;

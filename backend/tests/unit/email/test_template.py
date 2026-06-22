@@ -423,8 +423,8 @@ class TestStringsAndCategoryMap:
 
     def test_get_strings_returns_key_name_when_locale_missing(self, tmp_path: object, monkeypatch: pytest.MonkeyPatch) -> None:
         """_get_strings falls back to key name when locale file unavailable."""
-        import app.modules.email.template as tpl
-        monkeypatch.setattr(tpl, "_LOCALES_DIR", tmp_path)
+        import app.modules.email.layout as layout
+        monkeypatch.setattr(layout, "_LOCALES_DIR", tmp_path)
         _load_locale.cache_clear()
         s = _get_strings("id")
         assert s["score_overview"] == "score_overview"  # key name as fallback

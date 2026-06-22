@@ -33,9 +33,8 @@ import { isRecord, isRecordArray } from '../lib/typeGuards';
 import { CATEGORY_MAP } from '../lib/categoryMap';
 import { getIntlLocale } from '../lib/languages';
 import { renderTranslatable, renderAdList, renderFlagList, type TranslatableText } from '../utils/renderTranslatable';
-import { buildI18nEmailBody, type ScoringConclusionData } from '../utils/buildI18nEmailBody';
+import { usePreviewEmailText } from '../hooks/usePreviewEmailText';
 import type { TranslatableI18n, AdListI18n } from '../hooks/useCalculator';
-import type { CategoryScore } from '../hooks/useScoring';
 
 interface ScoringSummary {
   conclusion?: string;
@@ -639,30 +638,24 @@ function ManualInputsSection({
 }
 
 function EmailOutputSection({
+  evaluationId,
   emailOutput,
+  language,
   t,
   onSendMail,
-  scoreBreakdown,
-  scoringSummary,
-  calculatorResults,
 }: {
+  evaluationId: number;
   emailOutput: string;
+  language: string;
   t: TFunction;
   onSendMail: () => void;
-  scoreBreakdown?: CategoryScore[];
-  scoringSummary?: ScoringConclusionData | null;
-  calculatorResults?: Record<string, unknown>;
 }) {
   const [copied, setCopied] = useState(false);
 
-  // Check if i18n data is available in score breakdown
-  const hasI18n = scoreBreakdown?.some((cat) =>
-    cat.rows.some((r) => r.message_i18n != null),
-  ) ?? false;
-
-  const displayText = hasI18n && scoreBreakdown
-    ? buildI18nEmailBody(scoreBreakdown, scoringSummary ?? null, t, calculatorResults)
-    : emailOutput;
+  // The email body is rendered server-side by the unified renderer; fall back
+  // to the stored (Indonesian) email_output while the preview text loads.
+  const { data: previewText } = usePreviewEmailText(evaluationId, language);
+  const displayText = previewText ?? emailOutput;
 
   const handleCopy = async () => {
     try {
@@ -909,16 +902,11 @@ export function EvaluationDetailPage() {
             {evaluation.email_output && (
               <>
                 <EmailOutputSection
+                  evaluationId={evaluation.id}
                   emailOutput={evaluation.email_output}
+                  language={i18n.language}
                   t={t}
                   onSendMail={() => setSendMailDialogOpen(true)}
-                  scoreBreakdown={evaluation.score_breakdown as unknown as CategoryScore[]}
-                  scoringSummary={
-                    isScoringSummary(evaluation.calculator_results.scoring_summary)
-                      ? evaluation.calculator_results.scoring_summary as ScoringConclusionData
-                      : null
-                  }
-                  calculatorResults={evaluation.calculator_results}
                 />
                 <SendMailDialog
                   open={sendMailDialogOpen}
@@ -928,8 +916,6 @@ export function EvaluationDetailPage() {
                   period={evaluation.period}
                   emailOutput={evaluation.email_output}
                   brandRawData={evaluation.brand_raw_data}
-                  scoreBreakdown={evaluation.score_breakdown}
-                  calculatorResults={evaluation.calculator_results}
                 />
               </>
             )}

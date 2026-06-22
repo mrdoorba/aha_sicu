@@ -1,0 +1,65 @@
+📊 Performa Operasional Toko:
+scoring.opRow1
+Foto produk sudah menggunakan background yang baik
+
+📈 Performa Penjualan Toko:
+scoring.bizRow13
+Conversion rate di atas benchmark
+
+👥 Tinjauan Pengunjung:
+Jumlah pengunjung sehat
+Tren pengunjung meningkat
+
+🏷️ Tingkat Penggunaan Alat Promosi:
+Flash Sale: aktif
+Bundle Deal: nonaktif
+Menggunakan 5 dari 11 alat promosi
+Disarankan mengaktifkan lebih banyak alat promosi
+
+📦 Jumlah Produk & Status Toko:
+Jumlah produk memadai (250)
+
+📣 Performa Iklan:
+Biaya iklan: Rp5.000.000
+Penjualan dari iklan: Rp20.000.000
+scoring.adsRoas
+• Total Iklan: 3 Aktif, 1 Dijeda dan 2 Berakhir.
+• Melibatkan 6 (12.0%) produk dari total jumlah produk: 50.
+
+• Jenis Iklan yang aktif digunakan:
+  {{semua_total}} Iklan Produk Otomatis Semua Halaman.
+  {{toko_total}} Iklan Toko ({{toko_auto}} Otomatis & {{toko_manual}} Manual).
+
+📌 Jumlah produk yang dipartisipasikan ke dalam iklan kurang maksimal (saran >50%).
+📌 Jumlah iklan dengan status aktif kurang maksimal (saran >50%).
+
+ads.topProducts.header
+ads.topProducts.item
+ads.topProducts.item
+
+ads.bestKeyword
+
+🎯 Partisipasi Campaign:
+Partisipasi campaign rendah
+
+🏆 Kompetisi TOP Produk:
+scoring.compRow58
+↪https://tokopedia.com/brand-x
+Posisi pasar kedua
+
+📋 Kesimpulan:
+- Kualitas operasional toko sudah cukup baik
+- Partisipasi Campaign Shopee belum maksimal.
+- Range diskon: {{range}}
+
+📌 Estimasi persentase biaya marketing sekarang:
+Estimasi biaya marketing saat ini sekitar 8% dari omzet.
+📌 Berpotensi menggunakan 'fake discount'
+
+💡 Minimum budget marketing yang dibutuhkan AHA untuk meningkatkan performa penjualan toko = 3%
+
+Kami melihat bahwa potensi dari Toko Kopi Kenangan masih belum maksimal. Silahkan klik di link berikut ini untuk menjadwalkan sesi konsultasi yang lebih mendalam untuk menemukan solusi yang tepat bagi bisnis Anda.
+
+cal-bd2.ahacommerce.net
+
+Semoga apa yang kami bagikan dapat bermanfaat.

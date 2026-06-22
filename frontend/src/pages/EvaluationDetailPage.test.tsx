@@ -1,11 +1,19 @@
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EvaluationDetailPage } from './EvaluationDetailPage';
 
 vi.mock('../hooks/useSendPlainEmail', () => ({
   useSendPlainEmail: () => ({ mutate: vi.fn(), isPending: false }),
+}));
+
+// The email body is rendered server-side via /email/preview?format=text. The
+// hook is mocked so tests control the returned (translated) preview text.
+let mockPreviewText: string | undefined;
+vi.mock('../hooks/usePreviewEmailText', () => ({
+  usePreviewEmailText: () => ({ data: mockPreviewText }),
 }));
 
 const mockRefetch = vi.fn();
@@ -108,14 +116,19 @@ function LocationDisplay() {
 }
 
 const renderPage = (path = '/history/42') => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false } },
+  });
   return render(
-    <MemoryRouter initialEntries={[path]}>
-      <Routes>
-        <Route path="/history/:id" element={<EvaluationDetailPage />} />
-        <Route path="/history" element={<div data-testid="history-page">History</div>} />
-      </Routes>
-      <LocationDisplay />
-    </MemoryRouter>,
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[path]}>
+        <Routes>
+          <Route path="/history/:id" element={<EvaluationDetailPage />} />
+          <Route path="/history" element={<div data-testid="history-page">History</div>} />
+        </Routes>
+        <LocationDisplay />
+      </MemoryRouter>
+    </QueryClientProvider>,
   );
 };
 
@@ -136,6 +149,7 @@ beforeEach(() => {
     last_login: '2026-02-20T00:00:00Z',
   };
   mockUseEvaluationDetail.mockImplementation(() => mockHookReturn);
+  mockPreviewText = undefined;
   vi.clearAllMocks();
 });
 
@@ -686,41 +700,25 @@ describe('EvaluationDetailPage', () => {
 
   // --- EmailOutputSection i18n tests ---
 
-  it('renders translated email sections when score_breakdown has message_i18n', () => {
-    mockHookReturn = {
-      ...mockHookReturn,
-      evaluation: {
-        ...MOCK_EVALUATION,
-        score_breakdown: [
-          {
-            category: 'Kesehatan Operasional Toko',
-            score: 10.0,
-            max_score: 10.0,
-            available: true,
-            rows: [
-              { row: 1, metric: 'unfulfilled', value: '0.5%', benchmark: '<1%', verdict: 'pass', message: 'OK', score: 2, message_i18n: { key: 'scoring.unfulfilledOrderRate.pass', vars: { value: '0.5%' } } },
-            ],
-          },
-        ],
-      },
-    };
+  it('renders server-rendered preview text when available', () => {
+    // The unified renderer returns the translated body via the preview endpoint.
+    mockPreviewText = '📊 Performa Operasional Toko:\nTranslated row content';
     renderPage();
 
-    // Should show translated content from buildI18nEmailBody
-    // The i18n key resolves via test i18n setup — check that the section header appears
     expect(screen.getByText(/Performa Operasional Toko/)).toBeInTheDocument();
-    // Should NOT show the raw email_output text
+    // Should NOT show the raw email_output text when preview text is present.
     expect(screen.queryByText('Brand evaluation for Nike Indonesia')).not.toBeInTheDocument();
   });
 
-  it('renders raw email output when score_breakdown lacks message_i18n', () => {
-    // Default MOCK_EVALUATION score_breakdown has rows: [] — no message_i18n
+  it('falls back to raw email output when preview text is unavailable', () => {
+    // No preview text (e.g. still loading) → fall back to stored email_output.
+    mockPreviewText = undefined;
     renderPage();
 
     expect(screen.getByText(/Brand evaluation for Nike Indonesia/)).toBeInTheDocument();
   });
 
-  it('copies translated email text when i18n available', async () => {
+  it('copies the server-rendered preview text when available', async () => {
     const writeText = vi.fn().mockResolvedValue(undefined);
     Object.defineProperty(navigator, 'clipboard', {
       value: { writeText },
@@ -728,31 +726,13 @@ describe('EvaluationDetailPage', () => {
       configurable: true,
     });
 
-    mockHookReturn = {
-      ...mockHookReturn,
-      evaluation: {
-        ...MOCK_EVALUATION,
-        score_breakdown: [
-          {
-            category: 'Kesehatan Operasional Toko',
-            score: 10.0,
-            max_score: 10.0,
-            available: true,
-            rows: [
-              { row: 1, metric: 'unfulfilled', value: '0.5%', benchmark: '<1%', verdict: 'pass', message: 'OK', score: 2, message_i18n: { key: 'scoring.unfulfilledOrderRate.pass', vars: { value: '0.5%' } } },
-            ],
-          },
-        ],
-      },
-    };
+    mockPreviewText = '📊 Performa Operasional Toko:\nTranslated row content';
     renderPage();
 
     const copyBtn = screen.getByRole('button', { name: /email output/i });
     await userEvent.click(copyBtn);
 
-    // Should NOT copy the raw emailOutput, but the translated body
     expect(writeText).not.toHaveBeenCalledWith(MOCK_EVALUATION.email_output);
-    // Should copy some text that includes the translated section
     expect(writeText).toHaveBeenCalledTimes(1);
     const copiedText = writeText.mock.calls[0][0] as string;
     expect(copiedText).toContain('Performa Operasional Toko');

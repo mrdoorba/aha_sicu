@@ -1,6 +1,7 @@
 """Email module request/response schemas."""
 
 from datetime import datetime
+from typing import Any
 
 from pydantic import BaseModel, EmailStr, Field, model_validator
 
@@ -52,14 +53,20 @@ class SendEmailRequest(BaseModel):
 
 
 class SendPlainEmailRequest(BaseModel):
-    """Request body for sending a plain-text evaluation email via Gmail SMTP."""
+    """Request body for sending a plain-text evaluation email via Gmail SMTP.
+
+    The email body is rendered server-side from ``evaluation_id`` + ``language``
+    by the unified email renderer; any client-supplied ``body`` is ignored
+    (kept optional for backward compatibility with older clients).
+    """
 
     evaluation_id: int
     recipients: list[EmailStr] = Field(min_length=1, max_length=10)
     cc: list[EmailStr] = Field(default_factory=list, max_length=10)
     bcc: list[EmailStr] = Field(default_factory=list, max_length=10)
     subject: str = Field(min_length=1, max_length=200)
-    body: str = Field(min_length=1, max_length=20_000)
+    body: str | None = Field(default=None, max_length=20_000, description="Ignored — body is rendered server-side")
+    language: str = Field(default="id", pattern="^(id|en|th)$")
 
     @model_validator(mode="after")
     def validate_total_recipients(self) -> "SendPlainEmailRequest":
@@ -86,6 +93,29 @@ class SendPlainEmailRequest(BaseModel):
         if blocked:
             raise ValueError(f"Recipients outside allowed domains: {', '.join(blocked)}")
         return self
+
+
+class PreviewEmailRequest(BaseModel):
+    """Stateless email-preview payload — a ScoringResult-shaped, in-memory result.
+
+    Used by the pre-save scoring screen, which has no saved evaluation to fetch.
+    The fields mirror the score endpoint's response; the router maps them into
+    the renderer's evaluation-dict shape and feeds the single ``render_email``.
+    Rows and i18n companions are accepted as permissive dicts (the renderer
+    reads them positionally as ``{"key", "vars"}`` / row dicts).
+    """
+
+    category_scores: list[dict[str, Any]] = Field(default_factory=list)
+    conclusion: str = ""
+    conclusion_i18n: list[dict[str, Any]] | None = None
+    marketing_estimation: str = ""
+    marketing_budget: str = ""
+    marketing_budget_i18n: dict[str, Any] | None = None
+    closing_message: str = ""
+    closing_message_i18n: dict[str, Any] | None = None
+    calculator_results: dict[str, Any] = Field(default_factory=dict)
+    brand_name: str = ""
+    period: str = ""
 
 
 class SendEmailResponse(BaseModel):
