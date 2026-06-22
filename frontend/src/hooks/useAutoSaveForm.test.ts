@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { buildManualData, mergeWithOverrides, applyPeriodSwap, type PeriodScopedData } from './manualDataUtils';
+import { buildManualData, mergeWithOverrides, applyPeriodSwap, createPeriodMemory } from './manualDataUtils';
 import { EMPTY_MANUAL_DATA } from '../components/evaluation/forms/formConfig';
 import type { ManualData } from '../components/evaluation/forms/formConfig';
 
@@ -116,35 +116,50 @@ describe('mergeWithOverrides', () => {
 });
 
 describe('applyPeriodSwap', () => {
-  const withPeriod = (period: string | null, sales0: number | null): ManualData => ({
+  // Mei 2026 window: slot0=May, slot1=Apr. Apr 2026 window: slot0=Apr, slot1=Mar.
+  const meiWithSales = (may: number | null, apr: number | null): ManualData => ({
     ...EMPTY_MANUAL_DATA,
-    business: { ...EMPTY_MANUAL_DATA.business, salesStartMonth: period, salesMonth0: sales0 },
+    business: { ...EMPTY_MANUAL_DATA.business, salesStartMonth: '2026-05', salesMonth0: may, salesMonth1: apr },
   });
 
-  it('blanks period-scoped data (keeping new start month) for an unvisited period', () => {
-    const snapshots = new Map<string, PeriodScopedData>();
-    const result = applyPeriodSwap(withPeriod('2026-05', 119_937_630), '2026-06', snapshots);
+  it('carries overlapping calendar-month sales when the window shifts', () => {
+    const mem = createPeriodMemory();
+    // On Mei: May=1M (slot0), Apr=1.2M (slot1). Shift to Apr 2026.
+    const result = applyPeriodSwap(meiWithSales(1_000_000, 1_200_000), '2026-04', mem);
 
-    expect(result.business.salesStartMonth).toBe('2026-06');
-    expect(result.business.salesMonth0).toBeNull();
+    expect(result.business.salesStartMonth).toBe('2026-04');
+    expect(result.business.salesMonth0).toBe(1_200_000); // Apr 2026 — carried over
+    expect(result.business.salesMonth1).toBeNull();       // Mar 2026 — never entered
   });
 
-  it('restores remembered data when returning to a visited period', () => {
-    const snapshots = new Map<string, PeriodScopedData>();
+  it('refills both months on return to the original period', () => {
+    const mem = createPeriodMemory();
+    const apr = applyPeriodSwap(meiWithSales(1_000_000, 1_200_000), '2026-04', mem);
+    // Feed the Apr state (with its carried slot0) back in, then return to Mei.
+    const back = applyPeriodSwap({ ...EMPTY_MANUAL_DATA, ...apr }, '2026-05', mem);
 
-    // Leave Mei 2026 (119M) → stashes Mei, blanks Jun
-    applyPeriodSwap(withPeriod('2026-05', 119_937_630), '2026-06', snapshots);
-    // Return to Mei 2026 from the blank Jun
-    const back = applyPeriodSwap(withPeriod('2026-06', null), '2026-05', snapshots);
-
-    expect(back.business.salesStartMonth).toBe('2026-05');
-    expect(back.business.salesMonth0).toBe(119_937_630);
+    expect(back.business.salesMonth0).toBe(1_000_000); // May 2026
+    expect(back.business.salesMonth1).toBe(1_200_000); // Apr 2026
   });
 
-  it('does not stash when the period is unchanged', () => {
-    const snapshots = new Map<string, PeriodScopedData>();
-    applyPeriodSwap(withPeriod('2026-05', 119_937_630), '2026-05', snapshots);
-    expect(snapshots.size).toBe(0);
+  it('drops and restores non-business sections per period', () => {
+    const mem = createPeriodMemory();
+    const mei: ManualData = {
+      ...meiWithSales(1_000_000, null),
+      visitors: { ...EMPTY_MANUAL_DATA.visitors, totalVisitors: 5000 },
+    };
+    const apr = applyPeriodSwap(mei, '2026-04', mem);
+    expect(apr.visitors.totalVisitors).toBeNull(); // dropped for fresh period
+
+    const back = applyPeriodSwap({ ...EMPTY_MANUAL_DATA, ...apr }, '2026-05', mem);
+    expect(back.visitors.totalVisitors).toBe(5000); // restored on return
+  });
+
+  it('leaves current data untouched on a no-op (same period) swap', () => {
+    const mem = createPeriodMemory();
+    const result = applyPeriodSwap(meiWithSales(1_000_000, 1_200_000), '2026-05', mem);
+    expect(result.business.salesMonth0).toBe(1_000_000);
+    expect(mem.sections.size).toBe(0);
   });
 });
 
@@ -223,32 +238,37 @@ describe('useAutoSaveForm', () => {
     expect(result.current.manualData.competition.product1.marketPrice).toBeNull();
   });
 
-  it('swaps period-scoped data on start-month change but keeps competition', () => {
+  it('carries overlapping months, drops sections per period, keeps competition', () => {
     const { result } = renderHook(() => useAutoSaveForm(defaultOptions));
 
     act(() => {
       result.current.handleFieldChange('business', 'salesStartMonth', '2026-05');
-      result.current.handleFieldChange('business', 'salesMonth0', 119_937_630);
+      result.current.handleFieldChange('business', 'salesMonth0', 1_000_000); // May 2026
+      result.current.handleFieldChange('business', 'salesMonth1', 1_200_000); // Apr 2026
+      result.current.handleFieldChange('visitors', 'totalVisitors', 5000);
       result.current.handleFieldChange('competition', 'product1.keyword', 'sepatu');
     });
 
-    expect(result.current.manualData.business.salesMonth0).toBe(119_937_630);
-
-    // Switch to a fresh period: sales blanks, competition stays.
+    // Switch to Apr 2026: Apr's figure carries to slot 0, Mar blank, visitors
+    // drop (per-period), competition untouched (brand-level).
     act(() => {
-      result.current.handleFieldChange('business', 'salesStartMonth', '2026-06');
+      result.current.handleFieldChange('business', 'salesStartMonth', '2026-04');
     });
 
-    expect(result.current.manualData.business.salesStartMonth).toBe('2026-06');
-    expect(result.current.manualData.business.salesMonth0).toBeNull();
+    expect(result.current.manualData.business.salesStartMonth).toBe('2026-04');
+    expect(result.current.manualData.business.salesMonth0).toBe(1_200_000); // Apr carried
+    expect(result.current.manualData.business.salesMonth1).toBeNull();       // Mar blank
+    expect(result.current.manualData.visitors.totalVisitors).toBeNull();     // section dropped
     expect(result.current.manualData.competition.product1.keyword).toBe('sepatu');
 
-    // Return to Mei 2026: remembered sales value refills.
+    // Return to Mei 2026: both sales months and the visitors section refill.
     act(() => {
       result.current.handleFieldChange('business', 'salesStartMonth', '2026-05');
     });
 
-    expect(result.current.manualData.business.salesMonth0).toBe(119_937_630);
+    expect(result.current.manualData.business.salesMonth0).toBe(1_000_000);
+    expect(result.current.manualData.business.salesMonth1).toBe(1_200_000);
+    expect(result.current.manualData.visitors.totalVisitors).toBe(5000);
   });
 
   it('debounces save by 500ms on triggerSave', () => {
