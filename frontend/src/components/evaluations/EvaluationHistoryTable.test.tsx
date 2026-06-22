@@ -238,6 +238,24 @@ describe('EvaluationHistoryTable — Accordion', () => {
     expect(screen.getByTestId('location')).toHaveTextContent('?page=2');
   });
 
+  it('keeps the page param after the search debounce window elapses', async () => {
+    const user = userEvent.setup();
+    mockGroupedReturn = {
+      ...mockGroupedReturn,
+      total: 40,
+      pages: 2,
+    };
+    renderTable();
+
+    await user.click(screen.getByRole('button', { name: /common\.next/i }));
+    expect(screen.getByTestId('location')).toHaveTextContent('?page=2');
+
+    // The search effect re-fires when setSearchParams changes identity on
+    // navigation; past the 300ms debounce it must NOT wipe the page param.
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(screen.getByTestId('location')).toHaveTextContent('?page=2');
+  });
+
   // --- Search ---
 
   it('search input has i18n placeholder', () => {

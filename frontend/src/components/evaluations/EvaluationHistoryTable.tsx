@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { ChevronLeft, ChevronRight, ChevronDown, ChevronUp, AlertCircle, Search, X, CalendarIcon, Loader2 } from 'lucide-react';
@@ -325,14 +325,12 @@ export const EvaluationHistoryTable = () => {
     ? undefined
     : selectedVerdicts;
   const [searchInput, setSearchInput] = useState(searchFromUrl);
-  const isInitialMount = useRef(true);
 
-  // Debounce: update URL params after 300ms idle (skip initial mount)
+  // Debounce: update URL params after 300ms idle. Guard on a real diff so the
+  // effect re-firing (setSearchParams changes identity on every navigation in
+  // react-router v6) doesn't wipe the page param when only the URL changed.
   useEffect(() => {
-    if (isInitialMount.current) {
-      isInitialMount.current = false;
-      return;
-    }
+    if (searchInput === searchFromUrl) return;
     const timer = setTimeout(() => {
       setSearchParams((prev) => {
         const p = new URLSearchParams(prev);
@@ -346,7 +344,7 @@ export const EvaluationHistoryTable = () => {
       }, { replace: true });
     }, 300);
     return () => clearTimeout(timer);
-  }, [searchInput, setSearchParams]);
+  }, [searchInput, searchFromUrl, setSearchParams]);
 
   // Sync input when URL changes externally (e.g., browser back)
   useEffect(() => {
