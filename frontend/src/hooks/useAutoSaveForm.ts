@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSaveEvaluationInputs, type CategoryType } from './useEvaluation';
 import type { ManualData, CompetitionData } from '../components/evaluation/forms/formConfig';
-import { buildManualData, mergeWithOverrides, applyPeriodSwap, type PeriodScopedData } from './manualDataUtils';
+import { buildManualData, mergeWithOverrides, applyPeriodSwap, createPeriodMemory, type PeriodMemory } from './manualDataUtils';
 import { toRecord } from '../lib/typeGuards';
 
 /** Type-safe keys of ManualData (excluding competition which has nested structure) */
@@ -53,9 +53,10 @@ export function useAutoSaveForm({ brandId, categoryType, initialData, marketplac
 
   const [localOverrides, setLocalOverrides] = useState<Partial<ManualData>>({});
 
-  // In-memory per-period memory: start-month → its period-scoped data. Lets the
-  // form remember and refill data when the user switches periods within a session.
-  const periodSnapshotsRef = useRef<Map<string, PeriodScopedData>>(new Map());
+  // In-memory period memory. Lets the form remember and refill data when the
+  // user switches periods within a session (sales carry by calendar month;
+  // other sections drop/restore per period).
+  const periodMemoryRef = useRef<PeriodMemory>(createPeriodMemory());
 
   const mergedData = mergeWithOverrides(manualData, localOverrides);
 
@@ -116,7 +117,7 @@ export function useAutoSaveForm({ brandId, categoryType, initialData, marketplac
         if (category === 'business' && key === 'salesStartMonth') {
           const newPeriod = typeof value === 'string' && value ? value : null;
           const current = mergeWithOverrides(base, prev);
-          const target = applyPeriodSwap(current, newPeriod, periodSnapshotsRef.current);
+          const target = applyPeriodSwap(current, newPeriod, periodMemoryRef.current);
           return { ...prev, ...target };
         }
 

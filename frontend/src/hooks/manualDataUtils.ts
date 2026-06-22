@@ -45,15 +45,48 @@ export function buildManualData(initialData: Record<string, unknown> | null): Ma
 // ── Period-scoped swap (session-only) ──────────────────────────────────────
 // Everything below the period selector is "data for that period" EXCEPT
 // competition (and marketplace/category, which live outside ManualData).
+//
+// Two memory models, because the sections differ in kind:
+//  • The monthly sales grid is a rolling 6-month window. Adjacent periods
+//    overlap (Mei's window holds Apr; Apr's window also holds Apr), so each
+//    figure is keyed by its CALENDAR MONTH and carries across periods.
+//  • Visitors/operational/promo/products/ads/campaign are single values for
+//    the period, keyed by the start month and dropped/remembered per period.
 export type PeriodScopedData = Pick<
   ManualData,
   'operational' | 'business' | 'visitors' | 'promoTools' | 'products' | 'ads' | 'campaign'
 >;
 
-function pickPeriodScoped(d: ManualData): PeriodScopedData {
+type SectionData = Pick<
+  ManualData,
+  'operational' | 'visitors' | 'promoTools' | 'products' | 'ads' | 'campaign'
+>;
+
+export interface PeriodMemory {
+  /** Non-business sections, keyed by period (start month). */
+  sections: Map<string, SectionData>;
+  /** Monthly sales, keyed by calendar month "YYYY-MM" — overlaps carry across periods. */
+  salesByMonth: Map<string, number | null>;
+  /** Conversion rate, keyed by period (it describes the start month). */
+  conversionByPeriod: Map<string, number | null>;
+}
+
+export function createPeriodMemory(): PeriodMemory {
+  return { sections: new Map(), salesByMonth: new Map(), conversionByPeriod: new Map() };
+}
+
+const SALES_SLOTS = ['salesMonth0', 'salesMonth1', 'salesMonth2', 'salesMonth3', 'salesMonth4', 'salesMonth5'] as const;
+
+/** Calendar-month key for slot `i` of a window starting at `startMonth` (i months back). */
+function monthKeyForSlot(startMonth: string, slotIndex: number): string {
+  const [year, month] = startMonth.split('-').map(Number);
+  const d = new Date(year, month - 1 - slotIndex, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
+}
+
+function pickSections(d: ManualData): SectionData {
   return {
     operational: d.operational,
-    business: d.business,
     visitors: d.visitors,
     promoTools: d.promoTools,
     products: d.products,
@@ -62,11 +95,10 @@ function pickPeriodScoped(d: ManualData): PeriodScopedData {
   };
 }
 
-function blankPeriodScoped(startMonth: string | null): PeriodScopedData {
+function blankSections(): SectionData {
   const e = EMPTY_MANUAL_DATA;
   return {
     operational: { ...e.operational },
-    business: { ...e.business, salesStartMonth: startMonth },
     visitors: { ...e.visitors },
     promoTools: { ...e.promoTools },
     products: { ...e.products },
@@ -75,27 +107,50 @@ function blankPeriodScoped(startMonth: string | null): PeriodScopedData {
   };
 }
 
+/** Rebuild the business section for `startMonth` from calendar-month + per-period memory. */
+function buildBusiness(startMonth: string | null, mem: PeriodMemory): ManualData['business'] {
+  const business = { ...EMPTY_MANUAL_DATA.business, salesStartMonth: startMonth };
+  if (!startMonth) return business;
+  business.conversionRate = mem.conversionByPeriod.get(startMonth) ?? null;
+  SALES_SLOTS.forEach((slot, i) => {
+    business[slot] = mem.salesByMonth.get(monthKeyForSlot(startMonth, i)) ?? null;
+  });
+  return business;
+}
+
 /**
- * Session-only period swap. Stashes the current period's scoped data under its
- * start-month key, then returns the target period's data — a remembered snapshot
- * if that period was visited before, else blanks. Competition is left to the
- * caller (it is NOT period-scoped). Mutates `snapshots`, the in-memory session map.
- * ponytail: session-only — the map lives in memory, so a reload shows only the
+ * Session-only period swap. Stashes the leaving period's data into `mem`, then
+ * rebuilds the target period: non-business sections from per-period memory
+ * (blank if unvisited), the sales grid from calendar-month memory so overlapping
+ * months refill automatically. Competition is left to the caller (not period-scoped).
+ * Mutates `mem`, the in-memory session store.
+ * ponytail: session-only — `mem` lives in memory, so a reload shows only the
  * last-saved period. Upgrade path: persist data keyed by period in the backend.
  */
 export function applyPeriodSwap(
   current: ManualData,
   newPeriod: string | null,
-  snapshots: Map<string, PeriodScopedData>,
+  mem: PeriodMemory,
 ): PeriodScopedData {
   const oldPeriod = current.business.salesStartMonth;
-  if (oldPeriod && oldPeriod !== newPeriod) {
-    snapshots.set(oldPeriod, pickPeriodScoped(current));
+
+  // No-op selection: return current data untouched (don't wipe from empty memory).
+  if (oldPeriod === newPeriod) {
+    return { ...pickSections(current), business: current.business };
   }
-  if (newPeriod && snapshots.has(newPeriod)) {
-    return snapshots.get(newPeriod)!;
+
+  if (oldPeriod) {
+    mem.sections.set(oldPeriod, pickSections(current));
+    mem.conversionByPeriod.set(oldPeriod, current.business.conversionRate);
+    SALES_SLOTS.forEach((slot, i) => {
+      mem.salesByMonth.set(monthKeyForSlot(oldPeriod, i), current.business[slot]);
+    });
   }
-  return blankPeriodScoped(newPeriod);
+
+  const sections = (newPeriod && mem.sections.has(newPeriod))
+    ? mem.sections.get(newPeriod)!
+    : blankSections();
+  return { ...sections, business: buildBusiness(newPeriod, mem) };
 }
 
 /** Merge local overrides into base server data */
