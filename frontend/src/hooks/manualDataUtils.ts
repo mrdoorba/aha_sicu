@@ -42,6 +42,62 @@ export function buildManualData(initialData: Record<string, unknown> | null): Ma
   };
 }
 
+// ── Period-scoped swap (session-only) ──────────────────────────────────────
+// Everything below the period selector is "data for that period" EXCEPT
+// competition (and marketplace/category, which live outside ManualData).
+export type PeriodScopedData = Pick<
+  ManualData,
+  'operational' | 'business' | 'visitors' | 'promoTools' | 'products' | 'ads' | 'campaign'
+>;
+
+function pickPeriodScoped(d: ManualData): PeriodScopedData {
+  return {
+    operational: d.operational,
+    business: d.business,
+    visitors: d.visitors,
+    promoTools: d.promoTools,
+    products: d.products,
+    ads: d.ads,
+    campaign: d.campaign,
+  };
+}
+
+function blankPeriodScoped(startMonth: string | null): PeriodScopedData {
+  const e = EMPTY_MANUAL_DATA;
+  return {
+    operational: { ...e.operational },
+    business: { ...e.business, salesStartMonth: startMonth },
+    visitors: { ...e.visitors },
+    promoTools: { ...e.promoTools },
+    products: { ...e.products },
+    ads: { ...e.ads },
+    campaign: { ...e.campaign },
+  };
+}
+
+/**
+ * Session-only period swap. Stashes the current period's scoped data under its
+ * start-month key, then returns the target period's data — a remembered snapshot
+ * if that period was visited before, else blanks. Competition is left to the
+ * caller (it is NOT period-scoped). Mutates `snapshots`, the in-memory session map.
+ * ponytail: session-only — the map lives in memory, so a reload shows only the
+ * last-saved period. Upgrade path: persist data keyed by period in the backend.
+ */
+export function applyPeriodSwap(
+  current: ManualData,
+  newPeriod: string | null,
+  snapshots: Map<string, PeriodScopedData>,
+): PeriodScopedData {
+  const oldPeriod = current.business.salesStartMonth;
+  if (oldPeriod && oldPeriod !== newPeriod) {
+    snapshots.set(oldPeriod, pickPeriodScoped(current));
+  }
+  if (newPeriod && snapshots.has(newPeriod)) {
+    return snapshots.get(newPeriod)!;
+  }
+  return blankPeriodScoped(newPeriod);
+}
+
 /** Merge local overrides into base server data */
 export function mergeWithOverrides(base: ManualData, overrides: Partial<ManualData>): ManualData {
   return {

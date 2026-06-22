@@ -7,7 +7,6 @@ import { FinalScoreDisplay } from './FinalScoreDisplay';
 import { ScoreBreakdown } from './ScoreBreakdown';
 import { EmailOutput } from './EmailOutput';
 import { VerdictSelector } from './VerdictSelector';
-import { PeriodSelector } from './PeriodSelector';
 import { generatePeriodOptions } from './periodOptions';
 import type { ScoringResult, ScoringStep } from '../../../hooks/useScoring';
 
@@ -44,7 +43,8 @@ export const ScoringSection = ({
 }: ScoringSectionProps) => {
   const { t } = useTranslation();
   const [verdict, setVerdict] = useState('✔️');
-  const [period, setPeriod] = useState(() => generatePeriodOptions()[0]);
+  // ponytail: period was a redundant selector; always file under the current month.
+  const period = generatePeriodOptions()[0];
 
   const canGenerate = !!categoryType;
   const initialMount = useRef(true);
@@ -74,9 +74,9 @@ export const ScoringSection = ({
         brand_name: brandName,
       });
     }
-    // Only re-run when verdict or period changes
+    // Only re-run when verdict changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [verdict, period]);
+  }, [verdict]);
 
   return (
     <div className="space-y-4">
@@ -124,8 +124,6 @@ export const ScoringSection = ({
           {scoringResult && (
             <div className="mt-4 flex flex-wrap items-end gap-4 border-t pt-4">
               <VerdictSelector value={verdict} onChange={setVerdict} />
-
-              <PeriodSelector value={period} onChange={setPeriod} />
             </div>
           )}
         </CardContent>

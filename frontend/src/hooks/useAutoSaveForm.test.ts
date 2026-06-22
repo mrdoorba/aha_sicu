@@ -1,6 +1,6 @@
 import { renderHook, act } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { buildManualData, mergeWithOverrides } from './manualDataUtils';
+import { buildManualData, mergeWithOverrides, applyPeriodSwap, type PeriodScopedData } from './manualDataUtils';
 import { EMPTY_MANUAL_DATA } from '../components/evaluation/forms/formConfig';
 import type { ManualData } from '../components/evaluation/forms/formConfig';
 
@@ -115,6 +115,39 @@ describe('mergeWithOverrides', () => {
   });
 });
 
+describe('applyPeriodSwap', () => {
+  const withPeriod = (period: string | null, sales0: number | null): ManualData => ({
+    ...EMPTY_MANUAL_DATA,
+    business: { ...EMPTY_MANUAL_DATA.business, salesStartMonth: period, salesMonth0: sales0 },
+  });
+
+  it('blanks period-scoped data (keeping new start month) for an unvisited period', () => {
+    const snapshots = new Map<string, PeriodScopedData>();
+    const result = applyPeriodSwap(withPeriod('2026-05', 119_937_630), '2026-06', snapshots);
+
+    expect(result.business.salesStartMonth).toBe('2026-06');
+    expect(result.business.salesMonth0).toBeNull();
+  });
+
+  it('restores remembered data when returning to a visited period', () => {
+    const snapshots = new Map<string, PeriodScopedData>();
+
+    // Leave Mei 2026 (119M) → stashes Mei, blanks Jun
+    applyPeriodSwap(withPeriod('2026-05', 119_937_630), '2026-06', snapshots);
+    // Return to Mei 2026 from the blank Jun
+    const back = applyPeriodSwap(withPeriod('2026-06', null), '2026-05', snapshots);
+
+    expect(back.business.salesStartMonth).toBe('2026-05');
+    expect(back.business.salesMonth0).toBe(119_937_630);
+  });
+
+  it('does not stash when the period is unchanged', () => {
+    const snapshots = new Map<string, PeriodScopedData>();
+    applyPeriodSwap(withPeriod('2026-05', 119_937_630), '2026-05', snapshots);
+    expect(snapshots.size).toBe(0);
+  });
+});
+
 // ── Integration tests for the hook ────────────────────────────────────────
 
 const mockMutate = vi.fn();
@@ -188,6 +221,34 @@ describe('useAutoSaveForm', () => {
 
     expect(result.current.manualData.competition.product1.keyword).toBe('sepatu');
     expect(result.current.manualData.competition.product1.marketPrice).toBeNull();
+  });
+
+  it('swaps period-scoped data on start-month change but keeps competition', () => {
+    const { result } = renderHook(() => useAutoSaveForm(defaultOptions));
+
+    act(() => {
+      result.current.handleFieldChange('business', 'salesStartMonth', '2026-05');
+      result.current.handleFieldChange('business', 'salesMonth0', 119_937_630);
+      result.current.handleFieldChange('competition', 'product1.keyword', 'sepatu');
+    });
+
+    expect(result.current.manualData.business.salesMonth0).toBe(119_937_630);
+
+    // Switch to a fresh period: sales blanks, competition stays.
+    act(() => {
+      result.current.handleFieldChange('business', 'salesStartMonth', '2026-06');
+    });
+
+    expect(result.current.manualData.business.salesStartMonth).toBe('2026-06');
+    expect(result.current.manualData.business.salesMonth0).toBeNull();
+    expect(result.current.manualData.competition.product1.keyword).toBe('sepatu');
+
+    // Return to Mei 2026: remembered sales value refills.
+    act(() => {
+      result.current.handleFieldChange('business', 'salesStartMonth', '2026-05');
+    });
+
+    expect(result.current.manualData.business.salesMonth0).toBe(119_937_630);
   });
 
   it('debounces save by 500ms on triggerSave', () => {

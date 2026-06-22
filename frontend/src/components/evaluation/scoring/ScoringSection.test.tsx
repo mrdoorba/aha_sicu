@@ -144,32 +144,6 @@ describe('ScoringSection', () => {
     });
   });
 
-  it('auto-triggers onGenerate when period changes and scoringResult exists', async () => {
-    const user = userEvent.setup();
-    const onGenerate = vi.fn();
-    render(
-      <ScoringSection
-        {...defaultProps}
-        onGenerate={onGenerate}
-        scoringResult={MOCK_RESULT}
-      />,
-    );
-
-    const periodOptions = generatePeriodOptions();
-    const secondPeriod = periodOptions[1];
-
-    // Find the period combobox (second one) and change it
-    const comboboxes = screen.getAllByRole('combobox');
-    await user.click(comboboxes[1]); // period selector
-    await user.click(screen.getByText(secondPeriod));
-
-    await waitFor(() => {
-      expect(onGenerate).toHaveBeenCalledWith(
-        expect.objectContaining({ period: secondPeriod }),
-      );
-    });
-  });
-
   it('does NOT auto-trigger onGenerate when scoringResult is null', () => {
     const onGenerate = vi.fn();
     // Render without scoringResult — dropdowns are not shown
