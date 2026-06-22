@@ -2523,7 +2523,13 @@ class TestMessageTemplatesG75:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        assert "CUSTOM CLOSING IN EMAIL" in result.email_body
+        # The custom closing template still drives the raw G75 field.
+        assert result.closing_message == "CUSTOM CLOSING IN EMAIL"
+        # email_body is now produced by the unified renderer, which prefers the
+        # i18n companion (closing_message_i18n) over the raw custom template —
+        # matching what every send/preview surface already displayed.
+        assert result.closing_message_i18n is not None
+        assert result.closing_message_i18n.key == "closing.potential"
 
 
 class TestMessageTemplateEndToEnd:
@@ -2544,7 +2550,13 @@ class TestMessageTemplateEndToEnd:
             store_name="S", period="P", brand_name="B",
             rules=rules,
         )
-        assert "E2E TEST PASS:" in result.email_body
+        # The custom message template still drives the raw G-column message.
+        op_cat = next(c for c in result.category_scores if c.category == "Kesehatan Operasional Toko")
+        assert any("E2E TEST PASS:" in r.message for r in op_cat.rows)
+        # email_body is now produced by the unified renderer, which prefers a
+        # row's i18n companion over the raw custom template when one exists —
+        # matching what every send/preview surface already displayed.
+        assert result.email_body != ""
 
     def test_default_rules_produce_identical_messages(self, full_manual_data, full_calculator_results):
         """Default rules with message templates produce identical output to rules=None."""

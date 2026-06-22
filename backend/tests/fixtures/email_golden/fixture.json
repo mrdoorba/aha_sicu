@@ -1,0 +1,337 @@
+{
+  "brand_name": "Kopi Kenangan",
+  "period": "Januari 2026",
+  "marketplace": "ID",
+  "score_breakdown": [
+    {
+      "category": "Kesehatan Operasional Toko",
+      "score": 2,
+      "max_score": 3,
+      "available": true,
+      "rows": [
+        {
+          "row": 1,
+          "metric": "Chat Performance",
+          "value": "95%",
+          "benchmark": ">90%",
+          "verdict": "✔️",
+          "message": "raw chat fallback",
+          "score": 1,
+          "message_i18n": { "key": "scoring.opRow1", "vars": { "value": "95%" } }
+        },
+        {
+          "row": 5,
+          "metric": "Photo Background",
+          "value": "ok",
+          "benchmark": "-",
+          "verdict": "✔️",
+          "message": "Foto produk sudah menggunakan background yang baik",
+          "score": 1
+        }
+      ]
+    },
+    {
+      "category": "Bisnis Analisis",
+      "score": 1,
+      "max_score": 2,
+      "available": true,
+      "rows": [
+        {
+          "row": 10,
+          "metric": "excluded business",
+          "value": 0,
+          "benchmark": "-",
+          "verdict": "❌",
+          "message": "excluded business message",
+          "score": 0
+        },
+        {
+          "row": 13,
+          "metric": "Sales",
+          "value": 100000000,
+          "benchmark": ">50jt",
+          "verdict": "✔️",
+          "message": "raw sales fallback",
+          "score": 1,
+          "message_i18n": { "key": "scoring.bizRow13", "vars": { "amount": "100jt" } }
+        },
+        {
+          "row": 20,
+          "metric": "Conversion Rate",
+          "value": 4.0,
+          "benchmark": ">3%",
+          "verdict": "✔️",
+          "message": "Conversion rate di atas benchmark",
+          "score": 1
+        }
+      ]
+    },
+    {
+      "category": "Tinjauan Pengunjung",
+      "score": 1,
+      "max_score": 2,
+      "available": true,
+      "rows": [
+        {
+          "row": 27,
+          "metric": "excluded visitor",
+          "value": 0,
+          "benchmark": "-",
+          "verdict": "❌",
+          "message": "excluded visitor message",
+          "score": 0
+        },
+        {
+          "row": 28,
+          "metric": "Visitors",
+          "value": 12000,
+          "benchmark": ">10rb",
+          "verdict": "✔️",
+          "message": "Jumlah pengunjung sehat",
+          "score": 1
+        },
+        {
+          "row": 29,
+          "metric": "Visitor Trend",
+          "value": "naik",
+          "benchmark": "-",
+          "verdict": "✔️",
+          "message": "Tren pengunjung meningkat",
+          "score": 1
+        }
+      ]
+    },
+    {
+      "category": "Promo Toko",
+      "score": 1,
+      "max_score": 3,
+      "available": true,
+      "rows": [
+        {
+          "row": 30,
+          "metric": "excluded promo",
+          "value": 0,
+          "benchmark": "-",
+          "verdict": "❌",
+          "message": "excluded promo 30",
+          "score": 0
+        },
+        {
+          "row": 31,
+          "metric": "Flash Sale",
+          "value": "aktif",
+          "benchmark": "-",
+          "verdict": "✔️",
+          "message": "Flash Sale: aktif",
+          "score": 1
+        },
+        {
+          "row": 41,
+          "metric": "Bundle Deal",
+          "value": "nonaktif",
+          "benchmark": "-",
+          "verdict": "❌",
+          "message": "Bundle Deal: nonaktif",
+          "score": 0
+        },
+        {
+          "row": 42,
+          "metric": "Promo Summary",
+          "value": "5/11",
+          "benchmark": "-",
+          "verdict": "❌",
+          "message": "Menggunakan 5 dari 11 alat promosi",
+          "score": 0
+        },
+        {
+          "row": 43,
+          "metric": "Promo Recommendation",
+          "value": "-",
+          "benchmark": "-",
+          "verdict": "❌",
+          "message": "Disarankan mengaktifkan lebih banyak alat promosi",
+          "score": 0
+        },
+        {
+          "row": 44,
+          "metric": "excluded promo 44",
+          "value": 0,
+          "benchmark": "-",
+          "verdict": "❌",
+          "message": "excluded promo 44",
+          "score": 0
+        }
+      ]
+    },
+    {
+      "category": "Jumlah Produk & Status Toko",
+      "score": 1,
+      "max_score": 1,
+      "available": true,
+      "rows": [
+        {
+          "row": 44,
+          "metric": "Product Count",
+          "value": 250,
+          "benchmark": ">100",
+          "verdict": "✔️",
+          "message": "Jumlah produk memadai (250)",
+          "score": 1
+        }
+      ]
+    },
+    {
+      "category": "Data Iklan",
+      "score": 2,
+      "max_score": 4,
+      "available": true,
+      "rows": [
+        {
+          "row": 49,
+          "metric": "excluded ads",
+          "value": 0,
+          "benchmark": "-",
+          "verdict": "❌",
+          "message": "excluded ads 49",
+          "score": 0
+        },
+        {
+          "row": 50,
+          "metric": "Ad Cost",
+          "value": 5000000,
+          "benchmark": "-",
+          "verdict": "✔️",
+          "message": "Biaya iklan: Rp5.000.000",
+          "score": 1
+        },
+        {
+          "row": 51,
+          "metric": "Ad Sales",
+          "value": 20000000,
+          "benchmark": "-",
+          "verdict": "✔️",
+          "message": "Penjualan dari iklan: Rp20.000.000",
+          "score": 1
+        },
+        {
+          "row": 52,
+          "metric": "ROAS",
+          "value": 4.0,
+          "benchmark": ">3",
+          "verdict": "✔️",
+          "message": "ROAS: 4.0",
+          "score": 1,
+          "message_i18n": { "key": "scoring.adsRoas", "vars": { "roas": "4.0" } }
+        },
+        {
+          "row": 53,
+          "metric": "Iklan check up",
+          "value": "see details",
+          "benchmark": "-",
+          "verdict": "❌",
+          "message": "RAW ADS KEYWORD OUTPUT TEXT",
+          "score": 0
+        },
+        {
+          "row": 54,
+          "metric": "excluded ads 54",
+          "value": 0,
+          "benchmark": "-",
+          "verdict": "❌",
+          "message": "excluded ads 54",
+          "score": 0
+        }
+      ]
+    },
+    {
+      "category": "Partisipasi Campaign",
+      "score": 0,
+      "max_score": 1,
+      "available": true,
+      "rows": [
+        {
+          "row": 56,
+          "metric": "excluded campaign",
+          "value": 0,
+          "benchmark": "-",
+          "verdict": "❌",
+          "message": "excluded campaign 56",
+          "score": 0
+        },
+        {
+          "row": 57,
+          "metric": "Campaign Participation",
+          "value": "rendah",
+          "benchmark": "-",
+          "verdict": "❌",
+          "message": "Partisipasi campaign rendah",
+          "score": 0
+        }
+      ]
+    },
+    {
+      "category": "Kompetisi TOP Produk",
+      "score": 1,
+      "max_score": 2,
+      "available": true,
+      "rows": [
+        {
+          "row": 58,
+          "metric": "Top Competitor",
+          "value": "Brand X",
+          "benchmark": "-",
+          "verdict": "❌",
+          "message": "raw competition fallback",
+          "score": 0,
+          "message_i18n": {
+            "key": "scoring.compRow58",
+            "vars": { "name": "Brand X", "link": "https://tokopedia.com/brand-x" }
+          }
+        },
+        {
+          "row": 60,
+          "metric": "Market Position",
+          "value": "2nd",
+          "benchmark": "-",
+          "verdict": "✔️",
+          "message": "Posisi pasar kedua",
+          "score": 1
+        }
+      ]
+    }
+  ],
+  "calculator_results": {
+    "ads_keyword": {
+      "output_text": "RAW ADS KEYWORD OUTPUT TEXT",
+      "details": {
+        "ak2_i18n": { "key": "ads.summary", "vars": { "active": "3", "paused": "1", "ended": "2", "unique_count": "6", "product_pct": "12.0%", "total_products": "50" } },
+        "ak3_i18n": { "key": "ads.typeBreakdown", "vars": { "shop": "1", "product": "5" } },
+        "ak4_i18n": [
+          { "key": "ads.flag.productLow", "vars": { "pct": "12.0%" } },
+          { "key": "ads.flag.activeLow", "vars": { "count": "3" } }
+        ],
+        "al2_i18n": {
+          "header": { "key": "ads.topProducts.header", "vars": { "count": "2" } },
+          "ads": [
+            { "key": "ads.topProducts.item", "vars": { "name": "Kopi Susu", "roas": "5.0" } },
+            { "key": "ads.topProducts.item", "vars": { "name": "Es Kopi", "roas": "3.5" } }
+          ]
+        },
+        "al3_i18n": { "key": "ads.bestKeyword", "vars": { "keyword": "kopi susu" } }
+      }
+    },
+    "scoring_summary": {
+      "conclusion": "raw conclusion fallback",
+      "conclusion_i18n": [
+        { "key": "conclusion.operationalGood", "vars": {} },
+        { "key": "conclusion.campaignLow", "vars": {} },
+        { "key": "conclusion.discountRange", "vars": { "min": "10", "max": "50" } }
+      ],
+      "marketing_estimation": "Estimasi biaya marketing saat ini sekitar 8% dari omzet.\n📌 Berpotensi menggunakan 'fake discount'",
+      "marketing_budget": "raw budget fallback",
+      "marketing_budget_i18n": { "key": "marketing.budgetRecommendation", "vars": { "pct": "3%" } },
+      "closing_message": "raw closing fallback",
+      "closing_message_i18n": { "key": "closing.potential", "vars": { "store_name": "Kopi Kenangan" } }
+    }
+  }
+}

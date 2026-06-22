@@ -4,9 +4,11 @@ import logging
 from datetime import date
 from pathlib import Path
 
+from typing import Literal
+
 from asyncpg import Connection
 from fastapi import APIRouter, Depends, Query
-from fastapi.responses import HTMLResponse
+from fastapi.responses import HTMLResponse, PlainTextResponse
 
 from app.config import settings
 from app.core.dependencies import get_current_user, get_db_connection, require_role
@@ -22,10 +24,12 @@ from app.modules.email.schemas import (
     DeleteEmailHistoryResponse,
     EmailHistoryItem,
     EmailHistoryListResponse,
+    PreviewEmailRequest,
     SendEmailRequest,
     SendEmailResponse,
     SendPlainEmailRequest,
 )
+from app.modules.email.layout import render_email, render_plain_email_message
 from app.modules.email.service import asset_to_data_uri, gmail_smtp_send, send_evaluation_email
 from app.modules.email.template import _get_strings, render_email_html
 from app.modules.evaluations.service import get_evaluation_detail
@@ -184,12 +188,14 @@ async def send_plain_email_endpoint(
     """Send a plain-text evaluation email via Gmail SMTP.
 
     Validates the evaluation exists (reusing get_evaluation_detail's access
-    control), sends the supplied subject/body verbatim, and logs the result
-    to email_history. In debug mode (gmail_smtp_enabled=False), writes the
-    body to /tmp instead of dialing SMTP. Independent of email_enabled (the
+    control), renders the plain-text body server-side from the unified email
+    renderer (the client-supplied body is ignored), sends it, and logs the
+    result to email_history. In debug mode (gmail_smtp_enabled=False), writes
+    the body to /tmp instead of dialing SMTP. Independent of email_enabled (the
     SendGrid path's gate).
     """
-    await get_evaluation_detail(conn=conn, evaluation_id=body.evaluation_id)
+    evaluation = await get_evaluation_detail(conn=conn, evaluation_id=body.evaluation_id)
+    body_text = render_plain_email_message(evaluation.model_dump(), language=body.language)
 
     recipients = [str(r) for r in body.recipients]
     cc = [str(c) for c in body.cc] if body.cc else None
@@ -200,7 +206,7 @@ async def send_plain_email_endpoint(
     if not settings.gmail_smtp_enabled:
         preview_path = Path(f"/tmp/email_preview_plain_{body.evaluation_id}.txt")
         preview_path.write_text(
-            f"Subject: {body.subject}\nTo: {recipient_str}\n\n{body.body}",
+            f"Subject: {body.subject}\nTo: {recipient_str}\n\n{body_text}",
             encoding="utf-8",
         )
         logger.info("Plain email preview saved to %s", preview_path)
@@ -213,7 +219,7 @@ async def send_plain_email_endpoint(
         try:
             message_id = await gmail_smtp_send(
                 subject=body.subject,
-                body_text=body.body,
+                body_text=body_text,
                 from_name=settings.email_from_name,
                 from_email=sender_email,
                 to_emails=recipients,
@@ -262,30 +268,38 @@ async def send_plain_email_endpoint(
     return result
 
 
-@router.get("/preview/{evaluation_id}")
+@router.get("/preview/{evaluation_id}", response_class=HTMLResponse, response_model=None)
 async def preview_email_endpoint(
     evaluation_id: int,
     current_user: dict = Depends(get_current_user),
     conn: Connection = Depends(get_db_connection),
     note: str | None = Query(default=None, max_length=500),
     language: str | None = Query(default=None),
-) -> HTMLResponse:
-    """Preview the evaluation email as rendered HTML.
+    format: Literal["html", "text"] = Query(default="html"),
+) -> HTMLResponse | PlainTextResponse:
+    """Preview the evaluation email as rendered HTML or plain text.
 
-    Returns the HTML that would be sent, with data URI images for browser
-    rendering. Protected by authentication (no debug guard needed).
-    Accepts an optional `language` query param to override the user's
-    default language for the preview.
+    Both formats come from the single :func:`render_email` renderer. ``html``
+    (the default) is the dashboard preview, with data URI images for browser
+    rendering. ``text`` is the plain-text body the evaluation page displays and
+    Gmail SMTP sends. Protected by authentication (no debug guard needed).
+    Accepts an optional `language` query param to override the user's default
+    language for the preview.
     """
     evaluation = await get_evaluation_detail(conn=conn, evaluation_id=evaluation_id)
     eval_dict = evaluation.model_dump()
+
+    lang = language or current_user.get("language", "id")
+
+    if format == "text":
+        text = render_email(eval_dict, language=lang, fmt="text")
+        return PlainTextResponse(content=text)
 
     # Convert header/footer assets to data URIs for browser rendering
     header_src = asset_to_data_uri("aha-e-mail-header-2026.png")
     footer_src = asset_to_data_uri("aha-e-mail-footer-2026.png")
     syb_src = asset_to_data_uri("syb-color-3.png")
 
-    lang = language or current_user.get("language", "id")
     html = render_email_html(
         evaluation_data=eval_dict,
         chart_src=_chart_placeholder_svg(lang),
@@ -296,6 +310,52 @@ async def preview_email_endpoint(
         language=lang,
     )
 
+    return HTMLResponse(content=html)
+
+
+@router.post("/preview", response_class=PlainTextResponse, response_model=None)
+async def preview_email_from_result_endpoint(
+    body: PreviewEmailRequest,
+    current_user: dict = Depends(get_current_user),
+    language: str = Query(default="id"),
+    format: Literal["html", "text"] = Query(default="text"),
+) -> HTMLResponse | PlainTextResponse:
+    """Render an email preview from a posted, in-memory ScoringResult payload.
+
+    Stateless: there is no DB lookup, so the pre-save scoring screen can
+    re-render its just-computed result in any language. Reuses the single
+    :func:`render_email` renderer — no second rendering path.
+    """
+    result = {
+        "brand_name": body.brand_name,
+        "period": body.period,
+        "score_breakdown": body.category_scores,
+        "calculator_results": {
+            **body.calculator_results,
+            "scoring_summary": {
+                "conclusion": body.conclusion,
+                "conclusion_i18n": body.conclusion_i18n,
+                "marketing_estimation": body.marketing_estimation,
+                "marketing_budget": body.marketing_budget,
+                "marketing_budget_i18n": body.marketing_budget_i18n,
+                "closing_message": body.closing_message,
+                "closing_message_i18n": body.closing_message_i18n,
+            },
+        },
+    }
+
+    if format == "text":
+        return PlainTextResponse(content=render_email(result, language=language, fmt="text"))
+
+    html = render_email(
+        result,
+        language=language,
+        fmt="html",
+        chart_src=_chart_placeholder_svg(language),
+        header_src=asset_to_data_uri("aha-e-mail-header-2026.png"),
+        footer_src=asset_to_data_uri("aha-e-mail-footer-2026.png"),
+        syb_src=asset_to_data_uri("syb-color-3.png"),
+    )
     return HTMLResponse(content=html)
 
 

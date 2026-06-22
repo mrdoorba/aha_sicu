@@ -277,9 +277,10 @@ export interface paths {
          * @description Send a plain-text evaluation email via Gmail SMTP.
          *
          *     Validates the evaluation exists (reusing get_evaluation_detail's access
-         *     control), sends the supplied subject/body verbatim, and logs the result
-         *     to email_history. In debug mode (gmail_smtp_enabled=False), writes the
-         *     body to /tmp instead of dialing SMTP. Independent of email_enabled (the
+         *     control), renders the plain-text body server-side from the unified email
+         *     renderer (the client-supplied body is ignored), sends it, and logs the
+         *     result to email_history. In debug mode (gmail_smtp_enabled=False), writes
+         *     the body to /tmp instead of dialing SMTP. Independent of email_enabled (the
          *     SendGrid path's gate).
          */
         post: operations["send_plain_email_endpoint_api_v1_email_send_plain_post"];
@@ -298,16 +299,42 @@ export interface paths {
         };
         /**
          * Preview Email Endpoint
-         * @description Preview the evaluation email as rendered HTML.
+         * @description Preview the evaluation email as rendered HTML or plain text.
          *
-         *     Returns the HTML that would be sent, with data URI images for browser
-         *     rendering. Protected by authentication (no debug guard needed).
-         *     Accepts an optional `language` query param to override the user's
-         *     default language for the preview.
+         *     Both formats come from the single :func:`render_email` renderer. ``html``
+         *     (the default) is the dashboard preview, with data URI images for browser
+         *     rendering. ``text`` is the plain-text body the evaluation page displays and
+         *     Gmail SMTP sends. Protected by authentication (no debug guard needed).
+         *     Accepts an optional `language` query param to override the user's default
+         *     language for the preview.
          */
         get: operations["preview_email_endpoint_api_v1_email_preview__evaluation_id__get"];
         put?: never;
         post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/email/preview": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /**
+         * Preview Email From Result Endpoint
+         * @description Render an email preview from a posted, in-memory ScoringResult payload.
+         *
+         *     Stateless: there is no DB lookup, so the pre-save scoring screen can
+         *     re-render its just-computed result in any language. Reuses the single
+         *     :func:`render_email` renderer — no second rendering path.
+         */
+        post: operations["preview_email_from_result_endpoint_api_v1_email_preview_post"];
         delete?: never;
         options?: never;
         head?: never;
@@ -1425,6 +1452,68 @@ export interface components {
             /** Detail */
             detail?: components["schemas"]["ValidationError"][];
         };
+        /**
+         * PreviewEmailRequest
+         * @description Stateless email-preview payload — a ScoringResult-shaped, in-memory result.
+         *
+         *     Used by the pre-save scoring screen, which has no saved evaluation to fetch.
+         *     The fields mirror the score endpoint's response; the router maps them into
+         *     the renderer's evaluation-dict shape and feeds the single ``render_email``.
+         *     Rows and i18n companions are accepted as permissive dicts (the renderer
+         *     reads them positionally as ``{"key", "vars"}`` / row dicts).
+         */
+        PreviewEmailRequest: {
+            /** Category Scores */
+            category_scores?: {
+                [key: string]: unknown;
+            }[];
+            /**
+             * Conclusion
+             * @default
+             */
+            conclusion: string;
+            /** Conclusion I18N */
+            conclusion_i18n?: {
+                [key: string]: unknown;
+            }[] | null;
+            /**
+             * Marketing Estimation
+             * @default
+             */
+            marketing_estimation: string;
+            /**
+             * Marketing Budget
+             * @default
+             */
+            marketing_budget: string;
+            /** Marketing Budget I18N */
+            marketing_budget_i18n?: {
+                [key: string]: unknown;
+            } | null;
+            /**
+             * Closing Message
+             * @default
+             */
+            closing_message: string;
+            /** Closing Message I18N */
+            closing_message_i18n?: {
+                [key: string]: unknown;
+            } | null;
+            /** Calculator Results */
+            calculator_results?: {
+                [key: string]: unknown;
+            };
+            /**
+             * Brand Name
+             * @default
+             */
+            brand_name: string;
+            /**
+             * Period
+             * @default
+             */
+            period: string;
+        };
         /** ProcessRequest */
         ProcessRequest: {
             /** Upload Id */
@@ -1767,6 +1856,10 @@ export interface components {
         /**
          * SendPlainEmailRequest
          * @description Request body for sending a plain-text evaluation email via Gmail SMTP.
+         *
+         *     The email body is rendered server-side from ``evaluation_id`` + ``language``
+         *     by the unified email renderer; any client-supplied ``body`` is ignored
+         *     (kept optional for backward compatibility with older clients).
          */
         SendPlainEmailRequest: {
             /** Evaluation Id */
@@ -1779,8 +1872,16 @@ export interface components {
             bcc?: string[];
             /** Subject */
             subject: string;
-            /** Body */
-            body: string;
+            /**
+             * Body
+             * @description Ignored — body is rendered server-side
+             */
+            body?: string | null;
+            /**
+             * Language
+             * @default id
+             */
+            language: string;
         };
         /** SignedUrlRequest */
         SignedUrlRequest: {
@@ -2490,6 +2591,7 @@ export interface operations {
             query?: {
                 note?: string | null;
                 language?: string | null;
+                format?: "html" | "text";
             };
             header?: never;
             path: {
@@ -2505,7 +2607,43 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": unknown;
+                    "text/html": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    preview_email_from_result_endpoint_api_v1_email_preview_post: {
+        parameters: {
+            query?: {
+                language?: string;
+                format?: "html" | "text";
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["PreviewEmailRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "text/plain": string;
                 };
             };
             /** @description Validation Error */

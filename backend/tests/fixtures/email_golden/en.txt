@@ -1,0 +1,65 @@
+📊 Store Operational Performance:
+scoring.opRow1
+Foto produk sudah menggunakan background yang baik
+
+📈 Store Sales Performance:
+scoring.bizRow13
+Conversion rate di atas benchmark
+
+👥 Visitor Overview:
+Jumlah pengunjung sehat
+Tren pengunjung meningkat
+
+🏷️ Promo Tool Usage:
+Flash Sale: aktif
+Bundle Deal: nonaktif
+Menggunakan 5 dari 11 alat promosi
+Disarankan mengaktifkan lebih banyak alat promosi
+
+📦 Products & Store Status:
+Jumlah produk memadai (250)
+
+📣 Advertising Performance:
+Biaya iklan: Rp5.000.000
+Penjualan dari iklan: Rp20.000.000
+scoring.adsRoas
+• Total Ads: 3 Active, 1 Paused and 2 Ended.
+• Involving 6 (12.0%) products out of total products: 50.
+
+• Active Ad Types Used:
+  {{semua_total}} Auto Product Ads All Placement.
+  {{toko_total}} Store Ads ({{toko_auto}} Auto & {{toko_manual}} Manual).
+
+📌 Product participation in ads is not optimal (recommended >50%).
+📌 Number of active ads is not optimal (recommended >50%).
+
+ads.topProducts.header
+ads.topProducts.item
+ads.topProducts.item
+
+ads.bestKeyword
+
+🎯 Campaign Participation:
+Partisipasi campaign rendah
+
+🏆 TOP Product Competition:
+scoring.compRow58
+↪https://tokopedia.com/brand-x
+Posisi pasar kedua
+
+📋 Conclusion:
+- Store operational quality is already fairly good
+- Shopee campaign participation is not yet optimal.
+- Discount range: {{range}}
+
+📌 Estimated marketing cost percentage now:
+Estimasi biaya marketing saat ini sekitar 8% dari omzet.
+📌 Potentially using 'fake discount'
+
+💡 Minimum marketing budget needed by AHA to improve store sales performance = 3%
+
+We see that the potential of Store Kopi Kenangan has not yet been maximized. Please click the following link to schedule a deeper consultation session to find the right solution for your business.
+
+cal-bd2.ahacommerce.net
+
+We hope what we have shared can be beneficial.

@@ -74,6 +74,14 @@ export const ScoreOverview = ({ score, scoreBreakdown }: ScoreOverviewProps) => 
               {t('scoreOverview.verdict')}
             </Badge>
 
+            <div className="flex items-center justify-between gap-4 w-full max-w-xs rounded-xl border border-primary/15 bg-primary/[0.07] px-4 py-3">
+              <span className="text-xs font-bold leading-tight text-foreground">{t('evaluationDetail.finalScore')}</span>
+              <span className="text-3xl font-black tabular-nums leading-none text-primary">
+                {Math.round(score)}
+                <span className="text-sm font-semibold text-muted-foreground">/100</span>
+              </span>
+            </div>
+
           </div>
 
           {/* Right: Radial Ring Chart */}

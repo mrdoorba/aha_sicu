@@ -167,6 +167,6 @@ describe('EvaluationForms Integration', () => {
   it('keeps calculator results and final score placeholders', () => {
     renderWithProviders();
     expect(screen.getByText('Calculator Results')).toBeInTheDocument();
-    expect(screen.getByText('Skor Akhir')).toBeInTheDocument();
+    expect(screen.getByText('AHA Compatibility Score')).toBeInTheDocument();
   });
 });

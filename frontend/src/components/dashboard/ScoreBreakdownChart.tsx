@@ -43,7 +43,7 @@ export const ScoreBreakdownChart = forwardRef<HTMLDivElement, ScoreBreakdownChar
     <Card className="border-none shadow-xl bg-card overflow-hidden">
       <CardContent className="p-8">
         <div className="flex items-center gap-2 mb-6">
-          <span className="text-xs font-black text-primary/40 tracking-widest">03</span>
+          <span className="text-xs font-black text-primary/40 tracking-widest">04</span>
           <h2 className="text-lg font-bold tracking-tight text-foreground">{t('presentation.section.scoreBreakdown')}</h2>
         </div>
 

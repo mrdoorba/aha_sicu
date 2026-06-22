@@ -413,18 +413,18 @@ class TestStringsAndCategoryMap:
     def test_migrated_email_strings_fidelity(self) -> None:
         """Spot-check that migrated locale values match original hardcoded values."""
         id_s = _get_strings("id")
-        assert id_s["score_overview"] == "Laporan Evaluasi Partner"
+        assert id_s["score_overview"] == "Laporan Evaluasi Brand"
         assert id_s["marketing_budget"] == "Est. Biaya Marketing"
         en_s = _get_strings("en")
-        assert en_s["score_overview"] == "Partner Evaluation Report"
+        assert en_s["score_overview"] == "Brand Evaluation Report"
         assert en_s["marketing_budget"] == "Est. Marketing Budget"
         th_s = _get_strings("th")
         assert th_s["score_overview"] is not None  # Thai chars, just verify present
 
     def test_get_strings_returns_key_name_when_locale_missing(self, tmp_path: object, monkeypatch: pytest.MonkeyPatch) -> None:
         """_get_strings falls back to key name when locale file unavailable."""
-        import app.modules.email.template as tpl
-        monkeypatch.setattr(tpl, "_LOCALES_DIR", tmp_path)
+        import app.modules.email.layout as layout
+        monkeypatch.setattr(layout, "_LOCALES_DIR", tmp_path)
         _load_locale.cache_clear()
         s = _get_strings("id")
         assert s["score_overview"] == "score_overview"  # key name as fallback
@@ -1000,7 +1000,9 @@ class TestCustomNote:
             note="Test note positioning",
         )
         note_pos = html.find("Test note positioning")
-        score_pos = html.find(_get_strings("id")["score_overview"])
+        # The score-overview section title now matches the email's main title
+        # ("Laporan Evaluasi Brand") too, so the section is the *last* occurrence.
+        score_pos = html.rfind(_get_strings("id")["score_overview"])
         assert note_pos < score_pos, "Note should appear before Score Overview"
 
 

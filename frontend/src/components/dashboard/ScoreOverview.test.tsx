@@ -72,9 +72,10 @@ describe('ScoreOverview – Partner Score', () => {
             />
         );
 
-        // Assert — partner score (75) not weighted score (20)
+        // Assert — headline is the partner score (75), ratio-based
         expect(screen.getAllByText('75').length).toBeGreaterThanOrEqual(1);
-        expect(screen.queryByText('20')).not.toBeInTheDocument();
+        // final_score (20) now shown separately as the AHA Compatibility Score
+        expect(screen.getByText('20')).toBeInTheDocument();
     });
 
     it('displays ✔️/❌ counts', () => {
