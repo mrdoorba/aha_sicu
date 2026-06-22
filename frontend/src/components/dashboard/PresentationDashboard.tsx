@@ -119,9 +119,9 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
         calculatorResults={evaluation.calculator_results}
       />
 
-      <ScoreBreakdownChart ref={chartRef} scoreBreakdown={scoreBreakdown} />
-
       <DataIntelligence calculatorResults={evaluation.calculator_results} marketplace={evaluation.marketplace} />
+
+      <ScoreBreakdownChart ref={chartRef} scoreBreakdown={scoreBreakdown} />
 
       <KesimpulanSection calculatorResults={evaluation.calculator_results} />
 
