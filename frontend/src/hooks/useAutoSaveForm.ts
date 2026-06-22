@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useSaveEvaluationInputs, type CategoryType } from './useEvaluation';
 import type { ManualData, CompetitionData } from '../components/evaluation/forms/formConfig';
-import { buildManualData, mergeWithOverrides } from './manualDataUtils';
+import { buildManualData, mergeWithOverrides, applyPeriodSwap, type PeriodScopedData } from './manualDataUtils';
 import { toRecord } from '../lib/typeGuards';
 
 /** Type-safe keys of ManualData (excluding competition which has nested structure) */
@@ -52,6 +52,10 @@ export function useAutoSaveForm({ brandId, categoryType, initialData, marketplac
   useEffect(() => { manualDataRef.current = manualData; }, [manualData]);
 
   const [localOverrides, setLocalOverrides] = useState<Partial<ManualData>>({});
+
+  // In-memory per-period memory: start-month → its period-scoped data. Lets the
+  // form remember and refill data when the user switches periods within a session.
+  const periodSnapshotsRef = useRef<Map<string, PeriodScopedData>>(new Map());
 
   const mergedData = mergeWithOverrides(manualData, localOverrides);
 
@@ -105,6 +109,17 @@ export function useAutoSaveForm({ brandId, categoryType, initialData, marketplac
     (category: string, key: string, value: number | string | null) => {
       setLocalOverrides((prev) => {
         const base = manualDataRef.current;
+
+        // Changing the sales-start month swaps every period-scoped section to
+        // that period's data (remembered in-session), leaving competition and
+        // marketplace/category untouched.
+        if (category === 'business' && key === 'salesStartMonth') {
+          const newPeriod = typeof value === 'string' && value ? value : null;
+          const current = mergeWithOverrides(base, prev);
+          const target = applyPeriodSwap(current, newPeriod, periodSnapshotsRef.current);
+          return { ...prev, ...target };
+        }
+
         const updated = { ...prev };
 
         if (category === 'competition' && key.includes('.')) {
