@@ -67,6 +67,14 @@ export const ScoreOverview = ({ score, scoreBreakdown }: ScoreOverviewProps) => 
             )}
 
             <div className="flex flex-wrap items-center justify-center gap-3 md:justify-start">
+              <div className="inline-flex items-baseline gap-2 rounded-full border border-primary/15 bg-primary/[0.07] px-4 py-2">
+                <span className="text-xs font-bold text-foreground">{t('scoreOverview.compatibility')}</span>
+                <span className="text-lg font-black tabular-nums leading-none text-primary">
+                  {Math.round(score)}
+                  <span className="text-xs font-semibold text-muted-foreground">/100</span>
+                </span>
+              </div>
+
               <Badge
                 className="flex items-center gap-2 px-5 py-2 text-sm font-bold tracking-wide border bg-primary/10 text-primary border-primary/20"
                 variant="outline"
@@ -74,14 +82,6 @@ export const ScoreOverview = ({ score, scoreBreakdown }: ScoreOverviewProps) => 
                 <TrendingUp className="size-4" />
                 {t('scoreOverview.verdict')}
               </Badge>
-
-              <div className="inline-flex items-baseline gap-2 rounded-full border border-primary/15 bg-primary/[0.07] px-4 py-2">
-                <span className="text-xs font-bold text-foreground">{t('evaluationDetail.finalScore')}</span>
-                <span className="text-lg font-black tabular-nums leading-none text-primary">
-                  {Math.round(score)}
-                  <span className="text-xs font-semibold text-muted-foreground">/100</span>
-                </span>
-              </div>
             </div>
 
           </div>

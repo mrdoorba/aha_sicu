@@ -608,6 +608,7 @@
   "scoreBreakdown.header.category": "Category",
   "scoreBreakdown.header.max": "Max",
   "scoreBreakdown.header.score": "Score",
+  "scoreOverview.compatibility": "AHA Compatibility",
   "scoreOverview.scoreLabel": "Score",
   "scoreOverview.verdict": "Performance can be Improved",
   "scorePanel.notAvailable": "N/A",
