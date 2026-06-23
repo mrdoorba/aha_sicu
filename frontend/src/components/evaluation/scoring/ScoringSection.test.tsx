@@ -36,6 +36,7 @@ const defaultProps = {
   categoryType: 'fashion' as string | null,
   storeName: 'Test Store',
   brandName: 'Test Brand',
+  salesStartMonth: null as string | null,
 };
 
 describe('ScoringSection', () => {

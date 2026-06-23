@@ -7,7 +7,7 @@ import { FinalScoreDisplay } from './FinalScoreDisplay';
 import { ScoreBreakdown } from './ScoreBreakdown';
 import { EmailOutput } from './EmailOutput';
 import { VerdictSelector } from './VerdictSelector';
-import { generatePeriodOptions } from './periodOptions';
+import { periodLabelFromMonth } from './periodOptions';
 import type { ScoringResult, ScoringStep } from '../../../hooks/useScoring';
 
 interface ScoringSectionProps {
@@ -27,6 +27,7 @@ interface ScoringSectionProps {
   brandName: string;
   scoringStep?: ScoringStep;
   calculatorResults?: Record<string, unknown>;
+  salesStartMonth: string | null;
 }
 
 export const ScoringSection = ({
@@ -40,11 +41,12 @@ export const ScoringSection = ({
   brandName,
   scoringStep = 'idle',
   calculatorResults,
+  salesStartMonth,
 }: ScoringSectionProps) => {
   const { t } = useTranslation();
   const [verdict, setVerdict] = useState('✔️');
-  // ponytail: period was a redundant selector; always file under the current month.
-  const period = generatePeriodOptions()[0];
+  // Period follows the selected "Periode Data" (salesStartMonth), not "now".
+  const period = periodLabelFromMonth(salesStartMonth);
 
   const canGenerate = !!categoryType;
   const initialMount = useRef(true);

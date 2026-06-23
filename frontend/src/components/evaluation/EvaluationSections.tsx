@@ -307,6 +307,7 @@ export const EvaluationSections = ({
             brandName={brandName}
             scoringStep={scoringStep}
             calculatorResults={calculatorResults}
+            salesStartMonth={manualData.business?.salesStartMonth ?? null}
           />
         </section>
 
