@@ -67,19 +67,6 @@ def test_send_email_returns_200_when_authenticated_with_valid_request(client, au
     assert data["message_id"] == "test-msg-id"
 
 
-def test_send_email_returns_401_when_no_auth_token(client):
-    """Unauthenticated request is rejected."""
-    response = client.post(
-        "/api/v1/email/send",
-        json={
-            "evaluation_id": 1,
-            "recipients": ["recipient@example.com"],
-            "language": "id",
-        },
-    )
-    assert response.status_code == 401
-
-
 def test_send_email_returns_422_when_invalid_recipient_domain(client, auth_headers):
     """Domain validation rejects recipients outside allowed domains."""
     user, headers, auth_ctx = auth_headers("admin")
@@ -185,12 +172,6 @@ def test_preview_email_returns_200_when_valid_evaluation(client, auth_headers):
     assert response.status_code == 200
     assert "text/html" in response.headers["content-type"]
     assert "Preview" in response.text
-
-
-def test_preview_email_returns_401_when_no_auth_token(client):
-    """Unauthenticated preview request is rejected."""
-    response = client.get("/api/v1/email/preview/1")
-    assert response.status_code == 401
 
 
 def test_preview_email_returns_404_when_evaluation_not_found(client, auth_headers):

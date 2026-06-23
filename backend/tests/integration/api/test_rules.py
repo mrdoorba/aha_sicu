@@ -121,14 +121,6 @@ def _setup_mocks(mock_verify, mock_db, mock_user_queries, mock_rules_db, user):
     return mock_rules_conn
 
 
-def test_get_rules_without_token(client):
-    """Test GET /api/v1/rules returns 401 without Authorization header."""
-    response = client.get("/api/v1/rules")
-    assert response.status_code == 401
-    data = response.json()
-    assert data["code"] == "AUTH_TOKEN_MISSING"
-
-
 def test_get_rules_leader_role_allowed(client):
     """Test GET /api/v1/rules returns 200 for leader role."""
     with (

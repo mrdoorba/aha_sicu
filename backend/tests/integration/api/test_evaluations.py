@@ -43,12 +43,6 @@ def _setup_auth_mocks(mock_verify, mock_db, mock_user_queries):
     mock_user_queries.update_last_login = AsyncMock()
 
 
-def test_get_evaluation_without_token(client):
-    """Test GET /api/v1/evaluations/brands/1 returns 401 without token."""
-    response = client.get("/api/v1/evaluations/brands/1")
-    assert response.status_code == 401
-
-
 def test_get_evaluation_new_state(client):
     """Test GET returns null state when no evaluation exists."""
     with (

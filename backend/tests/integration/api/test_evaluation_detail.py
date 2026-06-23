@@ -195,12 +195,6 @@ def test_get_evaluation_detail_not_found(client):
         assert data["detail"] == "Evaluation not found"
 
 
-def test_get_evaluation_detail_unauthenticated(client):
-    """Test unauthenticated request returns 401."""
-    response = client.get("/api/v1/evaluations/42")
-    assert response.status_code == 401
-
-
 def test_get_evaluation_detail_has_brand_raw_data(client):
     """Test brand_raw_data maps VP sheet keys to clean keys."""
     with (

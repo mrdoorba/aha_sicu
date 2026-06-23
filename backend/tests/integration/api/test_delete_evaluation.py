@@ -158,9 +158,3 @@ def test_delete_evaluation_cleans_up_email_history(client):
         mock_ehq.delete_email_history_by_ids.assert_awaited_once()
         _, kwargs = mock_ehq.delete_email_history_by_ids.await_args
         assert kwargs["ids"] == [10, 11]
-
-
-def test_delete_evaluation_unauthorized(client):
-    """Test unauthenticated request returns 401."""
-    response = client.delete("/api/v1/evaluations/42")
-    assert response.status_code == 401

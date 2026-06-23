@@ -70,14 +70,6 @@ def _auth_mocks():
     )
 
 
-def test_post_sync_requires_authentication(client):
-    """POST /api/v1/sync returns 401 without Authorization header."""
-    response = client.post("/api/v1/sync")
-    assert response.status_code == 401
-    data = response.json()
-    assert data["code"] == "AUTH_TOKEN_MISSING"
-
-
 def test_post_sync_returns_200_with_sync_status(client):
     """POST /api/v1/sync returns 200 with SyncStatusResponse after sync completes."""
     with (

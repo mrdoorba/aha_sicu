@@ -3,11 +3,43 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
+import pytest
 
 
-def test_me_without_token(client):
-    """Test /api/v1/me returns 401 without Authorization header."""
-    response = client.get("/api/v1/me")
+# Every endpoint that requires authentication. One parametrized test guards the
+# whole surface — a new protected route only needs a line here, not a bespoke
+# per-file "without_token" copy.
+PROTECTED_ENDPOINTS = [
+    ("GET", "/api/v1/me"),
+    ("PATCH", "/api/v1/me/language"),
+    ("GET", "/api/v1/brands"),
+    ("GET", "/api/v1/brands/1"),
+    ("GET", "/api/v1/accounts"),
+    ("GET", "/api/v1/rules"),
+    ("GET", "/api/v1/sync/status"),
+    ("POST", "/api/v1/sync"),
+    ("GET", "/api/v1/evaluations/42"),
+    ("DELETE", "/api/v1/evaluations/42"),
+    ("GET", "/api/v1/evaluations/brands/1"),
+    ("POST", "/api/v1/evaluations/brands/1/score"),
+    ("POST", "/api/v1/evaluations/brands/1/calculators/ads_keyword"),
+    ("POST", "/api/v1/evaluations/brands/1/calculators/discount"),
+    ("POST", "/api/v1/evaluations/brands/1/calculators/top_sku"),
+    ("POST", "/api/v1/upload/signed-url"),
+    ("GET", "/api/v1/upload/brands/123"),
+    ("POST", "/api/v1/email/send"),
+    ("POST", "/api/v1/email/send-plain"),
+    ("GET", "/api/v1/email/preview/1"),
+]
+
+
+@pytest.mark.parametrize("method,path", PROTECTED_ENDPOINTS)
+def test_protected_endpoint_rejects_missing_token(client, method, path):
+    """Every protected endpoint returns 401 AUTH_TOKEN_MISSING without a token.
+
+    Auth is enforced before request-body validation, so no payload is needed.
+    """
+    response = client.request(method, path)
     assert response.status_code == 401
     data = response.json()
     assert data["code"] == "AUTH_TOKEN_MISSING"

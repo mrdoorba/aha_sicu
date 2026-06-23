@@ -5,16 +5,6 @@ from unittest.mock import AsyncMock, patch
 
 
 
-def test_sync_status_without_token(client):
-    """Test /api/v1/sync/status returns 401 without Authorization header."""
-    response = client.get("/api/v1/sync/status")
-    assert response.status_code == 401
-    data = response.json()
-    assert data["code"] == "AUTH_TOKEN_MISSING"
-    assert data["detail"] == "Authorization header required"
-    assert "timestamp" in data
-
-
 def test_sync_status_with_invalid_token(client):
     """Test /api/v1/sync/status returns 401 with invalid token (both Firebase and OIDC fail)."""
     from app.core.exceptions import AuthException

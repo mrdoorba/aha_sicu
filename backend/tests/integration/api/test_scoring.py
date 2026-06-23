@@ -139,15 +139,6 @@ def _setup_scoring_mocks(mock_bq, mock_eq, mock_cq, mock_rq,
     mock_rq.get_rules_by_template_and_marketplace = AsyncMock(return_value=rules_row if rules_row is not None else SAMPLE_RULES_ROW)
 
 
-def test_score_without_token(client):
-    """Test POST /score returns 401 without auth token."""
-    response = client.post(
-        "/api/v1/evaluations/brands/1/score",
-        json=SCORING_REQUEST,
-    )
-    assert response.status_code == 401
-
-
 def test_score_with_full_data(client):
     """Test POST /score returns complete scoring result with full data."""
     with (

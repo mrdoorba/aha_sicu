@@ -201,12 +201,6 @@ def _setup_auth_mocks(mock_verify, mock_db, mock_user_queries):
     mock_user_queries.update_last_login = AsyncMock()
 
 
-def test_run_ads_keyword_calculator_without_token(client):
-    """POST calculator endpoint returns 401 without token."""
-    response = client.post("/api/v1/evaluations/brands/1/calculators/ads_keyword")
-    assert response.status_code == 401
-
-
 def test_run_ads_keyword_calculator_success(client):
     """POST returns calculator result when all data present."""
     with (
@@ -375,12 +369,6 @@ def test_run_ads_keyword_upsert_on_recalculation(client):
 # ---------------------------------------------------------------------------
 # Discount Calculator integration tests
 # ---------------------------------------------------------------------------
-
-
-def test_run_discount_calculator_without_token(client):
-    """POST discount calculator returns 401 without token."""
-    response = client.post("/api/v1/evaluations/brands/1/calculators/discount")
-    assert response.status_code == 401
 
 
 def test_run_discount_calculator_success(client):
@@ -642,12 +630,6 @@ def test_run_discount_string_parsed_data(client):
 # ---------------------------------------------------------------------------
 # Top SKU Calculator integration tests
 # ---------------------------------------------------------------------------
-
-
-def test_run_top_sku_calculator_without_token(client):
-    """POST top_sku calculator returns 401 without token."""
-    response = client.post("/api/v1/evaluations/brands/1/calculators/top_sku")
-    assert response.status_code == 401
 
 
 def test_run_top_sku_calculator_success(client):
