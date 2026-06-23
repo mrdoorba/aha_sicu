@@ -501,7 +501,11 @@ function ManualInputsSection({
   t: (key: string, options?: Record<string, unknown>) => string;
   marketplace?: string;
 }) {
-  const categories = Object.entries(inputs);
+  // manual_inputs is JSONB — Postgres does not preserve key order, so sort by
+  // the canonical form order (MANUAL_DATA_FIELDS) to match the evaluation page.
+  const order = MANUAL_DATA_FIELDS.map((c) => c.key);
+  const rank = (k: string) => (order.indexOf(k) + 1) || 99;
+  const categories = Object.entries(inputs).sort(([a], [b]) => rank(a) - rank(b));
   if (categories.length === 0) {
     return <p className="text-muted-foreground">{t('evaluationDetail.noManualInputs')}</p>;
   }
@@ -838,6 +842,16 @@ export function EvaluationDetailPage() {
               </Card>
             </div>
 
+            {/* Manual Inputs */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="text-lg">{t('evaluationDetail.manualInputs')}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ManualInputsSection inputs={evaluation.manual_inputs} t={t} marketplace={evaluation.marketplace} />
+              </CardContent>
+            </Card>
+
             {/* Calculator Results */}
             <Card>
               <CardHeader>
@@ -885,16 +899,6 @@ export function EvaluationDetailPage() {
                   calculatorResults={evaluation.calculator_results}
                   t={t}
                 />
-              </CardContent>
-            </Card>
-
-            {/* Manual Inputs */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="text-lg">{t('evaluationDetail.manualInputs')}</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ManualInputsSection inputs={evaluation.manual_inputs} t={t} marketplace={evaluation.marketplace} />
               </CardContent>
             </Card>
 
