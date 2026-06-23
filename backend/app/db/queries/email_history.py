@@ -1,28 +1,10 @@
 """Email history database queries."""
 
-from datetime import date, datetime
+from datetime import date
 
 from asyncpg import Connection
 
 from app.db.queries.utils import FilterBuilder, escape_like, fetch_all, fetch_one, paginate
-
-_VALID_STATUSES: frozenset[str] = frozenset({
-    "sent", "failed", "delivered", "bounced", "deferred",
-    "opened", "clicked", "spam", "blocked", "invalid",
-})
-
-_STATUS_PRIORITY: dict[str, int] = {
-    "sent": 1,
-    "deferred": 2,
-    "delivered": 3,
-    "opened": 4,
-    "clicked": 5,
-    "bounced": 10,
-    "spam": 10,
-    "blocked": 10,
-    "invalid": 10,
-    "failed": 10,
-}
 
 _VALID_SORT_COLUMNS: frozenset[str] = frozenset({"sent_at", "recipient_email", "subject", "status"})
 _VALID_SORT_ORDERS: frozenset[str] = frozenset({"asc", "desc"})
@@ -137,57 +119,6 @@ async def list_email_history(
         "limit": limit,
         "pages": pages,
     }
-
-
-async def update_email_status_by_message_id(
-    conn: Connection,
-    *,
-    message_id: str,
-    new_status: str,
-    event_at: datetime,
-    error_detail: str | None = None,
-) -> bool:
-    """Atomically update email status if the new status has higher priority.
-
-    Uses a single UPDATE with a CASE-based priority comparison in the WHERE
-    clause to prevent TOCTOU race conditions under concurrent webhooks.
-
-    Returns True if a row was updated, False otherwise.
-    """
-    if new_status not in _VALID_STATUSES:
-        raise ValueError(f"Invalid status: {new_status}")
-
-    new_priority = _STATUS_PRIORITY[new_status]
-
-    result = await conn.execute(
-        """
-        UPDATE email_history
-        SET status = $2,
-            last_event_at = $3,
-            error_detail = COALESCE($4, error_detail)
-        WHERE message_id = $1
-          AND (CASE status
-                WHEN 'sent' THEN 1
-                WHEN 'deferred' THEN 2
-                WHEN 'delivered' THEN 3
-                WHEN 'opened' THEN 4
-                WHEN 'clicked' THEN 5
-                WHEN 'bounced' THEN 10
-                WHEN 'spam' THEN 10
-                WHEN 'blocked' THEN 10
-                WHEN 'invalid' THEN 10
-                WHEN 'failed' THEN 10
-                ELSE 0
-              END) < $5
-        """,
-        message_id,
-        new_status,
-        event_at,
-        error_detail,
-        new_priority,
-    )
-    # asyncpg returns "UPDATE N" where N is rows affected
-    return result == "UPDATE 1"
 
 
 _DELETE_BATCH_CAP = 100

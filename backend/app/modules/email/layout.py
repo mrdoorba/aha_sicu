@@ -8,7 +8,7 @@ the two output formats recipients see:
   Gmail SMTP. Reproduces, byte-for-byte, the output of the former frontend
   ``buildI18nEmailBody`` builder (frozen as golden fixtures).
 * ``fmt="html"`` — the styled HTML body shown on the dashboard preview and sent
-  via SendGrid. Reproduces the former ``render_email_html`` output exactly.
+  via Gmail SMTP. Reproduces the former ``render_email_html`` output exactly.
 
 All i18n resolution lives here (the ``_t``/``_resolve_*`` helpers), so the three
 former renderers collapse into this one interface.

@@ -192,7 +192,7 @@ async def send_plain_email_endpoint(
     renderer (the client-supplied body is ignored), sends it, and logs the
     result to email_history. In debug mode (gmail_smtp_enabled=False), writes
     the body to /tmp instead of dialing SMTP. Independent of email_enabled (the
-    SendGrid path's gate).
+    rich /send path's gate).
     """
     evaluation = await get_evaluation_detail(conn=conn, evaluation_id=body.evaluation_id)
     body_text = render_plain_email_message(
