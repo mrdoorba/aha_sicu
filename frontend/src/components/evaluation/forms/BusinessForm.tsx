@@ -8,7 +8,6 @@ import type { BusinessData } from './formConfig';
 import { BUSINESS_FIELDS, getSectionLinks, generateMonthLabels, formatCurrency } from './formConfig';
 import type { ScoringRules } from '../../../hooks/useRules';
 import { getBenchmarkFromRules, FORM_TO_RULES_MAP } from './benchmarkUtils';
-import { getIntlLocale } from '../../../lib/languages';
 
 interface BusinessFormProps {
   data: BusinessData;
@@ -20,22 +19,9 @@ interface BusinessFormProps {
 }
 
 export function BusinessForm({ data, rules, currency = 'IDR', marketplace = 'ID', onChange, onBlur }: BusinessFormProps) {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const links = getSectionLinks(marketplace);
   const monthLabels = useMemo(() => generateMonthLabels(data.salesStartMonth), [data.salesStartMonth]);
-
-  // Generate month options for the selector (last 12 months from now)
-  const monthOptions = useMemo(() => {
-    const options: Array<{ value: string; label: string }> = [];
-    const now = new Date();
-    for (let i = 0; i < 12; i++) {
-      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
-      const val = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}`;
-      const label = d.toLocaleDateString(getIntlLocale(i18n.language), { month: 'short', year: 'numeric' });
-      options.push({ value: val, label });
-    }
-    return options;
-  }, [i18n.language]);
 
   // Dynamic label overrides for sales months and conversion rate
   const getFieldLabel = (field: typeof BUSINESS_FIELDS[number], index: number): string => {
@@ -62,27 +48,6 @@ export function BusinessForm({ data, rules, currency = 'IDR', marketplace = 'ID'
             <ExternalLink className="size-4 text-muted-foreground" aria-hidden="true" />
           </a>
         </p>
-
-        {/* Month selector */}
-        <div className="mb-4">
-          <label htmlFor="salesStartMonth" className="mb-1 block text-sm font-medium">
-            {t('forms.business.startMonth')}
-          </label>
-          <select
-            id="salesStartMonth"
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-            value={data.salesStartMonth ?? ''}
-            onChange={(e) => {
-              onChange('business', 'salesStartMonth', e.target.value || null);
-            }}
-            onBlur={onBlur}
-          >
-            <option value="">{t('forms.business.selectMonth')}</option>
-            {monthOptions.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-        </div>
 
         <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           {BUSINESS_FIELDS.map((field, index) => {

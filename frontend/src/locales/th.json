@@ -393,7 +393,7 @@
   "forms.business.conversionRate": "อัตราการแปลง {{month}}",
   "forms.business.salesMonth": "ยอดขายเดือน {{month}}",
   "forms.business.selectMonth": "-- เลือกเดือน --",
-  "forms.business.startMonth": "เดือนเริ่มต้นขาย",
+  "forms.business.startMonth": "ช่วงเวลาข้อมูล",
   "forms.business.title": "วิเคราะห์ธุรกิจ",
   "forms.campaign.participationPct": "% การเข้าร่วมแคมเปญ",
   "forms.campaign.title": "การเข้าร่วมแคมเปญ",

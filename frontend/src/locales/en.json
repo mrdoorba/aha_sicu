@@ -393,7 +393,7 @@
   "forms.business.conversionRate": "Conversion Rate {{month}}",
   "forms.business.salesMonth": "Sales Month {{month}}",
   "forms.business.selectMonth": "-- Select Month --",
-  "forms.business.startMonth": "Sales Start Month",
+  "forms.business.startMonth": "Data Period",
   "forms.business.title": "Business Analysis",
   "forms.campaign.participationPct": "% Campaign Participation",
   "forms.campaign.title": "Campaign Participation",

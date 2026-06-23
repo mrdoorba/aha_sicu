@@ -1,5 +1,4 @@
 import { render, screen } from '@testing-library/react';
-import userEvent from '@testing-library/user-event';
 import { describe, it, expect, vi } from 'vitest';
 import { BusinessForm } from './BusinessForm';
 import type { BusinessData } from './formConfig';
@@ -92,13 +91,6 @@ describe('BusinessForm', () => {
     expect(idrLabels).toHaveLength(6);
   });
 
-  it('renders month selector dropdown', () => {
-    render(
-      <BusinessForm data={emptyData} onChange={vi.fn()} onBlur={vi.fn()} />,
-    );
-    expect(screen.getByLabelText(/forms\.business\.startMonth/)).toBeInTheDocument();
-  });
-
   it('generates dynamic labels when salesStartMonth is set', () => {
     const dataWithMonth: BusinessData = {
       ...emptyData,
@@ -154,17 +146,5 @@ describe('BusinessForm', () => {
     );
     expect(screen.getByText('forms.business.averageSales')).toBeInTheDocument();
     expect(screen.getByText('—')).toBeInTheDocument();
-  });
-
-  it('calls onChange for month selector', async () => {
-    const onChange = vi.fn();
-    const user = userEvent.setup();
-    render(
-      <BusinessForm data={emptyData} onChange={onChange} onBlur={vi.fn()} />,
-    );
-
-    const select = screen.getByLabelText(/forms\.business\.startMonth/);
-    await user.selectOptions(select, select.querySelector('option:nth-child(2)')!);
-    expect(onChange).toHaveBeenCalledWith('business', 'salesStartMonth', expect.any(String));
   });
 });
