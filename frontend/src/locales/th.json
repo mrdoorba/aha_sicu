@@ -608,6 +608,7 @@
   "scoreBreakdown.header.category": "หมวดหมู่",
   "scoreBreakdown.header.max": "สูงสุด",
   "scoreBreakdown.header.score": "คะแนน",
+  "scoreOverview.compatibility": "AHA Compatibility",
   "scoreOverview.scoreLabel": "คะแนน",
   "scoreOverview.verdict": "สามารถปรับปรุงประสิทธิภาพได้",
   "scorePanel.notAvailable": "N/A",
