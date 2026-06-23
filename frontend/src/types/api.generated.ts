@@ -1878,6 +1878,12 @@ export interface components {
              */
             body?: string | null;
             /**
+             * Pic Email
+             * @description PIC address(es) for the body's [EMAIL TO: ...] line
+             * @default
+             */
+            pic_email?: string;
+            /**
              * Language
              * @default id
              */

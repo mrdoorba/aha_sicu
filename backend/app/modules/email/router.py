@@ -195,7 +195,9 @@ async def send_plain_email_endpoint(
     SendGrid path's gate).
     """
     evaluation = await get_evaluation_detail(conn=conn, evaluation_id=body.evaluation_id)
-    body_text = render_plain_email_message(evaluation.model_dump(), language=body.language)
+    body_text = render_plain_email_message(
+        evaluation.model_dump(), language=body.language, pic_email=body.pic_email or None
+    )
 
     recipients = [str(r) for r in body.recipients]
     cc = [str(c) for c in body.cc] if body.cc else None
