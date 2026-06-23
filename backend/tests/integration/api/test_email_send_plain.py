@@ -129,7 +129,7 @@ def test_send_plain_debug_mode_writes_preview_and_skips_smtp(client, auth_header
 
 
 def test_send_plain_ignores_email_enabled_flag(client, auth_headers):
-    """Gmail SMTP gate is independent of email_enabled (SendGrid's gate).
+    """Gmail SMTP gate is independent of email_enabled (the rich /send gate).
 
     With email_enabled=False and gmail_smtp_enabled=True, SMTP must still fire.
     """
@@ -145,7 +145,7 @@ def test_send_plain_ignores_email_enabled_flag(client, auth_headers):
     ):
         mock_eval.return_value = _make_evaluation_detail()
         mock_send.return_value = "msg-id@ahacommerce.id"
-        mock_router_settings.email_enabled = False  # SendGrid stays gated
+        mock_router_settings.email_enabled = False  # rich /send stays gated
         mock_router_settings.gmail_smtp_enabled = True
         mock_router_settings.gmail_smtp_user = "bot@ahacommerce.net"
         mock_router_settings.email_from_name = "AHA Commerce"

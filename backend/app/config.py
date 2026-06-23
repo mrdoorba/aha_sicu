@@ -8,7 +8,11 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 class Settings(BaseSettings):
     """Application settings loaded from environment variables."""
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    # extra="ignore": tolerate leftover env keys (e.g. retired SENDGRID_* vars)
+    # so a stale .env doesn't crash startup during transport migrations.
+    model_config = SettingsConfigDict(
+        env_file=".env", env_file_encoding="utf-8", extra="ignore"
+    )
 
     app_name: str = "Store ICU API"
     debug: bool = False
@@ -57,16 +61,20 @@ class Settings(BaseSettings):
     # GCS Upload Bucket (empty = local dev fallback)
     gcs_upload_bucket: str = ""
 
-    # Email / SendGrid
-    sendgrid_api_key: str = ""
+    # Email — rich /send evaluation report (POST /api/v1/email/send).
+    # Sent over its OWN SMTP account, distinct from /send-plain's gmail_smtp_*.
+    # email_smtp_user defaults to email_from_email when left blank.
     email_from_name: str = "AHA Commerce"
     email_from_email: str = ""
     email_enabled: bool = False
     email_allowed_domains: str = ""
-    sendgrid_webhook_secret: str = ""
+    email_smtp_host: str = "smtp.gmail.com"
+    email_smtp_port: int = 587
+    email_smtp_user: str = ""
+    email_smtp_app_password: str = ""
 
     # Gmail SMTP transport (used by /api/v1/email/send-plain)
-    # Independent of email_enabled — that flag gates the SendGrid path and
+    # Independent of email_enabled — that flag gates the rich /send path and
     # the dashboard's Send Email button. This flag gates only the
     # evaluation-detail Send Mail dialog's SMTP send.
     gmail_smtp_enabled: bool = False

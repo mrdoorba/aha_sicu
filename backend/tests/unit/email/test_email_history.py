@@ -1,6 +1,6 @@
 """Tests for email history query layer."""
 
-from datetime import date, datetime, timezone
+from datetime import date
 from unittest.mock import AsyncMock
 
 import pytest
@@ -11,7 +11,6 @@ from app.db.queries.email_history import (
     insert_email_history,
     list_email_history,
     list_email_history_by_evaluation,
-    update_email_status_by_message_id,
 )
 
 
@@ -68,7 +67,7 @@ class TestInsertEmailHistory:
             "subject": "Test Subject",
             "status": "failed",
             "message_id": None,
-            "error_detail": "SendGrid API error (500): Internal Server Error",
+            "error_detail": "SMTP error: connection refused",
             "sent_at": "2026-03-20T10:00:00+00:00",
             "created_at": "2026-03-20T10:00:00+00:00",
         }
@@ -83,12 +82,12 @@ class TestInsertEmailHistory:
             subject="Test Subject",
             status="failed",
             message_id=None,
-            error_detail="SendGrid API error (500): Internal Server Error",
+            error_detail="SMTP error: connection refused",
         )
 
         assert result["status"] == "failed"
         assert result["message_id"] is None
-        assert "Internal Server Error" in result["error_detail"]
+        assert "connection refused" in result["error_detail"]
 
 
 class TestListEmailHistory:
@@ -157,81 +156,6 @@ class TestListEmailHistory:
         result = await list_email_history(mock_conn, limit=500)
 
         assert result["limit"] == _LIMIT_CAP
-
-
-class TestUpdateEmailStatus:
-    async def test_updates_status_when_priority_higher(self, mock_conn: AsyncMock) -> None:
-        mock_conn.execute.return_value = "UPDATE 1"
-
-        result = await update_email_status_by_message_id(
-            mock_conn,
-            message_id="<sg-msg-abc>",
-            new_status="delivered",
-            event_at=datetime(2026, 3, 20, 12, 0, 0, tzinfo=timezone.utc),
-        )
-
-        assert result is True
-        mock_conn.execute.assert_called_once()
-
-    async def test_skips_update_when_priority_lower(self, mock_conn: AsyncMock) -> None:
-        mock_conn.execute.return_value = "UPDATE 0"
-
-        result = await update_email_status_by_message_id(
-            mock_conn,
-            message_id="<sg-msg-abc>",
-            new_status="sent",
-            event_at=datetime(2026, 3, 20, 12, 0, 0, tzinfo=timezone.utc),
-        )
-
-        assert result is False
-
-    async def test_returns_false_when_message_id_not_found(self, mock_conn: AsyncMock) -> None:
-        mock_conn.execute.return_value = "UPDATE 0"
-
-        result = await update_email_status_by_message_id(
-            mock_conn,
-            message_id="<unknown>",
-            new_status="delivered",
-            event_at=datetime(2026, 3, 20, 12, 0, 0, tzinfo=timezone.utc),
-        )
-
-        assert result is False
-
-    async def test_rejects_invalid_status_value(self, mock_conn: AsyncMock) -> None:
-        with pytest.raises(ValueError, match="Invalid status"):
-            await update_email_status_by_message_id(
-                mock_conn,
-                message_id="<sg-msg-abc>",
-                new_status="hacked",
-                event_at=datetime(2026, 3, 20, 12, 0, 0, tzinfo=timezone.utc),
-            )
-
-    async def test_idempotent_when_same_event_arrives_twice(self, mock_conn: AsyncMock) -> None:
-        mock_conn.execute.return_value = "UPDATE 0"
-
-        result = await update_email_status_by_message_id(
-            mock_conn,
-            message_id="<sg-msg-abc>",
-            new_status="delivered",
-            event_at=datetime(2026, 3, 20, 12, 0, 0, tzinfo=timezone.utc),
-        )
-
-        assert result is False
-
-    async def test_updates_error_detail_on_bounce(self, mock_conn: AsyncMock) -> None:
-        mock_conn.execute.return_value = "UPDATE 1"
-
-        result = await update_email_status_by_message_id(
-            mock_conn,
-            message_id="<sg-msg-abc>",
-            new_status="bounced",
-            event_at=datetime(2026, 3, 20, 12, 0, 0, tzinfo=timezone.utc),
-            error_detail="Mailbox full",
-        )
-
-        assert result is True
-        call_args = mock_conn.execute.call_args[0]
-        assert call_args[4] == "Mailbox full"
 
 
 class TestListEmailHistoryByEvaluation:

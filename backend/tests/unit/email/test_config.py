@@ -1,4 +1,4 @@
-"""Tests for SendGrid configuration and email schemas."""
+"""Tests for email configuration and email schemas."""
 
 import os
 from unittest.mock import patch
@@ -11,12 +11,8 @@ from app.config import Settings
 from app.modules.email.schemas import SendEmailRequest, SendEmailResponse
 
 
-class TestSendGridConfigDefaults:
-    """Test that SendGrid config fields have correct defaults."""
-
-    def test_sendgrid_api_key_default_empty(self) -> None:
-        s = Settings(_env_file=None)
-        assert s.sendgrid_api_key == ""
+class TestEmailConfigDefaults:
+    """Test that email config fields have correct defaults."""
 
     def test_email_from_name_default(self) -> None:
         s = Settings(_env_file=None)
@@ -31,13 +27,8 @@ class TestSendGridConfigDefaults:
         assert s.email_enabled is False
 
 
-class TestSendGridConfigEnvOverrides:
-    """Test that all SendGrid fields can be overridden via env vars."""
-
-    def test_sendgrid_api_key_override(self) -> None:
-        with patch.dict(os.environ, {"SENDGRID_API_KEY": "SG.test-key"}):
-            s = Settings(_env_file=None)
-            assert s.sendgrid_api_key == "SG.test-key"
+class TestEmailConfigEnvOverrides:
+    """Test that email fields can be overridden via env vars."""
 
     def test_email_from_name_override(self) -> None:
         with patch.dict(os.environ, {"EMAIL_FROM_NAME": "My Brand"}):

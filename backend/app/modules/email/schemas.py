@@ -7,11 +7,6 @@ from pydantic import BaseModel, EmailStr, Field, model_validator
 
 from app.config import settings
 
-_KNOWN_SENDGRID_EVENTS: frozenset[str] = frozenset({
-    "processed", "delivered", "bounce", "dropped",
-    "open", "click", "spamreport", "deferred",
-})
-
 
 class SendEmailRequest(BaseModel):
     """Request body for sending an evaluation email."""
@@ -163,20 +158,3 @@ class DeleteEmailHistoryResponse(BaseModel):
     """Response after deleting email history entries."""
 
     deleted: int
-
-
-class SendGridWebhookEvent(BaseModel):
-    """Single SendGrid Event Webhook payload."""
-
-    event: str
-    email: str = ""
-    sg_message_id: str = ""
-    timestamp: int = 0
-    reason: str = ""
-    type: str = ""
-
-    @model_validator(mode="after")
-    def validate_event_type(self) -> "SendGridWebhookEvent":
-        if self.event not in _KNOWN_SENDGRID_EVENTS:
-            raise ValueError(f"Unknown SendGrid event: {self.event}")
-        return self

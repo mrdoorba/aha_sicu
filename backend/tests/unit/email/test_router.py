@@ -64,7 +64,7 @@ class TestSendEmailLogsHistory:
 
         with auth_ctx, \
              patch("app.modules.email.router.get_evaluation_detail", new_callable=AsyncMock, return_value=mock_eval), \
-             patch("app.modules.email.router.send_evaluation_email", new_callable=AsyncMock, side_effect=AppException(code="SENDGRID_API_ERROR", detail="fail", status_code=502)), \
+             patch("app.modules.email.router.send_evaluation_email", new_callable=AsyncMock, side_effect=AppException(code="GMAIL_SMTP_ERROR", detail="fail", status_code=502)), \
              patch("app.modules.email.router.insert_email_history", new_callable=AsyncMock) as mock_insert, \
              patch("app.modules.email.router.settings") as mock_router_settings, \
              patch("app.modules.email.schemas.settings") as mock_schema_settings:
