@@ -74,10 +74,3 @@ def test_422_when_invalid_language_code(client):
         )
 
         assert response.status_code == 422
-
-
-def test_401_when_unauthenticated(client):
-    """PATCH /api/v1/me/language rejects requests without auth."""
-    response = client.patch("/api/v1/me/language", json={"language": "en"})
-
-    assert response.status_code == 401

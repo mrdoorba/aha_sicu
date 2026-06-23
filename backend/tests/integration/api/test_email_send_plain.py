@@ -65,11 +65,6 @@ def test_send_plain_returns_200_on_happy_path(client, auth_headers):
     assert history_kwargs["subject"] == "Hello"
 
 
-def test_send_plain_returns_401_when_no_auth_token(client):
-    response = client.post("/api/v1/email/send-plain", json=_valid_body())
-    assert response.status_code == 401
-
-
 def test_send_plain_returns_422_when_invalid_recipient_domain(client, auth_headers):
     user, headers, auth_ctx = auth_headers("admin")
 

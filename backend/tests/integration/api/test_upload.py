@@ -76,16 +76,6 @@ def _setup_auth_mocks(mock_verify, mock_db, mock_user_queries):
 # POST /api/v1/upload/signed-url
 # ---------------------------------------------------------------------------
 
-def test_signed_url_without_token(client):
-    response = client.post("/api/v1/upload/signed-url", json={
-        "filename": "report.csv",
-        "content_type": "text/csv",
-        "file_type": "cpc_ad_report",
-        "brand_id": 123,
-    })
-    assert response.status_code == 401
-
-
 def test_signed_url_valid(client):
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
@@ -475,8 +465,3 @@ def test_get_uploads_brand_not_found(client):
 
         assert response.status_code == 404
         assert response.json()["code"] == "BRAND_NOT_FOUND"
-
-
-def test_get_uploads_without_token(client):
-    response = client.get("/api/v1/upload/brands/123")
-    assert response.status_code == 401

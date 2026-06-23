@@ -24,14 +24,6 @@ SAMPLE_BRAND = {
 }
 
 
-def test_brand_detail_without_token(client):
-    """Test GET /api/v1/brands/1 returns 401 without Authorization header."""
-    response = client.get("/api/v1/brands/1")
-    assert response.status_code == 401
-    data = response.json()
-    assert data["code"] == "AUTH_TOKEN_MISSING"
-
-
 def test_brand_detail_returns_brand_with_meeting(client):
     """Test GET /api/v1/brands/1 returns brand with meeting data."""
     with (

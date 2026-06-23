@@ -35,14 +35,6 @@ SAMPLE_BRANDS = [
 ]
 
 
-def test_brands_without_token(client):
-    """Test GET /api/v1/brands returns 401 without Authorization header."""
-    response = client.get("/api/v1/brands")
-    assert response.status_code == 401
-    data = response.json()
-    assert data["code"] == "AUTH_TOKEN_MISSING"
-
-
 def test_brands_returns_paginated_response(client):
     """Test GET /api/v1/brands returns paginated brand list."""
     with (

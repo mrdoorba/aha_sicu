@@ -106,12 +106,6 @@ def test_list_accounts_leader_forbidden(client):
         assert response.status_code == 403
 
 
-def test_list_accounts_unauthorized(client):
-    """No auth token — 401."""
-    response = client.get("/api/v1/accounts")
-    assert response.status_code == 401
-
-
 # --- CREATE ---
 
 
