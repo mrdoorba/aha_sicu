@@ -12,3 +12,12 @@ export function generatePeriodOptions(): string[] {
   }
   return options;
 }
+
+/** Period label ("Mei 2026") for a "YYYY-MM" start month; current month if unset. */
+export function periodLabelFromMonth(startMonth: string | null | undefined): string {
+  if (!startMonth || !/^\d{4}-(0[1-9]|1[0-2])$/.test(startMonth)) {
+    return generatePeriodOptions()[0];
+  }
+  const [year, month] = startMonth.split('-').map(Number);
+  return `${INDONESIAN_MONTHS[month - 1]} ${year}`;
+}
