@@ -675,9 +675,9 @@ class TestScoreBreakdown:
         assert "8" in html
         assert "10" in html
 
-    def test_section_number_03(self, evaluation_data: dict) -> None:
+    def test_section_number_04(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
-        assert "03" in html
+        assert "04" in html
 
 
 class TestDataIntelligence:
@@ -739,9 +739,9 @@ class TestDataIntelligence:
         html = _render_full(evaluation_data)
         assert _get_strings("id")["data_intelligence"] in html
 
-    def test_section_number_04(self, evaluation_data: dict) -> None:
+    def test_section_number_03(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
-        assert "04" in html
+        assert "03" in html
 
     def test_skips_when_no_data(self, sample_categories: list[dict]) -> None:
         """Data intelligence section should be omitted when calculator_results is empty."""
@@ -919,15 +919,17 @@ class TestFullRender:
         assert "</body>" in lower
 
     def test_section_ordering(self, evaluation_data: dict) -> None:
-        """Sections should appear in order: 01-05."""
+        """Sections should match the dashboard order (01-05):
+        overview, detailed, data intelligence, score breakdown, kesimpulan.
+        """
         html = _render_full(evaluation_data)
         s = _get_strings("id")
         pos_overview = html.find(s["score_overview"])
         pos_detailed = html.find(s["detailed_evaluation"])
-        pos_breakdown = html.find(s["score_breakdown"])
         pos_intelligence = html.find(s["data_intelligence"])
+        pos_breakdown = html.find(s["score_breakdown"])
         pos_kesimpulan = html.find(s["kesimpulan"])
-        assert pos_overview < pos_detailed < pos_breakdown < pos_intelligence < pos_kesimpulan
+        assert pos_overview < pos_detailed < pos_intelligence < pos_breakdown < pos_kesimpulan
 
 
 # ===================================================================
