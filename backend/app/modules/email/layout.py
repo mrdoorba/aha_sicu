@@ -449,16 +449,22 @@ def render_email_subject(result: dict[str, Any], language: str = "id") -> str:
     )
 
 
-def render_plain_email_message(result: dict[str, Any], language: str = "id") -> str:
+def render_plain_email_message(
+    result: dict[str, Any], language: str = "id", pic_email: str | None = None
+) -> str:
     """Compose the full plain-text email body (greeting wrapper + section body).
 
     Reproduces the frontend ``buildBody`` wrapper around the unified
     ``render_email(fmt="text")`` section body, so the SMTP-sent text is rendered
     entirely server-side and matches what recipients saw before consolidation.
+
+    ``pic_email`` is the (possibly user-edited) PIC address shown in the dialog;
+    when omitted it falls back to the evaluation's stored brand email.
     """
     raw = result.get("brand_raw_data") or {}
     brand_name = result.get("brand_name", "")
-    pic_email = raw.get("email") or ""
+    if pic_email is None:
+        pic_email = raw.get("email") or ""
     salutation = _t(
         "sendMailUtils.salutation",
         {"brandName": brand_name, "picName": raw.get("pic_name") or ""},
