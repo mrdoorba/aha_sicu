@@ -86,8 +86,13 @@ variable "gsheets_vp_spreadsheet_id_th" {
 # Email / SendGrid Variables
 # =============================================================================
 
-variable "email_from_email" {
-  description = "Verified sender email address for outgoing emails (SendGrid)"
+variable "dev_email_from_email" {
+  description = "From address for the rich /send path in dev. Over Gmail SMTP this must equal the authenticated SMTP account (email_smtp_user defaults to it when blank)."
+  type        = string
+}
+
+variable "prod_email_from_email" {
+  description = "From address for the rich /send path in prod (still SendGrid until prod migrates)."
   type        = string
 }
 
@@ -138,6 +143,15 @@ variable "gmail_smtp_user" {
 
 variable "gmail_smtp_app_password" {
   description = "Gmail App Password for SMTP auth. Seeded out-of-band; ignore_changes preserves rotations."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
+# Rich /send path (POST /api/v1/email/send) — its OWN Gmail SMTP account,
+# distinct from /send-plain's gmail_smtp_*. App password seeded out-of-band.
+variable "email_smtp_app_password" {
+  description = "Gmail App Password for the rich /send SMTP account. Seeded out-of-band; ignore_changes preserves rotations."
   type        = string
   sensitive   = true
   default     = ""

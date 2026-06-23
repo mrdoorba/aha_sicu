@@ -28,14 +28,19 @@ cloud_sql_tier          = "db-f1-micro"
 cloud_sql_disk_size     = 10
 cloud_sql_instance_name = "aha-sicu-db"
 
-# Email / SendGrid
-email_from_email = "noreply@ahabot.ai"
+# Email — From addresses per environment.
+# dev: rich /send migrated off SendGrid onto its own Gmail SMTP account; the
+# From must equal the authenticated SMTP account (email_smtp_user defaults to
+# it). prod: still SendGrid until prod migrates.
+dev_email_from_email  = "handers.the@ahacommerce.net"
+prod_email_from_email = "noreply@ahabot.ai"
 
-# Gmail SMTP (evaluation "Send Mail" dialog). The app password is NOT stored
-# here (this file is tracked) — it is already seeded in Secret Manager as
-# aha_coms_sicu_dev_gmail_smtp_app_password and managed via ignore_changes.
-# Import that secret + version into state before applying (see runbook), or
-# pass -var="gmail_smtp_app_password=..." at apply time.
+# Gmail SMTP (evaluation "Send Mail" dialog — /send-plain). The app password is
+# NOT stored here (this file is tracked) — it is already seeded in Secret
+# Manager as aha_coms_sicu_dev_gmail_smtp_app_password and managed via
+# ignore_changes. The rich /send path's password lives in the parallel secret
+# aha_coms_sicu_<env>_email_smtp_app_password. Seed both out-of-band, or pass
+# -var="gmail_smtp_app_password=..." / -var="email_smtp_app_password=..." at apply.
 gmail_smtp_user = "marwahkha@ahacommerce.net"
 
 # Feature flags (per-environment)

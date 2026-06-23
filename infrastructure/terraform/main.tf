@@ -115,11 +115,12 @@ module "dev" {
   cloud_run_memory        = var.cloud_run_memory
   cloud_run_cpu           = var.cloud_run_cpu
 
-  email_from_email        = var.email_from_email
+  email_from_email        = var.dev_email_from_email
   email_enabled           = var.dev_email_enabled
   email_allowed_domains   = var.dev_email_allowed_domains
   sendgrid_api_key        = var.sendgrid_api_key
   sendgrid_webhook_secret = var.sendgrid_webhook_secret
+  email_smtp_app_password = var.email_smtp_app_password
   gmail_smtp_user         = var.gmail_smtp_user
   gmail_smtp_app_password = var.gmail_smtp_app_password
   gmail_smtp_enabled      = var.dev_gmail_smtp_enabled
@@ -156,11 +157,12 @@ module "prod" {
   cloud_run_memory        = var.cloud_run_memory
   cloud_run_cpu           = var.cloud_run_cpu
 
-  email_from_email        = var.email_from_email
+  email_from_email        = var.prod_email_from_email
   email_enabled           = var.prod_email_enabled
   email_allowed_domains   = var.prod_email_allowed_domains
   sendgrid_api_key        = var.sendgrid_api_key
   sendgrid_webhook_secret = var.sendgrid_webhook_secret
+  email_smtp_app_password = var.email_smtp_app_password
   gmail_smtp_user         = var.gmail_smtp_user
   gmail_smtp_app_password = var.gmail_smtp_app_password
   gmail_smtp_enabled      = var.prod_gmail_smtp_enabled
