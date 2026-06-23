@@ -1,11 +1,14 @@
 """Service for syncing evaluated brand data to a Google Sheet.
 
-Writes one row per brand with: Periode, Brand Name, Kategori, Score Internal.
-Data comes from the latest evaluation (by created_at) for each brand.
+Writes one row per brand with: Waktu Submit, Periode Data, Brand Name,
+Kategori, AHA Compatibility Score. Data comes from the latest evaluation
+(by created_at) for each brand.
 """
 
 import logging
+from datetime import datetime
 from typing import Any
+from zoneinfo import ZoneInfo
 
 from asyncpg import Connection
 
@@ -16,8 +19,15 @@ from app.modules.sync.sheets_client import GoogleSheetsClient
 
 logger = logging.getLogger(__name__)
 
-HEADER_ROW = ["Periode", "Brand Name", "Kategori", "Score Internal"]
-EVAL_RANGE = "SICU!A:D"
+HEADER_ROW = [
+    "Waktu Submit",
+    "Periode Data",
+    "Brand Name",
+    "Kategori",
+    "AHA Compatibility Score",
+]
+EVAL_RANGE = "SICU!A:E"
+_WIB = ZoneInfo("Asia/Jakarta")
 _CATEGORY_COLUMNS: dict[str, tuple[str, ...]] = {
     "ID": ("Kategori", "Category", "category"),
     "TH": ("Product Category", "Product\nCategory", "Kategori", "Category", "category"),
@@ -44,7 +54,8 @@ async def _get_latest_evaluation_per_brand(
                b.brand_name,
                COALESCE(e.marketplace, 'ID') AS marketplace,
                b.raw_data,
-               e.final_score
+               e.final_score,
+               e.created_at AS submitted_at
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
         ORDER BY e.brand_id, e.created_at DESC
@@ -64,7 +75,8 @@ async def _get_latest_evaluation_for_brand(
                b.brand_name,
                COALESCE(e.marketplace, 'ID') AS marketplace,
                b.raw_data,
-               e.final_score
+               e.final_score,
+               e.created_at AS submitted_at
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
         WHERE b.brand_name = $1
@@ -94,9 +106,17 @@ def _normalize_eval_sheet_row(data: dict[str, Any]) -> dict[str, Any]:
     return normalized
 
 
+def _format_submit_date(submitted_at: Any) -> str:
+    """Format an evaluation timestamp as a WIB date, e.g. '23 Jun 2026'."""
+    if not isinstance(submitted_at, datetime):
+        return ""
+    return submitted_at.astimezone(_WIB).strftime("%-d %b %Y")
+
+
 def _brand_row(data: dict[str, Any]) -> list[str]:
     """Build a sheet row from brand evaluation data."""
     return [
+        _format_submit_date(data.get("submitted_at")),
         data["period"],
         data["brand_name"],
         data.get("kategori") or "",
@@ -134,8 +154,8 @@ async def sync_brand_to_sheet(brand_name: str) -> None:
             await full_sync_eval_sheet()
             return
 
-        # Read existing brand names from column B
-        existing = await client.read_column(spreadsheet_id, f"{tab}!B:B")
+        # Read existing brand names from column C
+        existing = await client.read_column(spreadsheet_id, f"{tab}!C:C")
 
         # Find existing row index (0-based, including header)
         row_idx = None
@@ -179,8 +199,8 @@ async def remove_brand_from_sheet(brand_name: str) -> None:
         client = GoogleSheetsClient()
         spreadsheet_id = settings.gsheets_eval_spreadsheet_id
 
-        # Read existing brand names from column B
-        existing = await client.read_column(spreadsheet_id, f"{settings.gsheets_eval_tab}!B:B")
+        # Read existing brand names from column C
+        existing = await client.read_column(spreadsheet_id, f"{settings.gsheets_eval_tab}!C:C")
 
         # Find the row index (0-based) of the brand
         row_indices = [

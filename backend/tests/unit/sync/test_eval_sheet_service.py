@@ -1,5 +1,6 @@
 """Unit tests for eval_sheet_service — syncing evaluation data to Google Sheet."""
 
+from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
 from app.modules.sync.eval_sheet_service import (
@@ -14,6 +15,10 @@ from app.modules.sync.eval_sheet_service import (
 
 MODULE = "app.modules.sync.eval_sheet_service"
 
+# 2026-06-23 05:00 UTC = 12:00 WIB → formats as "23 Jun 2026"
+SUBMITTED_AT = datetime(2026, 6, 23, 5, 0, 0, tzinfo=timezone.utc)
+SUBMITTED_DATE = "23 Jun 2026"
+
 
 # --- _brand_row ---
 
@@ -21,23 +26,36 @@ MODULE = "app.modules.sync.eval_sheet_service"
 def test_brand_row_formats_all_fields():
     """should format all fields into a sheet row when all data present"""
     data = {
+        "submitted_at": SUBMITTED_AT,
         "period": "Jan 2026",
         "brand_name": "Nike",
         "kategori": "Sepatu",
         "final_score": 72.50,
     }
-    assert _brand_row(data) == ["Jan 2026", "Nike", "Sepatu", "72.5"]
+    assert _brand_row(data) == [SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5"]
 
 
 def test_brand_row_handles_missing_kategori():
     """should use empty string when kategori is None"""
     data = {
+        "submitted_at": SUBMITTED_AT,
         "period": "Feb 2026",
         "brand_name": "Adidas",
         "kategori": None,
         "final_score": 85.00,
     }
-    assert _brand_row(data) == ["Feb 2026", "Adidas", "", "85.0"]
+    assert _brand_row(data) == [SUBMITTED_DATE, "Feb 2026", "Adidas", "", "85.0"]
+
+
+def test_brand_row_handles_missing_submitted_at():
+    """should use empty string when submitted_at is absent"""
+    data = {
+        "period": "Feb 2026",
+        "brand_name": "Adidas",
+        "kategori": "Sepatu",
+        "final_score": 85.00,
+    }
+    assert _brand_row(data) == ["", "Feb 2026", "Adidas", "Sepatu", "85.0"]
 
 
 def test_normalize_eval_sheet_row_uses_th_category_key():
@@ -119,13 +137,19 @@ def test_normalize_eval_sheet_row_parses_json_string_raw_data():
 
 
 def test_header_row_has_correct_columns():
-    """should have Periode, Brand Name, Kategori, Score Internal columns"""
-    assert HEADER_ROW == ["Periode", "Brand Name", "Kategori", "Score Internal"]
+    """should have Waktu Submit, Periode Data, Brand Name, Kategori, AHA Compatibility Score"""
+    assert HEADER_ROW == [
+        "Waktu Submit",
+        "Periode Data",
+        "Brand Name",
+        "Kategori",
+        "AHA Compatibility Score",
+    ]
 
 
-def test_eval_range_covers_four_columns():
-    """should cover columns A through D"""
-    assert EVAL_RANGE == "SICU!A:D"
+def test_eval_range_covers_five_columns():
+    """should cover columns A through E"""
+    assert EVAL_RANGE == "SICU!A:E"
 
 
 # --- sync_brand_to_sheet ---
@@ -141,6 +165,7 @@ async def test_sync_brand_to_sheet_skips_when_not_configured():
 async def test_sync_brand_to_sheet_appends_new_brand():
     """should append row when brand not in sheet"""
     mock_data = {
+        "submitted_at": SUBMITTED_AT,
         "period": "Jan 2026",
         "brand_name": "Nike",
         "kategori": "Sepatu",
@@ -167,12 +192,13 @@ async def test_sync_brand_to_sheet_appends_new_brand():
 
         mock_client.append_rows.assert_awaited_once()
         args = mock_client.append_rows.call_args
-        assert args[0][2] == [["Jan 2026", "Nike", "Sepatu", "72.5"]]
+        assert args[0][2] == [[SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5"]]
 
 
 async def test_sync_brand_to_sheet_overwrites_existing_brand():
     """should overwrite row when brand already exists in sheet"""
     mock_data = {
+        "submitted_at": SUBMITTED_AT,
         "period": "Feb 2026",
         "brand_name": "Nike",
         "kategori": "Sepatu",
@@ -202,7 +228,7 @@ async def test_sync_brand_to_sheet_overwrites_existing_brand():
         mock_client.write_rows.assert_awaited_once()
         args = mock_client.write_rows.call_args
         assert args[0][1] == "SICU!A2"
-        assert args[0][2] == [["Feb 2026", "Nike", "Sepatu", "88.0"]]
+        assert args[0][2] == [[SUBMITTED_DATE, "Feb 2026", "Nike", "Sepatu", "88.0"]]
         mock_client.append_rows.assert_not_awaited()
 
 
@@ -290,8 +316,8 @@ async def test_sync_brand_to_sheet_runs_full_sync_when_header_is_missing():
 # --- remove_brand_from_sheet ---
 
 
-async def test_remove_brand_reads_column_b():
-    """should read brand names from column B (not A)"""
+async def test_remove_brand_reads_column_c():
+    """should read brand names from column C (where Brand Name now lives)"""
     mock_client = AsyncMock()
     mock_client.read_column = AsyncMock(return_value=["Brand Name", "Nike"])
 
@@ -305,7 +331,7 @@ async def test_remove_brand_reads_column_b():
 
         await remove_brand_from_sheet("Nike")
 
-        mock_client.read_column.assert_awaited_once_with("sheet-123", "SICU!B:B")
+        mock_client.read_column.assert_awaited_once_with("sheet-123", "SICU!C:C")
 
 
 # --- full_sync_eval_sheet ---
@@ -325,8 +351,10 @@ async def test_full_sync_returns_error_when_not_configured():
 async def test_full_sync_writes_header_and_data():
     """should clear sheet and write header + one row per brand"""
     brand_data = [
-        {"period": "Jan 2026", "brand_name": "Nike", "kategori": "Sepatu", "final_score": 72.5},
-        {"period": "Feb 2026", "brand_name": "Adidas", "kategori": None, "final_score": 85.0},
+        {"submitted_at": SUBMITTED_AT, "period": "Jan 2026", "brand_name": "Nike",
+         "kategori": "Sepatu", "final_score": 72.5},
+        {"submitted_at": SUBMITTED_AT, "period": "Feb 2026", "brand_name": "Adidas",
+         "kategori": None, "final_score": 85.0},
     ]
     mock_conn = AsyncMock()
     mock_conn.fetch = AsyncMock(return_value=[AsyncMock(**d) for d in brand_data])
@@ -355,5 +383,5 @@ async def test_full_sync_writes_header_and_data():
         write_args = mock_client.write_rows.call_args
         rows = write_args[0][2]
         assert rows[0] == HEADER_ROW
-        assert rows[1] == ["Jan 2026", "Nike", "Sepatu", "72.5"]
-        assert rows[2] == ["Feb 2026", "Adidas", "", "85.0"]
+        assert rows[1] == [SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5"]
+        assert rows[2] == [SUBMITTED_DATE, "Feb 2026", "Adidas", "", "85.0"]
