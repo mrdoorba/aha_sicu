@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowUpDown, Copy, ClipboardCheck, Trash2, ChevronRight, ChevronDown, Mail } from 'lucide-react';
+import { ArrowLeft, ArrowUpDown, Copy, ClipboardCheck, Trash2, ChevronRight, ChevronDown, Mail, Download } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -285,6 +285,57 @@ function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>
   const output2 = showAllSku ? sortedOutput2 : sortedOutput2.slice(0, PREVIEW_COUNT);
   const hasMoreItems = allOutput1.length > PREVIEW_COUNT || allOutput2.length > PREVIEW_COUNT;
 
+  // Join revenue (output_1: total_omzet) with stock (output_2: varian, stok) by
+  // kode_variasi, sorted by Total Omzet desc — the full Top-20% SKU set for export.
+  const exportRows = useMemo(() => {
+    const stockByKv = new Map(allOutput2.map((s) => [String(s.kode_variasi), s]));
+    return sortRecordArray(allOutput1, 'total_omzet', 'desc').map((r) => {
+      const stock = stockByKv.get(String(r.kode_variasi));
+      return {
+        kodeVariasi: String(r.kode_variasi ?? '-'),
+        namaProduk: String(r.product_name ?? r.nama_produk ?? stock?.nama_produk ?? '-'),
+        varian: String(stock?.varian ?? '-'),
+        totalOmzet: Number(r.total_omzet) || 0,
+        stok: stock?.stok != null ? Number(stock.stok) || 0 : 0,
+      };
+    });
+  }, [allOutput1, allOutput2]);
+
+  const exportHeaders = [
+    t('topSku.kodeVariasi'), t('topSku.namaProduk'), t('topSku.varian'), t('topSku.totalOmzet'), t('topSku.stok'),
+  ];
+
+  const handleExportExcel = async () => {
+    try {
+      const XLSX = await import('xlsx');
+      const aoa = [exportHeaders, ...exportRows.map((r) => [r.kodeVariasi, r.namaProduk, r.varian, r.totalOmzet, r.stok])];
+      const ws = XLSX.utils.aoa_to_sheet(aoa);
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, 'Top SKU');
+      XLSX.writeFile(wb, 'top-sku-20pct.xlsx');
+    } catch {
+      toast.error(t('topSku.exportError'));
+    }
+  };
+
+  const handleExportPdf = async () => {
+    try {
+      const { default: jsPDF } = await import('jspdf');
+      const autoTable = (await import('jspdf-autotable')).default;
+      const doc = new jsPDF();
+      doc.text(t('topSku.exportTitle'), 14, 16);
+      autoTable(doc, {
+        startY: 22,
+        head: [exportHeaders],
+        body: exportRows.map((r) => [r.kodeVariasi, r.namaProduk, r.varian, formatNumber(r.totalOmzet, marketplace), String(r.stok)]),
+        styles: { fontSize: 8 },
+      });
+      doc.save('top-sku-20pct.pdf');
+    } catch {
+      toast.error(t('topSku.exportError'));
+    }
+  };
+
   if (allOutput1.length === 0 && allOutput2.length === 0) {
     return <p className="text-muted-foreground">{t('common.noData')}</p>;
   }
@@ -300,6 +351,18 @@ function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>
         <p className="text-sm font-medium">
           {t('evaluationDetail.stockAvailability')}: <span className="font-bold">{typeof outOfStockPct === 'number' ? `${Math.round(outOfStockPct * 100)}%` : String(outOfStockPct)}</span> {t('evaluationDetail.stockAvailability.suffix')}
         </p>
+      )}
+      {exportRows.length > 0 && (
+        <div className="flex flex-wrap gap-2">
+          <Button variant="outline" size="sm" onClick={handleExportExcel}>
+            <Download className="mr-1.5 size-4" />
+            {t('topSku.exportExcel')}
+          </Button>
+          <Button variant="outline" size="sm" onClick={handleExportPdf}>
+            <Download className="mr-1.5 size-4" />
+            {t('topSku.exportPdf')}
+          </Button>
+        </div>
       )}
       <Collapsible open={isOpen} onOpenChange={setIsOpen}>
         <CollapsibleTrigger asChild>
