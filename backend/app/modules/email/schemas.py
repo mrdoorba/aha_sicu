@@ -66,6 +66,7 @@ class SendPlainEmailRequest(BaseModel):
     bcc: list[EmailStr] = Field(default_factory=list, max_length=10)
     subject: str = Field(min_length=1, max_length=200)
     body: str | None = Field(default=None, max_length=20_000, description="Ignored — body is rendered server-side")
+    pic_email: str = Field(default="", max_length=500, description="PIC address(es) for the body's [EMAIL TO: ...] line")
     language: str = Field(default="id", pattern="^(id|en|th)$")
 
     @model_validator(mode="after")

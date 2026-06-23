@@ -85,7 +85,7 @@ export function SendMailDialog({
 
   const handleSend = () => {
     sendMutation.mutate(
-      { evaluationId, recipients: [to], subject, body, language: emailLanguage },
+      { evaluationId, recipients: [to], subject, body, picEmail, language: emailLanguage },
       {
         onSuccess: () => {
           toast.success(t('sendMail.sendSuccess', { defaultValue: 'Email sent.' }));

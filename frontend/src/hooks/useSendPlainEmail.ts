@@ -11,6 +11,8 @@ export interface SendPlainEmailParams {
    * compatibility / auditing only.
    */
   body: string;
+  /** PIC address(es) for the body's `[EMAIL TO: ...]` line; rendered server-side. */
+  picEmail?: string;
   language: string;
   cc?: string[];
   bcc?: string[];
@@ -23,6 +25,7 @@ export function useSendPlainEmail() {
       recipients,
       subject,
       body,
+      picEmail,
       language,
       cc,
       bcc,
@@ -34,6 +37,7 @@ export function useSendPlainEmail() {
           subject,
           body,
           language,
+          ...(picEmail ? { pic_email: picEmail } : {}),
           ...(cc && cc.length > 0 ? { cc } : {}),
           ...(bcc && bcc.length > 0 ? { bcc } : {}),
         },
