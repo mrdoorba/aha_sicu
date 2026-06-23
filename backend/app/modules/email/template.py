@@ -177,11 +177,16 @@ def _preserve_whitespace(text: str) -> str:
 
 
 def _closing_with_cta_buttons(closing_message: str, S: dict[str, str]) -> str:
-    """Render closing message with URLs replaced by CTA buttons."""
+    """Render closing message, turning standalone-URL lines into CTA buttons.
+
+    The consultation link is authored on its own line (``\\n\\n<link>\\n\\n``).
+    Only a line whose entire trimmed content is a single URL becomes a button;
+    a URL sitting inline in prose — e.g. a store name like ``redcarpet.id`` — is
+    left as text so it is not mistaken for the call-to-action.
+    """
     cta_label = S.get("schedule_consultation", "Jadwalkan Konsultasi Gratis")
 
-    def _replace_url(match: re.Match) -> str:
-        url = match.group(0)
+    def _button(url: str) -> str:
         href = url if url.startswith("http") else f"https://{url}"
         return (
             f'</td></tr>'
@@ -195,10 +200,13 @@ def _closing_with_cta_buttons(closing_message: str, S: dict[str, str]) -> str:
             f'<tr><td style="padding:0 18px;font-size:13px;color:{TEXT_DARK};line-height:1.7;">'
         )
 
-    escaped = _esc(closing_message)
-    result = _URL_RE.sub(_replace_url, escaped)
-    result = result.replace("\n", "<br>")
-    return result
+    rendered = [
+        _button(stripped)
+        if (stripped := line.strip()) and _URL_RE.fullmatch(stripped)
+        else _esc(line)
+        for line in closing_message.split("\n")
+    ]
+    return "<br>".join(rendered)
 
 
 def _section_header(number: str, title: str) -> str:

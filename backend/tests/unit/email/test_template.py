@@ -5,6 +5,7 @@ from __future__ import annotations
 import pytest
 
 from app.modules.email.template import (
+    _closing_with_cta_buttons,
     _get_category_map,
     _get_strings,
     _load_locale,
@@ -1194,6 +1195,24 @@ class TestConclusionI18n:
         assert "คุณภาพการดำเนินงานของร้านค้าอยู่ในเกณฑ์ค่อนข้างดี" in html
         # Raw Indonesian should NOT appear
         assert "Performa toko sangat baik" not in html
+
+    def test_inline_store_url_is_not_turned_into_cta_button(self) -> None:
+        # Regression: a brand whose store_name is itself a URL (e.g. redcarpet.id)
+        # used to render a second, bogus "Jadwalkan Konsultasi Gratis" button
+        # pointing at the store. Only the standalone consultation link is a CTA.
+        S = _get_strings("id")
+        closing = (
+            "Kami melihat bahwa potensi dari Toko https://redcarpet.id/ masih belum maksimal. "
+            "Silahkan klik di link berikut ini untuk menjadwalkan sesi konsultasi.\n\n"
+            "cal-bd2.ahacommerce.net\n\n"
+            "Semoga apa yang kami bagikan dapat bermanfaat."
+        )
+        html = _closing_with_cta_buttons(closing, S)
+        assert html.count(S["schedule_consultation"]) == 1
+        assert "cal-bd2.ahacommerce.net" in html
+        # The store URL survives as inline text, never as an <a href> button.
+        assert "redcarpet.id" in html
+        assert 'href="https://redcarpet.id/"' not in html
 
     def test_thai_closing_message_translated(self, sample_categories: list[dict]) -> None:
         data = self._make_th_eval(sample_categories)
