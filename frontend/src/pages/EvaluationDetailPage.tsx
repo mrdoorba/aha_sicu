@@ -236,7 +236,7 @@ function sortRecordArray(data: Record<string, unknown>[], field: string, dir: So
   });
 }
 
-function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>; t: (key: string, vars?: Record<string, string>) => string; marketplace?: string }) {
+function TopSkuSection({ data, t, marketplace, brandName, period }: { data: Record<string, unknown>; t: (key: string, vars?: Record<string, string>) => string; marketplace?: string; brandName?: string; period?: string }) {
   const details = isRecord(data.details) ? data.details : undefined;
   const allOutput1 = useMemo(() => isRecordArray(details?.output_1) ? details.output_1 : [], [details]);
   const allOutput2 = useMemo(() => isRecordArray(details?.output_2) ? details.output_2 : [], [details]);
@@ -305,6 +305,14 @@ function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>
     t('topSku.kodeVariasi'), t('topSku.namaProduk'), t('topSku.varian'), t('topSku.totalOmzet'), t('topSku.stok'),
   ];
 
+  // e.g. "Cintage-Jun-2026-top-sku-20pct" — slug brand + period, fall back gracefully.
+  const exportFilename = [brandName, period, 'top-sku-20pct']
+    .filter(Boolean)
+    .join('-')
+    .replace(/[^a-zA-Z0-9-]+/g, '-')
+    .replace(/-+/g, '-')
+    .replace(/^-|-$/g, '');
+
   const handleExportExcel = async () => {
     try {
       const XLSX = await import('xlsx');
@@ -312,7 +320,7 @@ function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>
       const ws = XLSX.utils.aoa_to_sheet(aoa);
       const wb = XLSX.utils.book_new();
       XLSX.utils.book_append_sheet(wb, ws, 'Top SKU');
-      XLSX.writeFile(wb, 'top-sku-20pct.xlsx');
+      XLSX.writeFile(wb, `${exportFilename}.xlsx`);
     } catch {
       toast.error(t('topSku.exportError'));
     }
@@ -330,7 +338,7 @@ function TopSkuSection({ data, t, marketplace }: { data: Record<string, unknown>
         body: exportRows.map((r) => [r.kodeVariasi, r.namaProduk, r.varian, formatNumber(r.totalOmzet, marketplace), String(r.stok)]),
         styles: { fontSize: 8 },
       });
-      doc.save('top-sku-20pct.pdf');
+      doc.save(`${exportFilename}.pdf`);
     } catch {
       toast.error(t('topSku.exportError'));
     }
@@ -940,6 +948,8 @@ export function EvaluationDetailPage() {
                       data={evaluation.calculator_results.top_sku}
                       t={t}
                       marketplace={evaluation.marketplace}
+                      brandName={evaluation.brand_name}
+                      period={evaluation.period}
                     />
                   ) : (
                     <p className="text-muted-foreground">{t('common.noData')}</p>
