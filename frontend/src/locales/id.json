@@ -393,7 +393,7 @@
   "forms.business.conversionRate": "Tingkat Konversi {{month}}",
   "forms.business.salesMonth": "Penjualan Bulan {{month}}",
   "forms.business.selectMonth": "-- Pilih Bulan --",
-  "forms.business.startMonth": "Bulan Awal Penjualan",
+  "forms.business.startMonth": "Periode Data",
   "forms.business.title": "Bisnis Analisis",
   "forms.campaign.participationPct": "% Partisipasi Campaign",
   "forms.campaign.title": "Partisipasi Campaign",

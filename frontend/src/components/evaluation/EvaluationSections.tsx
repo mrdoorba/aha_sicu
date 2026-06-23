@@ -9,6 +9,7 @@ import { FileDownloadSection } from './FileDownloadSection';
 import { FileUploadSection } from './FileUploadSection';
 import { OperationalForm } from './forms/OperationalForm';
 import { BusinessForm } from './forms/BusinessForm';
+import { PeriodSelector } from './forms/PeriodSelector';
 import { VisitorsForm } from './forms/VisitorsForm';
 import { PromoToolsForm } from './forms/PromoToolsForm';
 import { ProductsStatusForm } from './forms/ProductsStatusForm';
@@ -185,6 +186,12 @@ export const EvaluationSections = ({
             </RadioGroup>
           </CardContent>
         </Card>
+
+        <PeriodSelector
+          value={manualData.business?.salesStartMonth ?? null}
+          onChange={onFieldChange}
+          onBlur={onFieldBlur}
+        />
 
         <OperationalForm
           data={manualData.operational}
