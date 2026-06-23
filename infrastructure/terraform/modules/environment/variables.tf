@@ -143,6 +143,13 @@ variable "gmail_smtp_app_password" {
   default     = ""
 }
 
+variable "email_smtp_app_password" {
+  description = "Gmail App Password for the rich /send SMTP account (distinct from gmail_smtp_app_password). Seeded out-of-band; ignore_changes preserves rotations."
+  type        = string
+  sensitive   = true
+  default     = ""
+}
+
 variable "cors_origins" {
   description = "Allowed CORS origins for GCS upload bucket"
   type        = list(string)
