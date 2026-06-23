@@ -690,7 +690,7 @@
   "scoring.promoEffectiveness": "Efektivitas Promo",
   "scoring.promoEffectiveness.fail": "❌ Efektifitas alat promosi = {{value}} [Kurang Baik, nilai disarankan: >{{threshold}}%]",
   "scoring.promoEffectiveness.pass": "✔️ Efektifitas alat promosi = {{value}} [Sudah Baik]",
-  "scoring.promoIndividual.dependent": "{{verdict}} $t({{metricKey}}) = {{pct}} [Terlalu mengandalkan promo, nilai disarankan: 15%-50%]",
+  "scoring.promoIndividual.dependent": "{{verdict}} $t({{metricKey}}) = {{pct}} [Terlalu mengandalkan promo, nilai disarankan: 15%-50%] — Terindikasi Menggunakan Fake Discount",
   "scoring.promoIndividual.fail": "❌ $t({{metricKey}}) = {{pct}} [Kurang Efektif, nilai disarankan: {{benchmark}}]",
   "scoring.promoIndividual.pass": "✔️ $t({{metricKey}}) ({{pct}}) digunakan & persentase penggunaan baik",
   "scoring.promoIndividual.passAffiliate": "✔️ $t({{metricKey}}) ({{pct}}) digunakan",

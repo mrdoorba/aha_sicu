@@ -205,7 +205,7 @@ def _generate_promo_messages(cat: CategoryScore, manual_data: dict, rules: dict 
             elif row.row == PROMO_START_ROW and d13 > 0 and d_value / d13 >= 0.50:
                 # "Terlalu mengandalkan promo" only applies to Promo Toko (row 31)
                 tmpl = indiv.get("message_dependent",
-                    "{verdict} {metric} = {pct_str} [Terlalu mengandalkan promo, nilai disarankan: 15%-50%]")
+                    "{verdict} {metric} = {pct_str} [Terlalu mengandalkan promo, nilai disarankan: 15%-50%] — Terindikasi Menggunakan Fake Discount")
                 row.message = _format_message_template(tmpl, verdict=row.verdict, metric=row.metric, pct_str=pct_str)
                 row.message_i18n = TranslatableText(
                     key="scoring.promoIndividual.dependent",
