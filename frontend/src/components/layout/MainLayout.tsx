@@ -9,9 +9,9 @@ export const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   return (
-    <div className="flex h-screen bg-background text-foreground transition-colors duration-500 overflow-hidden">
-      {/* Desktop Sidebar */}
-      <Sidebar className="hidden lg:flex" />
+    <div className="relative flex h-screen bg-background text-foreground transition-colors duration-500 overflow-hidden">
+      {/* Desktop Sidebar — collapsed rail that expands on hover */}
+      <Sidebar className="hidden lg:flex" hoverExpand />
 
       {/* Mobile Sidebar Overlay */}
       <div 

@@ -28,16 +28,23 @@ import {
 
 interface SidebarProps {
   className?: string;
+  /** Desktop rail: collapsed at rest, expands on hover, pinnable via the chevron. */
+  hoverExpand?: boolean;
 }
 
-export const Sidebar = ({ className }: SidebarProps) => {
+export const Sidebar = ({ className, hoverExpand = false }: SidebarProps) => {
   const { t } = useTranslation();
   const { user, logout } = useAuth();
   const { profile } = useCurrentUser();
   const location = useLocation();
-  const [isCollapsed, setIsCollapsed] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
+  const [isHovered, setIsHovered] = useState(false);
   const [showLogoutConfirm, setShowLogoutConfirm] = useState(false);
   const [isLoggingOut, setIsLoggingOut] = useState(false);
+
+  // Hover rail: collapsed unless pinned or hovered. Without hoverExpand (mobile
+  // drawer) the sidebar is always expanded.
+  const isCollapsed = hoverExpand ? !(isPinned || isHovered) : false;
 
   const canAccessHistory = profile?.role === 'leader' || profile?.role === 'admin';
   const canAccessRules = canAccessHistory;
@@ -85,18 +92,23 @@ export const Sidebar = ({ className }: SidebarProps) => {
 
   return (
     <>
+      {/* Reserve the rail's footprint so the expanding panel overlays content instead of reflowing it. */}
+      {hoverExpand && <div aria-hidden className="hidden lg:block w-16 shrink-0" />}
       <aside
         className={cn(
           "relative flex flex-col border-r border-sidebar-border bg-sidebar text-sidebar-foreground transition-[width] duration-300 ease-in-out",
+          hoverExpand && "lg:absolute lg:inset-y-0 lg:left-0 lg:z-30",
           isCollapsed ? "w-16" : "w-64",
           className
         )}
+        onMouseEnter={hoverExpand ? () => setIsHovered(true) : undefined}
+        onMouseLeave={hoverExpand ? () => setIsHovered(false) : undefined}
       >
         <div className="flex h-16 items-center justify-between px-2">
           <div className="flex items-center gap-2 min-w-0">
             <button
               className="shrink-0 flex items-center justify-center h-10 w-10 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
-              onClick={() => setIsCollapsed(!isCollapsed)}
+              onClick={() => setIsPinned((p) => !p)}
             >
               <img src="/images/aha-logo-icon.webp" alt="Store ICU Logo" className="size-7 object-contain" />
             </button>
@@ -116,9 +128,10 @@ export const Sidebar = ({ className }: SidebarProps) => {
               "h-8 w-8 shrink-0 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300",
               isCollapsed ? "opacity-0 pointer-events-none w-0" : "opacity-100"
             )}
-            onClick={() => setIsCollapsed(true)}
+            onClick={() => setIsPinned((p) => !p)}
+            title={isPinned ? t('header.unpinSidebar') : t('header.pinSidebar')}
           >
-            <ChevronLeft className="h-4 w-4" />
+            <ChevronLeft className={cn("h-4 w-4 transition-transform duration-300", isPinned && "rotate-180")} />
           </Button>
         </div>
 

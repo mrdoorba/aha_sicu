@@ -48,10 +48,10 @@ vi.mock('next-themes', () => ({
     useTheme: () => ({ theme: 'light', setTheme: vi.fn() }),
 }));
 
-const renderSidebar = () => {
+const renderSidebar = (props?: { hoverExpand?: boolean }) => {
     return render(
         <BrowserRouter>
-            <Sidebar />
+            <Sidebar {...props} />
         </BrowserRouter>
     );
 };
@@ -133,15 +133,10 @@ describe('Sidebar overflow behavior', () => {
     });
 });
 
-describe('Sidebar title collapse transition', () => {
-    it('should apply w-0 and opacity-0 to title when collapsed', async () => {
-        // Arrange
-        const user = userEvent.setup();
-        renderSidebar();
-
-        // Act — click the logo to collapse
-        const logo = screen.getByAltText('Store ICU Logo');
-        await user.click(logo);
+describe('Sidebar hover-rail collapse transition', () => {
+    it('should apply w-0 and opacity-0 to title when collapsed at rest (hover rail)', () => {
+        // Arrange & Act — hover rail rests collapsed
+        renderSidebar({ hoverExpand: true });
 
         // Assert
         const title = screen.getByText('Store ICU');
@@ -149,7 +144,21 @@ describe('Sidebar title collapse transition', () => {
         expect(title.className).toContain('opacity-0');
     });
 
-    it('should apply w-auto and opacity-100 to title when expanded', () => {
+    it('should apply w-auto and opacity-100 to title when pinned open', async () => {
+        // Arrange
+        const user = userEvent.setup();
+        renderSidebar({ hoverExpand: true });
+
+        // Act — click the logo to pin the rail open
+        await user.click(screen.getByAltText('Store ICU Logo'));
+
+        // Assert
+        const title = screen.getByText('Store ICU');
+        expect(title.className).toContain('w-auto');
+        expect(title.className).toContain('opacity-100');
+    });
+
+    it('should stay expanded without hoverExpand (mobile drawer)', () => {
         // Arrange & Act
         renderSidebar();
 
