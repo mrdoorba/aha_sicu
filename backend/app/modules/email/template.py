@@ -348,10 +348,10 @@ def _render_score_overview(
                 <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                   <tr>
                     <td style="padding-right:20px;font-size:16px;font-weight:bold;color:{GREEN};">
-                      ⊘ {counts['checks']}
+                      ✔️ {counts['checks']}
                     </td>
                     <td style="font-size:16px;font-weight:bold;color:{ORANGE};">
-                      ⊗ {counts['xs']}
+                      ❌ {counts['xs']}
                     </td>
                   </tr>
                 </table>
@@ -616,7 +616,7 @@ def _render_score_breakdown(
 
     return (
         f'<tr><td style="padding:16px 30px 24px 30px">'
-        f'{_section_header("03", S["score_breakdown"])}'
+        f'{_section_header("04", S["score_breakdown"])}'
         f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="card">'
         f'<tr><td style="padding:20px">'
         f'<table width="100%" cellpadding="0" cellspacing="0" border="0">'
@@ -792,7 +792,7 @@ def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, s
 <!-- Data Intelligence -->
 <tr>
   <td style="padding:16px 30px 24px 30px;">
-    {_section_header("04", S['data_intelligence'])}
+    {_section_header("03", S['data_intelligence'])}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="background-color:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};">
       <tr>
@@ -1201,8 +1201,8 @@ def render_email_html_body(
         {note_section}
         {score_overview}
         {detailed}
-        {breakdown}
         {intelligence}
+        {breakdown}
         {kesimpulan}
         {signoff}
         {footer_banner}
