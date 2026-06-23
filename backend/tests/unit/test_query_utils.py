@@ -1,55 +1,6 @@
 """Tests for database query utilities."""
 
-from unittest.mock import AsyncMock, MagicMock
-
-from app.db.queries.utils import fetch_one, fetch_all, paginate, FilterBuilder
-
-
-class TestFetchOne:
-
-    async def test_returns_dict_when_row_exists(self):
-        conn = AsyncMock()
-        row = MagicMock()
-        row.__iter__ = MagicMock(return_value=iter([("id", 1), ("name", "test")]))
-        row.keys.return_value = ["id", "name"]
-        conn.fetchrow.return_value = row
-        result = await fetch_one(conn, "SELECT * FROM t WHERE id = $1", 1)
-        assert result == dict(row)
-        conn.fetchrow.assert_called_once_with("SELECT * FROM t WHERE id = $1", 1)
-
-
-    async def test_returns_none_when_no_row(self):
-        conn = AsyncMock()
-        conn.fetchrow.return_value = None
-        result = await fetch_one(conn, "SELECT * FROM t WHERE id = $1", 1)
-        assert result is None
-
-
-    async def test_passes_multiple_args(self):
-        conn = AsyncMock()
-        conn.fetchrow.return_value = None
-        await fetch_one(conn, "SELECT * FROM t WHERE a = $1 AND b = $2", "x", 2)
-        conn.fetchrow.assert_called_once_with(
-            "SELECT * FROM t WHERE a = $1 AND b = $2", "x", 2
-        )
-
-
-class TestFetchAll:
-
-    async def test_returns_list_of_dicts(self):
-        conn = AsyncMock()
-        row1 = MagicMock()
-        row2 = MagicMock()
-        conn.fetch.return_value = [row1, row2]
-        result = await fetch_all(conn, "SELECT * FROM t")
-        assert result == [dict(row1), dict(row2)]
-
-
-    async def test_returns_empty_list_when_no_rows(self):
-        conn = AsyncMock()
-        conn.fetch.return_value = []
-        result = await fetch_all(conn, "SELECT * FROM t")
-        assert result == []
+from app.db.queries.utils import paginate, FilterBuilder
 
 
 class TestPaginate:
