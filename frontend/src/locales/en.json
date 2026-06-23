@@ -690,7 +690,7 @@
   "scoring.promoEffectiveness": "Promo Effectiveness",
   "scoring.promoEffectiveness.fail": "❌ Promo tool effectiveness = {{value}} [Needs Improvement, target: >{{threshold}}%]",
   "scoring.promoEffectiveness.pass": "✔️ Promo tool effectiveness = {{value}} [Good]",
-  "scoring.promoIndividual.dependent": "{{verdict}} $t({{metricKey}}) = {{pct}} [Too dependent on promo, target: 15%-50%]",
+  "scoring.promoIndividual.dependent": "{{verdict}} $t({{metricKey}}) = {{pct}} [Too dependent on promo, target: 15%-50%] — Fake Discount Detected",
   "scoring.promoIndividual.fail": "❌ $t({{metricKey}}) = {{pct}} [Ineffective, target: {{benchmark}}]",
   "scoring.promoIndividual.pass": "✔️ $t({{metricKey}}) ({{pct}}) used & usage rate is good",
   "scoring.promoIndividual.passAffiliate": "✔️ $t({{metricKey}}) ({{pct}}) used",

@@ -690,7 +690,7 @@
   "scoring.promoEffectiveness": "ประสิทธิภาพโปรโมชั่น",
   "scoring.promoEffectiveness.fail": "❌ ประสิทธิภาพเครื่องมือโปรโมชั่น = {{value}} [ต้องปรับปรุง, เป้าหมาย: >{{threshold}}%]",
   "scoring.promoEffectiveness.pass": "✔️ ประสิทธิภาพเครื่องมือโปรโมชั่น = {{value}} [ดี]",
-  "scoring.promoIndividual.dependent": "{{verdict}} $t({{metricKey}}) = {{pct}} [พึ่งพาโปรโมชั่นมากเกินไป, เป้าหมาย: 15%-50%]",
+  "scoring.promoIndividual.dependent": "{{verdict}} $t({{metricKey}}) = {{pct}} [พึ่งพาโปรโมชั่นมากเกินไป, เป้าหมาย: 15%-50%] — ตรวจพบส่วนลดปลอม",
   "scoring.promoIndividual.fail": "❌ $t({{metricKey}}) = {{pct}} [ไม่มีประสิทธิภาพ, เป้าหมาย: {{benchmark}}]",
   "scoring.promoIndividual.pass": "✔️ $t({{metricKey}}) ({{pct}}) ใช้งานแล้วและอัตราการใช้ดี",
   "scoring.promoIndividual.passAffiliate": "✔️ $t({{metricKey}}) ใช้งานแล้ว",
