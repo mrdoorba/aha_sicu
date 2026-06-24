@@ -51,7 +51,7 @@ _EMAIL_STRING_KEYS: frozenset[str] = frozenset({
     "verdict", "score", "message", "approved", "rejected",
     "check_count", "cross_count", "performance_verdict", "brand_report",
     "subject", "plain_score", "plain_period", "chart_placeholder",
-    "schedule_consultation", "signoff_regards", "greeting",
+    "schedule_consultation", "signoff_regards", "greeting", "compatibility",
 })
 
 # Indonesian category names are the canonical keys used in evaluation data.
@@ -344,14 +344,30 @@ def _render_note(note: str) -> str:
 def _render_score_overview(
     categories: list[dict[str, Any]],
     S: dict[str, str],
+    final_score: float | None = None,
 ) -> str:
     """Render score overview section: large score, progress bar, verdict counts.
 
-    Uses the **partner score** (pass-ratio from verdicts) instead of the
-    internal ``final_score`` to match the presentation dashboard display.
+    The large number is the **partner score** (pass-ratio from verdicts), to
+    match the presentation dashboard.  The ``final_score`` — the *AHA
+    Compatibility Score* — rides alongside in its own pill (dashboard parity),
+    shown only when supplied.
     """
     counts = _compute_verdict_counts(categories)
     partner_score = counts["score"]
+
+    compat_pill = ""
+    if final_score is not None:
+        compat_pill = (
+            f'<td style="padding-right:10px;vertical-align:middle;">'
+            f'<table role="presentation" cellpadding="0" cellspacing="0" border="0" '
+            f'style="background-color:{PRIMARY_LIGHT};border:1px solid {PRIMARY_BLUE}26;border-radius:20px;">'
+            f'<tr><td style="padding:8px 16px;white-space:nowrap;">'
+            f'<span style="font-size:12px;font-weight:bold;color:{TEXT_DARK};">{S["compatibility"]}</span>'
+            f'<span style="font-size:16px;font-weight:900;color:{PRIMARY_BLUE};padding-left:8px;">{round(final_score)}</span>'
+            f'<span style="font-size:11px;font-weight:600;color:{TEXT_SECONDARY};">/100</span>'
+            f'</td></tr></table></td>'
+        )
 
     return f"""\
 <!-- Score Overview -->
@@ -385,14 +401,21 @@ def _render_score_overview(
                 </table>
               </td>
             </tr>
-            <!-- Performance badge -->
+            <!-- AHA Compatibility pill + Performance badge -->
             <tr>
               <td>
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0"
-                       style="background-color:{PRIMARY_LIGHT};border:1px solid {PRIMARY_BLUE}30;border-radius:6px;">
+                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
                   <tr>
-                    <td style="padding:8px 16px;font-size:13px;font-weight:bold;color:{PRIMARY_BLUE};letter-spacing:0.3px;">
-                      ↗ {S['performance_verdict']}
+                    {compat_pill}
+                    <td style="vertical-align:middle;">
+                      <table role="presentation" cellpadding="0" cellspacing="0" border="0"
+                             style="background-color:{PRIMARY_LIGHT};border:1px solid {PRIMARY_BLUE}30;border-radius:6px;">
+                        <tr>
+                          <td style="padding:8px 16px;font-size:13px;font-weight:bold;color:{PRIMARY_BLUE};letter-spacing:0.3px;">
+                            ↗ {S['performance_verdict']}
+                          </td>
+                        </tr>
+                      </table>
                     </td>
                   </tr>
                 </table>
@@ -1193,7 +1216,7 @@ def render_email_html_body(
 
     header = _render_header(header_src, brand_name, period, S)
     note_section = _render_note(note) if note else ""
-    score_overview = _render_score_overview(categories, S)
+    score_overview = _render_score_overview(categories, S, evaluation_data.get("final_score"))
     detailed = _render_detailed_evaluation(categories, S, cat_map, language)
     breakdown = _render_score_breakdown(chart_src, categories, S, cat_map)
     intelligence = _render_data_intelligence(calculator_results, S, language=language)
