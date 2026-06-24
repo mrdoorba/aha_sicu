@@ -61,6 +61,7 @@ _EMAIL_STRING_KEYS: frozenset[str] = frozenset({
     "check_count", "cross_count", "performance_verdict", "brand_report",
     "subject", "plain_score", "plain_period", "chart_placeholder",
     "schedule_consultation", "signoff_regards", "greeting", "compatibility",
+    "visit_store",
 })
 
 # Indonesian category names are the canonical keys used in evaluation data.
@@ -192,13 +193,21 @@ _NOTE_BOLD_RE = re.compile(r"\*([^*\n]+)\*")
 _NOTE_LINK_RE = re.compile(r"\[\s*(https?://[^\]\s]+)\s*\]")
 
 
-def _render_note_markup(text: str) -> str:
-    """Escape *text*, then resolve ``*bold*`` and ``[url]`` markers + newlines."""
+def _render_note_markup(text: str, S: dict[str, str]) -> str:
+    """Escape *text*, then resolve ``*bold*`` and ``[url]`` markers + newlines.
+
+    The bracketed store URL becomes a pill button on its own line (rather than
+    a bare inline link glued to the preceding word), labelled with the
+    localized ``visit_store`` string.
+    """
+    store_label = S.get("visit_store", "Visit Store")
     out = _esc(text)
     out = _NOTE_LINK_RE.sub(
         lambda m: (
-            f'<a href="{m.group(1)}" target="_blank" '
-            f'style="color:{PRIMARY_BLUE};text-decoration:underline;">{m.group(1)}</a>'
+            f'<br><a href="{m.group(1)}" target="_blank" '
+            f'style="display:inline-block;margin-top:12px;background-color:{PRIMARY_BLUE};'
+            f'color:{WHITE};font-size:14px;font-weight:700;text-decoration:none;'
+            f'padding:10px 28px;border-radius:24px;">{_esc(store_label)}</a>'
         ),
         out,
     )
@@ -308,9 +317,11 @@ def _render_header(
 <!-- Header Image -->
 <tr>
   <td style="padding:0;margin:0;">
-    <img src="{header_src}" width="900"
-         style="display:block;width:100%;height:auto;border:0;"
-         alt="AHA Commerce">
+    <a href="https://www.ahacommerce.net/" target="_blank" style="text-decoration:none;">
+      <img src="{header_src}" width="900"
+           style="display:block;width:100%;height:auto;border:0;"
+           alt="AHA Commerce">
+    </a>
   </td>
 </tr>
 <!-- Brand Info -->
@@ -332,7 +343,7 @@ def _render_header(
 </tr>"""
 
 
-def _render_note(note: str) -> str:
+def _render_note(note: str, S: dict[str, str]) -> str:
     """Render the note (salutation + intro) as plain prose.
 
     The text is HTML-escaped, then its ``*bold*`` spans and ``[url]`` link are
@@ -340,7 +351,7 @@ def _render_note(note: str) -> str:
     <br>.  No bordered card — the salutation reads as plain text and the
     starred title stands out only by its bold weight.
     """
-    body = _render_note_markup(note)
+    body = _render_note_markup(note, S)
     return f"""\
 <!-- Note -->
 <tr>
@@ -444,9 +455,11 @@ def _render_footer(footer_src: str) -> str:
 <!-- Footer Image -->
 <tr>
   <td style="padding:0;margin:0;">
-    <img src="{footer_src}" width="900"
-         style="display:block;width:100%;height:auto;border:0;"
-         alt="AHA Commerce Footer">
+    <a href="https://www.ahacommerce.net/" target="_blank" style="text-decoration:none;">
+      <img src="{footer_src}" width="900"
+           style="display:block;width:100%;height:auto;border:0;"
+           alt="AHA Commerce Footer">
+    </a>
   </td>
 </tr>"""
 
@@ -1283,7 +1296,7 @@ def render_email_html_body(
     calculator_results: dict[str, Any] = evaluation_data.get("calculator_results", {})
 
     header = _render_header(header_src, brand_name, period, S)
-    note_section = _render_note(note) if note else ""
+    note_section = _render_note(note, S) if note else ""
     score_overview = _render_score_overview(categories, S, evaluation_data.get("final_score"))
     detailed = _render_detailed_evaluation(categories, S, cat_map, language, evaluation_data.get("marketplace", "ID"))
     breakdown = _render_score_breakdown(chart_src, categories, S, cat_map)
