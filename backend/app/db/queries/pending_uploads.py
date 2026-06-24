@@ -69,14 +69,6 @@ async def claim_pending_upload(conn: Connection, upload_id: str) -> dict | None:
     )
 
 
-async def delete_pending_upload(conn: Connection, upload_id: str) -> None:
-    """Delete a pending upload by upload_id."""
-    await conn.execute(
-        "DELETE FROM pending_uploads WHERE upload_id = $1",
-        upload_id,
-    )
-
-
 async def cleanup_expired_uploads(conn: Connection) -> int:
     """Delete all expired pending uploads, return count deleted."""
     result = await conn.execute(

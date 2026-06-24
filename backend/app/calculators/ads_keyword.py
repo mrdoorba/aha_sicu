@@ -11,6 +11,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any
 
+from app.calculators.scoring.helpers import _safe_num
 from app.core.marketplace import MARKETPLACE_CURRENCY
 
 
@@ -75,23 +76,6 @@ def _format_roas(value: float | int) -> str:
 def _format_pct(fraction: float) -> str:
     """Format fraction as percentage: 0.05 → '5.0%'."""
     return f"{fraction * 100:.1f}%"
-
-
-def _safe_num(value: Any) -> float:
-    """Coerce a value to float, treating None/'-'/'' as 0."""
-    if value is None:
-        return 0.0
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        value = value.strip()
-        if value in ("", "-"):
-            return 0.0
-        try:
-            return float(value)
-        except ValueError:
-            return 0.0
-    return 0.0
 
 
 def _safe_str(value: Any) -> str:

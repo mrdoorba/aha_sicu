@@ -31,22 +31,6 @@ async def get_results_by_brand(conn: Connection, brand_id: int) -> list[Calculat
     )
 
 
-async def get_result_by_type(
-    conn: Connection, brand_id: int, calculator_type: str
-) -> CalculatorResultRow | None:
-    """Return a single calculator result for a brand+type, or None."""
-    return await fetch_one(
-        conn,
-        """
-        SELECT id, brand_id, calculator_type, details, output_text, calculated_at
-        FROM calculator_results
-        WHERE brand_id = $1 AND calculator_type = $2
-        """,
-        brand_id,
-        calculator_type,
-    )
-
-
 async def delete_results_by_types(
     conn: Connection, brand_id: int, calculator_types: list[str]
 ) -> int:

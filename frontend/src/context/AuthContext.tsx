@@ -6,7 +6,6 @@ import {
   type ReactNode,
 } from 'react';
 import type { User } from 'firebase/auth';
-import type { AuthService } from '../services/authService';
 import { firebaseAuthService } from '../services/firebaseAuthService';
 
 interface AuthContextType {
@@ -20,30 +19,26 @@ const AuthContext = createContext<AuthContextType | null>(null);
 
 interface AuthProviderProps {
   children: ReactNode;
-  authService?: AuthService;
 }
 
-export const AuthProvider = ({
-  children,
-  authService = firebaseAuthService,
-}: AuthProviderProps) => {
+export const AuthProvider = ({ children }: AuthProviderProps) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = authService.subscribe((user) => {
+    const unsubscribe = firebaseAuthService.subscribe((user) => {
       setUser(user);
       setLoading(false);
     });
     return unsubscribe;
-  }, [authService]);
+  }, []);
 
   const login = async (email: string, password: string) => {
-    await authService.login(email, password);
+    await firebaseAuthService.login(email, password);
   };
 
   const logout = async () => {
-    await authService.logout();
+    await firebaseAuthService.logout();
   };
 
   return (

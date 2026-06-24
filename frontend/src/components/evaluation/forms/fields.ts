@@ -26,16 +26,6 @@ export function localizeSellerLink(link: string, marketplace: string = 'ID'): st
   return link;
 }
 
-/** @deprecated Use getSectionLinks(marketplace) instead. */
-export const SECTION_LINKS = {
-  operational: 'https://seller.shopee.co.id/portal/accounthealth/home',
-  business: 'https://seller.shopee.co.id/datacenter/dashboard',
-  visitors: 'https://seller.shopee.co.id/datacenter/traffic/overview',
-  promoTools: 'https://seller.shopee.co.id/datacenter/marketing/tools/discount',
-  ads: 'https://seller.shopee.co.id/portal/marketing/pas/assembly?&type=all&group=last-thirty-days',
-  campaign: 'https://seller.shopee.co.id/portal/marketing/cmt-product/campaign?tab=AllCampaign',
-} as const;
-
 export function getSectionLinks(marketplace: string = 'ID') {
   const base = getSellerBaseUrl(marketplace);
   return {

@@ -8,7 +8,8 @@ IDR-labelled output (unchanged) for Indonesia.
 
 import pytest
 
-from app.calculators.scoring import calculate_score, DEFAULT_RULES
+from app.calculators.scoring import calculate_score
+from app.calculators.scoring.rules import DEFAULT_RULES
 from app.calculators.scoring.helpers import _fmt_currency, _fmt_idr
 from app.calculators.scoring.computations import _compute_g66, _compute_g66_i18n
 from app.calculators.scoring.messages import (

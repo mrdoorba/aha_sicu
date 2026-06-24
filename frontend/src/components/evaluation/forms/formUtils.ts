@@ -62,16 +62,6 @@ export function parseCurrency(formatted: string, _marketplace?: string): number 
   return isNaN(num) ? null : num;
 }
 
-/** @deprecated Use `formatCurrency` instead. Kept for backward compatibility. */
-export function formatIDR(value: number | null | undefined): string {
-  return formatCurrency(value);
-}
-
-/** @deprecated Use `parseCurrency` instead. Kept for backward compatibility. */
-export function parseIDR(formatted: string): number | null {
-  return parseCurrency(formatted);
-}
-
 // ── Section progress computation ──────────────────────────────────────────
 
 function countFilledInFlat(obj: object): { filled: number; total: number } {

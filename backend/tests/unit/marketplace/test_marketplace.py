@@ -13,14 +13,16 @@ from pathlib import Path
 
 import pytest
 
-from app.core.marketplace import (
-    CURRENCY_SYMBOLS,
-    IDR_TO_THB_RATE,
-    MARKETPLACE_CURRENCY,
-    MARKETPLACE_LABELS,
-    VALID_MARKETPLACES,
-    convert_idr_to_thb,
-)
+from app.core.marketplace import MARKETPLACE_CURRENCY
+
+# The fixed IDR→THB seeding rate lives in migration 026; mirror it locally so
+# the threshold-derivation arithmetic stays covered after the runtime helper
+# was removed as dead code.
+IDR_TO_THB_RATE = 0.0019
+
+
+def convert_idr_to_thb(value_idr: float) -> float:
+    return round(value_idr * IDR_TO_THB_RATE, 2)
 
 
 # ---------------------------------------------------------------------------
@@ -29,40 +31,13 @@ from app.core.marketplace import (
 
 
 class TestMarketplaceConstants:
-    """Verify MARKETPLACE_CURRENCY and MARKETPLACE_LABELS are importable and complete."""
-
-    def test_valid_marketplaces_contains_id_and_th(self) -> None:
-        assert "ID" in VALID_MARKETPLACES
-        assert "TH" in VALID_MARKETPLACES
-
-    def test_valid_marketplaces_is_frozen(self) -> None:
-        assert isinstance(VALID_MARKETPLACES, frozenset)
+    """Verify MARKETPLACE_CURRENCY is importable and complete."""
 
     def test_marketplace_currency_maps_id_to_idr(self) -> None:
         assert MARKETPLACE_CURRENCY["ID"] == "IDR"
 
     def test_marketplace_currency_maps_th_to_thb(self) -> None:
         assert MARKETPLACE_CURRENCY["TH"] == "THB"
-
-    def test_marketplace_labels_maps_id_to_indonesia(self) -> None:
-        assert MARKETPLACE_LABELS["ID"] == "Indonesia"
-
-    def test_marketplace_labels_maps_th_to_thailand(self) -> None:
-        assert MARKETPLACE_LABELS["TH"] == "Thailand"
-
-    def test_currency_symbols_has_idr(self) -> None:
-        assert CURRENCY_SYMBOLS["IDR"] == "Rp"
-
-    def test_currency_symbols_has_thb(self) -> None:
-        assert CURRENCY_SYMBOLS["THB"] == "฿"
-
-    def test_all_valid_marketplaces_have_currency(self) -> None:
-        for mp in VALID_MARKETPLACES:
-            assert mp in MARKETPLACE_CURRENCY, f"Missing currency mapping for {mp}"
-
-    def test_all_valid_marketplaces_have_label(self) -> None:
-        for mp in VALID_MARKETPLACES:
-            assert mp in MARKETPLACE_LABELS, f"Missing label mapping for {mp}"
 
 
 # ---------------------------------------------------------------------------
@@ -234,8 +209,8 @@ class TestInvalidMarketplaceRejection:
     """Verify that invalid marketplace codes are caught at the constants level."""
 
     @pytest.mark.parametrize("code", ["XX", "US", "id", "th", "", "IDR"])
-    def test_invalid_code_not_in_valid_marketplaces(self, code: str) -> None:
-        assert code not in VALID_MARKETPLACES
+    def test_invalid_code_not_in_marketplace_currency(self, code: str) -> None:
+        assert code not in MARKETPLACE_CURRENCY
 
     def test_marketplace_currency_raises_on_invalid_key(self) -> None:
         with pytest.raises(KeyError):

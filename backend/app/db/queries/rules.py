@@ -32,14 +32,6 @@ async def get_all_rules(conn: Connection, *, marketplace: str = "ID") -> list[Ru
     )
 
 
-async def get_rules_by_template(conn: Connection, template: str) -> RuleRow | None:
-    """Get scoring rules for a specific template (defaults to marketplace='ID').
-
-    Kept for backward compatibility — prefer get_rules_by_template_and_marketplace.
-    """
-    return await get_rules_by_template_and_marketplace(conn, template, marketplace="ID")
-
-
 async def get_rules_by_template_and_marketplace(
     conn: Connection,
     template: str,

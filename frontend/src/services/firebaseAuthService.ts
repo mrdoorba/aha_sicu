@@ -5,9 +5,8 @@ import {
   subscribeToAuthChanges,
 } from '../firebase/auth';
 import type { User } from 'firebase/auth';
-import type { AuthService } from './authService';
 
-export const firebaseAuthService: AuthService = {
+export const firebaseAuthService = {
   getToken: () => getCurrentUserToken(),
   subscribe: (callback: (user: User | null) => void) =>
     subscribeToAuthChanges(callback),

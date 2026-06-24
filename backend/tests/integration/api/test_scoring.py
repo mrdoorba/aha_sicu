@@ -3,7 +3,7 @@
 from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
-from app.calculators.scoring import DEFAULT_RULES
+from app.calculators.scoring.rules import DEFAULT_RULES
 
 AUTH_HEADERS = {"Authorization": "Bearer valid-token"}
 

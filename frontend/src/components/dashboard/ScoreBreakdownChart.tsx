@@ -11,7 +11,7 @@ import { Card, CardContent } from '../ui/card';
 import { cn } from '../../lib/utils';
 import { useTranslation } from 'react-i18next';
 import { CATEGORY_MAP } from '../../lib/categoryMap';
-import { computeCategoryVerdictCounts } from '../../lib/verdictCounts';
+import { computeVerdictCounts } from '../../lib/verdictCounts';
 
 interface RowData {
   verdict: string;
@@ -34,7 +34,7 @@ export const ScoreBreakdownChart = forwardRef<HTMLDivElement, ScoreBreakdownChar
   const radarData = scoreBreakdown.map((cat) => {
     const mapped = CATEGORY_MAP.find((m) => m.backend === cat.category);
     const label = mapped ? t(mapped.labelKey) : cat.category;
-    const counts = computeCategoryVerdictCounts(cat.rows || []);
+    const counts = computeVerdictCounts([cat]);
     const percent = counts.total > 0 ? counts.score : 0;
     return { category: label, value: percent, fullMark: 100 };
   });
@@ -76,7 +76,7 @@ export const ScoreBreakdownChart = forwardRef<HTMLDivElement, ScoreBreakdownChar
             {scoreBreakdown.map((cat, idx) => {
               const mapped = CATEGORY_MAP.find((m) => m.backend === cat.category);
               const label = mapped ? t(mapped.labelKey) : cat.category;
-              const counts = computeCategoryVerdictCounts(cat.rows || []);
+              const counts = computeVerdictCounts([cat]);
               const percent = counts.total > 0 ? counts.score : 0;
 
               return (

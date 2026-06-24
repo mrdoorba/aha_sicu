@@ -68,14 +68,14 @@ class TestScoringWithDoubleEncodedData:
 
     def test_dict_data_produces_nonzero_business_score(self):
         """With dict manual_data, business section scores > 0."""
-        from app.calculators.scoring import _score_business
+        from app.calculators.scoring.categories import _score_business
         data = _ensure_dict(self.SAMPLE_MANUAL_DATA)
         result = _score_business(data)
         assert result.score > 0, "Business score should be > 0 with real data"
 
     def test_string_data_produces_nonzero_business_score(self):
         """With double-encoded (string) manual_data, _ensure_dict recovers the dict."""
-        from app.calculators.scoring import _score_business
+        from app.calculators.scoring.categories import _score_business
         encoded = json.dumps(self.SAMPLE_MANUAL_DATA)
         data = _ensure_dict(encoded)
         result = _score_business(data)
@@ -83,14 +83,14 @@ class TestScoringWithDoubleEncodedData:
 
     def test_dict_data_produces_nonzero_visitors_score(self):
         """With dict manual_data, visitors section scores > 0."""
-        from app.calculators.scoring import _score_visitors
+        from app.calculators.scoring.categories import _score_visitors
         data = _ensure_dict(self.SAMPLE_MANUAL_DATA)
         result = _score_visitors(data)
         assert result.score > 0, "Visitors score should be > 0 with 60K followers"
 
     def test_string_data_produces_nonzero_visitors_score(self):
         """With double-encoded (string) manual_data, visitors section recovers."""
-        from app.calculators.scoring import _score_visitors
+        from app.calculators.scoring.categories import _score_visitors
         encoded = json.dumps(self.SAMPLE_MANUAL_DATA)
         data = _ensure_dict(encoded)
         result = _score_visitors(data)
@@ -98,7 +98,7 @@ class TestScoringWithDoubleEncodedData:
 
     def test_both_formats_produce_identical_scores(self):
         """Dict and string manual_data produce identical scoring results."""
-        from app.calculators.scoring import _score_business, _score_visitors, _score_products
+        from app.calculators.scoring.categories import _score_business, _score_visitors, _score_products
 
         dict_data = _ensure_dict(self.SAMPLE_MANUAL_DATA)
         string_data = _ensure_dict(json.dumps(self.SAMPLE_MANUAL_DATA))
