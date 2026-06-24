@@ -239,6 +239,9 @@ class TestScoreOverview:
         )
         # Partner score = round(3 checks / 5 total * 100) = 60
         assert ">60<" in html or ">60 " in html.replace("&nbsp;", " ")
+        # AHA Compatibility Score pill carries the internal final_score (72.5 -> 72)
+        assert ">AHA Compatibility<" in html
+        assert ">72<" in html
 
     def test_score_color_green(self) -> None:
         assert _score_color(80.0) == "#22C55E"

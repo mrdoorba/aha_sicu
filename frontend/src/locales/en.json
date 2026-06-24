@@ -825,6 +825,7 @@
   "email.performance_verdict": "Performance can be Improved",
   "email.brand_report": "Brand Evaluation Report",
   "email.greeting": "Hello Brand {{brandName}},",
+  "email.compatibility": "AHA Compatibility",
   "email.subject": "Brand Evaluation Report: {brand_name} - {period}",
   "email.plain_score": "AHA Compatibility Score",
   "email.plain_period": "Period",
