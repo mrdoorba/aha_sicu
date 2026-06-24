@@ -9,6 +9,7 @@ from app.modules.email.template import (
     _get_category_map,
     _get_strings,
     _load_locale,
+    _render_metric_card,
     _resolve_ads_output_text,
     _resolve_translatable_text,
     _translate,
@@ -18,6 +19,28 @@ from app.modules.email.template import (
     _resolve_metric_name,
     _score_color,
 )
+
+
+class TestMetricCardLink:
+    """Competition rows carry a product link in message_i18n.vars.link."""
+
+    def _row(self) -> dict:
+        return {
+            "verdict": "❌",
+            "metric": "Kompetisi TOP Produk",
+            "value": "Produk A",
+            "message": "Kompetitor unggul di harga",
+            "message_i18n": {"key": "x.missing", "vars": {"link": "https://shopee.co.id/product/1/2"}},
+        }
+
+    def test_link_rendered_as_anchor(self) -> None:
+        html = _render_metric_card(self._row(), _get_strings("id"), "id", "ID")
+        assert 'href="https://shopee.co.id/product/1/2"' in html
+
+    def test_link_localized_for_th_marketplace(self) -> None:
+        html = _render_metric_card(self._row(), _get_strings("id"), "th", "TH")
+        assert "shopee.co.th/product/1/2" in html
+        assert "shopee.co.id" not in html
 
 
 # ---------------------------------------------------------------------------
