@@ -826,6 +826,7 @@
   "email.brand_report": "รายงานประเมินแบรนด์",
   "email.greeting": "สวัสดีแบรนด์ {{brandName}},",
   "email.compatibility": "AHA Compatibility",
+  "email.visit_store": "เยี่ยมชมร้านค้า",
   "email.subject": "รายงานประเมินแบรนด์: {brand_name} - {period}",
   "email.plain_score": "AHA Compatibility Score",
   "email.plain_period": "ช่วงเวลา",
