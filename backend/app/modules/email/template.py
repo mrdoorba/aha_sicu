@@ -31,6 +31,14 @@ GREEN = "#22C55E"
 GREEN_LIGHT = "#DCFCE7"
 ORANGE = "#F97316"
 ORANGE_LIGHT = "#FFF7ED"
+# Verdict signal shades (Tailwind 50/200/700) for the metric-card tint.
+# 700 text clears WCAG AA on white where the 500 base (#22C55E ~1.9:1) failed.
+GREEN_50 = "#F0FDF4"
+GREEN_200 = "#BBF7D0"
+GREEN_700 = "#15803D"
+ORANGE_50 = "#FFF7ED"
+ORANGE_200 = "#FED7AA"
+ORANGE_700 = "#C2410C"
 BG_GRAY = "#F4F4F5"          # neutral-100
 WHITE = "#ffffff"
 TEXT_DARK = "#1D388B"         # dark navy — foreground
@@ -447,12 +455,31 @@ def _render_footer(footer_src: str) -> str:
 # ---------------------------------------------------------------------------
 
 
+# A leading verdict glyph in the message duplicates the card's own verdict
+# icon, so strip it from the message body (the icon now leads the metric name).
+_LEADING_VERDICT_RE = re.compile(r"^\s*(?:\u2714\ufe0f|\u2705|\u274c)\s*")
+
+
 def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id") -> str:
-    """Render a single metric card matching the dashboard CategoryMetricCard style."""
-    is_pass = row.get("verdict") == "\u2714\ufe0f"
-    verdict_color = GREEN if is_pass else ORANGE
+    """Render a single metric card with a verdict-signal tint.
+
+    Pass rows are washed green, fails orange, and rows with no verdict ("-")
+    stay neutral white.  The value is the navy hero of the card; the verdict
+    text uses the 700 shade for AA contrast, and the verdict icon leads the
+    metric name (so the message drops its now-duplicate leading glyph).
+    """
+    verdict = row.get("verdict")
+    if verdict == "\u2714\ufe0f":
+        icon, msg_color, card_bg, card_border = "\u2714\ufe0f", GREEN_700, GREEN_50, GREEN_200
+    elif verdict == "\u274c":
+        icon, msg_color, card_bg, card_border = "\u274c", ORANGE_700, ORANGE_50, ORANGE_200
+    else:
+        icon, msg_color, card_bg, card_border = "", TEXT_SECONDARY, WHITE, BORDER_LIGHT
+
     raw_message = row.get("message", "")
     translated_message = _resolve_translatable_text(row.get("message_i18n"), raw_message, lang)
+    if icon:
+        translated_message = _LEADING_VERDICT_RE.sub("", translated_message)
     message = _esc(translated_message).replace("\n", "<br>")
     raw_metric = row.get("metric", "")
     display_metric = _resolve_metric_name(row, lang)
@@ -480,10 +507,10 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id"
             )
         if message:
             detail_parts.append(
-                f'<div style="font-size:11px;color:{verdict_color};line-height:1.5">{message}</div>'
+                f'<div style="font-size:11px;font-weight:600;color:{msg_color};line-height:1.5">{message}</div>'
             )
         detail_html = (
-            f'<tr><td colspan="2" style="border-top:1px solid {BORDER_LIGHT};padding-top:8px">'
+            f'<tr><td colspan="2" style="border-top:1px solid {card_border};padding-top:8px">'
             + "".join(detail_parts)
             + "</td></tr>"
         )
@@ -496,13 +523,17 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id"
         escaped_value = _esc(display_value)
         val_style = "text-align:right;white-space:nowrap"
 
+    icon_html = f"{icon}&nbsp;" if icon else ""
+    label_style = f"font-size:13px;font-weight:700;color:{TEXT_DARK};line-height:1.4"
+    value_style = f"font-size:17px;font-weight:800;color:{TEXT_DARK};letter-spacing:-0.3px"
     pb = 10 if has_detail else 0
     return (
-        f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="mc">'
+        f'<table width="100%" cellpadding="0" cellspacing="0" border="0" '
+        f'style="background-color:{card_bg};border:1px solid {card_border};border-radius:8px;margin-bottom:8px;">'
         f'<tr><td style="padding:14px 16px">'
         f'<table width="100%" cellpadding="0" cellspacing="0" border="0">'
-        f'<tr><td class="lbl" style="padding-bottom:{pb}px">{_esc(display_metric)}</td>'
-        f'<td class="val" style="{val_style};padding-bottom:{pb}px">{escaped_value}</td></tr>'
+        f'<tr><td style="{label_style};padding-bottom:{pb}px">{icon_html}{_esc(display_metric)}</td>'
+        f'<td style="{value_style};{val_style};padding-bottom:{pb}px">{escaped_value}</td></tr>'
         f'{detail_html}'
         f'</table></td></tr></table>'
     )
@@ -1117,10 +1148,8 @@ _EMAIL_CSS = f"""\
 body,td,th{{font-family:{FONT_STACK};}}
 .T{{border-collapse:collapse;}}
 .card{{background:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};}}
-.mc{{background:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};margin-bottom:8px;}}
 .hdr{{font-size:15px;font-weight:bold;color:{TEXT_DARK};}}
 .lbl{{font-size:13px;font-weight:600;color:{TEXT_DARK};}}
-.val{{font-size:13px;font-weight:bold;color:{TEXT_SECONDARY};}}
 .sm{{font-size:11px;color:{TEXT_SECONDARY};}}
 .bar-bg{{background:{BORDER_LIGHT};border-radius:4px;height:8px;padding:0;}}
 .bar-bg10{{background:{BORDER_LIGHT};border-radius:4px;height:10px;padding:0;}}
