@@ -1108,7 +1108,7 @@ def _render_footer_banner(syb_src: str, language: str) -> str:
     return f"""\
 <!-- Footer Banner -->
 <tr>
-  <td style="padding:24px 30px 0 30px;">
+  <td style="padding:24px 30px 24px 30px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="border-radius:12px;overflow:hidden;">
       <!-- Gold section -->
