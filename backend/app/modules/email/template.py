@@ -997,9 +997,9 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str], *,
         escaped_closing = _closing_with_cta_buttons(closing_message, S)
         parts.append(f"""\
           <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-                 style="border-left:4px solid {PRIMARY_BLUE}40;background-color:{PRIMARY_LIGHT};border-radius:0 8px 8px 0;">
+                 style="border:1px solid {PRIMARY_BLUE}33;background-color:{PRIMARY_LIGHT};border-radius:8px;">
             <tr>
-              <td style="padding:24px 18px;font-size:13px;color:{TEXT_DARK};line-height:1.7;">
+              <td style="padding:24px 20px;font-size:13px;color:{TEXT_DARK};line-height:1.7;">
                 {escaped_closing}
               </td>
             </tr>
