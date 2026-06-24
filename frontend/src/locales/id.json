@@ -823,6 +823,7 @@
   "email.cross_count": "Tidak Lolos",
   "email.performance_verdict": "Performa dapat Ditingkatkan",
   "email.brand_report": "Laporan Evaluasi Brand",
+  "email.greeting": "Halo Brand {{brandName}},",
   "email.subject": "Laporan Evaluasi Brand: {brand_name} - {period}",
   "email.plain_score": "AHA Compatibility Score",
   "email.plain_period": "Periode",
