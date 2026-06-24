@@ -8,6 +8,7 @@ from __future__ import annotations
 
 import re
 from typing import Any
+from urllib.parse import urlsplit, urlunsplit
 
 # Translation + locale loading live in layout.py (the single source of truth).
 # Re-imported here because the HTML section renderers and _get_strings depend on
@@ -460,7 +461,27 @@ def _render_footer(footer_src: str) -> str:
 _LEADING_VERDICT_RE = re.compile(r"^\s*(?:\u2714\ufe0f|\u2705|\u274c)\s*")
 
 
-def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id") -> str:
+def _localize_shopee_link(link: str, marketplace: str = "ID") -> str:
+    """Swap a Shopee link's host to the marketplace's domain (mirrors the
+    frontend ``localizeShopeeLink``).  Non-Shopee/unparseable links pass through.
+    """
+    try:
+        parts = urlsplit(link)
+        host = parts.netloc
+        if host.startswith("seller.shopee."):
+            host = "seller.shopee.co.th" if marketplace == "TH" else "seller.shopee.co.id"
+            return urlunsplit(parts._replace(netloc=host))
+        if host.startswith("shopee."):
+            host = "shopee.co.th" if marketplace == "TH" else "shopee.co.id"
+            return urlunsplit(parts._replace(netloc=host))
+        return link
+    except Exception:
+        return link
+
+
+def _render_metric_card(
+    row: dict[str, Any], S: dict[str, str], lang: str = "id", marketplace: str = "ID",
+) -> str:
     """Render a single metric card with a verdict-signal tint.
 
     Pass rows are washed green, fails orange, and rows with no verdict ("-")
@@ -477,10 +498,20 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id"
         icon, msg_color, card_bg, card_border = "", TEXT_SECONDARY, WHITE, BORDER_LIGHT
 
     raw_message = row.get("message", "")
-    translated_message = _resolve_translatable_text(row.get("message_i18n"), raw_message, lang)
+    message_i18n = row.get("message_i18n")
+    translated_message = _resolve_translatable_text(message_i18n, raw_message, lang)
     if icon:
         translated_message = _LEADING_VERDICT_RE.sub("", translated_message)
-    message = _esc(translated_message).replace("\n", "<br>")
+    # Competition rows carry their product link in message_i18n.vars.link; the
+    # resolved text never includes it, so append it under the ↪ convention the
+    # dashboard and plain-text renderer share.
+    vars_link = (message_i18n.get("vars") or {}).get("link") if isinstance(message_i18n, dict) else None
+    if vars_link:
+        translated_message = f"{translated_message}\n↪{_localize_shopee_link(vars_link, marketplace)}"
+    # Split off any ↪url so it renders as a real anchor, not escaped text.
+    text_part, _sep, url_part = translated_message.partition("↪")
+    link = _localize_shopee_link(url_part.strip(), marketplace) if url_part.strip() else ""
+    message = _esc(text_part.rstrip()).replace("\n", "<br>")
     raw_metric = row.get("metric", "")
     display_metric = _resolve_metric_name(row, lang)
     raw_value = row.get("value")
@@ -496,7 +527,7 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id"
     if raw_metric == "Biaya (iklan)":
         benchmark = "-"
     has_benchmark = bool(benchmark) and benchmark != "-"
-    has_detail = has_benchmark or bool(message)
+    has_detail = has_benchmark or bool(message) or bool(link)
 
     detail_html = ""
     if has_detail:
@@ -508,6 +539,13 @@ def _render_metric_card(row: dict[str, Any], S: dict[str, str], lang: str = "id"
         if message:
             detail_parts.append(
                 f'<div style="font-size:11px;font-weight:600;color:{msg_color};line-height:1.5">{message}</div>'
+            )
+        if link:
+            detail_parts.append(
+                f'<div style="font-size:11px;line-height:1.5;padding-top:2px">'
+                f'<a href="{_esc(link)}" target="_blank" '
+                f'style="color:{PRIMARY_BLUE};text-decoration:underline;word-break:break-all">'
+                f'↪ {_esc(link)}</a></div>'
             )
         detail_html = (
             f'<tr><td colspan="2" style="border-top:1px solid {card_border};padding-top:8px">'
@@ -544,6 +582,7 @@ def _render_detailed_evaluation(
     S: dict[str, str],
     cat_map: dict[str, str],
     lang: str = "id",
+    marketplace: str = "ID",
 ) -> str:
     """Render detailed evaluation section with all categories and metric cards."""
     if not categories:
@@ -591,7 +630,7 @@ def _render_detailed_evaluation(
         grid_rows: list[str] = []
         pending_left: str | None = None
         for row in rows:
-            card = _render_metric_card(row, S, lang)
+            card = _render_metric_card(row, S, lang, marketplace)
             wide = _is_wide_card(row)
             if pending_left is None:
                 if _needs_divider(row) or wide:
@@ -1246,7 +1285,7 @@ def render_email_html_body(
     header = _render_header(header_src, brand_name, period, S)
     note_section = _render_note(note) if note else ""
     score_overview = _render_score_overview(categories, S, evaluation_data.get("final_score"))
-    detailed = _render_detailed_evaluation(categories, S, cat_map, language)
+    detailed = _render_detailed_evaluation(categories, S, cat_map, language, evaluation_data.get("marketplace", "ID"))
     breakdown = _render_score_breakdown(chart_src, categories, S, cat_map)
     intelligence = _render_data_intelligence(calculator_results, S, language=language)
     kesimpulan = _render_kesimpulan(calculator_results, S, language=language, marketplace=evaluation_data.get("marketplace", "ID"))
