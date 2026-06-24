@@ -16,7 +16,7 @@ class TestEmailConfigDefaults:
 
     def test_email_from_name_default(self) -> None:
         s = Settings(_env_file=None)
-        assert s.email_from_name == "AHA Commerce"
+        assert s.email_from_name == "AHAbot™"
 
     def test_email_from_email_default_empty(self) -> None:
         s = Settings(_env_file=None)

@@ -64,7 +64,7 @@ class Settings(BaseSettings):
     # Email — rich /send evaluation report (POST /api/v1/email/send).
     # Sent over its OWN SMTP account, distinct from /send-plain's gmail_smtp_*.
     # email_smtp_user defaults to email_from_email when left blank.
-    email_from_name: str = "AHA Commerce"
+    email_from_name: str = "AHAbot™"
     email_from_email: str = ""
     email_enabled: bool = False
     email_allowed_domains: str = ""
