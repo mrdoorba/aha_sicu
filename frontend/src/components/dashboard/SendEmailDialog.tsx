@@ -32,11 +32,11 @@ function buildDefaultNote(
     brandName,
     picName: brandRawData.pic_name ?? '',
   });
-  const intro = fixedT('sendMailUtils.intro', {
-    brandName,
-    storeLink: brandRawData.store_link ?? '',
-    kategori: brandRawData.kategori ?? '',
-  });
+  // Append the category clause only when present, else "dengan kategori" dangles.
+  const kategori = brandRawData.kategori ?? '';
+  const intro =
+    fixedT('sendMailUtils.intro', { brandName, storeLink: brandRawData.store_link ?? '' }) +
+    (kategori ? fixedT('sendMailUtils.introCategory', { kategori }) : '');
   return `${salutation}\n\n${intro}`;
 }
 
