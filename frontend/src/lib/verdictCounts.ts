@@ -37,18 +37,3 @@ export function computeVerdictCounts(categories: CategoryWithRows[]): VerdictCou
 
     return { checks, xs, total, score };
 }
-
-export function computeCategoryVerdictCounts(rows: RowWithVerdict[]): VerdictCounts {
-    let checks = 0;
-    let xs = 0;
-
-    for (const row of rows) {
-        if (row.verdict === '✔️') checks++;
-        else if (row.verdict === '❌') xs++;
-    }
-
-    const total = checks + xs;
-    const score = total > 0 ? Math.round((checks / total) * 100) : 0;
-
-    return { checks, xs, total, score };
-}

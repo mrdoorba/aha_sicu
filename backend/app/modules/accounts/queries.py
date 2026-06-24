@@ -1,31 +1,11 @@
 """Account management database queries."""
 
-from datetime import datetime
-from typing import TypedDict
-
 from asyncpg import Connection
 
 from app.db.queries.utils import fetch_all, fetch_one
 
 
-class AccountUserRow(TypedDict):
-    id: int
-    email: str
-    role: str
-    created_at: datetime
-    last_login: datetime | None
-
-
-class AccountUserDetailRow(TypedDict):
-    id: int
-    firebase_uid: str
-    email: str
-    role: str
-    created_at: datetime
-    last_login: datetime | None
-
-
-async def get_all_users(conn: Connection) -> list[AccountUserRow]:
+async def get_all_users(conn: Connection) -> list[dict]:
     """Get all users ordered by creation date."""
     return await fetch_all(
         conn,
@@ -35,7 +15,7 @@ async def get_all_users(conn: Connection) -> list[AccountUserRow]:
 
 async def create_user(
     conn: Connection, firebase_uid: str, email: str, role: str
-) -> AccountUserRow:
+) -> dict:
     """Create a new user with specified role."""
     return await fetch_one(
         conn,
@@ -50,7 +30,7 @@ async def create_user(
     )
 
 
-async def update_user_role(conn: Connection, user_id: int, role: str) -> AccountUserRow | None:
+async def update_user_role(conn: Connection, user_id: int, role: str) -> dict | None:
     """Update a user's role. Returns updated user or None if not found."""
     return await fetch_one(
         conn,
@@ -64,7 +44,7 @@ async def update_user_role(conn: Connection, user_id: int, role: str) -> Account
     )
 
 
-async def get_user_by_id(conn: Connection, user_id: int) -> AccountUserDetailRow | None:
+async def get_user_by_id(conn: Connection, user_id: int) -> dict | None:
     """Get a user by ID."""
     return await fetch_one(
         conn,

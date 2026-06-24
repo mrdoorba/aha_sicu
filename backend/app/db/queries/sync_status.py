@@ -100,17 +100,3 @@ async def is_sync_in_progress(conn: Connection) -> bool:
         """
     )
     return row is not None
-
-
-async def get_sync_status_by_id(conn: Connection, sync_id: int) -> SyncStatusRow | None:
-    """Get sync status by ID."""
-    return await fetch_one(
-        conn,
-        """
-        SELECT id, started_at, completed_at, success, brands_synced,
-               error_message, sync_details
-        FROM sync_status
-        WHERE id = $1
-        """,
-        sync_id,
-    )

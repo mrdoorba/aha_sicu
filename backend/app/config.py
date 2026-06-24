@@ -14,8 +14,6 @@ class Settings(BaseSettings):
         env_file=".env", env_file_encoding="utf-8", extra="ignore"
     )
 
-    app_name: str = "Store ICU API"
-    debug: bool = False
     log_level: str = "INFO"
 
     # Database (Cloud SQL PostgreSQL)

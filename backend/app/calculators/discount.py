@@ -14,6 +14,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.calculators.price_parser import _parse_price
+from app.calculators.scoring.helpers import _safe_num
 
 
 @dataclass
@@ -24,23 +25,6 @@ class DiscountResult:
     details: dict[str, Any] = field(default_factory=dict)
 
 
-def _safe_num(value: Any) -> float:
-    """Coerce a value to float, treating None/'-'/'' as 0."""
-    if value is None:
-        return 0.0
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        value = value.strip()
-        if value in ("", "-"):
-            return 0.0
-        try:
-            return float(value)
-        except ValueError:
-            return 0.0
-    return 0.0
-
-
 def _roundup(value: float, decimals: int) -> float:
     factor = 10**decimals
     return math.ceil(value * factor) / factor
@@ -48,30 +32,6 @@ def _roundup(value: float, decimals: int) -> float:
 
 def _format_pct_1dp(fraction: float) -> str:
     return f"{fraction * 100:.1f}%"
-
-
-def _calculate_urutan(rows: list[dict]) -> list[int]:
-    """Legacy helper retained for compatibility with existing imports/tests."""
-    result: list[int] = []
-    prev_order = None
-    counter = 0
-
-    for row in rows:
-        order_num = str(row.get("No. Pesanan", "") or "").strip()
-        if not order_num:
-            result.append(0)
-            prev_order = None
-            continue
-
-        if order_num == prev_order:
-            counter += 1
-        else:
-            counter = 1
-
-        result.append(counter)
-        prev_order = order_num
-
-    return result
 
 
 @dataclass
@@ -222,12 +182,10 @@ def _apply_sheet_metrics(items: list[LineItem], *, fake_discount_gate: bool) -> 
 
 def _calculate_line_items(
     rows: list[dict],
-    urutan_list: list[int],
     *,
     marketplace: str = "ID",
 ) -> list[LineItem]:
     """Legacy entry point retained for compatibility; now returns sheet-parity rows."""
-    del urutan_list
     items = _normalize_rows(rows, marketplace=marketplace)
     fake_discount_gate = _compute_fake_discount_gate(items)
     return _apply_sheet_metrics(items, fake_discount_gate=fake_discount_gate)
@@ -423,8 +381,7 @@ def calculate_discount(
     if not order_data:
         return _empty_result()
 
-    urutan_list = _calculate_urutan(order_data)
-    line_items = _calculate_line_items(order_data, urutan_list, marketplace=marketplace)
+    line_items = _calculate_line_items(order_data, marketplace=marketplace)
     product_summary = _build_product_summary(line_items)
     top_sku = _filter_top_sku(product_summary)
     output_text, details = _format_output(

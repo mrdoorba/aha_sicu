@@ -135,16 +135,7 @@ def _extract_source_language(upload: dict) -> str:
 
     Defaults to ``"id"`` when the key is absent (backwards compatibility).
     """
-    parsed_data = upload.get("parsed_data")
-    if isinstance(parsed_data, str):
-        import json
-        try:
-            parsed_data = json.loads(parsed_data)
-        except (json.JSONDecodeError, TypeError):
-            parsed_data = None
-    if isinstance(parsed_data, dict):
-        return parsed_data.get("source_language", "id")
-    return "id"
+    return ensure_dict(upload.get("parsed_data")).get("source_language", "id")
 
 
 class ColumnarRows:
@@ -297,13 +288,7 @@ def _extract_total_products(eval_inputs: dict | None) -> int:
             "for Ads Keyword Calculator",
         )
 
-    manual_data = eval_inputs.get("manual_data")
-    if isinstance(manual_data, str):
-        import json
-        try:
-            manual_data = json.loads(manual_data)
-        except (json.JSONDecodeError, TypeError):
-            manual_data = None
+    manual_data = ensure_dict(eval_inputs.get("manual_data"))
     if not manual_data:
         raise CalculatorException(
             code="CALC_MISSING_DATA",

@@ -3,8 +3,6 @@ import {
   formatCurrency,
   parseCurrency,
   getCurrencyCode,
-  formatIDR,
-  parseIDR,
 } from './formUtils';
 
 describe('formatCurrency', () => {
@@ -81,21 +79,5 @@ describe('getCurrencyCode', () => {
   it('handles lowercase marketplace input', () => {
     expect(getCurrencyCode('th')).toBe('THB');
     expect(getCurrencyCode('id')).toBe('IDR');
-  });
-});
-
-describe('formatIDR (backward compat)', () => {
-  it('produces identical output to formatCurrency', () => {
-    expect(formatIDR(125000000)).toBe('125,000,000');
-    expect(formatIDR(null)).toBe('');
-    expect(formatIDR(0)).toBe('0');
-  });
-});
-
-describe('parseIDR (backward compat)', () => {
-  it('produces identical output to parseCurrency', () => {
-    expect(parseIDR('125,000,000')).toBe(125000000);
-    expect(parseIDR('')).toBeNull();
-    expect(parseIDR('abc')).toBeNull();
   });
 });

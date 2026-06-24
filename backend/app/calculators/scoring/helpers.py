@@ -77,16 +77,6 @@ def _fmt_pct_0dp(value: float) -> str:
     return f"{value * 100:.0f}%"
 
 
-def _fmt_num_1dp(value: float) -> str:
-    """Format as number with 1 decimal: 0.005 -> '0.5%' (percentage number)."""
-    return f"{value:.1f}%"
-
-
-def _fmt_num_2dp(value: float) -> str:
-    """Format as number with 2 decimals."""
-    return f"{value:.2f}"
-
-
 def _fmt_idr(value: float) -> str:
     """Format IDR value with comma thousands separator."""
     rounded = round(value)

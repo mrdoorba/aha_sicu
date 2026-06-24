@@ -117,9 +117,7 @@ class PendingUpload:
     brand_id: int
     file_type: str
     filename: str
-    content_type: str
     object_name: str
-    expires_at: datetime
 
 
 def _validate_file_type(file_type: str) -> None:
@@ -210,9 +208,7 @@ async def _claim_pending_upload(
         brand_id=row["brand_id"],
         file_type=row["file_type"],
         filename=row["filename"],
-        content_type=row["content_type"],
         object_name=row["object_name"],
-        expires_at=row["expires_at"],
     )
 
 

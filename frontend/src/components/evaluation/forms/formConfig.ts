@@ -28,7 +28,6 @@ export {
   OPERATIONAL_FIELDS,
   PROMO_TOOLS_FIELDS,
   PRODUCTS_FIELDS,
-  SECTION_LINKS,
   STORE_STATUS_OPTIONS,
   VISITORS_FIELDS,
   getSectionLinks,
@@ -38,9 +37,7 @@ export {
 export {
   computeSectionProgress,
   formatCurrency,
-  formatIDR,
   generateMonthLabels,
   getCurrencyCode,
   parseCurrency,
-  parseIDR,
 } from './formUtils';

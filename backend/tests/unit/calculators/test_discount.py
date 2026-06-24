@@ -9,7 +9,6 @@ from app.calculators.discount import (
     _build_product_summary,
     _build_reference_price_map,
     _calculate_line_items,
-    _calculate_urutan,
     _compute_fake_discount_gate,
     _filter_top_sku,
     _normalize_rows,
@@ -78,15 +77,6 @@ class TestSafeNum:
 
 
 class TestLegacyHelpers:
-    def test_calculate_urutan_is_still_stable(self):
-        rows = [
-            {"No. Pesanan": "ORD001"},
-            {"No. Pesanan": "ORD001"},
-            {"No. Pesanan": ""},
-            {"No. Pesanan": "ORD002"},
-        ]
-        assert _calculate_urutan(rows) == [1, 2, 0, 1]
-
     def test_roundup_three_decimals(self):
         assert _roundup(0.0018607, 3) == pytest.approx(0.002)
 
@@ -136,7 +126,7 @@ class TestSheetStages:
             _make_row("O1", "Prod A", "V1", "100", "80", voucher="6"),
             _make_row("O1", "Prod B", "V1", "100", "80", voucher="6"),
         ]
-        items = _calculate_line_items(rows, _calculate_urutan(rows))
+        items = _calculate_line_items(rows)
         assert [item.campaign_discount for item in items] == [23.0, 23.0]
 
     def test_paket_is_split_by_order_row_count(self):
@@ -144,7 +134,7 @@ class TestSheetStages:
             _make_row("O1", "Prod A", "V1", "100", "80", paket="4"),
             _make_row("O1", "Prod B", "V1", "100", "80", paket="4"),
         ]
-        items = _calculate_line_items(rows, _calculate_urutan(rows))
+        items = _calculate_line_items(rows)
         assert [item.campaign_discount for item in items] == [22.0, 22.0]
 
     def test_composite_key_grouping_keeps_variants_separate(self):
@@ -152,7 +142,7 @@ class TestSheetStages:
             _make_row("O1", "Prod", "Red", "100", "80"),
             _make_row("O2", "Prod", "Blue", "100", "80"),
         ]
-        items = _calculate_line_items(rows, _calculate_urutan(rows))
+        items = _calculate_line_items(rows)
         summary = _build_product_summary(items)
         assert [item.product_name for item in summary] == ["ProdRed", "ProdBlue"]
 

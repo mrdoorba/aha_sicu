@@ -115,12 +115,3 @@ async def get_storage_path_by_type(
         file_type,
     )
     return row["storage_path"] if row else None
-
-
-async def delete_upload(conn: Connection, brand_id: int, file_type: str) -> None:
-    """Delete an upload for a brand+file_type pair."""
-    await conn.execute(
-        "DELETE FROM brand_uploads WHERE brand_id = $1 AND file_type = $2",
-        brand_id,
-        file_type,
-    )

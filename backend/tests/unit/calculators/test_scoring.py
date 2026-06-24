@@ -5,17 +5,8 @@ Tests against the spec in logic/scoring-system-template-sicu.md.
 
 import pytest
 
-from app.calculators.scoring import (
-    DEFAULT_RULES,
-    ScoringResult,
-    _compute_g68,
-    _compute_g72,
-    _parse_g68_left,
-    _compute_g73,
-    _compute_g75,
-    _format_message_template,
-    _generate_month_labels,
-    _parse_d73_percentages,
+from app.calculators.scoring import calculate_score
+from app.calculators.scoring.categories import (
     _promo_verdict,
     _score_ads,
     _score_business,
@@ -25,8 +16,21 @@ from app.calculators.scoring import (
     _score_promo_tools,
     _score_stock,
     _score_visitors,
-    calculate_score,
 )
+from app.calculators.scoring.computations import (
+    _compute_g68,
+    _compute_g72,
+    _compute_g73,
+    _compute_g75,
+    _parse_d73_percentages,
+    _parse_g68_left,
+)
+from app.calculators.scoring.helpers import (
+    _format_message_template,
+    _generate_month_labels,
+)
+from app.calculators.scoring.models import ScoringResult
+from app.calculators.scoring.rules import DEFAULT_RULES
 
 
 # ---------------------------------------------------------------------------
@@ -276,7 +280,8 @@ class TestScoreBusiness:
         assert h19_row.score == 10.0
 
     def test_rata_penjualan_message_is_empty(self):
-        from app.calculators.scoring import _generate_business_messages, RowScore, CategoryScore
+        from app.calculators.scoring.messages import _generate_business_messages
+        from app.calculators.scoring.models import RowScore, CategoryScore
         data = {
             "business": {
                 "salesMonth0": 120_000_000,

@@ -7,7 +7,6 @@ from app.db.queries.pending_uploads import (
     claim_pending_upload,
     cleanup_expired_uploads,
     create_pending_upload,
-    delete_pending_upload,
     get_pending_upload,
 )
 
@@ -93,19 +92,6 @@ async def test_none_returned_when_claim_pending_upload_missing() -> None:
     result = await claim_pending_upload(conn, "nonexistent-id")
 
     assert result is None
-
-
-@pytest.mark.asyncio
-async def test_delete_executed_when_delete_pending_upload_called() -> None:
-    conn = AsyncMock()
-    conn.execute = AsyncMock()
-
-    await delete_pending_upload(conn, "test-uuid-1234")
-
-    conn.execute.assert_called_once()
-    call_args = conn.execute.call_args
-    assert "DELETE FROM pending_uploads" in call_args.args[0]
-    assert call_args.args[1] == "test-uuid-1234"
 
 
 @pytest.mark.asyncio

@@ -12,6 +12,7 @@ from dataclasses import dataclass, field
 from typing import Any
 
 from app.calculators.price_parser import _parse_price
+from app.calculators.scoring.helpers import _safe_num
 
 
 # ---------------------------------------------------------------------------
@@ -29,23 +30,6 @@ class TopSkuResult:
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
-
-def _safe_num(value: Any) -> float:
-    """Coerce a value to float, treating None/'-'/'' as 0."""
-    if value is None:
-        return 0.0
-    if isinstance(value, (int, float)):
-        return float(value)
-    if isinstance(value, str):
-        value = value.strip()
-        if value in ("", "-"):
-            return 0.0
-        try:
-            return float(value)
-        except ValueError:
-            return 0.0
-    return 0.0
-
 
 # ---------------------------------------------------------------------------
 # Processing pipeline
