@@ -51,7 +51,7 @@ _EMAIL_STRING_KEYS: frozenset[str] = frozenset({
     "verdict", "score", "message", "approved", "rejected",
     "check_count", "cross_count", "performance_verdict", "brand_report",
     "subject", "plain_score", "plain_period", "chart_placeholder",
-    "schedule_consultation", "signoff_regards",
+    "schedule_consultation", "signoff_regards", "greeting",
 })
 
 # Indonesian category names are the canonical keys used in evaluation data.
@@ -176,6 +176,30 @@ def _preserve_whitespace(text: str) -> str:
     return "<br>".join(html_lines)
 
 
+# The note (salutation + intro) carries lightweight markup authored in the
+# Send dialog: ``*bold*`` spans and a ``[https://store-link]`` bracketed URL.
+# Resolve those to real HTML instead of leaking the raw asterisks/brackets.
+_NOTE_BOLD_RE = re.compile(r"\*([^*\n]+)\*")
+_NOTE_LINK_RE = re.compile(r"\[\s*(https?://[^\]\s]+)\s*\]")
+
+
+def _render_note_markup(text: str) -> str:
+    """Escape *text*, then resolve ``*bold*`` and ``[url]`` markers + newlines."""
+    out = _esc(text)
+    out = _NOTE_LINK_RE.sub(
+        lambda m: (
+            f'<a href="{m.group(1)}" target="_blank" '
+            f'style="color:{PRIMARY_BLUE};text-decoration:underline;">{m.group(1)}</a>'
+        ),
+        out,
+    )
+    out = _NOTE_BOLD_RE.sub(
+        lambda m: f'<b style="font-weight:700;color:{TEXT_DARK};">{m.group(1)}</b>',
+        out,
+    )
+    return out.replace("\n", "<br>")
+
+
 def _closing_with_cta_buttons(closing_message: str, S: dict[str, str]) -> str:
     """Render closing message, turning standalone-URL lines into CTA buttons.
 
@@ -269,7 +293,8 @@ def _render_header(
     period: str,
     S: dict[str, str],
 ) -> str:
-    """Render header section: branded image + brand info."""
+    """Render header section: branded image + greeting + period."""
+    greeting = S.get("greeting", "Hello Brand {{brandName}},").replace("{{brandName}}", brand_name)
     return f"""\
 <!-- Header Image -->
 <tr>
@@ -284,8 +309,8 @@ def _render_header(
   <td style="padding:24px 30px 16px 30px;">
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
       <tr>
-        <td style="font-size:24px;font-weight:bold;color:{TEXT_DARK};padding-bottom:4px;">
-          {_esc(brand_name)}
+        <td style="font-size:26px;font-weight:800;color:{TEXT_DARK};letter-spacing:-0.5px;padding-bottom:4px;">
+          {_esc(greeting)}
         </td>
       </tr>
       <tr>
@@ -299,24 +324,19 @@ def _render_header(
 
 
 def _render_note(note: str) -> str:
-    """Render custom note as a styled card.
+    """Render the note (salutation + intro) as plain prose.
 
-    HTML-escapes the note text and converts newlines to <br> for
-    line break preservation in the email.
+    The text is HTML-escaped, then its ``*bold*`` spans and ``[url]`` link are
+    resolved to HTML (see :func:`_render_note_markup`) and newlines become
+    <br>.  No bordered card — the salutation reads as plain text and the
+    starred title stands out only by its bold weight.
     """
-    escaped = _esc(note).replace("\n", "<br>")
+    body = _render_note_markup(note)
     return f"""\
-<!-- Custom Note -->
+<!-- Note -->
 <tr>
-  <td style="padding:8px 30px 16px 30px;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-           style="background-color:{CARD_BG};border-radius:6px;border-left:3px solid {PRIMARY_BLUE};">
-      <tr>
-        <td style="padding:14px 16px;font-size:13px;color:{TEXT_DARK};line-height:1.6;">
-          {escaped}
-        </td>
-      </tr>
-    </table>
+  <td style="padding:8px 30px 16px 30px;font-size:14px;color:{TEXT_SECONDARY};line-height:1.7;">
+    {body}
   </td>
 </tr>"""
 
