@@ -284,7 +284,7 @@ class TestSendEvaluationEmail:
             )
 
         call_kwargs = mock_send.call_args[1]
-        expected_subject = "Laporan Evaluasi Brand: Kopi Kenangan - Januari 2026"
+        expected_subject = "🏥 AHA Store Internal Check Up (Store ICU) - Kopi Kenangan Januari 2026"
         assert call_kwargs["subject"] == expected_subject
 
     async def test_passes_note_to_render_fn(
