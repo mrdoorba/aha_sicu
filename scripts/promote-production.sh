@@ -1,4 +1,8 @@
 #!/usr/bin/env bash
+# Promote develop -> production by FAST-FORWARD ONLY. This is the only sanctioned
+# path. Do NOT use a GitHub develop->production PR / merge button: the resulting
+# merge commit lives only on production and permanently breaks --ff-only here.
+# Production protection is intentionally strict:false; do not re-enable it. See CLAUDE.md.
 set -euo pipefail
 
 ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
