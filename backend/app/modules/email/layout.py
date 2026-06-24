@@ -472,13 +472,14 @@ def render_plain_email_message(
     )
     intro = _t(
         "sendMailUtils.intro",
-        {
-            "brandName": brand_name,
-            "storeLink": raw.get("store_link") or "",
-            "kategori": raw.get("kategori") or "",
-        },
+        {"brandName": brand_name, "storeLink": raw.get("store_link") or ""},
         language,
     )
+    # Append the category clause only when a category exists — otherwise the
+    # template leaves a dangling "dengan kategori" with nothing after it.
+    kategori = raw.get("kategori") or ""
+    if kategori:
+        intro += _t("sendMailUtils.introCategory", {"kategori": kategori}, language)
     body = render_email(result, language=language, fmt="text")
     return f"[EMAIL TO: {pic_email}]\n\n{salutation}\n\n{intro}\n\n{body}"
 

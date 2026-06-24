@@ -18,7 +18,10 @@ export function buildBody(
 ): string {
   const translate = t ?? i18n.t;
   const salutation = translate('sendMailUtils.salutation', { brandName, picName });
-  const intro = translate('sendMailUtils.intro', { brandName, storeLink, kategori });
+  // Append the category clause only when present, else "dengan kategori" dangles.
+  const intro =
+    translate('sendMailUtils.intro', { brandName, storeLink }) +
+    (kategori ? translate('sendMailUtils.introCategory', { kategori }) : '');
   const bodyContent = emailBodyOverride ?? emailOutput;
 
   return `[EMAIL TO: ${picEmail}]
