@@ -79,8 +79,7 @@ See [docs/ENV.md](ENV.md) for all environment variables.
 | `npm test` | Run all smoke tests |
 | `npm run test:health` | Backend health check only |
 | `npm run test:auth` | Auth enforcement only |
-| `npm run test:frontend` | Frontend SPA only |
-| `npm run test:db` | Database connectivity only |
+| `npm run test:ci` | CI gate: health + auth enforcement |
 
 ### Git Hooks (Lefthook)
 

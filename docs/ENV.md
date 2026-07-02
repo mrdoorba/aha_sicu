@@ -31,16 +31,30 @@
 |----------|----------|---------|-------------|
 | `FIREBASE_CREDENTIALS_PATH` | Yes* | — | Path to Firebase service account JSON (local dev). Cloud Run uses ADC automatically. |
 
-### Email (SendGrid)
+### Email — rich report (`POST /api/v1/email/send`, own SMTP account)
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `SENDGRID_API_KEY` | No | — | SendGrid API key with Mail Send permission |
 | `EMAIL_FROM_NAME` | No | `AHA Commerce` | Sender display name |
 | `EMAIL_FROM_EMAIL` | No | — | Verified sender email address |
-| `EMAIL_ENABLED` | No | `false` | Enable email sending |
+| `EMAIL_ENABLED` | No | `false` | Gates the rich `/send` path. When `false`, `/send` writes a `/tmp` HTML preview instead of dialing SMTP. |
 | `EMAIL_ALLOWED_DOMAINS` | No | `ahacommerce.co.id` | Comma-separated allowed recipient domains |
-| `SENDGRID_WEBHOOK_SECRET` | No | — | Optional Event Webhook verification secret |
+| `EMAIL_SMTP_HOST` | No | `smtp.gmail.com` | SMTP host for the rich `/send` account |
+| `EMAIL_SMTP_PORT` | No | `587` | SMTP port |
+| `EMAIL_SMTP_USER` | No | — | SMTP username (defaults to `EMAIL_FROM_EMAIL` when blank) |
+| `EMAIL_SMTP_APP_PASSWORD` | No | — | 16-char Google App Password (no spaces) |
+
+### Email — plain-text "Send Mail" dialog (`POST /api/v1/email/send-plain`, Gmail SMTP)
+
+Independent of `EMAIL_ENABLED`; gated only by `GMAIL_SMTP_ENABLED`.
+
+| Variable | Required | Default | Description |
+|----------|----------|---------|-------------|
+| `GMAIL_SMTP_ENABLED` | No | `false` | When `false`, `/send-plain` writes a `/tmp` preview instead of dialing SMTP |
+| `GMAIL_SMTP_USER` | No | — | Google Workspace account with 2-Step Verification |
+| `GMAIL_SMTP_APP_PASSWORD` | No | — | 16-char Google App Password (no spaces) |
+| `GMAIL_SMTP_HOST` | No | `smtp.gmail.com` | SMTP host |
+| `GMAIL_SMTP_PORT` | No | `587` | SMTP port |
 
 ### Google Sheets API
 
@@ -73,15 +87,17 @@
 
 ## Docker Compose (Local Dev)
 
-When using `docker compose up`, most backend env vars are already wired in `docker-compose.yml`. Email sending is disabled by default; if you want to exercise real outbound email locally, provide the same SendGrid-backed variables used by the backend:
+When using `docker compose up`, most backend env vars are already wired in `docker-compose.yml`. Email sending is disabled by default; if you want to exercise real outbound email locally, provide the same SMTP-backed variables used by the backend:
 
 | Variable | Required | Default | Description |
 |----------|----------|---------|-------------|
-| `SENDGRID_API_KEY` | No | — | SendGrid API key with Mail Send permission |
-| `EMAIL_FROM_NAME` | No | `AHA Commerce` | Sender display name |
+| `EMAIL_ENABLED` | No | `false` | Enable the rich `/send` path (otherwise a `/tmp` preview is written) |
 | `EMAIL_FROM_EMAIL` | No | — | Verified sender email address |
-| `EMAIL_ENABLED` | No | `false` | Enable real email sending (otherwise caught by MailHog) |
-| `SENDGRID_WEBHOOK_SECRET` | No | — | Optional Event Webhook verification secret |
+| `EMAIL_SMTP_USER` | No | — | SMTP username (defaults to `EMAIL_FROM_EMAIL`) |
+| `EMAIL_SMTP_APP_PASSWORD` | No | — | 16-char Google App Password |
+| `GMAIL_SMTP_ENABLED` | No | `false` | Enable the plain-text `/send-plain` dialog path |
+| `GMAIL_SMTP_USER` | No | — | Gmail/Workspace account for `/send-plain` |
+| `GMAIL_SMTP_APP_PASSWORD` | No | — | 16-char Google App Password |
 
 ---
 
