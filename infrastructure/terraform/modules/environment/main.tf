@@ -178,8 +178,11 @@ resource "google_service_account_key" "email_dwd" {
 }
 
 resource "google_secret_manager_secret_version" "gmail_dwd_credentials" {
-  secret      = google_secret_manager_secret.gmail_dwd_credentials.id
-  secret_data = base64decode(google_service_account_key.email_dwd.private_key)
+  secret = google_secret_manager_secret.gmail_dwd_credentials.id
+  # Borrow an already-authorized SA key when an override is supplied (prod reuses
+  # dev's DWD SA, which is the one authorized in the Admin Console), else use
+  # this env's own SA key.
+  secret_data = var.gmail_dwd_key_override != "" ? var.gmail_dwd_key_override : base64decode(google_service_account_key.email_dwd.private_key)
 }
 
 # Gmail SMTP App Password — backs the evaluation "Send Mail" dialog

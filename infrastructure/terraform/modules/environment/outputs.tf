@@ -40,6 +40,12 @@ output "email_dwd_client_id" {
   value       = google_service_account.email_dwd.unique_id
 }
 
+output "email_dwd_private_key" {
+  description = "Decoded Gmail-DWD SA key JSON — lets another env reuse this (authorized) SA"
+  value       = base64decode(google_service_account_key.email_dwd.private_key)
+  sensitive   = true
+}
+
 output "firebase_hosting_site" {
   description = "Firebase Hosting site ID"
   value       = google_firebase_hosting_site.frontend.site_id

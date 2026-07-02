@@ -44,12 +44,13 @@ gmail_smtp_user = "marwahkha@ahacommerce.net"
 
 # Feature flags (per-environment)
 dev_email_enabled       = true
-prod_email_enabled      = false
+prod_email_enabled      = true
 dev_gmail_smtp_enabled  = true
 prod_gmail_smtp_enabled = true
 
-# Rich /send via Gmail API + domain-wide delegation. Dev SA client id authorized
-# for gmail.send; prod SA not yet authorized, so prod stays on SMTP.
+# Rich /send via Gmail API + domain-wide delegation. Both envs send as bot@ via
+# the dev DWD SA (the one authorized in Admin Console); prod borrows dev's key
+# through gmail_dwd_key_override, so no separate prod authorization is needed.
 dev_gmail_dwd_enabled  = true
-prod_gmail_dwd_enabled = false
+prod_gmail_dwd_enabled = true
 

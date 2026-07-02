@@ -170,7 +170,10 @@ module "prod" {
   gmail_smtp_app_password = var.gmail_smtp_app_password
   gmail_smtp_enabled      = var.prod_gmail_smtp_enabled
   gmail_dwd_enabled       = var.prod_gmail_dwd_enabled
-  cloud_run_url           = var.prod_cloud_run_url
+  # Prod borrows dev's Gmail-DWD SA — the one already authorized in the Admin
+  # Console — so prod can send without a separate authorization.
+  gmail_dwd_key_override = module.dev.email_dwd_private_key
+  cloud_run_url          = var.prod_cloud_run_url
 
   gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
   gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id

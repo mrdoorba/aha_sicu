@@ -171,3 +171,10 @@ variable "gmail_dwd_sender" {
   type        = string
   default     = "bot@ahacommerce.net"
 }
+
+variable "gmail_dwd_key_override" {
+  description = "When set, the Gmail-DWD credentials secret uses this SA key JSON instead of this env's own SA key — lets an env borrow an already-authorized SA (prod reusing dev's DWD SA)."
+  type        = string
+  default     = ""
+  sensitive   = true
+}
