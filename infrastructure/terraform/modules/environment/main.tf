@@ -34,6 +34,18 @@ resource "google_service_account" "gsheets_sync" {
   project      = var.project_id
 }
 
+# Dedicated SA for sending mail as ${var.gmail_dwd_sender} via the Gmail API
+# using domain-wide delegation. Kept separate from gsheets_sync so a leaked key
+# can't reach Sheets and vice-versa. Its client_id (unique_id) must be
+# authorized in the Workspace Admin Console for scope gmail.send — that DWD
+# grant is a Workspace object and lives outside this GCP stack.
+resource "google_service_account" "email_dwd" {
+  account_id   = "aha-coms-sicu-${var.environment}-email-sa"
+  display_name = "Store ICU ${var.environment} Gmail DWD Sender"
+  description  = "Service account for sending evaluation email via Gmail API (domain-wide delegation)"
+  project      = var.project_id
+}
+
 # =============================================================================
 # IAM Bindings — Deploy SA
 # =============================================================================
@@ -150,6 +162,24 @@ resource "google_service_account_key" "gsheets_sync" {
 resource "google_secret_manager_secret_version" "gsheets_credentials" {
   secret      = google_secret_manager_secret.gsheets_credentials.id
   secret_data = base64decode(google_service_account_key.gsheets_sync.private_key)
+}
+
+resource "google_secret_manager_secret" "gmail_dwd_credentials" {
+  secret_id = "aha_coms_sicu_${var.environment}_gmail_dwd_credentials"
+  project   = var.project_id
+
+  replication {
+    auto {}
+  }
+}
+
+resource "google_service_account_key" "email_dwd" {
+  service_account_id = google_service_account.email_dwd.name
+}
+
+resource "google_secret_manager_secret_version" "gmail_dwd_credentials" {
+  secret      = google_secret_manager_secret.gmail_dwd_credentials.id
+  secret_data = base64decode(google_service_account_key.email_dwd.private_key)
 }
 
 resource "google_secret_manager_secret" "sendgrid_api_key" {
@@ -332,6 +362,13 @@ resource "google_secret_manager_secret_iam_member" "api_sa_gsheets" {
   project   = var.project_id
 }
 
+resource "google_secret_manager_secret_iam_member" "api_sa_gmail_dwd" {
+  secret_id = google_secret_manager_secret.gmail_dwd_credentials.secret_id
+  role      = "roles/secretmanager.secretAccessor"
+  member    = "serviceAccount:${google_service_account.cloud_run.email}"
+  project   = var.project_id
+}
+
 resource "google_secret_manager_secret_iam_member" "api_sa_sendgrid_api_key" {
   secret_id = google_secret_manager_secret.sendgrid_api_key.secret_id
   role      = "roles/secretmanager.secretAccessor"
@@ -413,6 +450,29 @@ resource "google_cloud_run_v2_service" "api" {
         value_source {
           secret_key_ref {
             secret  = google_secret_manager_secret.gsheets_credentials.secret_id
+            version = "latest"
+          }
+        }
+      }
+
+      # Gmail API domain-wide-delegation transport for the rich /send path.
+      # Inert until GMAIL_DWD_ENABLED is true; then /send goes through the Gmail
+      # API impersonating GMAIL_DWD_SENDER instead of SMTP app-password auth.
+      env {
+        name  = "GMAIL_DWD_ENABLED"
+        value = tostring(var.gmail_dwd_enabled)
+      }
+
+      env {
+        name  = "GMAIL_DWD_SENDER"
+        value = var.gmail_dwd_sender
+      }
+
+      env {
+        name = "GMAIL_DWD_CREDENTIALS_JSON"
+        value_source {
+          secret_key_ref {
+            secret  = google_secret_manager_secret.gmail_dwd_credentials.secret_id
             version = "latest"
           }
         }
@@ -573,6 +633,8 @@ resource "google_cloud_run_v2_service" "api" {
     google_sql_user.app,
     google_secret_manager_secret_iam_member.api_sa_db_password,
     google_secret_manager_secret_iam_member.api_sa_gsheets,
+    google_secret_manager_secret_iam_member.api_sa_gmail_dwd,
+    google_secret_manager_secret_version.gmail_dwd_credentials,
     google_secret_manager_secret_iam_member.api_sa_sendgrid_api_key,
     google_secret_manager_secret_iam_member.api_sa_sendgrid_webhook_secret,
     google_secret_manager_secret_iam_member.api_sa_gmail_smtp_app_password,

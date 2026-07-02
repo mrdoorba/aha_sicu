@@ -30,6 +30,16 @@ output "gsheets_service_account_email" {
   value       = google_service_account.gsheets_sync.email
 }
 
+output "email_dwd_service_account_email" {
+  description = "Gmail-DWD sender service account email"
+  value       = google_service_account.email_dwd.email
+}
+
+output "email_dwd_client_id" {
+  description = "Gmail-DWD SA client ID (unique_id) — authorize this in Admin Console for scope gmail.send"
+  value       = google_service_account.email_dwd.unique_id
+}
+
 output "firebase_hosting_site" {
   description = "Firebase Hosting site ID"
   value       = google_firebase_hosting_site.frontend.site_id

@@ -34,6 +34,16 @@ output "dev_gsheets_service_account_email" {
   value       = module.dev.gsheets_service_account_email
 }
 
+output "dev_email_dwd_service_account_email" {
+  description = "Dev Gmail-DWD sender service account email"
+  value       = module.dev.email_dwd_service_account_email
+}
+
+output "dev_email_dwd_client_id" {
+  description = "Dev Gmail-DWD SA client ID — authorize in Admin Console for scope gmail.send"
+  value       = module.dev.email_dwd_client_id
+}
+
 output "dev_firebase_hosting_site" {
   description = "Dev Firebase Hosting site ID"
   value       = module.dev.firebase_hosting_site
@@ -71,6 +81,16 @@ output "prod_gcs_upload_bucket" {
 output "prod_gsheets_service_account_email" {
   description = "Prod Google Sheets sync service account email"
   value       = module.prod.gsheets_service_account_email
+}
+
+output "prod_email_dwd_service_account_email" {
+  description = "Prod Gmail-DWD sender service account email"
+  value       = module.prod.email_dwd_service_account_email
+}
+
+output "prod_email_dwd_client_id" {
+  description = "Prod Gmail-DWD SA client ID — authorize in Admin Console for scope gmail.send"
+  value       = module.prod.email_dwd_client_id
 }
 
 output "prod_firebase_hosting_site" {

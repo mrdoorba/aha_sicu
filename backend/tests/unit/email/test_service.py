@@ -204,6 +204,7 @@ class TestSendEvaluationEmail:
             patch("app.modules.email.service.smtp_send_html") as mock_send,
         ):
             mock_settings.email_enabled = True
+            mock_settings.gmail_dwd_enabled = False
             mock_settings.email_from_name = "AHA Commerce"
             mock_settings.email_from_email = "noreply@aha.com"
             mock_send.return_value = "smtp-msg-123"
@@ -218,6 +219,34 @@ class TestSendEvaluationEmail:
         assert result.message_id == "smtp-msg-123"
         mock_send.assert_called_once()
 
+    async def test_sends_via_gmail_api_when_dwd_enabled(
+        self,
+        sample_evaluation_data: dict,
+        mock_render_fn: MagicMock,
+    ) -> None:
+        """With DWD on, the Gmail API transport is used and SMTP is skipped."""
+        with (
+            patch("app.modules.email.service.settings") as mock_settings,
+            patch("app.modules.email.service.gmail_api_send_html") as mock_gmail,
+            patch("app.modules.email.service.smtp_send_html") as mock_smtp,
+        ):
+            mock_settings.email_enabled = True
+            mock_settings.gmail_dwd_enabled = True
+            mock_settings.email_from_name = "AHA Commerce"
+            mock_settings.gmail_dwd_sender = "bot@ahacommerce.net"
+            mock_gmail.return_value = "gmail-msg-123"
+
+            result = await send_evaluation_email(
+                evaluation_data=sample_evaluation_data,
+                recipients=["test@example.com"],
+                render_html_fn=mock_render_fn,
+            )
+
+        assert result.success is True
+        assert result.message_id == "gmail-msg-123"
+        mock_gmail.assert_called_once()
+        mock_smtp.assert_not_called()
+
     async def test_subject_auto_generated_format(
         self,
         sample_evaluation_data: dict,
@@ -229,6 +258,7 @@ class TestSendEvaluationEmail:
             patch("app.modules.email.service.smtp_send_html") as mock_send,
         ):
             mock_settings.email_enabled = True
+            mock_settings.gmail_dwd_enabled = False
             mock_settings.email_from_name = "AHA Commerce"
             mock_settings.email_from_email = "noreply@aha.com"
             mock_send.return_value = "smtp-msg-123"
@@ -273,6 +303,7 @@ class TestSendEvaluationEmail:
             patch("app.modules.email.service.smtp_send_html") as mock_send,
         ):
             mock_settings.email_enabled = True
+            mock_settings.gmail_dwd_enabled = False
             mock_settings.email_from_name = "AHA Commerce"
             mock_settings.email_from_email = "noreply@aha.com"
             mock_send.return_value = "smtp-msg-123"

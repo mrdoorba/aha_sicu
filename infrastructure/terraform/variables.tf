@@ -169,6 +169,18 @@ variable "prod_gmail_smtp_enabled" {
   default     = false
 }
 
+variable "dev_gmail_dwd_enabled" {
+  description = "Whether the rich /send path uses Gmail API + domain-wide delegation in dev"
+  type        = bool
+  default     = false
+}
+
+variable "prod_gmail_dwd_enabled" {
+  description = "Whether the rich /send path uses Gmail API + domain-wide delegation in prod"
+  type        = bool
+  default     = false
+}
+
 # =============================================================================
 # Cloud Run URL (per-environment, for OIDC audience validation)
 # =============================================================================

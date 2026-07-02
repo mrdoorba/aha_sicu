@@ -71,6 +71,14 @@ class Settings(BaseSettings):
     email_smtp_user: str = ""
     email_smtp_app_password: str = ""
 
+    # Rich /send transport via Gmail API + domain-wide delegation. When enabled,
+    # the rich /send path sends through the Gmail API impersonating
+    # gmail_dwd_sender (its SA client ID must be authorized for scope gmail.send
+    # in the Workspace Admin Console) instead of SMTP app-password auth.
+    gmail_dwd_enabled: bool = False
+    gmail_dwd_credentials_json: str = ""
+    gmail_dwd_sender: str = ""
+
     # Gmail SMTP transport (used by /api/v1/email/send-plain)
     # Independent of email_enabled — that flag gates the rich /send path and
     # the dashboard's Send Email button. This flag gates only the

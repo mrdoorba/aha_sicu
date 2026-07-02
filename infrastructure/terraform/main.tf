@@ -92,6 +92,12 @@ resource "google_project_service" "sheets_api" {
   disable_on_destroy = false
 }
 
+resource "google_project_service" "gmail_api" {
+  project            = var.project_id
+  service            = "gmail.googleapis.com"
+  disable_on_destroy = false
+}
+
 # =============================================================================
 # Environment Modules
 # =============================================================================
@@ -124,6 +130,7 @@ module "dev" {
   gmail_smtp_user         = var.gmail_smtp_user
   gmail_smtp_app_password = var.gmail_smtp_app_password
   gmail_smtp_enabled      = var.dev_gmail_smtp_enabled
+  gmail_dwd_enabled       = var.dev_gmail_dwd_enabled
   cloud_run_url           = var.dev_cloud_run_url
 
   gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
@@ -166,6 +173,7 @@ module "prod" {
   gmail_smtp_user         = var.gmail_smtp_user
   gmail_smtp_app_password = var.gmail_smtp_app_password
   gmail_smtp_enabled      = var.prod_gmail_smtp_enabled
+  gmail_dwd_enabled       = var.prod_gmail_dwd_enabled
   cloud_run_url           = var.prod_cloud_run_url
 
   gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id

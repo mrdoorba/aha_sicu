@@ -172,3 +172,15 @@ variable "enable_scheduler" {
   type        = bool
   default     = true
 }
+
+variable "gmail_dwd_enabled" {
+  description = "Whether the rich /send path sends via the Gmail API + domain-wide delegation (else SMTP app-password)"
+  type        = bool
+  default     = false
+}
+
+variable "gmail_dwd_sender" {
+  description = "Mailbox the Gmail-DWD service account impersonates when sending the rich /send email"
+  type        = string
+  default     = "bot@ahacommerce.net"
+}

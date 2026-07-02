@@ -2,6 +2,7 @@
 
 import asyncio
 import base64
+import json
 import logging
 from collections.abc import Callable
 from email.message import EmailMessage
@@ -9,6 +10,9 @@ from email.utils import make_msgid
 from pathlib import Path
 
 import aiosmtplib
+from google.oauth2 import service_account
+from googleapiclient.discovery import build
+from googleapiclient.errors import HttpError
 
 from app.config import settings
 from app.core.exceptions import AppException
@@ -98,6 +102,93 @@ async def gmail_smtp_send(
     return msgid.strip("<>")
 
 
+def _build_html_message(
+    *,
+    subject: str,
+    from_name: str,
+    from_email: str,
+    to_emails: list[str],
+    cc_emails: list[str] | None,
+    html_content: str,
+    text_content: str,
+    images: list[tuple[bytes, str, str]],
+    bcc_emails: list[str] | None = None,
+) -> EmailMessage:
+    """Assemble the multipart/alternative (text + related html+images) message.
+
+    Shared by the SMTP and Gmail-API transports. A Bcc header is added only when
+    ``bcc_emails`` is passed — the SMTP path omits it (Bcc rides the envelope),
+    the Gmail-API path needs it since Gmail derives recipients from headers.
+    """
+    message = EmailMessage()
+    message["Subject"] = subject
+    message["From"] = f"{from_name} <{from_email}>" if from_name else from_email
+    message["To"] = ", ".join(to_emails)
+    if cc_emails:
+        message["Cc"] = ", ".join(cc_emails)
+    if bcc_emails:
+        message["Bcc"] = ", ".join(bcc_emails)
+    message["Message-ID"] = make_msgid(domain="ahacommerce.id")
+    message.set_content(text_content)
+    message.add_alternative(html_content, subtype="html")
+
+    html_part = message.get_payload()[1]
+    for data, subtype, cid in images:
+        html_part.add_related(data, maintype="image", subtype=subtype, cid=f"<{cid}>")
+    return message
+
+
+async def gmail_api_send_html(
+    *,
+    subject: str,
+    from_name: str,
+    to_emails: list[str],
+    cc_emails: list[str] | None,
+    bcc_emails: list[str] | None,
+    html_content: str,
+    text_content: str,
+    images: list[tuple[bytes, str, str]],
+) -> str:
+    """Send the rich HTML email via the Gmail API using domain-wide delegation.
+
+    Authenticates as the ``gmail_dwd`` service account impersonating
+    ``settings.gmail_dwd_sender`` (scope ``gmail.send``). From is the impersonated
+    mailbox. Returns the Message-ID header value (angle brackets stripped).
+    """
+    message = _build_html_message(
+        subject=subject,
+        from_name=from_name,
+        from_email=settings.gmail_dwd_sender,
+        to_emails=to_emails,
+        cc_emails=cc_emails,
+        bcc_emails=bcc_emails,
+        html_content=html_content,
+        text_content=text_content,
+        images=images,
+    )
+    msgid = message["Message-ID"]
+    raw = base64.urlsafe_b64encode(message.as_bytes()).decode("ascii")
+
+    def _send() -> None:
+        creds = service_account.Credentials.from_service_account_info(
+            json.loads(settings.gmail_dwd_credentials_json),
+            scopes=["https://www.googleapis.com/auth/gmail.send"],
+        ).with_subject(settings.gmail_dwd_sender)
+        service = build("gmail", "v1", credentials=creds, cache_discovery=False)
+        service.users().messages().send(userId="me", body={"raw": raw}).execute()
+
+    try:
+        await asyncio.to_thread(_send)
+    except HttpError as exc:
+        raise AppException(
+            code="GMAIL_API_ERROR",
+            detail=f"Gmail API send failed (check DWD authorization for {settings.gmail_dwd_sender}): {exc}",
+            status_code=502,
+        ) from exc
+
+    return msgid.strip("<>")
+
+
 async def smtp_send_html(
     *,
     subject: str,
@@ -117,20 +208,17 @@ async def smtp_send_html(
     (``email_smtp_*``) — distinct from /send-plain's ``gmail_smtp_*``.
     Returns the Message-ID header value (angle brackets stripped).
     """
-    message = EmailMessage()
-    message["Subject"] = subject
-    message["From"] = f"{from_name} <{from_email}>" if from_name else from_email
-    message["To"] = ", ".join(to_emails)
-    if cc_emails:
-        message["Cc"] = ", ".join(cc_emails)
-    msgid = make_msgid(domain="ahacommerce.id")
-    message["Message-ID"] = msgid
-    message.set_content(text_content)
-    message.add_alternative(html_content, subtype="html")
-
-    html_part = message.get_payload()[1]
-    for data, subtype, cid in images:
-        html_part.add_related(data, maintype="image", subtype=subtype, cid=f"<{cid}>")
+    message = _build_html_message(
+        subject=subject,
+        from_name=from_name,
+        from_email=from_email,
+        to_emails=to_emails,
+        cc_emails=cc_emails,
+        html_content=html_content,
+        text_content=text_content,
+        images=images,
+    )
+    msgid = message["Message-ID"]
 
     envelope_recipients = list(to_emails) + list(cc_emails or []) + list(bcc_emails or [])
 
@@ -254,17 +342,29 @@ async def send_evaluation_email(
     ]
 
     try:
-        message_id = await smtp_send_html(
-            subject=subject,
-            from_name=settings.email_from_name,
-            from_email=settings.email_from_email,
-            to_emails=recipients,
-            cc_emails=cc,
-            bcc_emails=bcc,
-            html_content=html_content,
-            text_content=text_content,
-            images=images,
-        )
+        if settings.gmail_dwd_enabled:
+            message_id = await gmail_api_send_html(
+                subject=subject,
+                from_name=settings.email_from_name,
+                to_emails=recipients,
+                cc_emails=cc,
+                bcc_emails=bcc,
+                html_content=html_content,
+                text_content=text_content,
+                images=images,
+            )
+        else:
+            message_id = await smtp_send_html(
+                subject=subject,
+                from_name=settings.email_from_name,
+                from_email=settings.email_from_email,
+                to_emails=recipients,
+                cc_emails=cc,
+                bcc_emails=bcc,
+                html_content=html_content,
+                text_content=text_content,
+                images=images,
+            )
         return SendEmailResponse(
             success=True,
             message_id=message_id,
