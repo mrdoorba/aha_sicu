@@ -5,17 +5,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { EvaluationDetailPage } from './EvaluationDetailPage';
 
-vi.mock('../hooks/useSendPlainEmail', () => ({
-  useSendPlainEmail: () => ({ mutate: vi.fn(), isPending: false }),
-}));
-
-// The email body is rendered server-side via /email/preview?format=text. The
-// hook is mocked so tests control the returned (translated) preview text.
-let mockPreviewText: string | undefined;
-vi.mock('../hooks/usePreviewEmailText', () => ({
-  usePreviewEmailText: () => ({ data: mockPreviewText }),
-}));
-
 const mockRefetch = vi.fn();
 
 const MOCK_EVALUATION = {
@@ -149,7 +138,6 @@ beforeEach(() => {
     last_login: '2026-02-20T00:00:00Z',
   };
   mockUseEvaluationDetail.mockImplementation(() => mockHookReturn);
-  mockPreviewText = undefined;
   vi.clearAllMocks();
 });
 
@@ -314,15 +302,13 @@ describe('EvaluationDetailPage', () => {
     expect(screen.getByText('(>3%)')).toBeInTheDocument();
   });
 
-  it('renders email output section with copy button when email_output present', () => {
+  it('shows the Send Email button in the header when email_output present', () => {
     renderPage();
 
-    expect(screen.getByText('Email Output')).toBeInTheDocument();
-    expect(screen.getByText(/Brand evaluation for Nike Indonesia/)).toBeInTheDocument();
-    expect(screen.getByRole('button', { name: /email output/i })).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /kirim email/i })).toBeInTheDocument();
   });
 
-  it('hides email section when email_output is null', () => {
+  it('hides the Send Email button when email_output is null', () => {
     mockHookReturn = {
       ...mockHookReturn,
       evaluation: { ...MOCK_EVALUATION, email_output: null },
@@ -330,23 +316,7 @@ describe('EvaluationDetailPage', () => {
 
     renderPage();
 
-    expect(screen.queryByText('Email Output')).not.toBeInTheDocument();
-  });
-
-  it('copies email output to clipboard on copy button click', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText },
-      writable: true,
-      configurable: true,
-    });
-
-    renderPage();
-
-    const copyBtn = screen.getByRole('button', { name: /email output/i });
-    await userEvent.click(copyBtn);
-
-    expect(writeText).toHaveBeenCalledWith(MOCK_EVALUATION.email_output);
+    expect(screen.queryByRole('button', { name: /kirim email/i })).not.toBeInTheDocument();
   });
 
   it('shows loading skeleton', () => {
@@ -698,43 +668,4 @@ describe('EvaluationDetailPage', () => {
     expect(screen.queryByText('Kesimpulan')).not.toBeInTheDocument();
   });
 
-  // --- EmailOutputSection i18n tests ---
-
-  it('renders server-rendered preview text when available', () => {
-    // The unified renderer returns the translated body via the preview endpoint.
-    mockPreviewText = '📊 Performa Operasional Toko:\nTranslated row content';
-    renderPage();
-
-    expect(screen.getByText(/Performa Operasional Toko/)).toBeInTheDocument();
-    // Should NOT show the raw email_output text when preview text is present.
-    expect(screen.queryByText('Brand evaluation for Nike Indonesia')).not.toBeInTheDocument();
-  });
-
-  it('falls back to raw email output when preview text is unavailable', () => {
-    // No preview text (e.g. still loading) → fall back to stored email_output.
-    mockPreviewText = undefined;
-    renderPage();
-
-    expect(screen.getByText(/Brand evaluation for Nike Indonesia/)).toBeInTheDocument();
-  });
-
-  it('copies the server-rendered preview text when available', async () => {
-    const writeText = vi.fn().mockResolvedValue(undefined);
-    Object.defineProperty(navigator, 'clipboard', {
-      value: { writeText },
-      writable: true,
-      configurable: true,
-    });
-
-    mockPreviewText = '📊 Performa Operasional Toko:\nTranslated row content';
-    renderPage();
-
-    const copyBtn = screen.getByRole('button', { name: /email output/i });
-    await userEvent.click(copyBtn);
-
-    expect(writeText).not.toHaveBeenCalledWith(MOCK_EVALUATION.email_output);
-    expect(writeText).toHaveBeenCalledTimes(1);
-    const copiedText = writeText.mock.calls[0][0] as string;
-    expect(copiedText).toContain('Performa Operasional Toko');
-  });
 });

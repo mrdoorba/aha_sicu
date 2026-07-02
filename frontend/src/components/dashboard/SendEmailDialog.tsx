@@ -47,6 +47,8 @@ interface SendEmailDialogProps {
   period: string;
   score: number;
   brandRawData: BrandRawData;
+  /** Brand marketplace ('ID' | 'TH'); picks the default email language. */
+  marketplace?: string;
   onSuccess?: () => void;
 }
 
@@ -58,26 +60,34 @@ export function SendEmailDialog({
   period,
   score,
   brandRawData,
+  marketplace,
   onSuccess,
 }: SendEmailDialogProps) {
   const { t, i18n } = useTranslation();
   const { mutate, isPending, isError, reset } = useSendEmail();
 
+  // Default the email to the brand's country: TH brand → 'th', ID → 'id',
+  // falling back to the dashboard UI language when the marketplace is unknown.
+  const defaultLanguage =
+    marketplace === 'TH' ? 'th' : marketplace === 'ID' ? 'id' : i18n.language;
+
   const initialRecipients = [brandRawData.email].filter(Boolean) as string[];
-  const [emailLanguage, setEmailLanguage] = useState(i18n.language);
+  const [emailLanguage, setEmailLanguage] = useState(defaultLanguage);
 
   const DEFAULT_CC: Record<string, string[]> = {
     id: ['tbd@ahacommerce.net', 'main@ahacommerce.net'],
-    th: ['th.bd@ahacommerce.net'],
+    th: ['th.bd@ahacommerce.net', 'th@ahacommerce.net'],
   };
-  const initialCc = DEFAULT_CC[i18n.language] ?? DEFAULT_CC['id'] ?? [];
+  const initialCc = DEFAULT_CC[defaultLanguage] ?? DEFAULT_CC['id'] ?? [];
+  // BCC the ops mailbox on every language.
+  const initialBcc = ['stp@ahacommerce.net'];
 
   const [recipients, setRecipients] = useState<string[]>(initialRecipients);
   const [cc, setCc] = useState<string[]>(initialCc);
-  const [bcc, setBcc] = useState<string[]>([]);
+  const [bcc, setBcc] = useState<string[]>(initialBcc);
   const [showCc, setShowCc] = useState(initialCc.length > 0);
-  const [showBcc, setShowBcc] = useState(false);
-  const [note, setNote] = useState(() => buildDefaultNote(brandName, brandRawData, i18n.language));
+  const [showBcc, setShowBcc] = useState(initialBcc.length > 0);
+  const [note, setNote] = useState(() => buildDefaultNote(brandName, brandRawData, defaultLanguage));
   const [showPreview, setShowPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -137,11 +147,11 @@ export function SendEmailDialog({
       reset();
       setRecipients(initialRecipients);
       setCc(initialCc);
-      setBcc([]);
+      setBcc(initialBcc);
       setShowCc(initialCc.length > 0);
-      setShowBcc(false);
-      setNote(buildDefaultNote(brandName, brandRawData, i18n.language));
-      setEmailLanguage(i18n.language);
+      setShowBcc(initialBcc.length > 0);
+      setNote(buildDefaultNote(brandName, brandRawData, defaultLanguage));
+      setEmailLanguage(defaultLanguage);
       setShowPreview(false);
       setPreviewHtml(null);
     }

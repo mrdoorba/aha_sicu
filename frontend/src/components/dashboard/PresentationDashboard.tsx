@@ -137,6 +137,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
         period={evaluation.period}
         score={Math.round(evaluation.final_score)}
         brandRawData={evaluation.brand_raw_data}
+        marketplace={evaluation.marketplace}
       />
     </div>
   );

@@ -171,12 +171,12 @@ describe('SendEmailDialog', () => {
     expect(screen.queryByRole('button', { name: 'CC' })).not.toBeInTheDocument();
   });
 
-  it('shows BCC link and clicking it reveals BCC field', () => {
+  it('shows BCC field pre-filled with the ops mailbox', () => {
     renderDialog();
-    const bccLink = screen.getByRole('button', { name: 'BCC' });
-    expect(bccLink).toBeInTheDocument();
-    fireEvent.click(bccLink);
+    // BCC field is visible by default (pre-filled with stp@ahacommerce.net)
     expect(screen.getByText('sendEmail.bcc')).toBeInTheDocument();
+    expect(screen.getByText('stp@ahacommerce.net')).toBeInTheDocument();
+    // BCC toggle button should not be present since BCC is already shown
     expect(screen.queryByRole('button', { name: 'BCC' })).not.toBeInTheDocument();
   });
 

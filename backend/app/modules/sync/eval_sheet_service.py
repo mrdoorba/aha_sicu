@@ -1,8 +1,8 @@
 """Service for syncing evaluated brand data to a Google Sheet.
 
 Writes one row per brand with: Waktu Submit, Periode Data, Brand Name,
-Kategori, AHA Compatibility Score. Data comes from the latest evaluation
-(by created_at) for each brand.
+Kategori, AHA Compatibility Score, Country. Data comes from the latest
+evaluation (by created_at) for each brand.
 """
 
 import logging
@@ -25,8 +25,9 @@ HEADER_ROW = [
     "Brand Name",
     "Kategori",
     "AHA Compatibility Score",
+    "Country",
 ]
-EVAL_RANGE = "SICU!A:E"
+EVAL_RANGE = "SICU!A:F"
 _WIB = ZoneInfo("Asia/Jakarta")
 _CATEGORY_COLUMNS: dict[str, tuple[str, ...]] = {
     "ID": ("Kategori", "Category", "category"),
@@ -121,6 +122,7 @@ def _brand_row(data: dict[str, Any]) -> list[str]:
         data["brand_name"],
         data.get("kategori") or "",
         str(data["final_score"]),
+        data.get("marketplace") or "ID",
     ]
 
 

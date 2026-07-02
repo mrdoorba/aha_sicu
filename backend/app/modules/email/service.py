@@ -192,6 +192,10 @@ async def send_evaluation_email(
     S = _get_strings(language)
     if not subject:
         subject = S["subject"].format(brand_name=brand_name, period=period)
+    # Tag the subject with the brand's market. EN is left untagged.
+    prefix = {"id": "[ID] ", "th": "[TH] "}.get(language, "")
+    if prefix and not subject.startswith(prefix):
+        subject = prefix + subject
 
     header_bytes = _load_asset("aha-e-mail-header-2026.png")
     footer_bytes = _load_asset("aha-e-mail-footer-2026.png")

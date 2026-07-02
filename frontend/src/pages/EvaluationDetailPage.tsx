@@ -1,5 +1,5 @@
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, ArrowUpDown, Copy, ClipboardCheck, Trash2, ChevronRight, ChevronDown, Mail, Download } from 'lucide-react';
+import { ArrowLeft, ArrowUpDown, Trash2, ChevronRight, ChevronDown, Mail, Download } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import type { TFunction } from 'i18next';
@@ -19,7 +19,7 @@ import { useEvaluationDetail } from '../hooks/useEvaluationDetail';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { useDeleteEvaluation } from '../hooks/useDeleteEvaluation';
 import { DeleteEvaluationDialog } from '../components/evaluations/DeleteEvaluationDialog';
-import { SendMailDialog } from '../components/evaluations/SendMailDialog';
+import { SendEmailDialog } from '../components/dashboard/SendEmailDialog';
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '../components/ui/collapsible';
 import { FinalScoreDisplay } from '../components/evaluation/scoring/FinalScoreDisplay';
 import {
@@ -33,7 +33,6 @@ import { isRecord, isRecordArray } from '../lib/typeGuards';
 import { CATEGORY_MAP } from '../lib/categoryMap';
 import { getIntlLocale } from '../lib/languages';
 import { renderTranslatable, renderAdList, renderFlagList, type TranslatableText } from '../utils/renderTranslatable';
-import { usePreviewEmailText } from '../hooks/usePreviewEmailText';
 import type { TranslatableI18n, AdListI18n } from '../hooks/useCalculator';
 
 interface ScoringSummary {
@@ -712,67 +711,6 @@ function ManualInputsSection({
   );
 }
 
-function EmailOutputSection({
-  evaluationId,
-  emailOutput,
-  language,
-  t,
-  onSendMail,
-}: {
-  evaluationId: number;
-  emailOutput: string;
-  language: string;
-  t: TFunction;
-  onSendMail: () => void;
-}) {
-  const [copied, setCopied] = useState(false);
-
-  // The email body is rendered server-side by the unified renderer; fall back
-  // to the stored (Indonesian) email_output while the preview text loads.
-  const { data: previewText } = usePreviewEmailText(evaluationId, language);
-  const displayText = previewText ?? emailOutput;
-
-  const handleCopy = async () => {
-    try {
-      await navigator.clipboard.writeText(displayText);
-      setCopied(true);
-      toast.success(t('evaluationDetail.emailCopied'));
-      setTimeout(() => setCopied(false), 2000);
-    } catch {
-      toast.error(t('evaluationDetail.copyFailed'));
-    }
-  };
-
-  return (
-    <Card>
-      <CardHeader className="flex flex-row items-center justify-between">
-        <CardTitle className="text-lg">{t('evaluationDetail.emailOutput')}</CardTitle>
-        <div className="flex gap-2">
-          <Button
-            variant="outline"
-            size="sm"
-            onClick={handleCopy}
-            aria-label={t('evaluationDetail.emailOutput')}
-          >
-            {copied ? <ClipboardCheck className="size-4" /> : <Copy className="size-4" />}
-            {copied ? t('common.copied') : t('common.copy')}
-          </Button>
-          <Button
-            size="sm"
-            onClick={onSendMail}
-          >
-            <Mail className="mr-1.5 size-4" />
-            {t('sendMail.send')}
-          </Button>
-        </div>
-      </CardHeader>
-      <CardContent>
-        <pre className="whitespace-pre-wrap rounded bg-muted p-4 text-sm">{displayText}</pre>
-      </CardContent>
-    </Card>
-  );
-}
-
 export function EvaluationDetailPage() {
   const { t, i18n } = useTranslation();
   const params = useParams<{ id: string }>();
@@ -857,6 +795,12 @@ export function EvaluationDetailPage() {
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
+                    {evaluation.email_output && (
+                      <Button size="sm" onClick={() => setSendMailDialogOpen(true)}>
+                        <Mail className="mr-1.5 size-4" />
+                        {t('sendMail.send')}
+                      </Button>
+                    )}
                     <Badge variant={evaluation.template === 'fashion' ? 'default' : 'secondary'}>
                       {evaluation.template === 'fashion' ? 'Fashion' : 'Non-Fashion'}
                     </Badge>
@@ -975,26 +919,18 @@ export function EvaluationDetailPage() {
               </CardContent>
             </Card>
 
-            {/* Email Output (conditional) */}
+            {/* Send Email dialog — triggered from the header button */}
             {evaluation.email_output && (
-              <>
-                <EmailOutputSection
-                  evaluationId={evaluation.id}
-                  emailOutput={evaluation.email_output}
-                  language={i18n.language}
-                  t={t}
-                  onSendMail={() => setSendMailDialogOpen(true)}
-                />
-                <SendMailDialog
-                  open={sendMailDialogOpen}
-                  onOpenChange={setSendMailDialogOpen}
-                  evaluationId={evaluation.id}
-                  brandName={evaluation.brand_name}
-                  period={evaluation.period}
-                  emailOutput={evaluation.email_output}
-                  brandRawData={evaluation.brand_raw_data}
-                />
-              </>
+              <SendEmailDialog
+                open={sendMailDialogOpen}
+                onOpenChange={setSendMailDialogOpen}
+                evaluationId={evaluation.id}
+                brandName={evaluation.brand_name}
+                period={evaluation.period}
+                score={Math.round(evaluation.final_score)}
+                brandRawData={evaluation.brand_raw_data}
+                marketplace={evaluation.marketplace}
+              />
             )}
           </div>
         )}

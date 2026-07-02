@@ -31,8 +31,9 @@ def test_brand_row_formats_all_fields():
         "brand_name": "Nike",
         "kategori": "Sepatu",
         "final_score": 72.50,
+        "marketplace": "TH",
     }
-    assert _brand_row(data) == [SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5"]
+    assert _brand_row(data) == [SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5", "TH"]
 
 
 def test_brand_row_handles_missing_kategori():
@@ -44,7 +45,7 @@ def test_brand_row_handles_missing_kategori():
         "kategori": None,
         "final_score": 85.00,
     }
-    assert _brand_row(data) == [SUBMITTED_DATE, "Feb 2026", "Adidas", "", "85.0"]
+    assert _brand_row(data) == [SUBMITTED_DATE, "Feb 2026", "Adidas", "", "85.0", "ID"]
 
 
 def test_brand_row_handles_missing_submitted_at():
@@ -55,7 +56,7 @@ def test_brand_row_handles_missing_submitted_at():
         "kategori": "Sepatu",
         "final_score": 85.00,
     }
-    assert _brand_row(data) == ["", "Feb 2026", "Adidas", "Sepatu", "85.0"]
+    assert _brand_row(data) == ["", "Feb 2026", "Adidas", "Sepatu", "85.0", "ID"]
 
 
 def test_normalize_eval_sheet_row_uses_th_category_key():
@@ -137,19 +138,20 @@ def test_normalize_eval_sheet_row_parses_json_string_raw_data():
 
 
 def test_header_row_has_correct_columns():
-    """should have Waktu Submit, Periode Data, Brand Name, Kategori, AHA Compatibility Score"""
+    """should have Waktu Submit, Periode Data, Brand Name, Kategori, AHA Compatibility Score, Country"""
     assert HEADER_ROW == [
         "Waktu Submit",
         "Periode Data",
         "Brand Name",
         "Kategori",
         "AHA Compatibility Score",
+        "Country",
     ]
 
 
-def test_eval_range_covers_five_columns():
-    """should cover columns A through E"""
-    assert EVAL_RANGE == "SICU!A:E"
+def test_eval_range_covers_six_columns():
+    """should cover columns A through F"""
+    assert EVAL_RANGE == "SICU!A:F"
 
 
 # --- sync_brand_to_sheet ---
@@ -192,7 +194,7 @@ async def test_sync_brand_to_sheet_appends_new_brand():
 
         mock_client.append_rows.assert_awaited_once()
         args = mock_client.append_rows.call_args
-        assert args[0][2] == [[SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5"]]
+        assert args[0][2] == [[SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5", "ID"]]
 
 
 async def test_sync_brand_to_sheet_overwrites_existing_brand():
@@ -228,7 +230,7 @@ async def test_sync_brand_to_sheet_overwrites_existing_brand():
         mock_client.write_rows.assert_awaited_once()
         args = mock_client.write_rows.call_args
         assert args[0][1] == "SICU!A2"
-        assert args[0][2] == [[SUBMITTED_DATE, "Feb 2026", "Nike", "Sepatu", "88.0"]]
+        assert args[0][2] == [[SUBMITTED_DATE, "Feb 2026", "Nike", "Sepatu", "88.0", "ID"]]
         mock_client.append_rows.assert_not_awaited()
 
 
@@ -383,5 +385,5 @@ async def test_full_sync_writes_header_and_data():
         write_args = mock_client.write_rows.call_args
         rows = write_args[0][2]
         assert rows[0] == HEADER_ROW
-        assert rows[1] == [SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5"]
-        assert rows[2] == [SUBMITTED_DATE, "Feb 2026", "Adidas", "", "85.0"]
+        assert rows[1] == [SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5", "ID"]
+        assert rows[2] == [SUBMITTED_DATE, "Feb 2026", "Adidas", "", "85.0", "ID"]
