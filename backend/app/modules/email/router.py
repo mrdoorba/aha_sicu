@@ -31,7 +31,7 @@ from app.modules.email.schemas import (
 )
 from app.modules.email.layout import render_email, render_plain_email_message
 from app.modules.email.service import asset_to_data_uri, gmail_smtp_send, send_evaluation_email
-from app.modules.email.template import _get_strings, render_email_html
+from app.modules.email.template import render_email_html
 from app.modules.evaluations.service import get_evaluation_detail
 
 logger = logging.getLogger(__name__)
@@ -118,9 +118,8 @@ async def send_email_endpoint(
 ) -> SendEmailResponse:
     """Send an evaluation report email.
 
-    Fetches evaluation data, renders the HTML template with the provided
-    chart image, and sends (or previews in debug mode) the email.
-    Logs the result to email_history.
+    Fetches evaluation data, renders the HTML template, and sends (or previews
+    in debug mode) the email. Logs the result to email_history.
     """
     evaluation = await get_evaluation_detail(conn=conn, evaluation_id=body.evaluation_id)
     eval_dict = evaluation.model_dump()
@@ -132,7 +131,6 @@ async def send_email_endpoint(
         result = await send_evaluation_email(
             evaluation_data=eval_dict,
             recipients=[str(r) for r in body.recipients],
-            chart_image_b64=body.chart_image,
             subject=body.subject,
             render_html_fn=render_email_html,
             cc=[str(c) for c in body.cc] if body.cc else None,
@@ -304,7 +302,6 @@ async def preview_email_endpoint(
 
     html = render_email_html(
         evaluation_data=eval_dict,
-        chart_src=_chart_placeholder_svg(lang),
         header_src=header_src,
         footer_src=footer_src,
         syb_src=syb_src,
@@ -353,23 +350,8 @@ async def preview_email_from_result_endpoint(
         result,
         language=language,
         fmt="html",
-        chart_src=_chart_placeholder_svg(language),
         header_src=asset_to_data_uri("aha-e-mail-header-2026.png"),
         footer_src=asset_to_data_uri("aha-e-mail-footer-2026.png"),
         syb_src=asset_to_data_uri("syb-color-3.png"),
     )
     return HTMLResponse(content=html)
-
-
-def _chart_placeholder_svg(language: str = "id") -> str:
-    """Generate chart placeholder SVG with localized text."""
-    S = _get_strings(language)
-    text = S["chart_placeholder"]
-    return (
-        "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' "
-        "width='600' height='300' viewBox='0 0 600 300'%3E"
-        "%3Crect width='600' height='300' fill='%23f0f0f0'/%3E"
-        "%3Ctext x='300' y='150' text-anchor='middle' fill='%23999' "
-        "font-family='Arial' font-size='14'%3E"
-        f"{text}%3C/text%3E%3C/svg%3E"
-    )

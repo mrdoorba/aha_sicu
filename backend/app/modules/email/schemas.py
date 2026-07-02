@@ -15,7 +15,6 @@ class SendEmailRequest(BaseModel):
     recipients: list[EmailStr] = Field(min_length=1, max_length=10)
     cc: list[EmailStr] = Field(default_factory=list, max_length=10)
     bcc: list[EmailStr] = Field(default_factory=list, max_length=10)
-    chart_image: str = Field(default="", description="Base64-encoded PNG chart image (optional — placeholder used if empty)")
     subject: str | None = Field(default=None, max_length=200)
     note: str | None = Field(default=None, max_length=500)
     language: str = Field(default="id", pattern="^(id|en|th)$")

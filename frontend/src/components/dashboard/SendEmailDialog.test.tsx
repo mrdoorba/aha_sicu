@@ -24,11 +24,6 @@ let mockMutationReturn: {
   reset: mockReset,
 };
 
-const mockCaptureChart = vi.fn();
-vi.mock('../../lib/captureChart', () => ({
-  captureChartAsPng: (...args: unknown[]) => mockCaptureChart(...args),
-}));
-
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, unknown>) => {
@@ -84,7 +79,6 @@ function renderDialog(overrides: Record<string, unknown> = {}) {
     period: '2026-01',
     score: 85.7,
     brandRawData: { email: 'pic@example.com', pic_name: 'PIC', store_link: null, kategori: null },
-    chartRef: { current: document.createElement('div') },
     onSuccess: vi.fn(),
     ...overrides,
   };
@@ -118,7 +112,6 @@ describe('SendEmailDialog', () => {
     };
     mockMutate.mockReset();
     mockReset.mockReset();
-    mockCaptureChart.mockReset();
     mockToastSuccess.mockReset();
     consoleErrorSpy = vi.spyOn(console, 'error').mockImplementation(() => {});
   });
@@ -202,21 +195,6 @@ describe('SendEmailDialog', () => {
     expect(screen.getByRole('button', { name: /sendEmail\.retry/i })).toBeInTheDocument();
   });
 
-  it('proceeds with send when chart capture fails (chart is optional)', async () => {
-    mockCaptureChart.mockRejectedValue(new Error('canvas error'));
-    renderDialog();
-
-    const sendBtn = screen.getByRole('button', { name: /sendEmail\.send/i });
-    fireEvent.click(sendBtn);
-
-    await waitFor(() => {
-      expect(mockMutate).toHaveBeenCalled();
-    });
-    // Chart image should be empty string when capture fails
-    expect(mockMutate.mock.calls[0][0].chartImage).toBe('');
-    expect(consoleErrorSpy).toHaveBeenCalled();
-  });
-
   it('renders note textarea pre-filled with default opening message', () => {
     renderDialog();
     const textarea = screen.getByPlaceholderText('sendEmail.notePlaceholder') as HTMLTextAreaElement;
@@ -254,7 +232,6 @@ describe('SendEmailDialog', () => {
   });
 
   it('sends correct payload shape with recipients array, cc, bcc, note', async () => {
-    mockCaptureChart.mockResolvedValue('abc123');
     mockMutate.mockImplementation(
       (_params: Record<string, unknown>, opts?: { onSuccess?: () => void }) => {
         opts?.onSuccess?.();
@@ -278,13 +255,11 @@ describe('SendEmailDialog', () => {
       expect(mockMutate).toHaveBeenCalled();
       const [params] = mockMutate.mock.calls[0];
       expect(params.recipients).toEqual(['pic@example.com']);
-      expect(params.chartImage).toBe('abc123');
       expect(params.note).toBe('Test note');
     });
   });
 
   it('calls onSuccess callback on successful send', async () => {
-    mockCaptureChart.mockResolvedValue('abc123');
     mockMutate.mockImplementation(
       (_params: Record<string, unknown>, opts?: { onSuccess?: () => void }) => {
         opts?.onSuccess?.();
@@ -321,7 +296,6 @@ describe('SendEmailDialog', () => {
   });
 
   it('mutation payload includes the selected email language', async () => {
-    mockCaptureChart.mockResolvedValue('abc123');
     mockMutate.mockImplementation(
       (_params: Record<string, unknown>, opts?: { onSuccess?: () => void }) => {
         opts?.onSuccess?.();
@@ -346,7 +320,6 @@ describe('SendEmailDialog', () => {
   });
 
   it('sends changed language in mutation payload when selector is changed', async () => {
-    mockCaptureChart.mockResolvedValue('abc123');
     mockMutate.mockImplementation(
       (_params: Record<string, unknown>, opts?: { onSuccess?: () => void }) => {
         opts?.onSuccess?.();

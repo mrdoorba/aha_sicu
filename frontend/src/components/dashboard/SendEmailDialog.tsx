@@ -2,7 +2,6 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { Mail, Loader2, ChevronDown, RefreshCw } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
 import { EmailLanguageSelector } from '../shared/EmailLanguageSelector';
-import { captureChartAsPng } from '../../lib/captureChart';
 import { toast } from 'sonner';
 import {
   Dialog,
@@ -48,7 +47,6 @@ interface SendEmailDialogProps {
   period: string;
   score: number;
   brandRawData: BrandRawData;
-  chartRef: React.RefObject<HTMLDivElement | null>;
   onSuccess?: () => void;
 }
 
@@ -60,7 +58,6 @@ export function SendEmailDialog({
   period,
   score,
   brandRawData,
-  chartRef,
   onSuccess,
 }: SendEmailDialogProps) {
   const { t, i18n } = useTranslation();
@@ -84,7 +81,6 @@ export function SendEmailDialog({
   const [showPreview, setShowPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
-  const [captureError, setCaptureError] = useState(false);
   const previousEmailLanguage = useRef(emailLanguage);
 
   const totalRecipients = recipients.length + cc.length + bcc.length;
@@ -139,7 +135,6 @@ export function SendEmailDialog({
   const handleClose = (nextOpen: boolean) => {
     if (!nextOpen) {
       reset();
-      setCaptureError(false);
       setRecipients(initialRecipients);
       setCc(initialCc);
       setBcc([]);
@@ -153,24 +148,11 @@ export function SendEmailDialog({
     onOpenChange(nextOpen);
   };
 
-  const handleSend = async () => {
-    setCaptureError(false);
-
-    let chartImage = '';
-    const node = chartRef.current;
-    if (node) {
-      try {
-        chartImage = await captureChartAsPng(node);
-      } catch (err) {
-        console.error('[SendEmail] Chart capture failed:', err);
-      }
-    }
-
+  const handleSend = () => {
     mutate(
       {
         evaluationId,
         recipients,
-        chartImage,
         cc: cc.length > 0 ? cc : undefined,
         bcc: bcc.length > 0 ? bcc : undefined,
         note: note || undefined,
@@ -347,9 +329,6 @@ export function SendEmailDialog({
           </div>
 
           {/* Error Messages */}
-          {captureError && (
-            <p className="text-sm text-destructive">{t('sendEmail.captureError')}</p>
-          )}
           {isError && (
             <p className="text-sm text-destructive">{t('sendEmail.error')}</p>
           )}

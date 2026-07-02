@@ -7,9 +7,7 @@ import pytest
 
 from app.core.exceptions import AppException
 from app.modules.email.service import (
-    _decode_chart_image,
     _load_asset,
-    _strip_base64_prefix,
     send_evaluation_email,
     smtp_send_html,
 )
@@ -32,37 +30,6 @@ class TestLoadAsset:
         data = _load_asset("aha-e-mail-footer-2026.png")
         assert isinstance(data, bytes)
         assert len(data) > 0
-
-
-# ---------------------------------------------------------------------------
-# _strip_base64_prefix / _decode_chart_image
-# ---------------------------------------------------------------------------
-class TestBase64Handling:
-    """Test base64 prefix stripping and chart image decoding."""
-
-    def test_strip_data_uri_prefix(self) -> None:
-        raw = "data:image/png;base64,iVBORw0KGgo="
-        assert _strip_base64_prefix(raw) == "iVBORw0KGgo="
-
-    def test_strip_no_prefix(self) -> None:
-        raw = "iVBORw0KGgo="
-        assert _strip_base64_prefix(raw) == "iVBORw0KGgo="
-
-    def test_decode_valid_base64(self, sample_base64_png: str) -> None:
-        result = _decode_chart_image(sample_base64_png)
-        assert isinstance(result, bytes)
-        assert result[:4] == b"\x89PNG"
-
-    def test_decode_with_data_uri_prefix(self, sample_base64_png: str) -> None:
-        prefixed = f"data:image/png;base64,{sample_base64_png}"
-        result = _decode_chart_image(prefixed)
-        assert isinstance(result, bytes)
-
-    def test_decode_invalid_base64_raises(self) -> None:
-        with pytest.raises(AppException) as exc_info:
-            _decode_chart_image("!!!not-valid-base64!!!")
-        assert exc_info.value.code == "INVALID_CHART_IMAGE"
-        assert exc_info.value.status_code == 422
 
 
 # ---------------------------------------------------------------------------
@@ -165,7 +132,6 @@ class TestSendEvaluationEmail:
     async def test_generates_default_subject(
         self,
         sample_evaluation_data: dict,
-        sample_base64_png: str,
         mock_render_fn: MagicMock,
     ) -> None:
         with patch("app.modules.email.service.settings") as mock_settings:
@@ -176,20 +142,17 @@ class TestSendEvaluationEmail:
             await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
                 recipients=["test@example.com"],
-                chart_image_b64=sample_base64_png,
                 render_html_fn=mock_render_fn,
             )
 
-        # Check the render function received chart_src, header_src, footer_src
+        # Check the render function received the image srcs
         call_kwargs = mock_render_fn.call_args[1]
-        assert "chart_src" in call_kwargs
         assert "header_src" in call_kwargs
         assert "footer_src" in call_kwargs
 
     async def test_uses_custom_subject(
         self,
         sample_evaluation_data: dict,
-        sample_base64_png: str,
         mock_render_fn: MagicMock,
     ) -> None:
         with patch("app.modules.email.service.settings") as mock_settings:
@@ -200,7 +163,6 @@ class TestSendEvaluationEmail:
             result = await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
                 recipients=["test@example.com"],
-                chart_image_b64=sample_base64_png,
                 subject="Custom Subject",
                 render_html_fn=mock_render_fn,
             )
@@ -210,7 +172,6 @@ class TestSendEvaluationEmail:
     async def test_debug_mode_writes_file(
         self,
         sample_evaluation_data: dict,
-        sample_base64_png: str,
         mock_render_fn: MagicMock,
     ) -> None:
         with patch("app.modules.email.service.settings") as mock_settings:
@@ -221,7 +182,6 @@ class TestSendEvaluationEmail:
             result = await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
                 recipients=["test@example.com"],
-                chart_image_b64=sample_base64_png,
                 render_html_fn=mock_render_fn,
             )
 
@@ -237,7 +197,6 @@ class TestSendEvaluationEmail:
     async def test_sends_via_smtp_when_enabled(
         self,
         sample_evaluation_data: dict,
-        sample_base64_png: str,
         mock_render_fn: MagicMock,
     ) -> None:
         with (
@@ -252,7 +211,6 @@ class TestSendEvaluationEmail:
             result = await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
                 recipients=["test@example.com"],
-                chart_image_b64=sample_base64_png,
                 render_html_fn=mock_render_fn,
             )
 
@@ -263,7 +221,6 @@ class TestSendEvaluationEmail:
     async def test_subject_auto_generated_format(
         self,
         sample_evaluation_data: dict,
-        sample_base64_png: str,
         mock_render_fn: MagicMock,
     ) -> None:
         """Subject should be 'Laporan Evaluasi Brand: [Brand] - [Period]'."""
@@ -279,7 +236,6 @@ class TestSendEvaluationEmail:
             await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
                 recipients=["test@example.com"],
-                chart_image_b64=sample_base64_png,
                 render_html_fn=mock_render_fn,
             )
 
@@ -290,7 +246,6 @@ class TestSendEvaluationEmail:
     async def test_passes_note_to_render_fn(
         self,
         sample_evaluation_data: dict,
-        sample_base64_png: str,
         mock_render_fn: MagicMock,
     ) -> None:
         with patch("app.modules.email.service.settings") as mock_settings:
@@ -301,7 +256,6 @@ class TestSendEvaluationEmail:
             await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
                 recipients=["test@example.com"],
-                chart_image_b64=sample_base64_png,
                 render_html_fn=mock_render_fn,
                 note="My custom note",
             )
@@ -312,7 +266,6 @@ class TestSendEvaluationEmail:
     async def test_multi_recipient_with_cc_bcc(
         self,
         sample_evaluation_data: dict,
-        sample_base64_png: str,
         mock_render_fn: MagicMock,
     ) -> None:
         with (
@@ -327,7 +280,6 @@ class TestSendEvaluationEmail:
             result = await send_evaluation_email(
                 evaluation_data=sample_evaluation_data,
                 recipients=["a@example.com", "b@example.com"],
-                chart_image_b64=sample_base64_png,
                 render_html_fn=mock_render_fn,
                 cc=["cc@example.com"],
                 bcc=["bcc@example.com"],

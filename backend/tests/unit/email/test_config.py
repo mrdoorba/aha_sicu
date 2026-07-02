@@ -94,7 +94,6 @@ class TestSendEmailRequestSchema:
         req = SendEmailRequest(
             evaluation_id=1,
             recipients=["test@example.com"],
-            chart_image="abc123",
         )
         assert req.recipients == ["test@example.com"]
 
@@ -103,17 +102,7 @@ class TestSendEmailRequestSchema:
             SendEmailRequest(
                 evaluation_id=1,
                 recipients=["not-an-email"],
-                chart_image="abc123",
             )
-
-    @patch("app.modules.email.schemas.settings")
-    def test_chart_image_defaults_to_empty(self, mock_settings) -> None:
-        mock_settings.email_allowed_domains = "example.com"
-        req = SendEmailRequest(
-            evaluation_id=1,
-            recipients=["test@example.com"],
-        )
-        assert req.chart_image == ""
 
     @patch("app.modules.email.schemas.settings")
     def test_subject_optional(self, mock_settings) -> None:
@@ -121,7 +110,6 @@ class TestSendEmailRequestSchema:
         req = SendEmailRequest(
             evaluation_id=1,
             recipients=["test@example.com"],
-            chart_image="abc123",
         )
         assert req.subject is None
 
@@ -132,7 +120,6 @@ class TestSendEmailRequestSchema:
             SendEmailRequest(
                 evaluation_id=1,
                 recipients=["test@example.com"],
-                chart_image="abc123",
                 subject="x" * 201,
             )
 
@@ -142,7 +129,6 @@ class TestSendEmailRequestSchema:
         req = SendEmailRequest(
             evaluation_id=1,
             recipients=["test@example.com"],
-            chart_image="abc123",
             subject="x" * 200,
         )
         assert len(req.subject) == 200
@@ -153,7 +139,6 @@ class TestSendEmailRequestSchema:
         req = SendEmailRequest(
             evaluation_id=1,
             recipients=["test@example.com"],
-            chart_image="abc123",
         )
         assert req.cc == []
         assert req.bcc == []
@@ -164,7 +149,6 @@ class TestSendEmailRequestSchema:
         req = SendEmailRequest(
             evaluation_id=1,
             recipients=["test@example.com"],
-            chart_image="abc123",
         )
         assert req.note is None
 
@@ -177,7 +161,6 @@ class TestSendEmailRequestSchema:
                 recipients=[f"r{i}@example.com" for i in range(6)],
                 cc=[f"cc{i}@example.com" for i in range(3)],
                 bcc=[f"bcc{i}@example.com" for i in range(2)],
-                chart_image="abc123",
             )
 
 

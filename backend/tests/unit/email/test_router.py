@@ -38,7 +38,6 @@ class TestSendEmailLogsHistory:
                 json={
                     "evaluation_id": 42,
                     "recipients": ["recipient@ahacommerce.id"],
-                    "chart_image": "",
                 },
                 headers=headers,
             )
@@ -76,7 +75,6 @@ class TestSendEmailLogsHistory:
                 json={
                     "evaluation_id": 42,
                     "recipients": ["recipient@ahacommerce.id"],
-                    "chart_image": "",
                 },
                 headers=headers,
             )
@@ -117,7 +115,6 @@ class TestSendEmailLogsHistory:
                 json={
                     "evaluation_id": 42,
                     "recipients": ["recipient@ahacommerce.id"],
-                    "chart_image": "",
                 },
                 headers=headers,
             )

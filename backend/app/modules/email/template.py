@@ -15,7 +15,7 @@ from urllib.parse import urlsplit, urlunsplit
 # them, and external callers/tests import these names from this module.
 from app.modules.email.layout import (
     _load_locale,
-    _resolve_ads_output_text,
+    _resolve_ads_output_text,  # noqa: F401  re-exported for callers/tests
     _resolve_metric_name,
     _resolve_translatable_text,
     _translate,  # noqa: F401  re-exported for callers/tests
@@ -59,9 +59,9 @@ _EMAIL_STRING_KEYS: frozenset[str] = frozenset({
     "kesimpulan", "marketing_budget", "metric", "value", "benchmark",
     "verdict", "score", "message", "approved", "rejected",
     "check_count", "cross_count", "performance_verdict", "brand_report",
-    "subject", "plain_score", "plain_period", "chart_placeholder",
+    "subject", "plain_score", "plain_period",
     "schedule_consultation", "signoff_regards", "greeting", "compatibility",
-    "visit_store",
+    "visit_store", "view_on_shopee",
 })
 
 # Indonesian category names are the canonical keys used in evaluation data.
@@ -406,21 +406,6 @@ def _render_score_overview(
                 <span style="font-size:22px;color:{TEXT_SECONDARY};font-weight:500;"> /100</span>
               </td>
             </tr>
-            <!-- Verdict counts -->
-            <tr>
-              <td style="padding-bottom:20px;">
-                <table role="presentation" cellpadding="0" cellspacing="0" border="0">
-                  <tr>
-                    <td style="padding-right:20px;font-size:16px;font-weight:bold;color:{GREEN};">
-                      ✔️ {counts['checks']}
-                    </td>
-                    <td style="font-size:16px;font-weight:bold;color:{ORANGE};">
-                      ❌ {counts['xs']}
-                    </td>
-                  </tr>
-                </table>
-              </td>
-            </tr>
             <!-- AHA Compatibility pill + Performance badge -->
             <tr>
               <td>
@@ -554,11 +539,13 @@ def _render_metric_card(
                 f'<div style="font-size:11px;font-weight:600;color:{msg_color};line-height:1.5">{message}</div>'
             )
         if link:
+            shopee_label = S.get("view_on_shopee", "View on Shopee")
             detail_parts.append(
-                f'<div style="font-size:11px;line-height:1.5;padding-top:2px">'
+                f'<div style="padding-top:6px">'
                 f'<a href="{_esc(link)}" target="_blank" '
-                f'style="color:{PRIMARY_BLUE};text-decoration:underline;word-break:break-all">'
-                f'↪ {_esc(link)}</a></div>'
+                f'style="display:inline-block;background-color:{PRIMARY_BLUE};color:{WHITE};'
+                f'font-size:12px;font-weight:700;text-decoration:none;'
+                f'padding:8px 20px;border-radius:20px">{_esc(shopee_label)}</a></div>'
             )
         detail_html = (
             f'<tr><td colspan="2" style="border-top:1px solid {card_border};padding-top:8px">'
@@ -606,23 +593,31 @@ def _render_detailed_evaluation(
         cat_name = cat_map.get(cat.get("category", ""), cat.get("category", ""))
 
         rows = cat.get("rows", [])
+        # Email hides rows the dashboard keeps:
+        #  - Bisnis per-month sales (scoring.monthlySales/pastMonthlySales) —
+        #    leaving only the 6-month average + conversion rate.
+        #  - Alat Promo individual tool rows (scoring.promo.*) — leaving only the
+        #    usage % + effectiveness % summary cards (scoring.promoUsageRate /
+        #    scoring.promoEffectiveness, which lack the trailing dot).
+        _drop = ("scoring.monthlySales", "scoring.pastMonthlySales")
+        rows = [
+            r for r in rows
+            if (_k := (r.get("metric_i18n") or {}).get("key") or "") not in _drop
+            and not _k.startswith("scoring.promo.")
+        ]
         if not rows:
             continue
-
-        # Use verdict-based counts to match the dashboard display
-        checks = sum(1 for r in rows if r.get("verdict") == "\u2714\ufe0f")
-        xs = sum(1 for r in rows if r.get("verdict") == "\u274c")
-        total = checks + xs
-        cat_pct = round((checks / total) * 100) if total > 0 else 0
-        cat_color = _score_color(cat_pct)
 
         # Metrics that trigger a full-width divider after their card
         # (matches dashboard DetailedEvaluation.tsx logic).
         _DIVIDER_AFTER = {"Program Afiliasi", "ROI"}
 
         def _needs_divider(row: dict[str, Any]) -> bool:
+            # ponytail: the Rata² divider separated the (now-removed) monthly
+            # sales block from the average — pointless once the months are gone,
+            # and it stranded the avg card so Conversion dropped to its own row.
             m = row.get("metric", "")
-            return m in _DIVIDER_AFTER or m.startswith("Rata² Penjualan")
+            return m in _DIVIDER_AFTER
 
         _DIVIDER_HTML = (
             f'<tr><td colspan="2" style="padding:8px 4px">'
@@ -672,20 +667,7 @@ def _render_detailed_evaluation(
         sections.append(
             f'<tr><td style="padding:12px 30px 0 30px">'
             f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="card" style="padding:16px">'
-            f'<tr><td style="padding:16px 16px 8px 16px">'
-            f'<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
-            f'<td class="hdr">{_esc(cat_name)}</td>'
-            f'<td style="text-align:right;font-size:13px;font-weight:bold">'
-            f'<span style="color:{GREEN}">✔️ {checks}</span>'
-            f'<span style="color:{TEXT_SECONDARY}"> / </span>'
-            f'<span style="color:{ORANGE}">❌ {xs}</span>'
-            f'</td></tr></table></td></tr>'
-            f'<tr><td style="padding:0 16px 16px 16px">'
-            f'<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
-            f'<td class="bar-bg">'
-            f'<table width="{cat_pct}%" cellpadding="0" cellspacing="0" border="0"><tr>'
-            f'<td style="background:{cat_color};border-radius:4px;height:8px;font-size:0;line-height:0">&nbsp;</td>'
-            f'</tr></table></td></tr></table></td></tr>'
+            f'<tr><td class="hdr" style="padding:16px 16px 12px 16px">{_esc(cat_name)}</td></tr>'
             f'<tr><td style="padding:0 12px 12px 12px">'
             f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="metric-grid">'
             f'{grid_html}</table></td></tr></table></td></tr>'
@@ -700,245 +682,6 @@ def _render_detailed_evaluation(
         f'{_section_header("02", S["detailed_evaluation"])}'
         f'</td></tr>{all_sections}'
     )
-
-
-def _render_score_breakdown(
-    chart_src: str,
-    categories: list[dict[str, Any]],
-    S: dict[str, str],
-    cat_map: dict[str, str],
-) -> str:
-    """Render score breakdown section: chart image + category summary bars."""
-    if not categories:
-        return ""
-
-    cat_bars: list[str] = []
-    for cat in categories:
-        cat_name = cat_map.get(cat.get("category", ""), cat.get("category", ""))
-
-        checks = sum(1 for r in cat.get("rows", []) if r.get("verdict") == "\u2714\ufe0f")
-        xs = sum(1 for r in cat.get("rows", []) if r.get("verdict") == "\u274c")
-        total = checks + xs
-        cat_pct = round((checks / total) * 100) if total > 0 else 0
-        cat_color = _score_color(cat_pct)
-
-        cat_bars.append(
-            f'<tr><td style="padding:6px 0">'
-            f'<table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
-            f'<td class="lbl" style="width:120px;padding-right:12px">{_esc(cat_name)}</td>'
-            f'<td style="padding:0"><table width="100%" cellpadding="0" cellspacing="0" border="0"><tr>'
-            f'<td class="bar-bg10">'
-            f'<table width="{cat_pct}%" cellpadding="0" cellspacing="0" border="0"><tr>'
-            f'<td style="background:{cat_color};border-radius:4px;height:10px;font-size:0;line-height:0">&nbsp;</td>'
-            f'</tr></table></td></tr></table></td>'
-            f'<td style="font-size:12px;width:90px;text-align:right;padding-left:12px">'
-            f'<span style="color:{GREEN};font-weight:bold">\u2714\ufe0f{checks}</span>'
-            f'<span style="color:{TEXT_SECONDARY}"> / </span>'
-            f'<span style="color:{ORANGE};font-weight:bold">\u274c{xs}</span>'
-            f'</td></tr></table></td></tr>'
-        )
-
-    bars_html = "".join(cat_bars)
-    chart_html = ""
-    if chart_src:
-        chart_html = (
-            f'<tr><td style="padding-top:8px;padding-bottom:16px">'
-            f'<img src="{chart_src}" width="540" '
-            f'style="display:block;width:100%;height:auto;border:0;border-radius:8px" '
-            f'alt="Score Breakdown Chart"></td></tr>'
-        )
-
-    return (
-        f'<tr><td style="padding:16px 30px 24px 30px">'
-        f'{_section_header("04", S["score_breakdown"])}'
-        f'<table width="100%" cellpadding="0" cellspacing="0" border="0" class="card">'
-        f'<tr><td style="padding:20px">'
-        f'<table width="100%" cellpadding="0" cellspacing="0" border="0">'
-        f'{chart_html}{bars_html}'
-        f'</table></td></tr></table></td></tr>'
-    )
-
-
-def _render_ranking_table(
-    title: str,
-    rows: list[dict[str, Any]],
-    value_key: str,
-    value_label: str,
-    code_label: str,
-    name_label: str,
-    code_key: str = "kode_variasi",
-    name_key: str = "product_name",
-    max_rows: int = 5,
-    value_color: str = PRIMARY_BLUE,
-) -> str:
-    """Render a ranking table (revenue or stock) limited to max_rows."""
-    if not rows:
-        return ""
-
-    display_rows = rows[:max_rows]
-    row_html_parts: list[str] = []
-    for i, item in enumerate(display_rows):
-        bg = WHITE if i % 2 == 0 else CARD_BG
-        formatted_value = _format_number(item.get(value_key, ""))
-        row_html_parts.append(
-            f'<tr style="background-color:{bg};">'
-            f'<td style="padding:8px 10px;font-size:12px;color:{TEXT_DARK};border-bottom:1px solid {BORDER_LIGHT};font-weight:500;">{_esc(item.get(code_key, "-"))}</td>'
-            f'<td style="padding:8px 10px;font-size:12px;color:{TEXT_DARK};border-bottom:1px solid {BORDER_LIGHT};max-width:200px;">{_esc(item.get(name_key, ""))}</td>'
-            f'<td style="padding:8px 10px;font-size:12px;color:{value_color};border-bottom:1px solid {BORDER_LIGHT};text-align:right;font-weight:bold;">{formatted_value}</td>'
-            f'</tr>'
-        )
-
-    rows_html = "\n".join(row_html_parts)
-    return f"""\
-<table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-       style="margin-top:12px;margin-bottom:16px;">
-  <tr>
-    <td style="font-size:13px;font-weight:bold;color:{TEXT_DARK};padding-bottom:8px;text-transform:uppercase;letter-spacing:1px;">
-      {_esc(title)}
-    </td>
-  </tr>
-  <tr>
-    <td>
-      <table role="presentation" width="100%" cellpadding="0" cellspacing="0"
-             style="border-collapse:collapse;border-radius:8px;overflow:hidden;border:1px solid {BORDER_LIGHT};">
-        <tr style="background-color:{CARD_BG};">
-          <td style="padding:8px 10px;font-size:11px;color:{TEXT_SECONDARY};font-weight:bold;border-bottom:2px solid {BORDER_LIGHT};text-transform:uppercase;letter-spacing:0.5px;">{_esc(code_label)}</td>
-          <td style="padding:8px 10px;font-size:11px;color:{TEXT_SECONDARY};font-weight:bold;border-bottom:2px solid {BORDER_LIGHT};text-transform:uppercase;letter-spacing:0.5px;">{_esc(name_label)}</td>
-          <td style="padding:8px 10px;font-size:11px;color:{TEXT_SECONDARY};font-weight:bold;border-bottom:2px solid {BORDER_LIGHT};text-align:right;text-transform:uppercase;letter-spacing:0.5px;width:100px;">{_esc(value_label)}</td>
-        </tr>
-        {rows_html}
-      </table>
-    </td>
-  </tr>
-</table>"""
-
-
-def _render_data_intelligence(calculator_results: dict[str, Any], S: dict[str, str], *, language: str = "id") -> str:
-    """Render data intelligence section: ads analysis + top SKU tables."""
-    if not calculator_results:
-        return ""
-
-    parts: list[str] = []
-
-    # Ads keyword analysis
-    ads = calculator_results.get("ads_keyword")
-    if ads:
-        output_text = ads.get("output_text", "")
-        # Try i18n resolution from details
-        details = ads.get("details") or {}
-        translated = _resolve_ads_output_text(details, language)
-        if translated:
-            output_text = translated
-        if output_text:
-            parts.append(f"""\
-<tr>
-  <td style="padding:8px 0;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="font-size:14px;font-weight:bold;color:{TEXT_DARK};padding-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
-          {S['ads_analysis']}
-        </td>
-      </tr>
-      <tr>
-        <td style="background-color:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};padding:14px 16px;font-family:monospace,'Courier New',Courier;font-size:12px;color:{TEXT_DARK};line-height:1.6;">
-{_preserve_whitespace(_esc(output_text))}</td>
-      </tr>
-    </table>
-  </td>
-</tr>""")
-
-    # Top SKU tables (use output_1/output_2 keys from calculator)
-    top_sku = calculator_results.get("top_sku")
-    if top_sku:
-        details = top_sku.get("details", {})
-        avg_stock = details.get("average_stock")
-
-        # Revenue ranking (output_1)
-        revenue = details.get("output_1", [])
-        # Stock ranking (output_2)
-        stock = details.get("output_2", [])
-
-        if revenue or stock or avg_stock is not None:
-            avg_stock_html = ""
-            if avg_stock is not None:
-                avg_stock_html = f"""\
-      <tr>
-        <td style="padding-bottom:12px;">
-          <table role="presentation" cellpadding="0" cellspacing="0" border="0"
-                 style="background-color:{PRIMARY_LIGHT};border-radius:6px;border:1px solid {PRIMARY_BLUE}40;">
-            <tr>
-              <td style="padding:8px 14px;font-size:13px;font-weight:600;color:{TEXT_DARK};">
-                {S['average_stock']}: <span style="color:{PRIMARY_BLUE};font-weight:bold;">{_format_number(avg_stock)}</span>
-              </td>
-            </tr>
-          </table>
-        </td>
-      </tr>"""
-
-            revenue_table = _render_ranking_table(
-                S["revenue_ranking"],
-                revenue,
-                "total_omzet",
-                value_label=S["revenue_ranking"],
-                code_label=S["product_code"],
-                name_label=S["product_name"],
-                code_key="kode_variasi",
-                name_key="product_name",
-                value_color=PRIMARY_BLUE,
-            )
-            stock_table = _render_ranking_table(
-                S["stock_ranking"],
-                stock,
-                "stok",
-                value_label=S["stock_ranking"],
-                code_label=S["product_code"],
-                name_label=S["product_name"],
-                code_key="kode_variasi",
-                name_key="nama_produk",
-                value_color=ORANGE,
-            )
-
-            parts.append(f"""\
-<tr>
-  <td style="padding:8px 0;">
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-      <tr>
-        <td style="font-size:14px;font-weight:bold;color:{TEXT_DARK};padding-bottom:10px;text-transform:uppercase;letter-spacing:1px;">
-          {S['top_sku']}
-        </td>
-      </tr>
-{avg_stock_html}
-      <tr>
-        <td>
-          {revenue_table}
-          {stock_table}
-        </td>
-      </tr>
-    </table>
-  </td>
-</tr>""")
-
-    if not parts:
-        return ""
-
-    all_parts = "\n".join(parts)
-    return f"""\
-<!-- Data Intelligence -->
-<tr>
-  <td style="padding:16px 30px 24px 30px;">
-    {_section_header("03", S['data_intelligence'])}
-    <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
-           style="background-color:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};">
-      <tr>
-        <td style="padding:20px;">
-          <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0">
-            {all_parts}
-          </table>
-        </td>
-      </tr>
-    </table>
-  </td>
-</tr>"""
 
 
 # ---------------------------------------------------------------------------
@@ -1216,7 +959,7 @@ body,td,th{{font-family:{FONT_STACK};}}
 def render_email_html(
     *,
     evaluation_data: dict[str, Any],
-    chart_src: str,
+    chart_src: str = "",  # vestigial: radar chart section dropped; kept for callers
     header_src: str,
     footer_src: str,
     syb_src: str = "",
@@ -1247,7 +990,7 @@ def render_email_html(
 def render_email_html_body(
     *,
     evaluation_data: dict[str, Any],
-    chart_src: str,
+    chart_src: str = "",  # vestigial: radar chart section dropped; kept for callers
     header_src: str,
     footer_src: str,
     syb_src: str = "",
@@ -1299,8 +1042,7 @@ def render_email_html_body(
     note_section = _render_note(note, S) if note else ""
     score_overview = _render_score_overview(categories, S, evaluation_data.get("final_score"))
     detailed = _render_detailed_evaluation(categories, S, cat_map, language, evaluation_data.get("marketplace", "ID"))
-    breakdown = _render_score_breakdown(chart_src, categories, S, cat_map)
-    intelligence = _render_data_intelligence(calculator_results, S, language=language)
+    # Data Intelligence (03) + Score Breakdown radar (04) dropped from the email.
     kesimpulan = _render_kesimpulan(calculator_results, S, language=language, marketplace=evaluation_data.get("marketplace", "ID"))
     signoff = _render_signoff(S)
     footer_banner = _render_footer_banner(syb_src, language) if syb_src else ""
@@ -1333,8 +1075,6 @@ def render_email_html_body(
         {note_section}
         {score_overview}
         {detailed}
-        {intelligence}
-        {breakdown}
         {kesimpulan}
         {signoff}
         {footer_banner}
