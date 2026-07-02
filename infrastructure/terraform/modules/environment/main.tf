@@ -589,13 +589,25 @@ resource "google_artifact_registry_repository" "registry" {
   # the digest prod pins from this registry — are never GC'd out from under a
   # running service. (A `tag_state = ANY` + 1-day rule previously deleted the
   # prod-pinned image while it was still in use, taking prod down.)
+  # Keep the 5 most recent versions; delete only UNTAGGED manifests beyond them.
+  # Tagged images (every deploy/promote target, incl. prod's pinned digest) are
+  # never collected — deleting tagged would re-break prod, which pins an image
+  # from this registry.
   cleanup_policies {
-    id     = "delete-stale-untagged"
+    id     = "keep-recent"
+    action = "KEEP"
+
+    most_recent_versions {
+      keep_count = 5
+    }
+  }
+
+  cleanup_policies {
+    id     = "delete-untagged"
     action = "DELETE"
 
     condition {
-      tag_state  = "UNTAGGED"
-      older_than = "2592000s" # 30 days
+      tag_state = "UNTAGGED"
     }
   }
 }
