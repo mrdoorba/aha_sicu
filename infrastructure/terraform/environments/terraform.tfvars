@@ -48,3 +48,8 @@ prod_email_enabled      = false
 dev_gmail_smtp_enabled  = true
 prod_gmail_smtp_enabled = true
 
+# Rich /send via Gmail API + domain-wide delegation. Dev SA client id authorized
+# for gmail.send; prod SA not yet authorized, so prod stays on SMTP.
+dev_gmail_dwd_enabled  = true
+prod_gmail_dwd_enabled = false
+
