@@ -39,6 +39,10 @@ function buildDefaultNote(
   return `${salutation}\n\n${intro}`;
 }
 
+function buildDefaultSubject(brandName: string, period: string, language: string): string {
+  return i18nInstance.getFixedT(language)('sendMailUtils.subject', { brandName, period });
+}
+
 interface SendEmailDialogProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
@@ -88,6 +92,7 @@ export function SendEmailDialog({
   const [showCc, setShowCc] = useState(initialCc.length > 0);
   const [showBcc, setShowBcc] = useState(initialBcc.length > 0);
   const [note, setNote] = useState(() => buildDefaultNote(brandName, brandRawData, defaultLanguage));
+  const [subject, setSubject] = useState(() => buildDefaultSubject(brandName, period, defaultLanguage));
   const [showPreview, setShowPreview] = useState(false);
   const [previewHtml, setPreviewHtml] = useState<string | null>(null);
   const [previewLoading, setPreviewLoading] = useState(false);
@@ -151,6 +156,7 @@ export function SendEmailDialog({
       setShowCc(initialCc.length > 0);
       setShowBcc(initialBcc.length > 0);
       setNote(buildDefaultNote(brandName, brandRawData, defaultLanguage));
+      setSubject(buildDefaultSubject(brandName, period, defaultLanguage));
       setEmailLanguage(defaultLanguage);
       setShowPreview(false);
       setPreviewHtml(null);
@@ -166,6 +172,7 @@ export function SendEmailDialog({
         cc: cc.length > 0 ? cc : undefined,
         bcc: bcc.length > 0 ? bcc : undefined,
         note: note || undefined,
+        subject: subject || undefined,
         language: emailLanguage,
       },
       {
@@ -265,7 +272,22 @@ export function SendEmailDialog({
             setCc(newCc);
             setShowCc(newCc.length > 0);
             setNote(buildDefaultNote(brandName, brandRawData, lang));
+            setSubject(buildDefaultSubject(brandName, period, lang));
           }} />
+
+          {/* Subject Section */}
+          <div className="space-y-1.5">
+            <Label htmlFor="send-email-subject">{t('sendEmail.subjectLabel')}</Label>
+            <input
+              id="send-email-subject"
+              type="text"
+              value={subject}
+              onChange={(e) => setSubject(e.target.value)}
+              maxLength={200}
+              disabled={isPending}
+              className="w-full rounded-md border bg-transparent px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-ring"
+            />
+          </div>
 
           {/* Note Section */}
           <div className="space-y-1.5">

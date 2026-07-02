@@ -733,6 +733,7 @@
   "sendEmail.invalidEmail": "รูปแบบอีเมลไม่ถูกต้อง",
   "sendEmail.maxRecipients": "ผู้รับสูงสุด 10 คน",
   "sendEmail.noteLabel": "หมายเหตุ (ไม่บังคับ)",
+  "sendEmail.subjectLabel": "หัวข้อ",
   "sendEmail.notePlaceholder": "เพิ่มหมายเหตุสำหรับผู้รับ...",
   "sendEmail.previewLoading": "กำลังโหลดตัวอย่าง...",
   "sendEmail.previewRefresh": "รีเฟรช",

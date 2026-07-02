@@ -733,6 +733,7 @@
   "sendEmail.invalidEmail": "Format email tidak valid",
   "sendEmail.maxRecipients": "Maksimal 10 penerima",
   "sendEmail.noteLabel": "Catatan (opsional)",
+  "sendEmail.subjectLabel": "Judul",
   "sendEmail.notePlaceholder": "Tambahkan catatan untuk penerima...",
   "sendEmail.previewLoading": "Memuat pratinjau...",
   "sendEmail.previewRefresh": "Muat Ulang",
