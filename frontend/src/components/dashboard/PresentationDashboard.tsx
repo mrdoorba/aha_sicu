@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useEvaluationDetail } from '../../hooks/useEvaluationDetail';
 import { useBrandEvaluations } from '../../hooks/useBrandEvaluations';
 import { useBrandDetail } from '../../hooks/useBrandDetail';
@@ -24,7 +24,6 @@ interface PresentationDashboardProps {
 export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboardProps) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const chartRef = useRef<HTMLDivElement>(null);
   const [sendDialogOpen, setSendDialogOpen] = useState(false);
   const { data: featureFlags } = useFeatureFlags();
   const { data: brand, isLoading: brandLoading } = useBrandDetail(brandId);
@@ -121,7 +120,7 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
 
       <DataIntelligence calculatorResults={evaluation.calculator_results} marketplace={evaluation.marketplace} />
 
-      <ScoreBreakdownChart ref={chartRef} scoreBreakdown={scoreBreakdown} />
+      <ScoreBreakdownChart scoreBreakdown={scoreBreakdown} />
 
       <KesimpulanSection calculatorResults={evaluation.calculator_results} />
 
@@ -138,7 +137,6 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
         period={evaluation.period}
         score={Math.round(evaluation.final_score)}
         brandRawData={evaluation.brand_raw_data}
-        chartRef={chartRef}
       />
     </div>
   );

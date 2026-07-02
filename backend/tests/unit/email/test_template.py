@@ -9,6 +9,7 @@ from app.modules.email.template import (
     _get_category_map,
     _get_strings,
     _load_locale,
+    _render_detailed_evaluation,
     _render_metric_card,
     _resolve_ads_output_text,
     _resolve_translatable_text,
@@ -41,6 +42,13 @@ class TestMetricCardLink:
         html = _render_metric_card(self._row(), _get_strings("id"), "th", "TH")
         assert "shopee.co.th/product/1/2" in html
         assert "shopee.co.id" not in html
+
+    def test_link_is_labelled_pill_button(self) -> None:
+        html = _render_metric_card(self._row(), _get_strings("id"), "id", "ID")
+        # Link renders as a labelled pill, not the raw URL as visible text.
+        assert "Lihat di Shopee" in html
+        assert "border-radius:20px" in html
+        assert ">↪ https://shopee.co.id/product/1/2<" not in html
 
 
 # ---------------------------------------------------------------------------
@@ -289,18 +297,15 @@ class TestScoreOverview:
         # Progress bar uses background-color for the filled portion
         assert "background-color:" in html
 
-    def test_verdict_counts_displayed(
-        self, evaluation_data: dict, sample_categories: list[dict],
-    ) -> None:
-        counts = _compute_verdict_counts(sample_categories)
+    def test_verdict_counts_not_in_overview(self, evaluation_data: dict) -> None:
+        """The ✔️/❌ tally row was removed from the score overview."""
         html = render_email_html(
             evaluation_data=evaluation_data,
-            chart_src="cid:chart123@domain",
             header_src="cid:header123@domain",
             footer_src="cid:footer123@domain",
         )
-        assert str(counts["checks"]) in html
-        assert str(counts["xs"]) in html
+        # The dedicated green-check tally cell no longer exists.
+        assert "font-size:16px;font-weight:bold;color:#22C55E;" not in html
 
     def test_verdict_text_displayed(self, evaluation_data: dict) -> None:
         html = render_email_html(
@@ -319,6 +324,82 @@ class TestScoreOverview:
             footer_src="cid:footer123@domain",
         )
         assert "01" in html
+
+
+class TestDetailedEvaluationTrim:
+    """Email detailed section drops per-month Bisnis rows and the ✔️/❌ counter+bar."""
+
+    def _bisnis(self) -> list[dict]:
+        return [{
+            "category": "Bisnis Analisis",
+            "score": 3.0, "max_score": 25.0, "available": True,
+            "rows": [
+                {"row": 13, "metric": "Penjualan Bulan ZZMONTH", "value": 1, "benchmark": "-",
+                 "verdict": "❌", "message": "",
+                 "metric_i18n": {"key": "scoring.monthlySales", "vars": {"month": "ZZMONTH"}}},
+                {"row": 14, "metric": "Penjualan Bulan YYMONTH", "value": 2, "benchmark": "-",
+                 "verdict": "-", "message": "",
+                 "metric_i18n": {"key": "scoring.pastMonthlySales", "vars": {"month": "YYMONTH"}}},
+                {"row": 19, "metric": "Rata² Penjualan 6 bulan terakhir", "value": 3, "benchmark": "-",
+                 "verdict": "-", "message": "",
+                 "metric_i18n": {"key": "scoring.avgSales6mo", "vars": {}}},
+                {"row": 20, "metric": "Tingkat Konversi", "value": 2.5, "benchmark": ">3%",
+                 "verdict": "❌", "message": "",
+                 "metric_i18n": {"key": "scoring.conversionRate", "vars": {}}},
+            ],
+        }]
+
+    def _render(self) -> str:
+        return _render_detailed_evaluation(
+            self._bisnis(), _get_strings("id"), _get_category_map("id"),
+        )
+
+    def test_monthly_rows_dropped(self) -> None:
+        html = self._render()
+        assert "ZZMONTH" not in html
+        assert "YYMONTH" not in html
+
+    def test_avg_and_conversion_kept(self) -> None:
+        html = self._render()
+        assert "Rata-rata Penjualan 6 Bulan" in html
+        assert "Conversion Rate" in html
+
+    def test_no_counter_or_bar(self) -> None:
+        html = self._render()
+        # Per-category ✔️/❌ counter cell and progress bar are gone from detail cards.
+        assert "text-align:right;font-size:13px;font-weight:bold" not in html
+        assert 'class="bar-bg"' not in html
+
+    def _promo(self) -> list[dict]:
+        tools = [{
+            "row": 31 + i, "metric": f"ZZTOOL{i}", "value": i, "benchmark": ">1%",
+            "verdict": "❌", "message": "",
+            "metric_i18n": {"key": f"scoring.promo.tool{i}", "vars": {}},
+        } for i in range(11)]
+        summary = [
+            {"row": 42, "metric": "% Penggunaan alat promosi", "value": 0.55,
+             "benchmark": ">80%", "verdict": "❌", "message": "",
+             "metric_i18n": {"key": "scoring.promoUsageRate", "vars": {}}},
+            {"row": 43, "metric": "% Efektifitas alat promosi", "value": 0.27,
+             "benchmark": ">90%", "verdict": "❌", "message": "",
+             "metric_i18n": {"key": "scoring.promoEffectiveness", "vars": {}}},
+        ]
+        return [{"category": "Promo Toko", "score": 15.0, "max_score": 15.0,
+                 "available": True, "rows": tools + summary}]
+
+    def test_promo_tool_rows_dropped(self) -> None:
+        html = _render_detailed_evaluation(
+            self._promo(), _get_strings("id"), _get_category_map("id"),
+        )
+        assert all(f"ZZTOOL{i}" not in html for i in range(11))
+
+    def test_promo_percent_summaries_kept(self) -> None:
+        html = _render_detailed_evaluation(
+            self._promo(), _get_strings("id"), _get_category_map("id"),
+        )
+        # The two percent cards survive (usage % + effectiveness %).
+        assert "Penggunaan" in html
+        assert "Efekti" in html or "Effect" in html
 
 
 class TestVerdictCounting:
@@ -638,14 +719,15 @@ class TestCategoryDividers:
             "score": 5,
         }
 
-    def test_divider_after_rata_penjualan(self) -> None:
+    def test_no_divider_after_rata_penjualan(self) -> None:
+        # The Rata² divider was dropped: monthly sales rows are hidden in the
+        # email, so the average pairs side-by-side with Conversion Rate.
         data = self._make_eval_data([
-            self._row("Penjualan Bulan Feb 2026"),
             self._row("Rata² Penjualan 6 bulan terakhir"),
             self._row("Tingkat Konversi"),
         ])
         html = _render_full(data)
-        assert "border-top:1px solid #325FEC4D" in html
+        assert "border-top:1px solid #325FEC4D" not in html
 
     def test_divider_after_program_afiliasi(self) -> None:
         data = self._make_eval_data([
@@ -686,105 +768,23 @@ class TestCategoryDividers:
         assert "ROI" in html
 
 
-class TestScoreBreakdown:
-    """Score breakdown section tests."""
+class TestDroppedSections:
+    """Data Intelligence (03) + Score Breakdown radar (04) are dropped from the email."""
 
-    def test_chart_cid_image(self, evaluation_data: dict) -> None:
+    def test_data_intelligence_absent(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
-        assert "cid:chart123@domain" in html
-
-    def test_category_bars(self, evaluation_data: dict) -> None:
-        """Score breakdown should show category summary bars."""
-        html = _render_full(evaluation_data)
-        # Category short names in the breakdown section
-        assert "Operasional" in html
-        # Score values (8.0 / 10.0 for first category)
-        assert "8" in html
-        assert "10" in html
-
-    def test_section_number_04(self, evaluation_data: dict) -> None:
-        html = _render_full(evaluation_data)
-        assert "04" in html
-
-
-class TestDataIntelligence:
-    """Data intelligence section tests."""
-
-    def test_ads_keyword_preformatted(self, evaluation_data: dict) -> None:
-        html = _render_full(evaluation_data)
-        # ads_keyword output_text should appear
-        assert "Keyword &#x27;sepatu&#x27;" in html or "Keyword 'sepatu'" in html or "sepatu" in html
-
-    def test_top_sku_revenue_table(self, evaluation_data: dict) -> None:
-        html = _render_full(evaluation_data)
-        # Top 5 revenue SKUs should appear (output_1)
-        assert "Sepatu Running" in html
-        assert "Tas Ransel" in html
-        assert "Jaket Outdoor" in html
-        assert "Topi Baseball" in html
-        assert "Kaos Polos" in html
-
-    def test_top_sku_stock_table(self, evaluation_data: dict) -> None:
-        html = _render_full(evaluation_data)
-        # Stock values for top 5 (output_2)
-        assert "500" in html
-        assert "350" in html
-        assert "200" in html
-
-    def test_top_sku_limits_to_five(self, evaluation_data: dict) -> None:
-        html = _render_full(evaluation_data)
-        # 6th item should NOT appear
-        assert "Celana Jeans" not in html
-
-    def test_top_sku_kode_variasi(self, evaluation_data: dict) -> None:
-        html = _render_full(evaluation_data)
-        assert "SKU-001" in html
-        assert "SKU-002" in html
-
-    def test_average_stock_displayed(self, evaluation_data: dict) -> None:
-        html = _render_full(evaluation_data)
-        assert "325" in html
-
-    def test_missing_calculator_results(self, sample_categories: list[dict]) -> None:
-        """Should not crash with empty calculator_results."""
-        data = {
-            "id": 1,
-            "brand_id": 1,
-            "brand_name": "Test Brand",
-            "final_score": 50.0,
-            "verdict": "\u2714\ufe0f",
-            "template": "non_fashion",
-            "score_breakdown": sample_categories,
-            "calculator_results": {},
-            "period": "Februari 2026",
-        }
-        html = _render_full(data)
-        # Should produce valid HTML without crashing
-        assert "<!DOCTYPE html" in html.upper() or "<!doctype html" in html.lower()
-
-    def test_section_header_present(self, evaluation_data: dict) -> None:
-        html = _render_full(evaluation_data)
-        assert _get_strings("id")["data_intelligence"] in html
-
-    def test_section_number_03(self, evaluation_data: dict) -> None:
-        html = _render_full(evaluation_data)
-        assert "03" in html
-
-    def test_skips_when_no_data(self, sample_categories: list[dict]) -> None:
-        """Data intelligence section should be omitted when calculator_results is empty."""
-        data = {
-            "id": 1,
-            "brand_id": 1,
-            "brand_name": "Test",
-            "final_score": 50.0,
-            "verdict": "\u2714\ufe0f",
-            "template": "fashion",
-            "score_breakdown": sample_categories,
-            "calculator_results": {},
-            "period": "Maret 2026",
-        }
-        html = _render_full(data)
         assert _get_strings("id")["data_intelligence"] not in html
+        # Top-SKU / ads content that lived only in that section is gone.
+        assert "Sepatu Running" not in html
+
+    def test_score_breakdown_absent(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert _get_strings("id")["score_breakdown"] not in html
+        assert "cid:chart123@domain" not in html
+
+    def test_still_valid_html(self, evaluation_data: dict) -> None:
+        html = _render_full(evaluation_data)
+        assert "<!doctype html" in html.lower()
 
 
 # ===================================================================
@@ -931,9 +931,15 @@ class TestFullRender:
         s = _get_strings("id")
         assert s["score_overview"] in html
         assert s["detailed_evaluation"] in html
-        assert s["score_breakdown"] in html
-        assert s["data_intelligence"] in html
         assert s["kesimpulan"] in html
+
+    def test_dropped_sections_absent(self, evaluation_data: dict) -> None:
+        # Data Intelligence (03) + Score Breakdown radar (04) are dropped.
+        html = _render_full(evaluation_data)
+        s = _get_strings("id")
+        assert s["data_intelligence"] not in html
+        assert s["score_breakdown"] not in html
+        assert "cid:chart123@domain" not in html
 
     def test_complete_html_structure(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
@@ -946,17 +952,13 @@ class TestFullRender:
         assert "</body>" in lower
 
     def test_section_ordering(self, evaluation_data: dict) -> None:
-        """Sections should match the dashboard order (01-05):
-        overview, detailed, data intelligence, score breakdown, kesimpulan.
-        """
+        """Remaining sections in order: overview, detailed, kesimpulan."""
         html = _render_full(evaluation_data)
         s = _get_strings("id")
         pos_overview = html.find(s["score_overview"])
         pos_detailed = html.find(s["detailed_evaluation"])
-        pos_intelligence = html.find(s["data_intelligence"])
-        pos_breakdown = html.find(s["score_breakdown"])
         pos_kesimpulan = html.find(s["kesimpulan"])
-        assert pos_overview < pos_detailed < pos_intelligence < pos_breakdown < pos_kesimpulan
+        assert pos_overview < pos_detailed < pos_kesimpulan
 
 
 # ===================================================================
@@ -1447,77 +1449,3 @@ class TestResolveAdsOutputText:
         result = _resolve_ads_output_text(details, "th")
         # Atomic fallback — if any section fails, return None
         assert result is None
-
-
-class TestAdsOutputI18nIntegration:
-    """Integration: Thai email renders translated ads analysis text."""
-
-    def _make_th_eval_with_ads(self, sample_categories: list[dict]) -> dict:
-        return {
-            "id": 1,
-            "brand_id": 1,
-            "brand_name": "Test TH",
-            "final_score": 50.0,
-            "verdict": "✔️",
-            "template": "fashion",
-            "score_breakdown": sample_categories,
-            "calculator_results": {
-                "ads_keyword": {
-                    "output_text": "• Total Iklan: 25 Aktif, 0 Dijeda dan 0 Berakhir.\n• Melibatkan 24 (68.6%) produk dari total jumlah produk: 35.",
-                    "details": {
-                        "ak2_i18n": {"key": "ads.summary", "vars": {
-                            "active": "25", "paused": "0", "ended": "0",
-                            "unique_count": "24", "product_pct": "68.6%",
-                            "total_products": "35",
-                        }},
-                        "ak3_i18n": None,
-                        "ak4_i18n": [
-                            {"key": "ads.flag.productGood", "vars": {}},
-                        ],
-                        "al2_i18n": None,
-                        "al3_i18n": None,
-                        "al5_i18n": None,
-                        "al6_i18n": None,
-                        "al7_i18n": None,
-                        "al8_i18n": None,
-                        "al9_i18n": None,
-                    },
-                },
-            },
-            "period": "Maret 2026",
-        }
-
-    def test_thai_email_renders_translated_ads(self, sample_categories: list[dict]) -> None:
-        data = self._make_th_eval_with_ads(sample_categories)
-        html = render_email_html(
-            evaluation_data=data,
-            chart_src="cid:chart",
-            header_src="cid:header",
-            footer_src="cid:footer",
-            language="th",
-        )
-        # Thai text should appear
-        assert "โฆษณาทั้งหมด" in html
-        # Indonesian raw text should NOT appear
-        assert "Total Iklan" not in html
-
-    def test_indonesian_email_without_details_unchanged(self, sample_categories: list[dict]) -> None:
-        """ID email with ads but no details dict renders raw output_text."""
-        data = {
-            "id": 1,
-            "brand_id": 1,
-            "brand_name": "Test ID",
-            "final_score": 50.0,
-            "verdict": "✔️",
-            "template": "fashion",
-            "score_breakdown": sample_categories,
-            "calculator_results": {
-                "ads_keyword": {
-                    "output_text": "• Total Iklan: 25 Aktif, 0 Dijeda dan 0 Berakhir.",
-                    "details": {},
-                },
-            },
-            "period": "Maret 2026",
-        }
-        html = _render_full(data)
-        assert "Total Iklan" in html

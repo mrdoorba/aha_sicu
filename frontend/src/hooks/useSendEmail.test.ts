@@ -27,7 +27,6 @@ function createWrapper() {
 const PARAMS = {
   evaluationId: 42,
   recipients: ['test@example.com'],
-  chartImage: 'iVBORw0KGgoAAAANSUhEUg==',
 };
 
 // -- Tests --
@@ -62,7 +61,6 @@ describe('useSendEmail', () => {
       body: {
         evaluation_id: 42,
         recipients: ['test@example.com'],
-        chart_image: 'iVBORw0KGgoAAAANSUhEUg==',
       },
     });
   });

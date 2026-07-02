@@ -33,31 +33,6 @@ def asset_to_data_uri(filename: str) -> str:
     return f"data:image/png;base64,{b64}"
 
 
-def _strip_base64_prefix(data: str) -> str:
-    """Strip data URI prefix (e.g. 'data:image/png;base64,') if present."""
-    if "," in data and data.startswith("data:"):
-        return data.split(",", 1)[1]
-    return data
-
-
-def _decode_chart_image(chart_image_b64: str) -> bytes | None:
-    """Decode a base64 chart image string, stripping data URI prefix first.
-
-    Returns None if the input is empty (chart capture was skipped).
-    """
-    if not chart_image_b64:
-        return None
-    stripped = _strip_base64_prefix(chart_image_b64)
-    try:
-        return base64.b64decode(stripped, validate=True)
-    except Exception as exc:
-        raise AppException(
-            code="INVALID_CHART_IMAGE",
-            detail=f"Failed to decode chart image: {exc}",
-            status_code=422,
-        ) from exc
-
-
 async def gmail_smtp_send(
     *,
     subject: str,
@@ -202,7 +177,6 @@ async def send_evaluation_email(
     *,
     evaluation_data: dict,
     recipients: list[str],
-    chart_image_b64: str,
     subject: str | None = None,
     render_html_fn: Callable,
     cc: list[str] | None = None,
@@ -219,8 +193,6 @@ async def send_evaluation_email(
     if not subject:
         subject = S["subject"].format(brand_name=brand_name, period=period)
 
-    chart_bytes = _decode_chart_image(chart_image_b64)
-
     header_bytes = _load_asset("aha-e-mail-header-2026.png")
     footer_bytes = _load_asset("aha-e-mail-footer-2026.png")
     syb_bytes = _load_asset("syb-color-3.png")
@@ -234,15 +206,8 @@ async def send_evaluation_email(
     footer_cid = footer_msgid.strip("<>")
     syb_cid = syb_msgid.strip("<>")
 
-    chart_cid = ""
-    if chart_bytes:
-        chart_msgid = make_msgid(domain="ahacommerce.id")
-        chart_cid = chart_msgid.strip("<>")
-
-    chart_src = f"cid:{chart_cid}" if chart_cid else ""
     html_content = render_html_fn(
         evaluation_data=evaluation_data,
-        chart_src=chart_src,
         header_src=f"cid:{header_cid}",
         footer_src=f"cid:{footer_cid}",
         syb_src=f"cid:{syb_cid}",
@@ -283,8 +248,6 @@ async def send_evaluation_email(
         (footer_bytes, "png", footer_cid),
         (syb_bytes, "png", syb_cid),
     ]
-    if chart_bytes and chart_cid:
-        images.append((chart_bytes, "png", chart_cid))
 
     try:
         message_id = await smtp_send_html(
