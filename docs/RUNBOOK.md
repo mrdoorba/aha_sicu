@@ -179,11 +179,10 @@ docker compose up backend
 
 ### Email not sending
 
-1. Check `EMAIL_ENABLED=true`
-2. Verify `SENDGRID_API_KEY` is set and valid
-3. Verify `EMAIL_FROM_EMAIL` is a verified SendGrid sender
-4. If Event Webhook handling matters, verify `SENDGRID_WEBHOOK_SECRET`
-5. Local dev: if email is disabled, no outbound mail will be attempted
+1. Rich `/send` path: check `EMAIL_ENABLED=true`; plain-text `/send-plain` dialog: check `GMAIL_SMTP_ENABLED=true` (the two flags are independent)
+2. Verify the relevant `*_SMTP_APP_PASSWORD` is a valid 16-char Google App Password (no spaces) and 2-Step Verification is on for the account
+3. Verify `EMAIL_FROM_EMAIL` / `GMAIL_SMTP_USER` are correct and the recipient domain is in `EMAIL_ALLOWED_DOMAINS`
+4. Local dev: if the path's flag is disabled, a `/tmp` preview is written instead of dialing SMTP — no outbound mail is attempted
 
 ## Rollback Procedures
 
