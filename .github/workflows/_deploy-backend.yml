@@ -58,7 +58,6 @@ jobs:
             SUFFIX=dev
           fi
           echo "db_secret=aha_coms_sicu_${SUFFIX}_db_password" >> "$GITHUB_OUTPUT"
-          echo "sendgrid_secret=aha_coms_sicu_${SUFFIX}_sendgrid_api_key" >> "$GITHUB_OUTPUT"
 
       - name: Authenticate to GCP
         uses: google-github-actions/auth@v3
@@ -68,7 +67,7 @@ jobs:
 
       - name: Validate deploy preflight
         run: |
-          REQUIRED_SECRETS=("${{ steps.secret-names.outputs.db_secret }}" "${{ steps.secret-names.outputs.sendgrid_secret }}")
+          REQUIRED_SECRETS=("${{ steps.secret-names.outputs.db_secret }}")
           for SECRET in "${REQUIRED_SECRETS[@]}"; do
             COUNT=$(gcloud secrets versions list "$SECRET" \
               --project=${{ vars.GCP_PROJECT_ID }} \
