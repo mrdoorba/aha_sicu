@@ -584,21 +584,27 @@ resource "google_artifact_registry_repository" "registry" {
 
   cleanup_policy_dry_run = false
 
+  # Delete ONLY dangling untagged manifests, and only after a long buffer. Every
+  # deploy/promote target is tagged (:<sha> + :latest), so tagged images — incl.
+  # the digest prod pins from this registry — are never GC'd out from under a
+  # running service. (A `tag_state = ANY` + 1-day rule previously deleted the
+  # prod-pinned image while it was still in use, taking prod down.)
   cleanup_policies {
-    id     = "delete-old-versions"
+    id     = "delete-stale-untagged"
     action = "DELETE"
 
     condition {
-      older_than = "86400s" # 1 day
+      tag_state  = "UNTAGGED"
+      older_than = "2592000s" # 30 days
     }
   }
 
   cleanup_policies {
-    id     = "keep-latest-2"
+    id     = "keep-recent"
     action = "KEEP"
 
     most_recent_versions {
-      keep_count = 2
+      keep_count = 20
     }
   }
 }
