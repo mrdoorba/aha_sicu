@@ -29,10 +29,9 @@ cloud_sql_disk_size     = 10
 cloud_sql_instance_name = "aha-sicu-db"
 
 # Email — From addresses per environment.
-# dev: rich /send migrated off SendGrid onto its own Gmail SMTP account; the
-# From must equal the authenticated SMTP account (email_smtp_user defaults to
-# it). prod: still SendGrid until prod migrates.
-dev_email_from_email  = "handers.the@ahacommerce.net"
+# dev: rich /send sends as bot@ahacommerce.net. Under Gmail DWD the From comes
+# from gmail_dwd_sender; this value is the SMTP-path fallback. prod: unchanged.
+dev_email_from_email  = "bot@ahacommerce.net"
 prod_email_from_email = "noreply@ahabot.ai"
 
 # Gmail SMTP (evaluation "Send Mail" dialog — /send-plain). The app password is

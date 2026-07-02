@@ -119,8 +119,7 @@ SECRETS=(
   "aha_coms_sicu_${ENV}_db_password"
   "aha_coms_sicu_${ENV}_gsheets_credentials"
   "aha_coms_sicu_${ENV}_firebase_admin"
-  "aha_coms_sicu_${ENV}_sendgrid_api_key"
-  "aha_coms_sicu_${ENV}_sendgrid_webhook_secret"
+  "aha_coms_sicu_${ENV}_gmail_dwd_credentials"
 )
 
 SECRETS_NEEDING_VALUES=()

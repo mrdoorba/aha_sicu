@@ -95,21 +95,8 @@ variable "cloud_run_url" {
 }
 
 variable "email_from_email" {
-  description = "Verified sender email address for outgoing emails (SendGrid)"
+  description = "Sender/From address for the rich /send path"
   type        = string
-}
-
-variable "sendgrid_api_key" {
-  description = "SendGrid API key for sending emails"
-  type        = string
-  sensitive   = true
-}
-
-variable "sendgrid_webhook_secret" {
-  description = "SendGrid Event Webhook verification key"
-  type        = string
-  sensitive   = true
-  default     = ""
 }
 
 variable "email_enabled" {

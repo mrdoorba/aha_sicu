@@ -96,14 +96,6 @@ gcloud secrets versions add aha_coms_sicu_dev_gsheets_credentials \
 gcloud secrets versions add aha_coms_sicu_dev_firebase_admin \
   --data-file=path/to/firebase-admin-credentials.json
 
-# SendGrid API key
-echo -n "SG.your-api-key-here" | \
-  gcloud secrets versions add aha_coms_sicu_dev_sendgrid_api_key --data-file=-
-
-# SendGrid Event Webhook verification secret (optional)
-echo -n "YOUR_SENDGRID_WEBHOOK_SECRET" | \
-  gcloud secrets versions add aha_coms_sicu_dev_sendgrid_webhook_secret --data-file=-
-
 # === Production environment ===
 
 echo -n "YOUR_DB_PASSWORD" | \
@@ -114,13 +106,12 @@ gcloud secrets versions add aha_coms_sicu_prod_gsheets_credentials \
 
 gcloud secrets versions add aha_coms_sicu_prod_firebase_admin \
   --data-file=path/to/firebase-admin-credentials.json
-
-echo -n "SG.your-api-key-here" | \
-  gcloud secrets versions add aha_coms_sicu_prod_sendgrid_api_key --data-file=-
-
-echo -n "YOUR_SENDGRID_WEBHOOK_SECRET" | \
-  gcloud secrets versions add aha_coms_sicu_prod_sendgrid_webhook_secret --data-file=-
 ```
+
+The Gmail-DWD credentials (`aha_coms_sicu_{env}_gmail_dwd_credentials`) are
+generated and seeded by Terraform from the `email_dwd` service-account key — no
+manual seeding needed. Its client ID (`terraform output {env}_email_dwd_client_id`)
+must be authorized in the Workspace Admin Console for scope `gmail.send`.
 
 ## Resources Created
 
@@ -130,7 +121,7 @@ echo -n "YOUR_SENDGRID_WEBHOOK_SECRET" | \
 | Cloud SQL (`aha-sicu-db`) | `google_sql_database_instance` | PostgreSQL database (shared) |
 | Cloud SQL DBs (`aha_coms_sicu_dev` + `aha_coms_sicu_prod`) | `google_sql_database` | Per-environment databases |
 | Artifact Registry (`aha-coms-sicu-{env}-registry`) | `google_artifact_registry_repository` | Docker images |
-| Secret Manager (5 secrets per env) | `google_secret_manager_secret` | DB password, Sheets creds, Firebase creds, SendGrid API key, SendGrid webhook secret |
+| Secret Manager (per env) | `google_secret_manager_secret` | DB password, Sheets creds, Firebase creds, Gmail SMTP + rich /send app passwords, Gmail-DWD credentials |
 | GCS Bucket (`{project_id}-aha-coms-sicu-{env}-uploads`) | `google_storage_bucket` | Raw uploaded files (kept until user replaces the upload) |
 | Firebase Hosting (`aha-coms-sicu-{env}`) | `google_firebase_hosting_site` | Frontend hosting |
 | Workload Identity Pool (`aha-coms-sicu-{env}-github-pool`) | `google_iam_workload_identity_pool` | GitHub Actions OIDC |

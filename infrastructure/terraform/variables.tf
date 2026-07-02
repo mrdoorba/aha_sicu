@@ -83,30 +83,17 @@ variable "gsheets_vp_spreadsheet_id_th" {
 }
 
 # =============================================================================
-# Email / SendGrid Variables
+# Email Variables
 # =============================================================================
 
 variable "dev_email_from_email" {
-  description = "From address for the rich /send path in dev. Over Gmail SMTP this must equal the authenticated SMTP account (email_smtp_user defaults to it when blank)."
+  description = "From address for the rich /send path in dev. Over Gmail SMTP this must equal the authenticated SMTP account (email_smtp_user defaults to it when blank); under Gmail DWD it is superseded by gmail_dwd_sender."
   type        = string
 }
 
 variable "prod_email_from_email" {
-  description = "From address for the rich /send path in prod (still SendGrid until prod migrates)."
+  description = "From address for the rich /send path in prod."
   type        = string
-}
-
-variable "sendgrid_api_key" {
-  description = "SendGrid API key for sending emails"
-  type        = string
-  sensitive   = true
-}
-
-variable "sendgrid_webhook_secret" {
-  description = "SendGrid Event Webhook verification key"
-  type        = string
-  sensitive   = true
-  default     = ""
 }
 
 variable "dev_email_enabled" {

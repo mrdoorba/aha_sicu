@@ -182,42 +182,6 @@ resource "google_secret_manager_secret_version" "gmail_dwd_credentials" {
   secret_data = base64decode(google_service_account_key.email_dwd.private_key)
 }
 
-resource "google_secret_manager_secret" "sendgrid_api_key" {
-  secret_id = "aha_coms_sicu_${var.environment}_sendgrid_api_key"
-  project   = var.project_id
-
-  replication {
-    auto {}
-  }
-}
-
-resource "google_secret_manager_secret" "sendgrid_webhook_secret" {
-  secret_id = "aha_coms_sicu_${var.environment}_sendgrid_webhook_secret"
-  project   = var.project_id
-
-  replication {
-    auto {}
-  }
-}
-
-resource "google_secret_manager_secret_version" "sendgrid_api_key" {
-  secret      = google_secret_manager_secret.sendgrid_api_key.id
-  secret_data = var.sendgrid_api_key
-
-  lifecycle {
-    ignore_changes = [secret_data]
-  }
-}
-
-resource "google_secret_manager_secret_version" "sendgrid_webhook_secret" {
-  secret      = google_secret_manager_secret.sendgrid_webhook_secret.id
-  secret_data = var.sendgrid_webhook_secret != "" ? var.sendgrid_webhook_secret : "placeholder"
-
-  lifecycle {
-    ignore_changes = [secret_data]
-  }
-}
-
 # Gmail SMTP App Password — backs the evaluation "Send Mail" dialog
 # (POST /api/v1/email/send-plain). Value is seeded out-of-band via gcloud;
 # ignore_changes keeps Terraform from clobbering manual rotations.
@@ -285,34 +249,6 @@ resource "google_secret_manager_secret_iam_member" "deploy_sa_db_password_viewer
   project   = var.project_id
 }
 
-resource "google_secret_manager_secret_iam_member" "deploy_sa_sendgrid_api_key" {
-  secret_id = google_secret_manager_secret.sendgrid_api_key.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.deploy.email}"
-  project   = var.project_id
-}
-
-resource "google_secret_manager_secret_iam_member" "deploy_sa_sendgrid_api_key_viewer" {
-  secret_id = google_secret_manager_secret.sendgrid_api_key.secret_id
-  role      = "roles/secretmanager.viewer"
-  member    = "serviceAccount:${google_service_account.deploy.email}"
-  project   = var.project_id
-}
-
-resource "google_secret_manager_secret_iam_member" "deploy_sa_sendgrid_webhook_secret" {
-  secret_id = google_secret_manager_secret.sendgrid_webhook_secret.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.deploy.email}"
-  project   = var.project_id
-}
-
-resource "google_secret_manager_secret_iam_member" "deploy_sa_sendgrid_webhook_secret_viewer" {
-  secret_id = google_secret_manager_secret.sendgrid_webhook_secret.secret_id
-  role      = "roles/secretmanager.viewer"
-  member    = "serviceAccount:${google_service_account.deploy.email}"
-  project   = var.project_id
-}
-
 resource "google_secret_manager_secret_iam_member" "deploy_sa_gmail_smtp_app_password" {
   secret_id = google_secret_manager_secret.gmail_smtp_app_password.secret_id
   role      = "roles/secretmanager.secretAccessor"
@@ -364,20 +300,6 @@ resource "google_secret_manager_secret_iam_member" "api_sa_gsheets" {
 
 resource "google_secret_manager_secret_iam_member" "api_sa_gmail_dwd" {
   secret_id = google_secret_manager_secret.gmail_dwd_credentials.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.cloud_run.email}"
-  project   = var.project_id
-}
-
-resource "google_secret_manager_secret_iam_member" "api_sa_sendgrid_api_key" {
-  secret_id = google_secret_manager_secret.sendgrid_api_key.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.cloud_run.email}"
-  project   = var.project_id
-}
-
-resource "google_secret_manager_secret_iam_member" "api_sa_sendgrid_webhook_secret" {
-  secret_id = google_secret_manager_secret.sendgrid_webhook_secret.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.cloud_run.email}"
   project   = var.project_id
@@ -484,16 +406,6 @@ resource "google_cloud_run_v2_service" "api" {
       }
 
       env {
-        name = "SENDGRID_API_KEY"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.sendgrid_api_key.secret_id
-            version = "latest"
-          }
-        }
-      }
-
-      env {
         name  = "EMAIL_FROM_NAME"
         value = "AHA Commerce"
       }
@@ -501,16 +413,6 @@ resource "google_cloud_run_v2_service" "api" {
       env {
         name  = "EMAIL_FROM_EMAIL"
         value = var.email_from_email
-      }
-
-      env {
-        name = "SENDGRID_WEBHOOK_SECRET"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.sendgrid_webhook_secret.secret_id
-            version = "latest"
-          }
-        }
       }
 
       env {
@@ -635,8 +537,6 @@ resource "google_cloud_run_v2_service" "api" {
     google_secret_manager_secret_iam_member.api_sa_gsheets,
     google_secret_manager_secret_iam_member.api_sa_gmail_dwd,
     google_secret_manager_secret_version.gmail_dwd_credentials,
-    google_secret_manager_secret_iam_member.api_sa_sendgrid_api_key,
-    google_secret_manager_secret_iam_member.api_sa_sendgrid_webhook_secret,
     google_secret_manager_secret_iam_member.api_sa_gmail_smtp_app_password,
     google_secret_manager_secret_iam_member.api_sa_email_smtp_app_password,
   ]
