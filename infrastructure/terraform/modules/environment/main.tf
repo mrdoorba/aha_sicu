@@ -596,25 +596,27 @@ resource "google_artifact_registry_repository" "registry" {
   # the digest prod pins from this registry — are never GC'd out from under a
   # running service. (A `tag_state = ANY` + 1-day rule previously deleted the
   # prod-pinned image while it was still in use, taking prod down.)
-  # Keep the 10 most recent versions; delete only UNTAGGED manifests beyond them.
-  # Tagged images (every deploy/promote target, incl. prod's pinned digest) are
-  # never collected — deleting tagged would re-break prod, which pins an image
-  # from this (now shared) registry.
+  # Keep the 20 most recent versions; delete everything else (tagged included).
+  # ponytail: deliberate ceiling — a build pushes ~3 digests, so this protects
+  # only ~6-7 recent builds. If prod goes more than that many dev builds without
+  # a re-promote, its pinned digest can age out of the window and be deleted,
+  # reprising the 2026-06-24 "image not found" outage. Raise keep_count or add an
+  # age-based tagged rule if promotes ever lag dev builds.
   cleanup_policies {
     id     = "keep-recent"
     action = "KEEP"
 
     most_recent_versions {
-      keep_count = 10
+      keep_count = 20
     }
   }
 
   cleanup_policies {
-    id     = "delete-untagged"
+    id     = "delete-old"
     action = "DELETE"
 
     condition {
-      tag_state = "UNTAGGED"
+      tag_state = "ANY"
     }
   }
 }
