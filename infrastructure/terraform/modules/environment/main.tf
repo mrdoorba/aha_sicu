@@ -579,6 +579,10 @@ resource "google_firebase_hosting_site" "frontend" {
 # =============================================================================
 
 resource "google_artifact_registry_repository" "registry" {
+  # prod reuses the develop-built image digest from the dev registry (promote
+  # never rebuilds), so the prod registry is unused — created only where wanted.
+  count = var.create_registry ? 1 : 0
+
   location      = var.region
   repository_id = "aha-coms-sicu-${var.environment}-registry"
   description   = "Docker container images for Store ICU"

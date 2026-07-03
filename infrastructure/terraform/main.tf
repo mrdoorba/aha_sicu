@@ -180,6 +180,9 @@ module "prod" {
   gsheets_eval_spreadsheet_id    = var.prod_gsheets_eval_spreadsheet_id
   gsheets_vp_spreadsheet_id_th   = var.gsheets_vp_spreadsheet_id_th
   enable_scheduler               = true
+  # Prod runs images from the dev registry (promote reuses the develop digest),
+  # so it needs no registry of its own.
+  create_registry = false
 
   cors_origins = [
     "https://aha-coms-sicu-prod.web.app",

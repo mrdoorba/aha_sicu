@@ -6,8 +6,8 @@ output "cloud_run_url" {
 }
 
 output "artifact_registry_url" {
-  description = "Docker image push target for Artifact Registry"
-  value       = "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.registry.repository_id}"
+  description = "Docker image push target for Artifact Registry (empty when this env has no registry)"
+  value       = var.create_registry ? "${var.region}-docker.pkg.dev/${var.project_id}/${google_artifact_registry_repository.registry[0].repository_id}" : ""
 }
 
 output "deploy_service_account_email" {

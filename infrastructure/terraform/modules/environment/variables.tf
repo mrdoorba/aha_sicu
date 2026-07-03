@@ -160,6 +160,12 @@ variable "enable_scheduler" {
   default     = true
 }
 
+variable "create_registry" {
+  description = "Whether to create an Artifact Registry for this env. Prod sets false — it reuses dev's image digest via promote and never builds its own."
+  type        = bool
+  default     = true
+}
+
 variable "gmail_dwd_enabled" {
   description = "Whether the rich /send path sends via the Gmail API + domain-wide delegation (else SMTP app-password)"
   type        = bool
