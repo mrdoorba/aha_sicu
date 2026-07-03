@@ -12,10 +12,8 @@ interface EvaluationHeaderProps {
   marketplace?: string;
 }
 
-const VP_DISPLAY_FIELDS_BY_MARKETPLACE: Record<string, readonly string[]> = {
-  ID: ['Nama PIC/ Jabatan*', 'No WA*', 'Email', 'Kategori', 'Link Shopee Mall / LazMall'],
-  TH: ['PIC', 'Contact Number', 'Email', 'Product Category', 'Shopee Link'],
-};
+// Unified "Brands Data" schema — ID and TH share the same column names.
+const VP_DISPLAY_FIELDS: readonly string[] = ['PIC', 'Phones', 'Emails', 'Category', 'Store Link'];
 
 const META_KEYS = new Set(['id', 'created_at', 'updated_at', 'synced_at']);
 
@@ -32,9 +30,9 @@ export const EvaluationHeader = ({ brand, isLoading, isError, marketplace }: Eva
 
   const getFieldLabel = (key: string): string => {
     const labelMap: Record<string, string> = {
-      'Nama PIC/ Jabatan*': t('evaluationHeader.fieldLabel.namaPic'),
-      'No WA*': t('evaluationHeader.fieldLabel.noWa'),
-      'Link Shopee Mall / LazMall': t('evaluationHeader.fieldLabel.linkToko'),
+      PIC: t('evaluationHeader.fieldLabel.namaPic'),
+      Phones: t('evaluationHeader.fieldLabel.noWa'),
+      'Store Link': t('evaluationHeader.fieldLabel.linkToko'),
     };
     return labelMap[key] ?? key;
   };
@@ -71,9 +69,7 @@ export const EvaluationHeader = ({ brand, isLoading, isError, marketplace }: Eva
     );
   }
 
-  const vpDisplayFields = VP_DISPLAY_FIELDS_BY_MARKETPLACE[marketplace ?? 'ID']
-    ?? VP_DISPLAY_FIELDS_BY_MARKETPLACE['ID'];
-  const vpFields = vpDisplayFields
+  const vpFields = VP_DISPLAY_FIELDS
     .filter((key) => {
       const val = brand.raw_data[key];
       return val !== undefined && val !== null && val !== '';

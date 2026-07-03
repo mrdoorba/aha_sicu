@@ -8,11 +8,11 @@ const SAMPLE_BRAND: BrandDetail = {
   id: 1,
   brand_name: 'Test Brand',
   raw_data: {
-    'Nama PIC/ Jabatan*': 'John',
-    'No WA*': '081234567890',
-    Email: 'john@example.com',
-    Kategori: 'Electronics',
-    'Link Shopee Mall / LazMall': 'https://shopee.co.id/mall',
+    PIC: 'John',
+    Phones: '081234567890',
+    Emails: 'john@example.com',
+    Category: 'Electronics',
+    'Store Link': 'https://shopee.co.id/mall',
   },
   updated_at: '2026-02-05T10:00:00Z',
   meeting_raw_data: { notes: 'Good meeting', score: '8' },
@@ -44,7 +44,7 @@ describe('EvaluationHeader', () => {
     expect(screen.getByText('John')).toBeInTheDocument();
     expect(screen.getByText('No WA:')).toBeInTheDocument();
     expect(screen.getByText('081234567890')).toBeInTheDocument();
-    expect(screen.getByText('Kategori:')).toBeInTheDocument();
+    expect(screen.getByText('Category:')).toBeInTheDocument();
     expect(screen.getByText('Electronics')).toBeInTheDocument();
     expect(screen.getByText('Link Toko:')).toBeInTheDocument();
   });
@@ -60,7 +60,7 @@ describe('EvaluationHeader', () => {
   it('skips curated fields that are missing from raw_data', () => {
     const brandMissing = {
       ...SAMPLE_BRAND,
-      raw_data: { Kategori: 'Electronics' },
+      raw_data: { Category: 'Electronics' },
     };
     renderHeader({ brand: brandMissing, isLoading: false, isError: false });
 
