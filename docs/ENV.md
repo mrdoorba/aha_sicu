@@ -62,12 +62,18 @@ Independent of `EMAIL_ENABLED`; gated only by `GMAIL_SMTP_ENABLED`.
 |----------|----------|---------|-------------|
 | `GSHEETS_CREDENTIALS_PATH` | No* | — | Path to GSheets service account JSON (development) |
 | `GSHEETS_CREDENTIALS_JSON` | No* | — | Raw JSON string from Secret Manager (production) |
-| `GSHEETS_VP_SPREADSHEET_ID` | No | — | VP data spreadsheet ID |
-| `GSHEETS_VP_RANGE` | No | `VP!A:Y` | VP sheet range |
-| `GSHEETS_VP_BRAND_COLUMN` | No | `Nama Brand` | VP sheet brand column header |
-| `GSHEETS_MEETING_SPREADSHEET_ID` | No | — | 1st Meeting data spreadsheet ID |
-| `GSHEETS_MEETING_RANGE` | No | `ZAP: 1st Meeting!A:D` | Meeting sheet range |
-| `GSHEETS_MEETING_BRAND_COLUMN` | No | `Brand` | Meeting sheet brand column header |
+| `GSHEETS_VP_SPREADSHEET_ID` | No | — | VP data spreadsheet ID (ID marketplace) |
+| `GSHEETS_VP_RANGE` | No | `Brands Data!A:Z` | VP sheet range (ID) |
+| `GSHEETS_VP_BRAND_COLUMN` | No | `Brand` | VP sheet brand column header (ID) |
+| `GSHEETS_VP_SPREADSHEET_ID_TH` | No | — | VP data spreadsheet ID (TH marketplace) |
+| `GSHEETS_VP_RANGE_TH` | No | `Brands Data!A:Z` | VP sheet range (TH) |
+| `GSHEETS_VP_BRAND_COLUMN_TH` | No | `Brand` | VP sheet brand column header (TH) |
+| `GSHEETS_MEETING_SPREADSHEET_ID` | No | — | 1st Meeting spreadsheet ID (ID marketplace) |
+| `GSHEETS_MEETING_RANGE` | No | `1st Meeting!A:M` | Meeting sheet range (ID) |
+| `GSHEETS_MEETING_BRAND_COLUMN` | No | `Brand` | Meeting sheet brand column header (ID) |
+| `GSHEETS_MEETING_SPREADSHEET_ID_TH` | No | — | 1st Meeting spreadsheet ID (TH marketplace) |
+| `GSHEETS_MEETING_RANGE_TH` | No | `1st Meeting!A:M` | Meeting sheet range (TH) |
+| `GSHEETS_MEETING_BRAND_COLUMN_TH` | No | `Brand` | Meeting sheet brand column header (TH) |
 | `GSHEETS_EVAL_SPREADSHEET_ID` | No | — | Evaluation status spreadsheet ID (write-only) |
 | `GSHEETS_EVAL_TAB` | No | `SICU` | Evaluation status tab name |
 

@@ -54,16 +54,16 @@ _HISTORY_VERDICT_MAP = {
 # Per-marketplace mapping from raw_data column names to BrandRawData fields
 _BRAND_RAW_DATA_COLUMNS: dict[str, dict[str, str]] = {
     "ID": {
-        "email": "Email",
-        "pic_name": "Nama PIC/ Jabatan*",
-        "store_link": "Link Shopee Mall / LazMall",
-        "kategori": "Kategori",
+        "email": "Emails",
+        "pic_name": "PIC",
+        "store_link": "Store Link",
+        "kategori": "Category",
     },
     "TH": {
-        "email": "Email",
+        "email": "Emails",
         "pic_name": "PIC",
-        "store_link": "Shopee Link",
-        "kategori": "Product Category",
+        "store_link": "Store Link",
+        "kategori": "Category",
     },
 }
 

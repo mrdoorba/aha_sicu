@@ -29,10 +29,10 @@ EVAL_DETAIL_ROW = {
     "brand_id": 10,
     "brand_name": "Nike Indonesia",
     "raw_data": {
-        "Email": "pic@nike.com",
-        "Nama PIC/ Jabatan*": "Budi Santoso",
-        "Link Shopee Mall / LazMall": "https://shopee.co.id/nike",
-        "Kategori": "Fashion",
+        "Emails": "pic@nike.com",
+        "PIC": "Budi Santoso",
+        "Store Link": "https://shopee.co.id/nike",
+        "Category": "Fashion",
         "Other Field": "ignored",
     },
     "final_score": Decimal("78.50"),
@@ -224,7 +224,7 @@ def test_get_evaluation_detail_brand_raw_data_partial(client):
     """Test brand_raw_data returns null for missing VP sheet fields."""
     partial_row = {
         **EVAL_DETAIL_ROW,
-        "raw_data": {"Email": "pic@brand.com"},
+        "raw_data": {"Emails": "pic@brand.com"},
     }
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,

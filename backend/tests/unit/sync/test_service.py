@@ -31,10 +31,21 @@ def mock_sheets_client():
 
     with patch("app.modules.sync.service.GoogleSheetsClient") as mock:
         instance = MagicMock()
-        instance.fetch_sheet_data = AsyncMock()
+        # VP and Meeting both read via fetch_sheet_data; dispatch by spreadsheet id.
+        instance._vp_rows = []
+        instance._meeting_rows = []
+
+        async def _fetch(spreadsheet_id, _range_name):
+            return (
+                instance._meeting_rows
+                if "meeting" in spreadsheet_id
+                else instance._vp_rows
+            )
+
+        instance.fetch_sheet_data = AsyncMock(side_effect=_fetch)
         instance.fetch_headers = AsyncMock(
             side_effect=lambda _spreadsheet_id, sheet_name: (
-                EXPECTED_HEADERS_MEETING_ID if sheet_name == "ZAP: 1st Meeting" else EXPECTED_HEADERS_VP_ID
+                EXPECTED_HEADERS_MEETING_ID if sheet_name == "1st Meeting" else EXPECTED_HEADERS_VP_ID
             )
         )
         instance.fetch_meeting_data = AsyncMock()
@@ -63,14 +74,17 @@ def mock_settings():
     """Mock settings with ID VP configured."""
     with patch("app.modules.sync.service.settings") as mock:
         mock.gsheets_vp_spreadsheet_id = "vp-id"
-        mock.gsheets_vp_range = "VP!A:Y"
-        mock.gsheets_vp_brand_column = "Nama Brand"
+        mock.gsheets_vp_range = "Brands Data!A:Z"
+        mock.gsheets_vp_brand_column = "Brand"
         mock.gsheets_vp_spreadsheet_id_th = None
-        mock.gsheets_vp_range_th = "VP!A:W"
+        mock.gsheets_vp_range_th = "Brands Data!A:Z"
         mock.gsheets_vp_brand_column_th = "Brand"
         mock.gsheets_meeting_spreadsheet_id = "meeting-id"
-        mock.gsheets_meeting_range = "ZAP: 1st Meeting!A:D"
+        mock.gsheets_meeting_range = "1st Meeting!A:M"
         mock.gsheets_meeting_brand_column = "Brand"
+        mock.gsheets_meeting_spreadsheet_id_th = None
+        mock.gsheets_meeting_range_th = "1st Meeting!A:M"
+        mock.gsheets_meeting_brand_column_th = "Brand"
         yield mock
 
 
@@ -80,15 +94,15 @@ async def test_run_sync_both_sheets_success(mock_db, mock_sheets_client, mock_qu
 
     mock_sync, mock_brand = mock_queries
 
-    # Mock VP data (now via fetch_sheet_data)
-    mock_sheets_client.fetch_sheet_data.return_value = [
-        {"Nama Brand": "Nike", "Category": "Fashion"},
-        {"Nama Brand": "Adidas", "Category": "Fashion"},
+    # Mock VP data (via fetch_sheet_data, dispatched by spreadsheet id)
+    mock_sheets_client._vp_rows = [
+        {"Brand": "Nike", "Category": "Fashion"},
+        {"Brand": "Adidas", "Category": "Fashion"},
     ]
 
     # Mock Meeting data
-    mock_sheets_client.fetch_meeting_data.return_value = [
-        {"Brand": "Samsung", "Status": "Active"},
+    mock_sheets_client._meeting_rows = [
+        {"Brand": "Samsung", "Verified": "Yes"},
     ]
 
     result = await run_sync()
@@ -111,13 +125,14 @@ async def test_run_sync_vp_only(mock_db, mock_sheets_client, mock_queries):
 
     with patch("app.modules.sync.service.settings") as mock_settings:
         mock_settings.gsheets_vp_spreadsheet_id = "vp-id"
-        mock_settings.gsheets_vp_range = "VP!A:Y"
-        mock_settings.gsheets_vp_brand_column = "Nama Brand"
+        mock_settings.gsheets_vp_range = "Brands Data!A:Z"
+        mock_settings.gsheets_vp_brand_column = "Brand"
         mock_settings.gsheets_vp_spreadsheet_id_th = None
         mock_settings.gsheets_meeting_spreadsheet_id = None  # Not configured
+        mock_settings.gsheets_meeting_spreadsheet_id_th = None  # Not configured
 
-        mock_sheets_client.fetch_sheet_data.return_value = [
-            {"Nama Brand": "Nike"},
+        mock_sheets_client._vp_rows = [
+            {"Brand": "Nike"},
         ]
 
         result = await run_sync()
@@ -132,32 +147,32 @@ async def test_run_sync_records_meeting_column_drift(mock_db, mock_sheets_client
     """Meeting drift is surfaced with explicit changed-column evidence."""
     from app.modules.sync.service import run_sync
 
+    from app.modules.sync.column_drift import (
+        EXPECTED_HEADERS_MEETING_ID,
+        EXPECTED_HEADERS_VP_ID,
+    )
+
     mock_sync, _ = mock_queries
-    mock_sheets_client.fetch_sheet_data.return_value = [{"Nama Brand": "Nike"}]
+    mock_sheets_client._vp_rows = [{"Brand": "Nike"}]
+
+    # Meeting headers with column 5 ("Duration (min)") renamed to trigger drift.
+    drifted_meeting = list(EXPECTED_HEADERS_MEETING_ID)
+    drifted_meeting[4] = "Minutes"
     mock_sheets_client.fetch_headers.side_effect = lambda _spreadsheet_id, sheet_name: (
-        ["Brand", "Title", "Minutes", "Timestamp"]
-        if sheet_name == "ZAP: 1st Meeting"
-        else [
-            "Nama Brand", "BD", "Timestamp", "Link Shopee Mall / LazMall", "Kategori",
-            ">= 25 Produk in stock", "Shopee Mall", "Umur brand >5 tahun",
-            "No OPEX Issue", "Lokasi Jabodetabek / Email Domain Perusahaan",
-            "Terdaftar DJKI", "Omset >100jt", "LBS", "Leader Approval", "Score\nVP",
-            "Approach", "Nama Perusahaan/Perorangan*", "Nama PIC/ Jabatan*", "No WA*",
-            "Email", "Alamat*", "Kirim surat fisik", "SICU", "", "Signed up",
-        ]
+        drifted_meeting if sheet_name == "1st Meeting" else EXPECTED_HEADERS_VP_ID
     )
 
     result = await run_sync()
 
     assert result.meeting_result is None
     assert result.column_drift_errors[-1]["changed_columns"] == [
-        {"position": 3, "expected": "Duration (mins)", "actual": "Minutes"},
+        {"position": 5, "expected": "Duration (min)", "actual": "Minutes"},
     ]
     update_kwargs = mock_sync.update_sync_status.await_args.kwargs
     assert update_kwargs["sync_details"]["m1_id"]["changed_columns"] == [
-        {"position": 3, "expected": "Duration (mins)", "actual": "Minutes"},
+        {"position": 5, "expected": "Duration (min)", "actual": "Minutes"},
     ]
-    assert "Duration (mins) → Minutes" in update_kwargs["error_message"]
+    assert "Duration (min) → Minutes" in update_kwargs["error_message"]
 
 
 async def test_run_sync_atomic_failure_when_batch_upsert_fails(mock_db, mock_sheets_client, mock_queries, mock_settings):
@@ -166,11 +181,11 @@ async def test_run_sync_atomic_failure_when_batch_upsert_fails(mock_db, mock_she
 
     mock_sync, mock_brand = mock_queries
 
-    mock_sheets_client.fetch_sheet_data.return_value = [
-        {"Nama Brand": "Nike"},
-        {"Nama Brand": "Adidas"},
+    mock_sheets_client._vp_rows = [
+        {"Brand": "Nike"},
+        {"Brand": "Adidas"},
     ]
-    mock_sheets_client.fetch_meeting_data.return_value = []
+    mock_sheets_client._meeting_rows = []
 
     # Batch upsert fails — entire sheet rolls back
     mock_brand.batch_upsert_brand_data.side_effect = Exception("DB error")
@@ -191,12 +206,12 @@ async def test_run_sync_skips_empty_brand_names(mock_db, mock_sheets_client, moc
 
     mock_sync, mock_brand = mock_queries
 
-    mock_sheets_client.fetch_sheet_data.return_value = [
-        {"Nama Brand": "Nike"},
-        {"Nama Brand": ""},  # Empty brand name
-        {"Nama Brand": "   "},  # Whitespace only
+    mock_sheets_client._vp_rows = [
+        {"Brand": "Nike"},
+        {"Brand": ""},  # Empty brand name
+        {"Brand": "   "},  # Whitespace only
     ]
-    mock_sheets_client.fetch_meeting_data.return_value = []
+    mock_sheets_client._meeting_rows = []
 
     result = await run_sync()
 
@@ -213,10 +228,12 @@ async def test_run_sync_handles_sheet_fetch_error(mock_db, mock_sheets_client, m
 
     mock_sync, _ = mock_queries
 
-    mock_sheets_client.fetch_sheet_data.side_effect = SyncException(
-        code="SYNC_PERMISSION_DENIED", detail="No access"
-    )
-    mock_sheets_client.fetch_meeting_data.return_value = [{"Brand": "Test"}]
+    async def _fetch(spreadsheet_id, _range_name):
+        if "meeting" in spreadsheet_id:
+            return [{"Brand": "Test"}]
+        raise SyncException(code="SYNC_PERMISSION_DENIED", detail="No access")
+
+    mock_sheets_client.fetch_sheet_data.side_effect = _fetch
 
     result = await run_sync()
 
@@ -234,8 +251,8 @@ async def test_run_sync_empty_sheets(mock_db, mock_sheets_client, mock_queries, 
 
     mock_sync, mock_brand = mock_queries
 
-    mock_sheets_client.fetch_sheet_data.return_value = []
-    mock_sheets_client.fetch_meeting_data.return_value = []
+    mock_sheets_client._vp_rows = []
+    mock_sheets_client._meeting_rows = []
 
     result = await run_sync()
 
@@ -250,10 +267,10 @@ async def test_run_sync_with_pre_created_sync_id(mock_db, mock_sheets_client, mo
 
     mock_sync, mock_brand = mock_queries
 
-    mock_sheets_client.fetch_sheet_data.return_value = [
-        {"Nama Brand": "Nike"},
+    mock_sheets_client._vp_rows = [
+        {"Brand": "Nike"},
     ]
-    mock_sheets_client.fetch_meeting_data.return_value = []
+    mock_sheets_client._meeting_rows = []
 
     result = await run_sync(sync_id=42)
 
@@ -272,8 +289,8 @@ async def test_run_sync_without_sync_id_creates_record(mock_db, mock_sheets_clie
 
     mock_sync, mock_brand = mock_queries
 
-    mock_sheets_client.fetch_sheet_data.return_value = []
-    mock_sheets_client.fetch_meeting_data.return_value = []
+    mock_sheets_client._vp_rows = []
+    mock_sheets_client._meeting_rows = []
 
     result = await run_sync()
 

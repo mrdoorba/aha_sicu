@@ -16,7 +16,8 @@
 # Google Sheets env vars (set per environment, synced to Cloud Run):
 #   GSHEETS_VP_SPREADSHEET_ID      – VP sheet spreadsheet ID (Indonesia)
 #   GSHEETS_VP_SPREADSHEET_ID_TH   – VP sheet spreadsheet ID (Thailand)
-#   GSHEETS_MEETING_SPREADSHEET_ID – 1st Meeting sheet spreadsheet ID
+#   GSHEETS_MEETING_SPREADSHEET_ID – 1st Meeting sheet spreadsheet ID (Indonesia)
+#   GSHEETS_MEETING_SPREADSHEET_ID_TH – 1st Meeting sheet spreadsheet ID (Thailand)
 #   GSHEETS_EVAL_SPREADSHEET_ID    – Evaluation status sheet spreadsheet ID
 #
 #   These are NOT read from tfvars (those files are gitignored).
@@ -175,6 +176,7 @@ jobs:
             GSHEETS_VP_SPREADSHEET_ID=${{ vars.GSHEETS_VP_SPREADSHEET_ID }}
             GSHEETS_VP_SPREADSHEET_ID_TH=${{ vars.GSHEETS_VP_SPREADSHEET_ID_TH }}
             GSHEETS_MEETING_SPREADSHEET_ID=${{ vars.GSHEETS_MEETING_SPREADSHEET_ID }}
+            GSHEETS_MEETING_SPREADSHEET_ID_TH=${{ vars.GSHEETS_MEETING_SPREADSHEET_ID_TH }}
             GSHEETS_EVAL_SPREADSHEET_ID=${{ vars.GSHEETS_EVAL_SPREADSHEET_ID }}
           flags: ${{ inputs.environment == 'dev' && '--cpu-throttling' || '' }}
 

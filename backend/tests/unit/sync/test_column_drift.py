@@ -51,17 +51,25 @@ def test_validate_headers_detects_reordered_columns():
     ]
 
 
-def test_expected_headers_match_latest_business_labels():
-    """Updated business-approved header labels stay in sync with drift checks."""
-    assert "Umur brand >5 tahun" in EXPECTED_HEADERS_VP_ID
-    assert "Umur toko >5 tahun" not in EXPECTED_HEADERS_VP_ID
-    assert "Lokasi Jabodetabek / Email Domain Perusahaan" in EXPECTED_HEADERS_VP_ID
-    assert "Lokasi Jabodetabek" not in EXPECTED_HEADERS_VP_ID
-    assert "SICU" in EXPECTED_HEADERS_VP_TH
-    assert "SHCU" not in EXPECTED_HEADERS_VP_TH
+def test_expected_headers_match_unified_schema():
+    """Expected headers track the unified 'Brands Data' / '1st Meeting' schema."""
+    # VP: brand key first, ID and TH share the same schema
+    assert EXPECTED_HEADERS_VP_ID[0] == "Brand"
+    assert "Category" in EXPECTED_HEADERS_VP_ID
+    assert EXPECTED_HEADERS_VP_TH == EXPECTED_HEADERS_VP_ID
+    # Meeting: new 1st Meeting tab layout
     assert EXPECTED_HEADERS_MEETING_ID == [
+        "Logged At",
         "Brand",
-        "Title",
-        "Duration (mins)",
-        "Timestamp",
+        "BD",
+        "Meeting Date",
+        "Duration (min)",
+        "Location",
+        "Location Detail",
+        "PIC",
+        "Brand Emails",
+        "Brand Phones",
+        "Verified",
+        "Meet Link",
+        "Brand ID",
     ]

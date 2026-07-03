@@ -86,12 +86,12 @@ export const BrandTable = ({ brands, isLoading }: BrandTableProps) => {
 
 // Priority fields to display from VP raw_data per marketplace
 const PRIORITY_KEYS_BY_MARKETPLACE: Record<string, string[]> = {
-  ID: ['Nama PIC/ Jabatan*', 'Kategori', 'No WA*'],
-  TH: ['PIC', 'Product Category', 'Contact Number'],
+  ID: ['PIC', 'Category', 'Phones'],
+  TH: ['PIC', 'Category', 'Phones'],
 };
 
 const PRIORITY_LABELS_BY_MARKETPLACE: Record<string, Record<string, string>> = {
-  ID: { 'Nama PIC/ Jabatan*': 'Nama PIC', 'No WA*': 'No WA' },
+  ID: { PIC: 'Nama PIC', Phones: 'No WA' },
   TH: {},
 };
 

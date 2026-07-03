@@ -7,7 +7,7 @@ from typing import Any, Literal
 from pydantic import BaseModel, field_validator, model_validator
 
 
-SheetType = Literal["vp", "vp_id", "vp_th", "meeting"]
+SheetType = Literal["vp", "vp_id", "vp_th", "meeting", "m1_id", "m1_th"]
 
 
 class SyncError(BaseModel):

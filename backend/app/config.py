@@ -95,18 +95,23 @@ class Settings(BaseSettings):
 
     # VP Sheet - Indonesia (brand_vp_data, marketplace='ID')
     gsheets_vp_spreadsheet_id: str | None = None
-    gsheets_vp_range: str = "VP!A:Y"
-    gsheets_vp_brand_column: str = "Nama Brand"
+    gsheets_vp_range: str = "Brands Data!A:Z"
+    gsheets_vp_brand_column: str = "Brand"
 
     # VP Sheet - Thailand (brand_vp_data, marketplace='TH')
     gsheets_vp_spreadsheet_id_th: str | None = None
-    gsheets_vp_range_th: str = "VP!A:W"
+    gsheets_vp_range_th: str = "Brands Data!A:Z"
     gsheets_vp_brand_column_th: str = "Brand"
 
-    # 1st Meeting Sheet (brand_meeting_data)
+    # 1st Meeting Sheet - Indonesia (brand_meeting_data, marketplace='ID')
     gsheets_meeting_spreadsheet_id: str | None = None
-    gsheets_meeting_range: str = "ZAP: 1st Meeting!A:D"
+    gsheets_meeting_range: str = "1st Meeting!A:M"
     gsheets_meeting_brand_column: str = "Brand"
+
+    # 1st Meeting Sheet - Thailand (brand_meeting_data, marketplace='TH')
+    gsheets_meeting_spreadsheet_id_th: str | None = None
+    gsheets_meeting_range_th: str = "1st Meeting!A:M"
+    gsheets_meeting_brand_column_th: str = "Brand"
 
     # Evaluation Status Sheet (write-only, one row per evaluated brand)
     gsheets_eval_spreadsheet_id: str | None = None

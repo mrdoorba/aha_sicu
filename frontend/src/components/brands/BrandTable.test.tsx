@@ -8,14 +8,14 @@ const SAMPLE_BRANDS: BrandListItem[] = [
   {
     id: 1,
     brand_name: 'Brand ABC',
-    raw_data: { Kategori: 'Electronics', 'Signed up': 'Yes' },
+    raw_data: { Category: 'Electronics', 'SICU Passed': 'Yes' },
     updated_at: '2026-02-05T10:00:00Z',
     meeting_raw_data: { notes: 'Good meeting' },
   },
   {
     id: 2,
     brand_name: 'Brand DEF',
-    raw_data: { Kategori: 'Fashion' },
+    raw_data: { Category: 'Fashion' },
     updated_at: '2026-02-05T11:00:00Z',
     meeting_raw_data: null,
   },
@@ -61,8 +61,8 @@ describe('BrandTable', () => {
   it('displays raw_data summary for each brand', () => {
     renderBrandTable({ brands: SAMPLE_BRANDS, isLoading: false });
 
-    expect(screen.getByText(/Kategori: Electronics/)).toBeInTheDocument();
-    expect(screen.getByText(/Kategori: Fashion/)).toBeInTheDocument();
+    expect(screen.getByText(/Category: Electronics/)).toBeInTheDocument();
+    expect(screen.getByText(/Category: Fashion/)).toBeInTheDocument();
   });
 
   it('shows skeleton loading state', () => {
