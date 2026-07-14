@@ -59,6 +59,12 @@ class Settings(BaseSettings):
     # GCS Upload Bucket (empty = local dev fallback)
     gcs_upload_bucket: str = ""
 
+    # Upload guards (defensive OOM caps). Largest legit prod upload seen is ~9 MB
+    # (order_export ZIP); these are generous headroom, tune down post-launch.
+    upload_max_file_mb: int = 100
+    upload_max_zip_uncompressed_mb: int = 200
+    upload_max_zip_entries: int = 50
+
     # Email — rich /send evaluation report (POST /api/v1/email/send).
     # Sent over its OWN SMTP account, distinct from /send-plain's gmail_smtp_*.
     # email_smtp_user defaults to email_from_email when left blank.
