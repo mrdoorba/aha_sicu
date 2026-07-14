@@ -135,15 +135,6 @@ variable "gmail_smtp_app_password" {
   default     = ""
 }
 
-# Rich /send path (POST /api/v1/email/send) — its OWN Gmail SMTP account,
-# distinct from /send-plain's gmail_smtp_*. App password seeded out-of-band.
-variable "email_smtp_app_password" {
-  description = "Gmail App Password for the rich /send SMTP account. Seeded out-of-band; ignore_changes preserves rotations."
-  type        = string
-  sensitive   = true
-  default     = ""
-}
-
 variable "dev_gmail_smtp_enabled" {
   description = "Whether the Gmail SMTP send-plain path is enabled in dev"
   type        = bool

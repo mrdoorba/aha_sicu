@@ -206,29 +206,6 @@ resource "google_secret_manager_secret_version" "gmail_smtp_app_password" {
   }
 }
 
-# Email SMTP App Password — backs the rich /send evaluation report
-# (POST /api/v1/email/send), which migrated off SendGrid onto its own Gmail
-# SMTP account, distinct from /send-plain's gmail_smtp_app_password. Value is
-# seeded out-of-band via gcloud; ignore_changes keeps Terraform from clobbering
-# manual rotations.
-resource "google_secret_manager_secret" "email_smtp_app_password" {
-  secret_id = "aha_coms_sicu_${var.environment}_email_smtp_app_password"
-  project   = var.project_id
-
-  replication {
-    auto {}
-  }
-}
-
-resource "google_secret_manager_secret_version" "email_smtp_app_password" {
-  secret      = google_secret_manager_secret.email_smtp_app_password.id
-  secret_data = var.email_smtp_app_password != "" ? var.email_smtp_app_password : "placeholder"
-
-  lifecycle {
-    ignore_changes = [secret_data]
-  }
-}
-
 # IAM: Grant Cloud Run SA access to secrets
 
 resource "google_secret_manager_secret_iam_member" "api_sa_db_password" {
@@ -270,27 +247,6 @@ resource "google_secret_manager_secret_iam_member" "api_sa_gmail_smtp_app_passwo
   secret_id = google_secret_manager_secret.gmail_smtp_app_password.secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = "serviceAccount:${google_service_account.cloud_run.email}"
-  project   = var.project_id
-}
-
-resource "google_secret_manager_secret_iam_member" "api_sa_email_smtp_app_password" {
-  secret_id = google_secret_manager_secret.email_smtp_app_password.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.cloud_run.email}"
-  project   = var.project_id
-}
-
-resource "google_secret_manager_secret_iam_member" "deploy_sa_email_smtp_app_password" {
-  secret_id = google_secret_manager_secret.email_smtp_app_password.secret_id
-  role      = "roles/secretmanager.secretAccessor"
-  member    = "serviceAccount:${google_service_account.deploy.email}"
-  project   = var.project_id
-}
-
-resource "google_secret_manager_secret_iam_member" "deploy_sa_email_smtp_app_password_viewer" {
-  secret_id = google_secret_manager_secret.email_smtp_app_password.secret_id
-  role      = "roles/secretmanager.viewer"
-  member    = "serviceAccount:${google_service_account.deploy.email}"
   project   = var.project_id
 }
 
@@ -463,18 +419,6 @@ resource "google_cloud_run_v2_service" "api" {
         }
       }
 
-      # Rich /send transport. EMAIL_SMTP_USER defaults to EMAIL_FROM_EMAIL in
-      # the app; host/port fall back to smtp.gmail.com:587.
-      env {
-        name = "EMAIL_SMTP_APP_PASSWORD"
-        value_source {
-          secret_key_ref {
-            secret  = google_secret_manager_secret.email_smtp_app_password.secret_id
-            version = "latest"
-          }
-        }
-      }
-
       env {
         name  = "GSHEETS_VP_SPREADSHEET_ID"
         value = var.gsheets_vp_spreadsheet_id
@@ -559,7 +503,6 @@ resource "google_cloud_run_v2_service" "api" {
     google_secret_manager_secret_iam_member.api_sa_gmail_dwd,
     google_secret_manager_secret_version.gmail_dwd_credentials,
     google_secret_manager_secret_iam_member.api_sa_gmail_smtp_app_password,
-    google_secret_manager_secret_iam_member.api_sa_email_smtp_app_password,
   ]
 }
 
