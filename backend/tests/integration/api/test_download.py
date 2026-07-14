@@ -74,6 +74,34 @@ def test_download_returns_signed_url(client):
     assert body["filename"] == "Brand_report.csv"
 
 
+def test_download_gcs_failure_returns_502(client):
+    """A GCS error while minting the download URL surfaces as 502, not a bare 500."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.upload.service.db") as mock_svc_db,
+        patch("app.modules.upload.service.get_storage_client") as mock_storage_fn,
+    ):
+        _setup_auth_mocks(mock_verify, mock_db, mock_user_queries)
+
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(return_value=SAMPLE_UPLOAD_WITH_PATH)
+
+        mock_storage = MagicMock()
+        mock_storage.generate_signed_download_url.side_effect = RuntimeError("GCS unavailable")
+        mock_storage_fn.return_value = mock_storage
+
+        resp = client.get(
+            "/api/v1/upload/brands/123/download/cpc_ad_report",
+            headers=AUTH_HEADERS,
+        )
+
+    assert resp.status_code == 502
+    assert resp.json()["code"] == "UPLOAD_SIGNED_URL_FAILED"
+
+
 def test_download_returns_404_when_no_upload(client):
     """Download endpoint returns 404 if no file uploaded for this slot."""
     with (
