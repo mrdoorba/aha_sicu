@@ -4,9 +4,29 @@ import { Sidebar } from './Sidebar';
 import { Menu, X } from 'lucide-react';
 import { Button } from '../ui/button';
 import { cn } from '../../lib/utils';
+import { useCurrentUser } from '../../hooks/useCurrentUser';
+import { useAuth } from '../../context/AuthContext';
 
 export const MainLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const { error } = useCurrentUser();
+  const { logout } = useAuth();
+
+  // A valid Firebase token from a sibling AHA app authenticates but has no SICU
+  // account, so /me returns 401 AUTH_USER_NOT_PROVISIONED. Show a clear dead-end
+  // instead of an empty shell whose every data query 401s.
+  if (error?.code === 'AUTH_USER_NOT_PROVISIONED') {
+    return (
+      <div className="flex min-h-screen flex-col items-center justify-center gap-4 bg-muted px-6 text-center">
+        <h1 className="text-xl font-semibold text-foreground">Account not provisioned</h1>
+        <p className="max-w-md text-muted-foreground">
+          Your sign-in succeeded, but this account has not been granted access to Store ICU.
+          Please contact an administrator to be added.
+        </p>
+        <Button onClick={() => logout()}>Sign out</Button>
+      </div>
+    );
+  }
 
   return (
     <div className="relative flex h-screen bg-background text-foreground transition-colors duration-500 overflow-hidden">

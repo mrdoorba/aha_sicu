@@ -34,5 +34,6 @@ export function useCurrentUser() {
     profile: query.data ?? null,
     isLoading: query.isLoading,
     isError: query.isError,
+    error: query.error as { code?: string } | null,
   };
 }
