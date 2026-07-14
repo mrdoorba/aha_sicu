@@ -16,8 +16,8 @@ cloud_run_memory        = "512Mi"
 cloud_run_cpu           = "1"
 
 # Google Sheets spreadsheet IDs (shared)
-gsheets_vp_spreadsheet_id      = "1zKXRL0Luqo9_rN3vtZWdfX2mMm86GCh87nrLlTCp0BU"
-gsheets_meeting_spreadsheet_id = "1bPxm-aEcjHH9DyShf1CysqzNfueBebSc2N-B1qX0YoM"
+gsheets_vp_spreadsheet_id      = "1AH9-KuHJXLwxuv82LC5stBmvA-Db-mAfZGJfbUKkvWc"
+gsheets_meeting_spreadsheet_id = "1AH9-KuHJXLwxuv82LC5stBmvA-Db-mAfZGJfbUKkvWc"
 
 # Google Sheets eval spreadsheet IDs (per-environment)
 dev_gsheets_eval_spreadsheet_id  = "1sU6OF8l2YsV5E_InP6rUHVqE_q9cSxN5ovU1PSEFT18"
@@ -37,9 +37,8 @@ prod_email_from_email = "noreply@ahabot.ai"
 # Gmail SMTP (evaluation "Send Mail" dialog — /send-plain). The app password is
 # NOT stored here (this file is tracked) — it is already seeded in Secret
 # Manager as aha_coms_sicu_dev_gmail_smtp_app_password and managed via
-# ignore_changes. The rich /send path's password lives in the parallel secret
-# aha_coms_sicu_<env>_email_smtp_app_password. Seed both out-of-band, or pass
-# -var="gmail_smtp_app_password=..." / -var="email_smtp_app_password=..." at apply.
+# ignore_changes. Seed out-of-band, or pass -var="gmail_smtp_app_password=..."
+# at apply.
 gmail_smtp_user = "marwahkha@ahacommerce.net"
 
 # Feature flags (per-environment)
