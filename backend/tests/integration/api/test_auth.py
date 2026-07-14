@@ -119,17 +119,12 @@ def test_me_with_valid_token_existing_user(client):
         assert mock_queries.get_user_by_firebase_uid.call_count == 2
 
 
-def test_me_with_valid_token_new_user(client):
-    """Test /api/v1/me creates new user on first login."""
-    mock_new_user = {
-        "id": 1,
-        "firebase_uid": "new-uid",
-        "email": "new@example.com",
-        "role": "member",
-        "created_at": datetime.now(timezone.utc),
-        "last_login": datetime.now(timezone.utc),
-    }
+def test_me_with_valid_token_unprovisioned_user_rejected(client):
+    """A valid Firebase token with no SICU user row is rejected (provision-only).
 
+    The Firebase project is shared across sibling apps, so a valid token must
+    not auto-create a SICU account — admins provision users explicitly.
+    """
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
@@ -141,19 +136,14 @@ def test_me_with_valid_token_new_user(client):
         mock_conn = AsyncMock()
         mock_db.connection.return_value.__aenter__.return_value = mock_conn
 
-        # User doesn't exist, will be created
+        # User has no SICU row → must be rejected, never auto-created
         mock_queries.get_user_by_firebase_uid = AsyncMock(return_value=None)
-        mock_queries.create_user = AsyncMock(return_value=mock_new_user)
+        mock_queries.create_user = AsyncMock()
 
         response = client.get("/api/v1/me", headers={"Authorization": "Bearer valid-token"})
-        assert response.status_code == 200
-        data = response.json()
-        assert data["id"] == 1
-        assert data["email"] == "new@example.com"
-        assert data["role"] == "member"
-
-        # Verify create_user was called with correct arguments
-        mock_queries.create_user.assert_called_once_with(mock_conn, "new-uid", "new@example.com")
+        assert response.status_code == 401
+        assert response.json()["code"] == "AUTH_USER_NOT_PROVISIONED"
+        mock_queries.create_user.assert_not_called()
 
 
 def test_health_endpoint(client):

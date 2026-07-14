@@ -6,6 +6,7 @@ from io import BytesIO
 
 import polars as pl
 
+from app.config import settings
 from app.core.exceptions import UploadException
 from app.modules.upload.parser import parse_excel
 
@@ -59,6 +60,21 @@ def process_zip(zip_bytes: bytes, file_type: str) -> pl.DataFrame:
             raise UploadException(
                 code="UPLOAD_ZIP_NO_EXCEL",
                 detail="ZIP archive contains no Excel files",
+            )
+
+        # Zip-bomb guard: reject on entry count / total uncompressed size read from
+        # the central directory (ZipInfo.file_size) BEFORE decompressing anything.
+        if len(excel_entries) > settings.upload_max_zip_entries:
+            raise UploadException(
+                code="UPLOAD_TOO_LARGE",
+                detail=f"ZIP has too many files (max {settings.upload_max_zip_entries})",
+            )
+        total_uncompressed = sum(zf.getinfo(name).file_size for name in excel_entries)
+        max_uncompressed = settings.upload_max_zip_uncompressed_mb * 1024 * 1024
+        if total_uncompressed > max_uncompressed:
+            raise UploadException(
+                code="UPLOAD_TOO_LARGE",
+                detail=f"ZIP contents exceed the {settings.upload_max_zip_uncompressed_mb} MB uncompressed limit",
             )
 
         # Sort by part number

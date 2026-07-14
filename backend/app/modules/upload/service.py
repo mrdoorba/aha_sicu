@@ -10,6 +10,7 @@ from asyncpg import Connection
 import polars as pl
 
 from app.calculators.engine import clear_dependent_results, run_calculators_for_upload
+from app.config import settings
 from app.core.exceptions import AppException, UploadException
 from app.db.connection import db
 from app.db.queries import brands as brand_queries
@@ -227,6 +228,14 @@ async def _download_and_parse(
         ) from e
 
     file_size = len(file_bytes)
+
+    max_bytes = settings.upload_max_file_mb * 1024 * 1024
+    if file_size > max_bytes:
+        del file_bytes
+        raise UploadException(
+            code="UPLOAD_TOO_LARGE",
+            detail=f"File exceeds the {settings.upload_max_file_mb} MB upload limit",
+        )
 
     try:
         df, source_language = _parse_file(

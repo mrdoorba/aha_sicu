@@ -75,17 +75,23 @@ async def get_current_user(
             "firebase_uid": None,
         }
 
-    # Firebase succeeded — get or create user in database
+    # Firebase succeeded — the user must be pre-provisioned by an admin.
+    # The Firebase project is shared across sibling apps, so a valid token does
+    # NOT imply a SICU user. Reject unknown identities instead of auto-creating
+    # them (admins onboard users via POST /api/v1/accounts, which writes the row).
     async with db.connection() as conn:
         user = await user_queries.get_user_by_firebase_uid(conn, token_data["uid"])
 
         if not user:
-            # First login - create user
-            user = await user_queries.create_user(conn, token_data["uid"], token_data["email"])
-        else:
-            # Update last login and re-fetch to get fresh data
-            await user_queries.update_last_login(conn, user["id"])
-            user = await user_queries.get_user_by_firebase_uid(conn, token_data["uid"])
+            logger.warning("Auth rejected: unprovisioned Firebase identity %s", token_data["uid"])
+            raise AuthException(
+                code="AUTH_USER_NOT_PROVISIONED",
+                detail="Account not provisioned. Contact an administrator.",
+            )
+
+        # Update last login and re-fetch to get fresh data
+        await user_queries.update_last_login(conn, user["id"])
+        user = await user_queries.get_user_by_firebase_uid(conn, token_data["uid"])
 
     return user
 

@@ -159,3 +159,37 @@ def test_process_zip_incremental_concat_matches_batch():
     assert len(result) == 6
     assert result["Col_A"].to_list() == [1, 2, 3, 4, 5, 6]
     assert result["Col_B"].to_list() == ["a", "b", "c", "d", "e", "f"]
+
+
+# ---------------------------------------------------------------------------
+# Zip-bomb guards (H2)
+# ---------------------------------------------------------------------------
+
+
+def test_process_zip_rejects_too_many_entries(monkeypatch):
+    """Entry count over the configured cap is rejected before decompression."""
+    from app.modules.upload import zip_handler
+
+    monkeypatch.setattr(zip_handler.settings, "upload_max_zip_entries", 2)
+    df = pl.DataFrame({"Col_A": [1], "Col_B": ["a"]})
+    zip_bytes = _make_zip({
+        "data_part_1_of_3.xlsx": df,
+        "data_part_2_of_3.xlsx": df,
+        "data_part_3_of_3.xlsx": df,
+    })
+    with pytest.raises(UploadException) as exc:
+        process_zip(zip_bytes, "order_export")
+    assert exc.value.code == "UPLOAD_TOO_LARGE"
+
+
+def test_process_zip_rejects_oversized_uncompressed(monkeypatch):
+    """Total uncompressed size over the cap is rejected before decompression."""
+    from app.modules.upload import zip_handler
+
+    # 0 MB cap → any real Excel entry exceeds it.
+    monkeypatch.setattr(zip_handler.settings, "upload_max_zip_uncompressed_mb", 0)
+    df = pl.DataFrame({"Col_A": [1, 2], "Col_B": ["a", "b"]})
+    zip_bytes = _make_zip({"data_part_1_of_1.xlsx": df})
+    with pytest.raises(UploadException) as exc:
+        process_zip(zip_bytes, "order_export")
+    assert exc.value.code == "UPLOAD_TOO_LARGE"
