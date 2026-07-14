@@ -345,6 +345,19 @@ resource "google_cloud_run_v2_service" "api" {
         container_port = 8080
       }
 
+      # Gate traffic on /health (verifies DB connectivity) so a freshly
+      # deployed revision isn't sent requests before the pool is ready.
+      startup_probe {
+        http_get {
+          path = "/health"
+          port = 8080
+        }
+        initial_delay_seconds = 5
+        period_seconds        = 5
+        timeout_seconds       = 3
+        failure_threshold     = 6
+      }
+
       env {
         name  = "DB_USER"
         value = google_sql_user.app.name
