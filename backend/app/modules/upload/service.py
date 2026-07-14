@@ -166,9 +166,17 @@ async def request_signed_url(
     expires_at = datetime.now(timezone.utc) + timedelta(minutes=expiry_minutes)
 
     storage = get_storage_client()
-    upload_url = await asyncio.to_thread(
-        storage.generate_signed_upload_url, object_name, content_type, expiry_minutes
-    )
+    try:
+        upload_url = await asyncio.to_thread(
+            storage.generate_signed_upload_url, object_name, content_type, expiry_minutes
+        )
+    except Exception as e:
+        logger.exception("Failed to generate signed upload URL for %s", object_name)
+        raise UploadException(
+            code="UPLOAD_SIGNED_URL_FAILED",
+            detail="Could not generate an upload URL. Please try again.",
+            status_code=502,
+        ) from e
 
     async with db.connection() as conn:
         await pending_queries.create_pending_upload(
@@ -415,9 +423,17 @@ async def get_download_url(brand_id: int, file_type: str) -> DownloadResponse:
         )
 
     storage = get_storage_client()
-    download_url = await asyncio.to_thread(
-        storage.generate_signed_download_url, upload["storage_path"]
-    )
+    try:
+        download_url = await asyncio.to_thread(
+            storage.generate_signed_download_url, upload["storage_path"]
+        )
+    except Exception as e:
+        logger.exception("Failed to generate signed download URL for %s", upload["storage_path"])
+        raise UploadException(
+            code="UPLOAD_SIGNED_URL_FAILED",
+            detail="Could not generate a download URL. Please try again.",
+            status_code=502,
+        ) from e
 
     return DownloadResponse(
         download_url=download_url,
