@@ -51,20 +51,21 @@ export const LanguageToggle = ({ className, isCollapsed }: LanguageToggleProps) 
     <div ref={ref} className={cn('relative', className)}>
       <Button
         variant="ghost"
-        size={isCollapsed ? 'icon' : 'default'}
         className={cn(
-          'w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300',
-          isCollapsed ? 'justify-center p-2' : 'justify-start px-3 py-2',
+          'w-full justify-start px-3 py-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300',
         )}
         onClick={() => setOpen(!open)}
         data-testid="language-toggle"
       >
         <Globe className="h-5 w-5 shrink-0" />
-        {!isCollapsed && (
-          <span className="ml-3 truncate">
-            {current.flag} {current.label}
-          </span>
-        )}
+        <span
+          className={cn(
+            'overflow-hidden whitespace-nowrap transition-all duration-300',
+            isCollapsed ? 'ml-0 w-0 opacity-0' : 'ml-3 w-auto opacity-100',
+          )}
+        >
+          {current.flag} {current.label}
+        </span>
       </Button>
 
       {open && (

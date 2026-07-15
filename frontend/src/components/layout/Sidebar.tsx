@@ -8,8 +8,11 @@ import {
   Settings,
   Users,
   LogOut,
-  ChevronLeft
+  ChevronLeft,
+  ExternalLink
 } from 'lucide-react';
+
+const AHA_BD_URL = 'https://aha-bd.web.app/';
 import { cn } from '../../lib/utils';
 import { useAuth } from '../../context/AuthContext';
 import { useCurrentUser } from '../../hooks/useCurrentUser';
@@ -146,8 +149,7 @@ export const Sidebar = ({ className, hoverExpand = false }: SidebarProps) => {
                   "group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap",
                   isActive
                     ? "bg-sidebar-primary text-sidebar-primary-foreground"
-                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground",
-                  isCollapsed && "justify-center px-2"
+                    : "text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
                 )}
                 title={isCollapsed ? item.title : undefined}
               >
@@ -169,6 +171,29 @@ export const Sidebar = ({ className, hoverExpand = false }: SidebarProps) => {
               </Link>
             );
           })}
+
+          {/* External hop to AHA BD. Plain <a> (no target=_blank) → same-tab nav,
+              but right-click "Open in new tab" still works natively. */}
+          <a
+            href={AHA_BD_URL}
+            className="group flex items-center rounded-md px-3 py-2 text-sm font-medium transition-colors whitespace-nowrap text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground"
+            title={isCollapsed ? 'AHA BD' : undefined}
+          >
+            <ExternalLink
+              className={cn(
+                "h-5 w-5 shrink-0 transition-[margin] duration-300 text-sidebar-foreground group-hover:text-sidebar-accent-foreground",
+                isCollapsed ? "mr-0" : "mr-3"
+              )}
+            />
+            <span
+              className={cn(
+                "overflow-hidden transition-all duration-300",
+                isCollapsed ? "w-0 opacity-0" : "w-auto opacity-100"
+              )}
+            >
+              AHA BD
+            </span>
+          </a>
         </nav>
 
         <div className="border-t border-sidebar-border p-4">
@@ -190,8 +215,7 @@ export const Sidebar = ({ className, hoverExpand = false }: SidebarProps) => {
           <Button
             variant="ghost"
             className={cn(
-              "w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground whitespace-nowrap",
-              isCollapsed ? "justify-center p-2" : "justify-start"
+              "w-full justify-start text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground whitespace-nowrap"
             )}
             onClick={() => setShowLogoutConfirm(true)}
             title={isCollapsed ? t('header.logout') : undefined}
