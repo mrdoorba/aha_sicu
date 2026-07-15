@@ -26,10 +26,8 @@ export const ThemeToggle = ({ className, isCollapsed }: ThemeToggleProps) => {
   return (
     <Button
       variant="ghost"
-      size={isCollapsed ? "icon" : "default"}
       className={cn(
-        "w-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300",
-        isCollapsed ? "justify-center p-2" : "justify-start px-3 py-2",
+        "w-full justify-start px-3 py-2 text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-all duration-300",
         className
       )}
       onClick={() => setTheme(isDark ? 'light' : 'dark')}
@@ -49,11 +47,14 @@ export const ThemeToggle = ({ className, isCollapsed }: ThemeToggleProps) => {
           )}
         />
       </div>
-      {!isCollapsed && (
-        <span className="ml-3 truncate">
-          {isDark ? "Light Mode" : "Dark Mode"}
-        </span>
-      )}
+      <span
+        className={cn(
+          "overflow-hidden whitespace-nowrap transition-all duration-300",
+          isCollapsed ? "ml-0 w-0 opacity-0" : "ml-3 w-auto opacity-100"
+        )}
+      >
+        {isDark ? "Light Mode" : "Dark Mode"}
+      </span>
     </Button>
   );
 };
