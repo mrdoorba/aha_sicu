@@ -956,6 +956,16 @@ body,td,th{{font-family:{FONT_STACK};}}
 # ---------------------------------------------------------------------------
 
 
+# Divider between the primary-language report and its English copy (ID/TH only).
+_LANGUAGE_DIVIDER = (
+    '<tr><td style="padding:8px 32px 24px;">'
+    '<div style="border-top:2px solid #e5e7eb;padding-top:16px;text-align:center;'
+    "color:#6b7280;font-size:13px;font-family:'Manrope',Arial,sans-serif;font-weight:700;"
+    'letter-spacing:.08em;text-transform:uppercase;">English version</div>'
+    "</td></tr>"
+)
+
+
 def render_email_html(
     *,
     evaluation_data: dict[str, Any],
@@ -1025,7 +1035,6 @@ def render_email_html_body(
         Complete HTML document string for the email body.
     """
     S = _get_strings(language)
-    cat_map = _get_category_map(language)
 
     brand_name: str = evaluation_data["brand_name"]
     period: str = evaluation_data["period"]
@@ -1038,13 +1047,26 @@ def render_email_html_body(
     ]
     calculator_results: dict[str, Any] = evaluation_data.get("calculator_results", {})
 
+    marketplace = evaluation_data.get("marketplace", "ID")
+    final_score = evaluation_data.get("final_score")
+
+    def _report_content(lang: str) -> str:
+        """The i18n-driven report region (overview + detail + kesimpulan + signoff)."""
+        S_l = _get_strings(lang)
+        cat_map_l = _get_category_map(lang)
+        score_overview = _render_score_overview(categories, S_l, final_score)
+        # Data Intelligence (03) + Score Breakdown radar (04) dropped from the email.
+        detailed = _render_detailed_evaluation(categories, S_l, cat_map_l, lang, marketplace)
+        kesimpulan = _render_kesimpulan(calculator_results, S_l, language=lang, marketplace=marketplace)
+        signoff = _render_signoff(S_l)
+        return f"{score_overview}\n{detailed}\n{kesimpulan}\n{signoff}"
+
     header = _render_header(header_src, brand_name, period, S)
     note_section = _render_note(note, S) if note else ""
-    score_overview = _render_score_overview(categories, S, evaluation_data.get("final_score"))
-    detailed = _render_detailed_evaluation(categories, S, cat_map, language, evaluation_data.get("marketplace", "ID"))
-    # Data Intelligence (03) + Score Breakdown radar (04) dropped from the email.
-    kesimpulan = _render_kesimpulan(calculator_results, S, language=language, marketplace=evaluation_data.get("marketplace", "ID"))
-    signoff = _render_signoff(S)
+    # ID/TH reports append an English copy below, split by a divider; EN sends one.
+    report = _report_content(language)
+    if language in ("id", "th"):
+        report += _LANGUAGE_DIVIDER + _report_content("en")
     footer_banner = _render_footer_banner(syb_src, language) if syb_src else ""
     footer = _render_footer(footer_src)
 
@@ -1073,10 +1095,7 @@ def render_email_html_body(
              style="width:100%;background-color:{WHITE};border-radius:8px;">
         {header}
         {note_section}
-        {score_overview}
-        {detailed}
-        {kesimpulan}
-        {signoff}
+        {report}
         {footer_banner}
         {footer}
       </table>
