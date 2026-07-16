@@ -1035,7 +1035,6 @@ def render_email_html_body(
         Complete HTML document string for the email body.
     """
     S = _get_strings(language)
-    cat_map = _get_category_map(language)
 
     brand_name: str = evaluation_data["brand_name"]
     period: str = evaluation_data["period"]
