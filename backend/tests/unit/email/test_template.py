@@ -1092,10 +1092,12 @@ class TestBenchmarkLabelI18n:
     def test_thai_benchmark_label_translated(self, evaluation_data: dict) -> None:
         html = _render_full_th(evaluation_data)
         th_strings = _get_strings("th")
+        # TH emails append an English copy below a divider; check the TH portion only.
+        th_portion = html.split("English version", 1)[0]
         # Should contain the Thai benchmark label
-        assert f"{th_strings['benchmark']}:" in html
+        assert f"{th_strings['benchmark']}:" in th_portion
         # Should NOT contain hardcoded English/Indonesian "Benchmark:"
-        assert "Benchmark:" not in html
+        assert "Benchmark:" not in th_portion
 
     def test_indonesian_benchmark_label_still_works(self, evaluation_data: dict) -> None:
         html = _render_full(evaluation_data)
