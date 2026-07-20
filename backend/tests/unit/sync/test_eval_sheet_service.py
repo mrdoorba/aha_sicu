@@ -4,9 +4,10 @@ from datetime import datetime, timezone
 from unittest.mock import AsyncMock, patch
 
 from app.modules.sync.eval_sheet_service import (
-    EVAL_RANGE,
     HEADER_ROW,
     _brand_row,
+    _eval_range,
+    _marketing_pct,
     _normalize_eval_sheet_row,
     full_sync_eval_sheet,
     remove_brand_from_sheet,
@@ -32,8 +33,11 @@ def test_brand_row_formats_all_fields():
         "kategori": "Sepatu",
         "final_score": 72.50,
         "marketplace": "TH",
+        "calculator_results": {
+            "scoring_summary": {"marketing_budget_i18n": {"vars": {"pct": "12%"}}}
+        },
     }
-    assert _brand_row(data) == [SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5", "TH"]
+    assert _brand_row(data) == [SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5", "TH", "12%"]
 
 
 def test_brand_row_handles_missing_kategori():
@@ -45,7 +49,7 @@ def test_brand_row_handles_missing_kategori():
         "kategori": None,
         "final_score": 85.00,
     }
-    assert _brand_row(data) == [SUBMITTED_DATE, "Feb 2026", "Adidas", "", "85.0", "ID"]
+    assert _brand_row(data) == [SUBMITTED_DATE, "Feb 2026", "Adidas", "", "85.0", "ID", ""]
 
 
 def test_brand_row_handles_missing_submitted_at():
@@ -56,7 +60,34 @@ def test_brand_row_handles_missing_submitted_at():
         "kategori": "Sepatu",
         "final_score": 85.00,
     }
-    assert _brand_row(data) == ["", "Feb 2026", "Adidas", "Sepatu", "85.0", "ID"]
+    assert _brand_row(data) == ["", "Feb 2026", "Adidas", "Sepatu", "85.0", "ID", ""]
+
+
+# --- _marketing_pct ---
+
+
+def test_marketing_pct_reads_i18n_vars():
+    """should read the exact pct from marketing_budget_i18n vars"""
+    cr = {"scoring_summary": {"marketing_budget_i18n": {"vars": {"pct": "18%"}}}}
+    assert _marketing_pct(cr) == "18%"
+
+
+def test_marketing_pct_falls_back_to_text():
+    """should parse the percentage out of the recommendation text when i18n absent"""
+    cr = {"scoring_summary": {"marketing_budget": "💡Minimum anggaran marketing ... = 12%"}}
+    assert _marketing_pct(cr) == "12%"
+
+
+def test_marketing_pct_parses_json_string():
+    """should handle double-encoded calculator_results"""
+    cr = '{"scoring_summary": {"marketing_budget_i18n": {"vars": {"pct": "25%"}}}}'
+    assert _marketing_pct(cr) == "25%"
+
+
+def test_marketing_pct_empty_when_missing():
+    """should return empty string when no marketing data present"""
+    assert _marketing_pct(None) == ""
+    assert _marketing_pct({}) == ""
 
 
 def test_normalize_eval_sheet_row_uses_th_category_key():
@@ -134,11 +165,11 @@ def test_normalize_eval_sheet_row_parses_json_string_raw_data():
     assert normalized["kategori"] == "Beauty"
 
 
-# --- HEADER_ROW ---
+# --- HEADER_ROW / range ---
 
 
 def test_header_row_has_correct_columns():
-    """should have Waktu Submit, Periode Data, Brand Name, Kategori, AHA Compatibility Score, Country"""
+    """should carry the six original columns plus Min. Anggaran Marketing"""
     assert HEADER_ROW == [
         "Waktu Submit",
         "Periode Data",
@@ -146,12 +177,15 @@ def test_header_row_has_correct_columns():
         "Kategori",
         "AHA Compatibility Score",
         "Country",
+        "Min. Anggaran Marketing",
     ]
 
 
-def test_eval_range_covers_six_columns():
-    """should cover columns A through F"""
-    assert EVAL_RANGE == "SICU!A:F"
+def test_eval_range_covers_seven_columns_on_configured_tab():
+    """should cover columns A through G on the quoted eval tab"""
+    with patch(f"{MODULE}.settings") as mock_settings:
+        mock_settings.gsheets_eval_tab = "SICU - bronze"
+        assert _eval_range() == "'SICU - bronze'!A:G"
 
 
 # --- sync_brand_to_sheet ---
@@ -172,6 +206,9 @@ async def test_sync_brand_to_sheet_appends_new_brand():
         "brand_name": "Nike",
         "kategori": "Sepatu",
         "final_score": 72.50,
+        "calculator_results": {
+            "scoring_summary": {"marketing_budget_i18n": {"vars": {"pct": "12%"}}}
+        },
     }
     mock_conn = AsyncMock()
     mock_conn.fetchrow = AsyncMock(return_value=mock_data)
@@ -188,13 +225,15 @@ async def test_sync_brand_to_sheet_appends_new_brand():
     ):
         mock_db.connection.return_value.__aenter__.return_value = mock_conn
         mock_settings.gsheets_eval_spreadsheet_id = "sheet-123"
-        mock_settings.gsheets_eval_tab = "SICU"
+        mock_settings.gsheets_eval_tab = "SICU - bronze"
 
         await sync_brand_to_sheet("Nike")
 
         mock_client.append_rows.assert_awaited_once()
         args = mock_client.append_rows.call_args
-        assert args[0][2] == [[SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5", "ID"]]
+        assert args[0][2] == [
+            [SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5", "ID", "12%"]
+        ]
 
 
 async def test_sync_brand_to_sheet_overwrites_existing_brand():
@@ -205,6 +244,7 @@ async def test_sync_brand_to_sheet_overwrites_existing_brand():
         "brand_name": "Nike",
         "kategori": "Sepatu",
         "final_score": 88.00,
+        "calculator_results": {"scoring_summary": {"marketing_budget": "... = 15%"}},
     }
     mock_conn = AsyncMock()
     mock_conn.fetchrow = AsyncMock(return_value=mock_data)
@@ -222,15 +262,17 @@ async def test_sync_brand_to_sheet_overwrites_existing_brand():
     ):
         mock_db.connection.return_value.__aenter__.return_value = mock_conn
         mock_settings.gsheets_eval_spreadsheet_id = "sheet-123"
-        mock_settings.gsheets_eval_tab = "SICU"
+        mock_settings.gsheets_eval_tab = "SICU - bronze"
 
         await sync_brand_to_sheet("Nike")
 
         # Should write to row 2 (index 1 + 1)
         mock_client.write_rows.assert_awaited_once()
         args = mock_client.write_rows.call_args
-        assert args[0][1] == "SICU!A2"
-        assert args[0][2] == [[SUBMITTED_DATE, "Feb 2026", "Nike", "Sepatu", "88.0", "ID"]]
+        assert args[0][1] == "'SICU - bronze'!A2"
+        assert args[0][2] == [
+            [SUBMITTED_DATE, "Feb 2026", "Nike", "Sepatu", "88.0", "ID", "15%"]
+        ]
         mock_client.append_rows.assert_not_awaited()
 
 
@@ -257,7 +299,7 @@ async def test_sync_brand_to_sheet_writes_header_when_empty():
     ):
         mock_db.connection.return_value.__aenter__.return_value = mock_conn
         mock_settings.gsheets_eval_spreadsheet_id = "sheet-123"
-        mock_settings.gsheets_eval_tab = "SICU"
+        mock_settings.gsheets_eval_tab = "SICU - bronze"
 
         await sync_brand_to_sheet("Nike")
 
@@ -306,7 +348,7 @@ async def test_sync_brand_to_sheet_runs_full_sync_when_header_is_missing():
     ):
         mock_db.connection.return_value.__aenter__.return_value = mock_conn
         mock_settings.gsheets_eval_spreadsheet_id = "sheet-123"
-        mock_settings.gsheets_eval_tab = "SICU"
+        mock_settings.gsheets_eval_tab = "SICU - bronze"
 
         await sync_brand_to_sheet("Digi Living")
 
@@ -329,11 +371,11 @@ async def test_remove_brand_reads_column_c():
         patch(f"{MODULE}.settings") as mock_settings,
     ):
         mock_settings.gsheets_eval_spreadsheet_id = "sheet-123"
-        mock_settings.gsheets_eval_tab = "SICU"
+        mock_settings.gsheets_eval_tab = "SICU - bronze"
 
         await remove_brand_from_sheet("Nike")
 
-        mock_client.read_column.assert_awaited_once_with("sheet-123", "SICU!C:C")
+        mock_client.read_column.assert_awaited_once_with("sheet-123", "'SICU - bronze'!C:C")
 
 
 # --- full_sync_eval_sheet ---
@@ -354,7 +396,8 @@ async def test_full_sync_writes_header_and_data():
     """should clear sheet and write header + one row per brand"""
     brand_data = [
         {"submitted_at": SUBMITTED_AT, "period": "Jan 2026", "brand_name": "Nike",
-         "kategori": "Sepatu", "final_score": 72.5},
+         "kategori": "Sepatu", "final_score": 72.5,
+         "calculator_results": {"scoring_summary": {"marketing_budget_i18n": {"vars": {"pct": "12%"}}}}},
         {"submitted_at": SUBMITTED_AT, "period": "Feb 2026", "brand_name": "Adidas",
          "kategori": None, "final_score": 85.0},
     ]
@@ -370,7 +413,7 @@ async def test_full_sync_writes_header_and_data():
         patch(f"{MODULE}._get_latest_evaluation_per_brand", return_value=brand_data),
     ):
         mock_settings.gsheets_eval_spreadsheet_id = "sheet-123"
-        mock_settings.gsheets_eval_tab = "SICU"
+        mock_settings.gsheets_eval_tab = "SICU - bronze"
         mock_db.connection.return_value.__aenter__.return_value = mock_conn
 
         result = await full_sync_eval_sheet()
@@ -378,12 +421,12 @@ async def test_full_sync_writes_header_and_data():
         assert result["success"] is True
         assert result["brands_synced"] == 2
 
-        # Verify clear was called
-        mock_client.clear_sheet.assert_awaited_once_with("sheet-123", EVAL_RANGE)
+        # Verify clear was called on the quoted A:G range
+        mock_client.clear_sheet.assert_awaited_once_with("sheet-123", "'SICU - bronze'!A:G")
 
         # Verify write includes header + 2 data rows
         write_args = mock_client.write_rows.call_args
         rows = write_args[0][2]
         assert rows[0] == HEADER_ROW
-        assert rows[1] == [SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5", "ID"]
-        assert rows[2] == [SUBMITTED_DATE, "Feb 2026", "Adidas", "", "85.0", "ID"]
+        assert rows[1] == [SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5", "ID", "12%"]
+        assert rows[2] == [SUBMITTED_DATE, "Feb 2026", "Adidas", "", "85.0", "ID", ""]

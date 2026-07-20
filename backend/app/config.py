@@ -121,7 +121,7 @@ class Settings(BaseSettings):
 
     # Evaluation Status Sheet (write-only, one row per evaluated brand)
     gsheets_eval_spreadsheet_id: str | None = None
-    gsheets_eval_tab: str = "SICU"
+    gsheets_eval_tab: str = "SICU - bronze"
 
 
 settings = Settings()
