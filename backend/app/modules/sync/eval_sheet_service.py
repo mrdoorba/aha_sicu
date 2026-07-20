@@ -6,6 +6,7 @@ evaluation (by created_at) for each brand.
 """
 
 import logging
+import re
 from datetime import datetime
 from typing import Any
 from zoneinfo import ZoneInfo
@@ -26,9 +27,20 @@ HEADER_ROW = [
     "Kategori",
     "AHA Compatibility Score",
     "Country",
+    "Min. Anggaran Marketing",
 ]
-EVAL_RANGE = "SICU!A:F"
+_EVAL_COLUMNS = "A:G"
 _WIB = ZoneInfo("Asia/Jakarta")
+
+
+def _tab_ref() -> str:
+    """Quoted A1 reference for the eval tab (names may contain spaces)."""
+    return f"'{settings.gsheets_eval_tab}'"
+
+
+def _eval_range() -> str:
+    """Full A1 range for the eval tab, e.g. ``'SICU - bronze'!A:G``."""
+    return f"{_tab_ref()}!{_EVAL_COLUMNS}"
 _CATEGORY_COLUMNS: dict[str, tuple[str, ...]] = {
     "ID": ("Kategori", "Category", "category"),
     "TH": ("Product Category", "Product\nCategory", "Kategori", "Category", "category"),
@@ -56,6 +68,7 @@ async def _get_latest_evaluation_per_brand(
                COALESCE(e.marketplace, 'ID') AS marketplace,
                b.raw_data,
                e.final_score,
+               e.calculator_results,
                e.created_at AS submitted_at
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
@@ -77,6 +90,7 @@ async def _get_latest_evaluation_for_brand(
                COALESCE(e.marketplace, 'ID') AS marketplace,
                b.raw_data,
                e.final_score,
+               e.calculator_results,
                e.created_at AS submitted_at
         FROM evaluations e
         JOIN brand_vp_data b ON e.brand_id = b.id
@@ -114,6 +128,17 @@ def _format_submit_date(submitted_at: Any) -> str:
     return submitted_at.astimezone(_WIB).strftime("%-d %b %Y")
 
 
+def _marketing_pct(calculator_results: Any) -> str:
+    """Extract the marketing-budget percentage (e.g. '12%') from stored results."""
+    summary = ensure_dict(ensure_dict(calculator_results).get("scoring_summary"))
+    pct = ensure_dict(ensure_dict(summary.get("marketing_budget_i18n")).get("vars")).get("pct")
+    if pct:
+        return str(pct)
+    # Fallback: parse the trailing percentage out of the recommendation text.
+    match = re.search(r"(\d+(?:\.\d+)?%)", summary.get("marketing_budget") or "")
+    return match.group(1) if match else ""
+
+
 def _brand_row(data: dict[str, Any]) -> list[str]:
     """Build a sheet row from brand evaluation data."""
     return [
@@ -123,6 +148,7 @@ def _brand_row(data: dict[str, Any]) -> list[str]:
         data.get("kategori") or "",
         str(data["final_score"]),
         data.get("marketplace") or "ID",
+        _marketing_pct(data.get("calculator_results")),
     ]
 
 
@@ -145,9 +171,8 @@ async def sync_brand_to_sheet(brand_name: str) -> None:
 
         client = GoogleSheetsClient()
         spreadsheet_id = settings.gsheets_eval_spreadsheet_id
-        tab = settings.gsheets_eval_tab
 
-        headers = await client.fetch_headers(spreadsheet_id, tab)
+        headers = await client.fetch_headers(spreadsheet_id, _tab_ref())
         if headers and headers != HEADER_ROW:
             logger.warning(
                 "Eval sheet header drift detected; running full sync before brand update",
@@ -157,7 +182,7 @@ async def sync_brand_to_sheet(brand_name: str) -> None:
             return
 
         # Read existing brand names from column C
-        existing = await client.read_column(spreadsheet_id, f"{tab}!C:C")
+        existing = await client.read_column(spreadsheet_id, f"{_tab_ref()}!C:C")
 
         # Find existing row index (0-based, including header)
         row_idx = None
@@ -172,17 +197,17 @@ async def sync_brand_to_sheet(brand_name: str) -> None:
             # Overwrite existing row (1-based for Sheets API)
             await client.write_rows(
                 spreadsheet_id,
-                f"{tab}!A{row_idx + 1}",
+                f"{_tab_ref()}!A{row_idx + 1}",
                 [row],
             )
             logger.info(f"Updated brand '{brand_name}' in eval sheet")
         else:
             # Write header if sheet is empty
             if not existing:
-                await client.write_rows(spreadsheet_id, f"{tab}!A1", [HEADER_ROW])
+                await client.write_rows(spreadsheet_id, f"{_tab_ref()}!A1", [HEADER_ROW])
 
             # Append new row
-            await client.append_rows(spreadsheet_id, EVAL_RANGE, [row])
+            await client.append_rows(spreadsheet_id, _eval_range(), [row])
             logger.info(f"Added brand '{brand_name}' to eval sheet")
 
     except Exception:
@@ -202,7 +227,7 @@ async def remove_brand_from_sheet(brand_name: str) -> None:
         spreadsheet_id = settings.gsheets_eval_spreadsheet_id
 
         # Read existing brand names from column C
-        existing = await client.read_column(spreadsheet_id, f"{settings.gsheets_eval_tab}!C:C")
+        existing = await client.read_column(spreadsheet_id, f"{_tab_ref()}!C:C")
 
         # Find the row index (0-based) of the brand
         row_indices = [
@@ -241,7 +266,7 @@ async def full_sync_eval_sheet() -> dict:
     client = GoogleSheetsClient()
 
     # Clear existing data
-    await client.clear_sheet(spreadsheet_id, EVAL_RANGE)
+    await client.clear_sheet(spreadsheet_id, _eval_range())
 
     # Get latest evaluation data per brand
     async with db.connection() as conn:
@@ -254,7 +279,7 @@ async def full_sync_eval_sheet() -> dict:
     if rows:
         await client.write_rows(
             spreadsheet_id,
-            f"{settings.gsheets_eval_tab}!A1",
+            f"{_tab_ref()}!A1",
             rows,
         )
 
