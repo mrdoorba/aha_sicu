@@ -252,20 +252,6 @@ describe('RulesPage', () => {
     expect(screen.getByText('Diskon')).toBeInTheDocument();
   });
 
-  it('shows version and updated timestamp', () => {
-    mockUseRules.mockReturnValue({
-      rules: SAMPLE_RULES,
-      isLoading: false,
-      isError: false,
-      error: null,
-      refetch: vi.fn(),
-    });
-
-    renderRulesPage();
-
-    expect(screen.getByText(/Diperbarui/)).toBeInTheDocument();
-  });
-
   it('shows loading state', () => {
     mockUseRules.mockReturnValue({
       rules: [],

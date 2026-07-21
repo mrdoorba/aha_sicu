@@ -226,12 +226,6 @@ export const RulesPage = () => {
       <div className="flex items-center justify-between mb-6">
           <h2 className="text-2xl font-bold tracking-tight">{t('rules.page.title')}</h2>
           <div className="flex items-center gap-3">
-            {!isEditing && (
-              <span className="text-sm text-muted-foreground">
-                {t('rules.page.updated')}{' '}
-                {new Date(activeRule.updated_at).toLocaleDateString()}
-              </span>
-            )}
             {canEdit && !isEditing && (
               <Button onClick={enterEditMode}>{t('rules.page.editRules')}</Button>
             )}
