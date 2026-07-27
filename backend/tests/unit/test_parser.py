@@ -10,6 +10,7 @@ from app.modules.upload.parser import (
     _normalise_english_columns,
     _normalise_thai_columns,
     _normalise_thai_mass_update,
+    normalise_stock_columns,
     dataframe_to_json,
     parse_csv,
     parse_excel,
@@ -431,7 +432,7 @@ class TestEnglishMassUpdateNormalisation:
         assert "Nama Variasi" in result.columns
         assert "SKU" in result.columns  # unchanged
         assert "Harga" in result.columns
-        assert "Stok" in result.columns
+        assert "Stock" in result.columns  # left to normalise_stock_columns
 
     def test_validates_after_normalisation(self):
         df = pl.DataFrame({
@@ -445,29 +446,11 @@ class TestEnglishMassUpdateNormalisation:
         result, _ = _normalise_english_columns(df)
         validate_columns(result, "mass_update")  # should not raise
 
-    def test_stock_prefix_rename_single(self):
-        """'Stock' → 'Stok'."""
-        df = pl.DataFrame({"Stock": [10], "Product ID": ["P1"]})
-        result, was_english = _normalise_english_columns(df)
-        assert was_english is True
-        assert "Stok" in result.columns
-        assert "Stock" not in result.columns
-
-    def test_stock_prefix_rename_multi_warehouse(self):
-        """'Stock', 'Stock 2', 'Stock 3' → 'Stok', 'Stok 2', 'Stok 3'."""
-        df = pl.DataFrame({
-            "Product ID": ["P1"],
-            "Stock": [10],
-            "Stock 2": [20],
-            "Stock 3": [30],
-        })
-        result, _ = _normalise_english_columns(df)
-        assert "Stok" in result.columns
-        assert "Stok 2" in result.columns
-        assert "Stok 3" in result.columns
-        assert "Stock" not in result.columns
-        assert "Stock 2" not in result.columns
-        assert "Stock 3" not in result.columns
+    def test_stock_column_does_not_flip_language(self):
+        """A stock column alone must not mark the file as English."""
+        df = pl.DataFrame({"Kode Produk": ["P1"], "Seller Stock": [10]})
+        _, was_english = _normalise_english_columns(df)
+        assert was_english is False
 
     def test_indonesian_mass_update_passthrough(self):
         """Indonesian mass update headers pass through unchanged."""
@@ -483,17 +466,60 @@ class TestEnglishMassUpdateNormalisation:
         result, was_english = _normalise_english_columns(df)
         assert was_english is False
 
-    def test_stok_columns_work_with_startswith(self):
-        """After rename, all stock columns match startswith('Stok')."""
+
+# ---------------------------------------------------------------------------
+# Stock column normalisation
+# ---------------------------------------------------------------------------
+
+class TestStockColumnNormalisation:
+    """Tests for normalise_stock_columns."""
+
+    def test_english_single(self):
+        result = normalise_stock_columns(pl.DataFrame({"Kode Produk": ["P1"], "Stock": [10]}))
+        assert "Stok" in result.columns
+        assert "Stock" not in result.columns
+
+    def test_thai_single(self):
+        result = normalise_stock_columns(pl.DataFrame({"Kode Produk": ["P1"], "คลัง": [10]}))
+        assert "Stok" in result.columns
+
+    def test_seller_stock_variant(self):
+        """The TH export variant that silently zeroed every Top SKU stock."""
+        result = normalise_stock_columns(
+            pl.DataFrame({"Kode Produk": ["P1"], "Seller Stock": [8801]})
+        )
+        assert "Stok" in result.columns
+        assert result["Stok"][0] == 8801
+
+    def test_multi_warehouse_suffix_preserved(self):
+        """Unknown warehouse suffixes still land under the 'Stok' prefix."""
         df = pl.DataFrame({
-            "Product ID": ["P1"],
-            "Stock": [10],
-            "Stock 2": [20],
-            "Stock 3": [30],
+            "Kode Produk": ["P1"],
+            "Seller Stock": [10],
+            "Seller Stock 2": [20],
+            "คลัง: Bangkok": [30],
+            "Stock-3": [40],
         })
-        result, _ = _normalise_english_columns(df)
-        stok_cols = [c for c in result.columns if c.startswith("Stok")]
-        assert len(stok_cols) == 3
+        result = normalise_stock_columns(df)
+        assert [c for c in result.columns if c.startswith("Stok")] == [
+            "Stok", "Stok 2", "Stok: Bangkok", "Stok-3",
+        ]
+
+    def test_already_indonesian_untouched(self):
+        df = pl.DataFrame({"Kode Produk": ["P1"], "Stok": [10], "Stok 2": [20]})
+        assert normalise_stock_columns(df).columns == df.columns
+
+    def test_accidental_prefix_match_skipped(self):
+        """'Stockholm' / 'คลังสินค้าย่อย' are not stock columns."""
+        df = pl.DataFrame({"Stockholm": ["x"], "คลังสินค้าย่อย": ["y"]})
+        assert normalise_stock_columns(df).columns == df.columns
+
+    def test_collision_leaves_original(self):
+        """Two variants mapping to the same target must not crash the upload."""
+        df = pl.DataFrame({"Stok": [1], "Stock": [2], "Seller Stock": [3]})
+        result = normalise_stock_columns(df)
+        assert len(result.columns) == 3
+        assert "Stok" in result.columns
 
 
 # ---------------------------------------------------------------------------
@@ -529,7 +555,6 @@ class TestThaiMassUpdateNormalisation:
         assert "Nama Variasi" in result.columns
         assert "SKU" in result.columns
         assert "Harga" in result.columns
-        assert "Stok" in result.columns
 
     def test_validates_after_normalisation(self):
         """Thai mass update passes column validation after normalisation."""
@@ -537,20 +562,11 @@ class TestThaiMassUpdateNormalisation:
         result, _ = _normalise_thai_mass_update(df)
         validate_columns(result, "mass_update")  # should not raise
 
-    def test_stock_wildcard_multi_warehouse(self):
-        """คลัง, คลัง 2, คลัง 3 → Stok, Stok 2, Stok 3."""
-        df = _thai_mass_update_df(**{
-            "คลัง 2": [10, 20],
-            "คลัง 3": [5, 15],
-        })
-        result, was_thai = _normalise_thai_mass_update(df)
+    def test_stock_columns_left_to_stock_normaliser(self):
+        """Stock renaming is not this function's job (see normalise_stock_columns)."""
+        result, was_thai = _normalise_thai_mass_update(_thai_mass_update_df())
         assert was_thai is True
-        assert "Stok" in result.columns
-        assert "Stok 2" in result.columns
-        assert "Stok 3" in result.columns
-        assert "คลัง" not in result.columns
-        assert "คลัง 2" not in result.columns
-        assert "คลัง 3" not in result.columns
+        assert "คลัง" in result.columns
 
     def test_indonesian_passthrough(self):
         """Indonesian DataFrames pass through unchanged."""

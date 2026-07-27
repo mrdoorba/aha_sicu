@@ -64,8 +64,8 @@ _VALUE_MAPS: dict[str, dict[str, str]] = {
 def _normalise_english_columns(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
     """Rename English Shopee columns to Indonesian and translate cell values.
 
-    Also renames ``Stock*`` columns to ``Stok*`` so the calculator's
-    ``startswith("Stok")`` lookup works for multi-warehouse files.
+    Stock columns are handled separately by :func:`normalise_stock_columns`,
+    which must not influence the detected source language.
 
     Returns:
         Tuple of (normalised DataFrame, was_english) where was_english is True
@@ -73,13 +73,6 @@ def _normalise_english_columns(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
     """
     actual = set(df.columns)
     rename_map = {en: id_ for en, id_ in _COLUMN_RENAME.items() if en in actual}
-
-    # Rename "Stock", "Stock 2", "Stock 3", … → "Stok", "Stok 2", "Stok 3", …
-    for col in actual:
-        if col == "Stock":
-            rename_map[col] = "Stok"
-        elif col.startswith("Stock "):
-            rename_map[col] = "Stok " + col[len("Stock "):]
 
     if not rename_map:
         return df, False  # already Indonesian or unrelated
@@ -185,8 +178,8 @@ _MASS_UPDATE_COLUMN_RENAME_TH: dict[str, str] = {
 def _normalise_thai_mass_update(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
     """Rename Thai Shopee mass-update columns to Indonesian.
 
-    Also renames ``คลัง*`` columns to ``Stok*`` so the calculator's
-    ``startswith("Stok")`` lookup works for multi-warehouse files.
+    Stock columns are handled separately by :func:`normalise_stock_columns`,
+    which must not influence the detected source language.
 
     Returns:
         Tuple of (normalised DataFrame, was_thai) where was_thai is True
@@ -195,18 +188,53 @@ def _normalise_thai_mass_update(df: pl.DataFrame) -> tuple[pl.DataFrame, bool]:
     actual = set(df.columns)
     rename_map = {th: id_ for th, id_ in _MASS_UPDATE_COLUMN_RENAME_TH.items() if th in actual}
 
-    # Rename "คลัง", "คลัง 2", "คลัง 3", … → "Stok", "Stok 2", "Stok 3", …
-    for col in actual:
-        if col == "คลัง":
-            rename_map[col] = "Stok"
-        elif col.startswith("คลัง "):
-            rename_map[col] = "Stok " + col[len("คลัง "):]
-
     if not rename_map:
         return df, False
 
     df = df.rename(rename_map)
     return df, True
+
+
+# ---------------------------------------------------------------------------
+# Stock column normalisation — language-independent
+# ---------------------------------------------------------------------------
+
+# Shopee names the mass-update stock column differently per seller language and
+# per export variant ("Stock", "คลัง", and — seen in TH exports since Jul 2026 —
+# "Seller Stock").  All of them must end up prefixed "Stok" because
+# _build_mass_update_lookup sums every column matching startswith("Stok").
+_STOCK_COLUMN_PREFIXES: tuple[str, ...] = ("Seller Stock", "Stock", "คลัง")
+
+
+def normalise_stock_columns(df: pl.DataFrame) -> pl.DataFrame:
+    """Rename any Shopee stock column to a ``Stok``-prefixed name.
+
+    Multi-warehouse exports suffix the base name ("Stock 2", "คลัง: Gudang B").
+    The suffix is preserved verbatim — the calculator only needs the ``Stok``
+    prefix — so warehouse naming we have not seen a sample of still lands in
+    the sum.  A suffix starting with an alphanumeric character means the match
+    was accidental ("Stockholm", "คลังสินค้า") and is skipped.
+
+    Deliberately separate from the language normalisers: a stock rename must
+    never flip the detected source language.
+    """
+    used = set(df.columns)
+    rename_map: dict[str, str] = {}
+
+    for col in df.columns:
+        for prefix in _STOCK_COLUMN_PREFIXES:
+            if not col.startswith(prefix):
+                continue
+            suffix = col[len(prefix):]
+            if suffix and suffix[0].isalnum():
+                break
+            new = "Stok" + suffix
+            if new != col and new not in used:
+                rename_map[col] = new
+                used.add(new)
+            break
+
+    return df.rename(rename_map) if rename_map else df
 
 
 # Required columns per file type — matched against actual Shopee exports.

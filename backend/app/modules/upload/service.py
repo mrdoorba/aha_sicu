@@ -22,6 +22,7 @@ from app.modules.upload.parser import (
     _normalise_thai_columns,
     _normalise_thai_mass_update,
     dataframe_to_json,
+    normalise_stock_columns,
     parse_csv,
     parse_excel,
     validate_columns,
@@ -80,6 +81,11 @@ def _parse_file(
             was_thai = False
         if was_thai:
             source_language = "th"
+
+    # Stock headers vary independently of the language headers, so normalise
+    # them after the language pass (and without touching source_language)
+    if file_type == "mass_update":
+        df = normalise_stock_columns(df)
 
     # Drop blank rows in mass_update files (trailing empties from Excel)
     if file_type == "mass_update" and "Kode Produk" in df.columns:
