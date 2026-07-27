@@ -156,6 +156,15 @@ def _build_mass_update_lookup(
         nama_variasi = str(row.get("Nama Variasi", "") or "").strip()
         kode_variasi = str(row.get("Kode Variasi", "") or "").strip()
         stok_keys = [k for k in row if isinstance(k, str) and k.startswith("Stok")]
+        # Shopee names its per-warehouse stock columns "Stok:<warehouse>" and
+        # emits no grand total beside them (verified against the machine-key row
+        # of real exports: every colon column carries an
+        # et_title_variation_stock.<id> key, and single-warehouse shops get one
+        # unsuffixed column instead).  A bare column appearing next to them is
+        # therefore seller-added — usually a hand-written SUM — so summing both
+        # would count every unit twice.  Trust Shopee's own columns.
+        warehouse_keys = [k for k in stok_keys if ":" in k]
+        stok_keys = warehouse_keys or stok_keys
         stok = int(sum(_safe_num(row.get(k)) for k in stok_keys)) if stok_keys else 0
 
         label = f"{nama_produk} - {nama_variasi}"

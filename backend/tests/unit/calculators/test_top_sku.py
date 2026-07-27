@@ -345,6 +345,34 @@ class TestBuildMassUpdateLookup:
         _, kode_to_stok = _build_mass_update_lookup(mu_data)
         assert kode_to_stok["K001"] == 38  # 12 + 2 + 0 + 24
 
+    def test_warehouse_columns_win_over_seller_added_bare_column(self):
+        """Per-warehouse columns are Shopee's own; a bare column beside them is not.
+
+        Real shape from the Ustraa export, whose bare "Stock" column carries no
+        machine key in the header row — a hand-written SUM of the two warehouses.
+        Summing all three would double every unit.
+        """
+        mu_data = [
+            {
+                "Nama Produk": "Prod A",
+                "Nama Variasi": "Red",
+                "Kode Variasi": "K001",
+                "Stok": "13246",
+                "Stok:GUDANG JAKARTA": "3378",
+                "Stok:GUDANG SBY": "9868",
+            },
+        ]
+        _, kode_to_stok = _build_mass_update_lookup(mu_data)
+        assert kode_to_stok["K001"] == 13246
+
+    def test_seller_stock_column_name_still_sums(self):
+        """The Indonesian rendering of the unsuffixed column has no colon."""
+        mu_data = [
+            {"Nama Produk": "P", "Nama Variasi": "R", "Kode Variasi": "K1", "Stok Penjual": "77"},
+        ]
+        _, kode_to_stok = _build_mass_update_lookup(mu_data)
+        assert kode_to_stok["K1"] == 77
+
     def test_single_stok_column_still_works(self):
         """Existing single 'Stok' column behavior must be preserved."""
         mu_data = [
