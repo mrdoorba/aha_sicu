@@ -154,15 +154,32 @@ def test_create_account_success(client):
         )
 
 
-def test_create_account_duplicate_email(client):
-    """Creating account with existing email — 409."""
+def test_create_account_adopts_existing_firebase_identity(client):
+    """Email taken in the shared Firebase project but no SICU row — adopt it, 201.
+
+    The Firebase project is shared across environments and sibling apps, so
+    rejecting here would leave the person unable to log in (no row) and unable
+    to be created (email taken).
+    """
     from firebase_admin import auth as firebase_auth
+
+    adopted_user = {
+        "id": 11,
+        "email": "dup@company.com",
+        "role": "member",
+        "created_at": datetime(2026, 2, 20, tzinfo=timezone.utc),
+        "last_login": None,
+    }
+    existing_firebase_user = MagicMock()
+    existing_firebase_user.uid = "existing-firebase-uid"
 
     with (
         patch("app.core.dependencies.verify_firebase_token") as mock_verify,
         patch("app.core.dependencies.db") as mock_db,
         patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.accounts.service.db") as mock_svc_db,
         patch("app.modules.accounts.service.auth") as mock_auth,
+        patch("app.modules.accounts.router._audit", new_callable=AsyncMock),
     ):
         _setup_auth(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
         mock_auth.create_user = MagicMock(
@@ -171,6 +188,46 @@ def test_create_account_duplicate_email(client):
             )
         )
         mock_auth.EmailAlreadyExistsError = firebase_auth.EmailAlreadyExistsError
+        mock_auth.get_user_by_email = MagicMock(return_value=existing_firebase_user)
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(return_value=adopted_user)
+
+        response = client.post(
+            "/api/v1/accounts",
+            json={"email": "dup@company.com", "password": "secret123", "role": "member"},
+            headers=AUTH_HEADERS,
+        )
+        assert response.status_code == 201
+        assert response.json()["email"] == "dup@company.com"
+        # The password the admin typed is applied to the identity we adopted.
+        mock_auth.update_user.assert_called_once_with(
+            "existing-firebase-uid", password="secret123"
+        )
+        # The row is written against the existing UID, not a fresh one.
+        assert "existing-firebase-uid" in mock_svc_conn.fetchrow.await_args.args
+        mock_auth.delete_user.assert_not_called()
+
+
+def test_create_account_duplicate_email(client):
+    """Already provisioned in SICU — the DB unique constraint fires, 409."""
+    from asyncpg import UniqueViolationError
+
+    mock_firebase_user = MagicMock()
+    mock_firebase_user.uid = "new-firebase-uid"
+
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_verify,
+        patch("app.core.dependencies.db") as mock_db,
+        patch("app.core.dependencies.user_queries") as mock_user_queries,
+        patch("app.modules.accounts.service.db") as mock_svc_db,
+        patch("app.modules.accounts.service.auth") as mock_auth,
+    ):
+        _setup_auth(mock_verify, mock_db, mock_user_queries, MOCK_ADMIN)
+        mock_auth.create_user = MagicMock(return_value=mock_firebase_user)
+        mock_svc_conn = AsyncMock()
+        mock_svc_db.connection.return_value.__aenter__.return_value = mock_svc_conn
+        mock_svc_conn.fetchrow = AsyncMock(side_effect=UniqueViolationError("dup"))
 
         response = client.post(
             "/api/v1/accounts",
