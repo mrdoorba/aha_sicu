@@ -37,6 +37,7 @@ import {
   DialogTitle,
 } from '../components/ui/dialog';
 import { getIntlLocale } from '../lib/languages';
+import { extractErrorMessage } from '../lib/typeGuards';
 
 const ROLES = ['member', 'leader', 'admin'] as const;
 
@@ -83,8 +84,8 @@ export const AccountsPage = () => {
       setCreateEmail('');
       setCreatePassword('');
       setCreateRole('member');
-    } catch {
-      toast.error(t('accounts.toast.createError'));
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('accounts.toast.createError')));
     }
   };
 
@@ -95,8 +96,8 @@ export const AccountsPage = () => {
         role: role as (typeof ROLES)[number],
       });
       toast.success(t('accounts.toast.roleChangeSuccess'));
-    } catch {
-      toast.error(t('accounts.toast.roleChangeError'));
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('accounts.toast.roleChangeError')));
     }
   };
 
@@ -110,8 +111,8 @@ export const AccountsPage = () => {
       toast.success(t('accounts.toast.resetSuccess'));
       setResetTarget(null);
       setNewPassword('');
-    } catch {
-      toast.error(t('accounts.toast.resetError'));
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('accounts.toast.resetError')));
     }
   };
 
@@ -121,8 +122,8 @@ export const AccountsPage = () => {
       await deleteAccount.mutateAsync(deleteTarget.id);
       toast.success(t('accounts.toast.deleteSuccess'));
       setDeleteTarget(null);
-    } catch {
-      toast.error(t('accounts.toast.deleteError'));
+    } catch (err) {
+      toast.error(extractErrorMessage(err, t('accounts.toast.deleteError')));
     }
   };
 
