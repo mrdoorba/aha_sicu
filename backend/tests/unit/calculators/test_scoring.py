@@ -395,6 +395,50 @@ class TestScorePromoTools:
         assert h43_row.score == 10.0  # Opportunity: ineffective
         assert cat.score == 15.0
 
+    def test_voucher_benchmark_is_68_pct(self):
+        # Row 35 = Voucher. 70% of sales clears the 68% benchmark. The 50%
+        # "too dependent" rule is promoToko-only (sheet row 35 has no such branch),
+        # so a voucher above half of sales is still allowed to pass.
+        data = {
+            "promoTools": {"voucher": 140_000_000},
+            "business": {"salesMonth0": 200_000_000},
+        }
+        cat = _score_promo_tools(data)
+        voucher_row = next(r for r in cat.rows if r.row == 35)
+        assert voucher_row.verdict == "✔️"
+        assert voucher_row.benchmark == ">68%"
+
+    def test_voucher_below_68_pct_fails(self):
+        # 60% of sales — under the 68% benchmark.
+        data = {
+            "promoTools": {"voucher": 120_000_000},
+            "business": {"salesMonth0": 200_000_000},
+        }
+        cat = _score_promo_tools(data)
+        voucher_row = next(r for r in cat.rows if r.row == 35)
+        assert voucher_row.verdict == "❌"
+
+    def test_afiliasi_benchmark_is_21_pct(self):
+        # Row 41 = Program Afiliasi. 20% of sales used to pass at 18%; the
+        # benchmark is now 21%, so it fails.
+        data = {
+            "promoTools": {"programAfiliasi": 40_000_000},
+            "business": {"salesMonth0": 200_000_000},
+        }
+        cat = _score_promo_tools(data)
+        afiliasi_row = next(r for r in cat.rows if r.row == 41)
+        assert afiliasi_row.verdict == "❌"
+        assert afiliasi_row.benchmark == ">21%"
+
+    def test_afiliasi_at_or_above_21_pct_passes(self):
+        data = {
+            "promoTools": {"programAfiliasi": 42_000_000},  # exactly 21%
+            "business": {"salesMonth0": 200_000_000},
+        }
+        cat = _score_promo_tools(data)
+        afiliasi_row = next(r for r in cat.rows if r.row == 41)
+        assert afiliasi_row.verdict == "✔️"
+
 
 class TestScoreProducts:
     def test_mall_with_enough_products(self):
@@ -455,7 +499,7 @@ class TestScoreAds:
         }
         cat = _score_ads(data, "fashion")
         h51_row = next(r for r in cat.rows if r.row == 51)
-        # GMV ratio = 100M/200M = 50% < 84% → pass → H51=5
+        # GMV ratio = 100M/200M = 50% < 74% → pass → H51=5
         assert h51_row.score == 5.0
 
     def test_gmv_ratio_high(self):
@@ -465,8 +509,20 @@ class TestScoreAds:
         }
         cat = _score_ads(data, "fashion")
         h51_row = next(r for r in cat.rows if r.row == 51)
-        # GMV ratio = 180M/200M = 90% >= 84% → fail → H51=0
+        # GMV ratio = 180M/200M = 90% >= 74% → fail → H51=0
         assert h51_row.score == 0.0
+
+    def test_gmv_ratio_between_74_and_84_pct_now_fails(self):
+        # 80% of sales: passed under the old 84% ceiling, fails under 74%.
+        data = {
+            "ads": {"adSales": 160_000_000, "adCost": 16_000_000},
+            "business": {"salesMonth0": 200_000_000},
+        }
+        cat = _score_ads(data, "fashion")
+        h51_row = next(r for r in cat.rows if r.row == 51)
+        assert h51_row.verdict == "❌"
+        assert h51_row.score == 0.0
+        assert h51_row.benchmark == "<74%"
 
 
 class TestScoreCampaign:

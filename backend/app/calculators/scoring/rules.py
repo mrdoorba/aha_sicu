@@ -103,7 +103,7 @@ DEFAULT_RULES: dict = {
             "message_fail": "❌ ROI = {val_str} [Kurang Baik, nilai disarankan: {benchmark}]",
         },
         "gmv_ratio_threshold": {
-            "threshold": 84.0, "points": 5, "comparison": "lt",
+            "threshold": 74.0, "points": 5, "comparison": "lt",
             "message_pass": "✔️ % GMV Iklan / GMV Toko = {pct_str} [Sudah Baik]",
             "message_fail": "❌ % GMV Iklan / GMV Toko = {pct_str} [Terlalu bergantung terhadap Iklan, nilai disarankan: <{threshold}%]",
             "message_no_ads": "❌ [Iklan tidak aktif sama sekali]",
@@ -235,18 +235,22 @@ DEFAULT_RULES: dict = {
 # ---------------------------------------------------------------------------
 
 # Field key → (display name, benchmark fraction)
+# ponytail: hardcoded on purpose — these benchmarks are not in the scoring_rules
+# JSONB, so changing one needs a deploy plus the matching edits in
+# frontend fields.ts and the three locale files. Move them into scoring_rules
+# (like ads.gmv_ratio_threshold) if they start changing per quarter.
 PROMO_TOOLS: list[tuple[str, str, float]] = [
     ("promoToko", "Promo Toko", 0.08),
     ("paketDiskon", "Paket Diskon", 0.16),
     ("komboHemat", "Kombo Hemat", 0.01),
     ("flashSale", "Flash Sale Toko Saya", 0.01),
-    ("voucher", "Voucher", 0.84),
+    ("voucher", "Voucher", 0.68),
     ("shopeeLive", "Shopee Live", 0.15),
     ("gameToko", "Game Toko", 0.01),
     ("brandMembership", "Brand Membership", 0.01),
     ("gratisOngkir", "Gratis Ongkir XTRA", 0.0),
     ("chatBroadcast", "Chat Broadcast", 0.01),
-    ("programAfiliasi", "Program Afiliasi", 0.18),
+    ("programAfiliasi", "Program Afiliasi", 0.21),
 ]
 
 # Row numbers for promo tools (rows 31-41)

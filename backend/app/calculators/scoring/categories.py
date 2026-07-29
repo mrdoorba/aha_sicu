@@ -418,7 +418,7 @@ def _score_ads(manual_data: dict, template: str, rules: dict | None = None) -> C
     ))
 
     # Row 51: GMV ratio = D48/D13
-    gmv_threshold = _get_rule_value(ads_rules, "gmv_ratio_threshold", "threshold", 84.0) / 100
+    gmv_threshold = _get_rule_value(ads_rules, "gmv_ratio_threshold", "threshold", 74.0) / 100
     gmv_points = float(_get_rule_value(ads_rules, "gmv_ratio_threshold", "points", 5.0))
     d51 = d48 / d13 if d13 > 0 else 0.0
     f51 = "✔️" if d51 < gmv_threshold else "❌"

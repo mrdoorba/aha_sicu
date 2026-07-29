@@ -128,4 +128,31 @@ describe('PromoToolsForm', () => {
     render(<PromoToolsForm data={data} salesMonth0={1000000} onChange={vi.fn()} onBlur={vi.fn()} />);
     expect(screen.getByText('18%')).toBeInTheDocument();
   });
+
+  it('counts a voucher above 50% of sales as passing, matching the backend', () => {
+    // The "too dependent" rule is promoToko-only in the backend (_promo_verdict)
+    // and in the source spreadsheet, so voucher must not be knocked out by it.
+    // salesMonth0 = 1,000,000:
+    //   voucher = 700,000 → 70% of sales, clears the 68% benchmark → ✔️
+    //   chatBroadcast = 20,000 → 2% > 1% → ✔️
+    //   paketDiskon = 10,000 → 1% < 16% → used but ❌
+    // Efektifitas: 2 of 11 = 18%. Penggunaan: 3 of 11 = 27%.
+    const data: PromoToolsData = {
+      promoToko: null,
+      paketDiskon: 10000,
+      komboHemat: null,
+      flashSale: null,
+      voucher: 700000,
+      shopeeLive: null,
+      gameToko: null,
+      brandMembership: null,
+      gratisOngkir: null,
+      chatBroadcast: 20000,
+      programAfiliasi: null,
+      komisiProgramAfiliasi: null,
+    };
+    render(<PromoToolsForm data={data} salesMonth0={1000000} onChange={vi.fn()} onBlur={vi.fn()} />);
+    expect(screen.getByText('27%')).toBeInTheDocument();
+    expect(screen.getByText('18%')).toBeInTheDocument();
+  });
 });

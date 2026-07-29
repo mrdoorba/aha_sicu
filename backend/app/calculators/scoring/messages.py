@@ -357,7 +357,7 @@ def _generate_ads_messages(
                 )
         elif row.row == 51:
             pct_str = _fmt_pct_1dp(row.value) if isinstance(row.value, float) else str(row.value)
-            threshold = _get_rule_value(ads_rules, "gmv_ratio_threshold", "threshold", 84)
+            threshold = _get_rule_value(ads_rules, "gmv_ratio_threshold", "threshold", 74)
             threshold_str = f"{threshold:g}" if isinstance(threshold, float) else str(threshold)
             if d48 == 0:
                 tmpl = _get_rule_value(ads_rules, "gmv_ratio_threshold", "message_no_ads",

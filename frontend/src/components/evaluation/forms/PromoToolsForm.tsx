@@ -27,7 +27,8 @@ export function PromoToolsForm({ data, salesMonth0, currency = 'IDR', marketplac
   const usagePct = Math.round((usageCount / metricFields.length) * 100);
 
   // % Efektifitas: count of metric-bearing tools exceeding threshold
-  // Mirrors backend _promo_verdict(): D=0→❌, D/D13≥50%→❌ (too dependent), then benchmark check
+  // Mirrors backend _promo_verdict(): D=0→❌, promoToko at D/D13≥50%→❌ (too dependent),
+  // then benchmark check
   const effectivenessResult = (() => {
     if (!salesMonth0) return null; // 0 or null → show "—"
     const passingCount = metricFields.filter((f) => {
@@ -36,8 +37,11 @@ export function PromoToolsForm({ data, salesMonth0, currency = 'IDR', marketplac
       if (val === 0) return false;
       // gratisOngkir is absolute threshold (>0), not percentage-based
       if (f.key === 'gratisOngkir') return val > f.threshold;
-      // Too dependent: single tool ≥ 50% of total sales → fail
-      if (val / salesMonth0 >= 0.5) return false;
+      // Too dependent: promoToko ≥ 50% of total sales → fail. Only promoToko —
+      // the source sheet puts this branch on row 31 alone, and applying it to
+      // every tool made voucher (68% benchmark) impossible to pass here while
+      // the backend passed it.
+      if (f.key === 'promoToko' && val / salesMonth0 >= 0.5) return false;
       return val >= salesMonth0 * f.threshold;
     }).length;
     return Math.round((passingCount / metricFields.length) * 100);
