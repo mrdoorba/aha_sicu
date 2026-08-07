@@ -505,6 +505,8 @@
   "presentation.intelligence.topSku": "Top SKU",
   "presentation.kesimpulan.marketingBudget": "งบประมาณการตลาดขั้นต่ำ",
   "presentation.loading": "กำลังรวบรวมข้อมูลการประเมิน...",
+  "presentation.salesTrend.title": "แนวโน้มยอดขาย — 6 เดือนล่าสุด",
+  "presentation.salesTrend.tooltip": "ยอดขาย",
   "presentation.section.dataIntelligence": "ข้อมูลเชิงลึก",
   "presentation.section.detailedEvaluation": "การประเมินโดยละเอียด",
   "presentation.section.kesimpulan": "สรุป",

@@ -2,6 +2,7 @@ import { useCallback, useMemo, useState } from 'react';
 import { Card, CardContent } from '../ui/card';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '../ui/tabs';
 import { CategoryMetricCard } from './CategoryMetricCard';
+import { SalesTrendChart, type SalesTrendPoint } from './SalesTrendChart';
 import { useTranslation } from 'react-i18next';
 import { CATEGORY_MAP } from '../../lib/categoryMap';
 
@@ -62,6 +63,48 @@ function formatAffiliateCommissionValue(value: unknown): string | null {
   }
 
   return null;
+}
+
+const LATEST_MONTH_KEY = 'scoring.monthlySales';
+const PAST_MONTH_KEY = 'scoring.pastMonthlySales';
+
+/** A past-month sales row — replaced by the trend chart, so it gets no card. */
+function isPastMonthSalesRow(row: RowScore): boolean {
+  return row.metric_i18n?.key === PAST_MONTH_KEY;
+}
+
+function monthLabel(row: RowScore): string {
+  return row.metric_i18n?.vars?.month ?? row.metric.replace('Penjualan Bulan ', '');
+}
+
+/**
+ * Collapse the six `Penjualan Bulan …` rows into a chronological series plus the
+ * 6-month average the latest month is benchmarked against.
+ */
+function buildSalesTrend(rows: RowScore[] | undefined): { points: SalesTrendPoint[]; average: number } {
+  if (!rows?.length) return { points: [], average: 0 };
+
+  const points: SalesTrendPoint[] = [];
+  let average = 0;
+
+  for (const row of rows) {
+    if (typeof row.value !== 'number') continue;
+    const key = row.metric_i18n?.key;
+
+    if (key === LATEST_MONTH_KEY) {
+      points.push({ month: monthLabel(row), value: row.value, isLatest: true });
+    } else if (key === PAST_MONTH_KEY) {
+      points.push({ month: monthLabel(row), value: row.value, isLatest: false });
+    } else if (key === 'scoring.avgSales6mo' || row.metric.startsWith('Rata² Penjualan')) {
+      average = row.value;
+    }
+  }
+
+  // A lone month is a card, not a trend.
+  if (points.length < 2) return { points: [], average: 0 };
+
+  // Backend emits newest-first (month0 … month5); a time axis reads oldest-first.
+  return { points: points.reverse(), average };
 }
 
 function looksLikeDiscountSummary(text: string): boolean {
@@ -221,8 +264,14 @@ export const DetailedEvaluation = ({
               {visitedTabs.has(cat.category) && (
                 <>
                   {(() => {
+                    const salesTrend = buildSalesTrend(cat.rows);
                     const cards = cat.rows?.flatMap((row, idx) => {
                       if (cat.category === 'Discount' && isDiscountAffiliateRow(row)) {
+                        return [];
+                      }
+
+                      // The five past months live in the trend chart instead.
+                      if (salesTrend.points.length > 0 && isPastMonthSalesRow(row)) {
                         return [];
                       }
 
@@ -281,9 +330,12 @@ export const DetailedEvaluation = ({
                     }) ?? [];
 
                     return cards.length > 0 ? (
-                    <div className="grid gap-3 sm:grid-cols-2">
-                      {cards}
-                    </div>
+                    <>
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        {cards}
+                      </div>
+                      <SalesTrendChart data={salesTrend.points} average={salesTrend.average} />
+                    </>
                   ) : (
                     <p className="text-sm text-muted-foreground py-8 text-center">
                       {t('presentation.detailedEvaluation.noMetrics')}

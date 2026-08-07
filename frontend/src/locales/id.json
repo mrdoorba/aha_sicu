@@ -505,6 +505,8 @@
   "presentation.intelligence.topSku": "Top SKU",
   "presentation.kesimpulan.marketingBudget": "Min. Anggaran Marketing",
   "presentation.loading": "Mengumpulkan data evaluasi...",
+  "presentation.salesTrend.title": "Tren Penjualan — 6 Bulan Terakhir",
+  "presentation.salesTrend.tooltip": "Penjualan",
   "presentation.section.dataIntelligence": "Data Inteligensi",
   "presentation.section.detailedEvaluation": "Evaluasi Detail",
   "presentation.section.kesimpulan": "Kesimpulan",

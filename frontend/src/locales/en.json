@@ -505,6 +505,8 @@
   "presentation.intelligence.topSku": "Top SKU",
   "presentation.kesimpulan.marketingBudget": "Min. Marketing Budget",
   "presentation.loading": "Gathering evaluation data...",
+  "presentation.salesTrend.title": "Sales Trend — Last 6 Months",
+  "presentation.salesTrend.tooltip": "Sales",
   "presentation.section.dataIntelligence": "Data Intelligence",
   "presentation.section.detailedEvaluation": "Detailed Evaluation",
   "presentation.section.kesimpulan": "Conclusion",
