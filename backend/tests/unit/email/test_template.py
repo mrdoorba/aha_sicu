@@ -201,6 +201,33 @@ class TestHTMLStructure:
         )
         assert "<!DOCTYPE html" in html.upper() or "<!doctype html" in html.lower()
 
+    def test_declares_light_only_color_scheme(self, evaluation_data: dict) -> None:
+        # The report is light for every recipient by decision. Undeclared, Apple
+        # Mail and Outlook would invert the whole palette on a dark OS and the
+        # report would come back unreadable.
+        html = render_email_html(
+            evaluation_data=evaluation_data,
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
+        )
+        head = html[: html.lower().find("</head>")]
+        assert '<meta name="color-scheme" content="light">' in head
+        assert '<meta name="supported-color-schemes" content="light">' in head
+        assert "color-scheme:light only" in head
+
+    def test_ships_no_dark_palette(self, evaluation_data: dict) -> None:
+        # The opt-out and a dark palette are mutually exclusive: a report that
+        # advertises light-only and then carries dark rules would show them to
+        # nobody. If a dark half is ever added, this test is the one to delete.
+        html = render_email_html(
+            evaluation_data=evaluation_data,
+            chart_src="cid:chart123@domain",
+            header_src="cid:header123@domain",
+            footer_src="cid:footer123@domain",
+        )
+        assert "prefers-color-scheme" not in html
+
     def test_no_style_blocks(self, evaluation_data: dict) -> None:
         html = render_email_html(
             evaluation_data=evaluation_data,

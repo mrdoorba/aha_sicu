@@ -937,9 +937,25 @@ def _minify_html(html: str) -> str:
 # ---------------------------------------------------------------------------
 # CSS classes — shared styles extracted to reduce repeated inline bytes.
 # Gmail supports <style> in <head> and rewrites class names with a prefix.
+#
+# ``color-scheme: light only``, paired with the two <meta> tags in the document
+# head, is a deliberate opt-out of dark mode: the report is always rendered in
+# the light palette below, whatever the recipient's OS is set to.
+#
+# A client that finds no such declaration assumes it may invert the palette
+# itself, and its inversion is blind — white cards turn charcoal, the navy
+# #1D388B headings come back as pale periwinkle, and the GREEN_50/ORANGE_50
+# verdict tints go muddy. Declaring light-only is what stops that in Apple Mail
+# (macOS and iOS) and in Outlook. Gmail's mobile apps force-invert regardless
+# and cannot be opted out by anything a document can say.
+#
+# Reversing this decision means shipping a real dark palette, not deleting these
+# three lines: without a dark half to offer, an undeclared report is handed back
+# to the blind inverter it was rescued from.
 # ---------------------------------------------------------------------------
 
 _EMAIL_CSS = f"""\
+:root{{color-scheme:light only;supported-color-schemes:light;}}
 body,td,th{{font-family:{FONT_STACK};}}
 .T{{border-collapse:collapse;}}
 .card{{background:{CARD_BG};border-radius:8px;border:1px solid {BORDER_LIGHT};}}
@@ -1077,6 +1093,8 @@ def render_email_html_body(
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1.0">
+<meta name="color-scheme" content="light">
+<meta name="supported-color-schemes" content="light">
 <title>{_esc(brand_name)} - {S['brand_report']}</title>
 <style type="text/css">
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap');
