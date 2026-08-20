@@ -80,10 +80,10 @@ def mock_settings():
         mock.gsheets_vp_range_th = "Brands Data!A:Z"
         mock.gsheets_vp_brand_column_th = "Brand"
         mock.gsheets_meeting_spreadsheet_id = "meeting-id"
-        mock.gsheets_meeting_range = "1st Meeting!A:M"
+        mock.gsheets_meeting_range = "1st Meeting!A:N"
         mock.gsheets_meeting_brand_column = "Brand"
         mock.gsheets_meeting_spreadsheet_id_th = None
-        mock.gsheets_meeting_range_th = "1st Meeting!A:M"
+        mock.gsheets_meeting_range_th = "1st Meeting!A:N"
         mock.gsheets_meeting_brand_column_th = "Brand"
         yield mock
 

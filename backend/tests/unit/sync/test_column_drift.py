@@ -72,4 +72,5 @@ def test_expected_headers_match_unified_schema():
         "Verified",
         "Meet Link",
         "Brand ID",
+        "Meeting ID",
     ]

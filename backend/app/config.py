@@ -111,12 +111,12 @@ class Settings(BaseSettings):
 
     # 1st Meeting Sheet - Indonesia (brand_meeting_data, marketplace='ID')
     gsheets_meeting_spreadsheet_id: str | None = None
-    gsheets_meeting_range: str = "1st Meeting!A:M"
+    gsheets_meeting_range: str = "1st Meeting!A:N"
     gsheets_meeting_brand_column: str = "Brand"
 
     # 1st Meeting Sheet - Thailand (brand_meeting_data, marketplace='TH')
     gsheets_meeting_spreadsheet_id_th: str | None = None
-    gsheets_meeting_range_th: str = "1st Meeting!A:M"
+    gsheets_meeting_range_th: str = "1st Meeting!A:N"
     gsheets_meeting_brand_column_th: str = "Brand"
 
     # Evaluation Status Sheet (write-only, one row per evaluated brand)

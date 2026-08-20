@@ -93,7 +93,7 @@ EXPECTED_HEADERS_VP_ID: list[str] = [
 ]
 EXPECTED_HEADERS_VP_TH: list[str] = EXPECTED_HEADERS_VP_ID
 
-# Meeting "1st Meeting" tab, columns A-M. ID and TH share the same schema.
+# Meeting "1st Meeting" tab, columns A-N. ID and TH share the same schema.
 EXPECTED_HEADERS_MEETING_ID: list[str] = [
     "Logged At",
     "Brand",
@@ -108,5 +108,6 @@ EXPECTED_HEADERS_MEETING_ID: list[str] = [
     "Verified",
     "Meet Link",
     "Brand ID",
+    "Meeting ID",
 ]
 EXPECTED_HEADERS_MEETING_TH: list[str] = EXPECTED_HEADERS_MEETING_ID
