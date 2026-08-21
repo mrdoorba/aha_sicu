@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 import pytest
 
 from app.modules.email.template import (
@@ -940,6 +942,21 @@ class TestResponsive:
         head_end = html.lower().find("</head>")
         head_html = html[:head_end] if head_end != -1 else ""
         assert "@media" in head_html
+
+    def test_stacking_hook_lands_only_on_grid_columns(self, evaluation_data: dict) -> None:
+        # The narrow-viewport rule stacks the two-column metric grid. It must
+        # reach the grid's own column cells and nothing deeper: when it was
+        # written as ``.metric-grid td`` it also caught each card's label and
+        # value cells, so on a phone every value dropped to its own line,
+        # right-aligned and stranded under its label.
+        html = _render_full(evaluation_data)
+        head = html[: html.lower().find("</head>")]
+        assert ".mcol {" in head or ".mcol{" in head
+        assert ".metric-grid td" not in head
+        cells = re.findall(r'<td class="mcol" style="([^"]*)"', html)
+        assert cells, "no stacking hook found in the rendered grid"
+        for style in cells:
+            assert "width:50%" in style, f"mcol on a non-column cell: {style}"
 
     def test_no_max_width_on_wrapper(self, evaluation_data: dict) -> None:
         """Email wrapper table should be fully fluid — no max-width cap."""

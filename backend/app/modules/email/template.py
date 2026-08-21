@@ -625,7 +625,11 @@ def _render_detailed_evaluation(
             f'</td></tr>'
         )
 
-        _HALF = 'style="width:50%;padding:4px;vertical-align:top"'
+        # ``mcol`` is the stacking hook the max-width:920px media query paints.
+        # It sits only on the grid's own column cells — never on the cells inside
+        # a metric card — so narrowing the viewport stacks the columns and leaves
+        # each card's label/value row intact.
+        _HALF = 'class="mcol" style="width:50%;padding:4px;vertical-align:top"'
         _FULL = 'style="width:100%;padding:4px;vertical-align:top"'
 
         def _is_wide_card(row: dict[str, Any]) -> bool:
@@ -1100,7 +1104,7 @@ def render_email_html_body(
 @import url('https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800;900&display=swap');
 {_EMAIL_CSS}
 @media only screen and (max-width:920px) {{
-  .metric-grid td {{ display:block !important; width:100% !important; }}
+  .mcol {{ display:block !important; width:100% !important; }}
 }}
 </style>
 </head>
