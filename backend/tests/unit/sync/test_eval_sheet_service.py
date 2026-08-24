@@ -198,163 +198,28 @@ async def test_sync_brand_to_sheet_skips_when_not_configured():
         # No exception, no side effects
 
 
-async def test_sync_brand_to_sheet_appends_new_brand():
-    """should append row when brand not in sheet"""
-    mock_data = {
-        "submitted_at": SUBMITTED_AT,
-        "period": "Jan 2026",
-        "brand_name": "Nike",
-        "kategori": "Sepatu",
-        "final_score": 72.50,
-        "calculator_results": {
-            "scoring_summary": {"marketing_budget_i18n": {"vars": {"pct": "12%"}}}
-        },
-    }
-    mock_conn = AsyncMock()
-    mock_conn.fetchrow = AsyncMock(return_value=mock_data)
-
-    mock_client = AsyncMock()
-    mock_client.fetch_headers = AsyncMock(return_value=HEADER_ROW)
-    mock_client.read_column = AsyncMock(return_value=["Brand Name", "Adidas"])
-
+async def test_sync_brand_to_sheet_rebuilds_whole_sheet():
+    """should rebuild every row so the newest-first order holds after a submit"""
     with (
         patch(f"{MODULE}._is_configured", return_value=True),
-        patch(f"{MODULE}.db") as mock_db,
-        patch(f"{MODULE}.GoogleSheetsClient", return_value=mock_client),
-        patch(f"{MODULE}.settings") as mock_settings,
-    ):
-        mock_db.connection.return_value.__aenter__.return_value = mock_conn
-        mock_settings.gsheets_eval_spreadsheet_id = "sheet-123"
-        mock_settings.gsheets_eval_tab = "SICU - bronze"
-
-        await sync_brand_to_sheet("Nike")
-
-        mock_client.append_rows.assert_awaited_once()
-        args = mock_client.append_rows.call_args
-        assert args[0][2] == [
-            [SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5", "ID", "12%"]
-        ]
-
-
-async def test_sync_brand_to_sheet_overwrites_existing_brand():
-    """should overwrite row when brand already exists in sheet"""
-    mock_data = {
-        "submitted_at": SUBMITTED_AT,
-        "period": "Feb 2026",
-        "brand_name": "Nike",
-        "kategori": "Sepatu",
-        "final_score": 88.00,
-        "calculator_results": {"scoring_summary": {"marketing_budget": "... = 15%"}},
-    }
-    mock_conn = AsyncMock()
-    mock_conn.fetchrow = AsyncMock(return_value=mock_data)
-
-    # Brand Name header at index 0, Nike at index 1
-    mock_client = AsyncMock()
-    mock_client.fetch_headers = AsyncMock(return_value=HEADER_ROW)
-    mock_client.read_column = AsyncMock(return_value=["Brand Name", "Nike"])
-
-    with (
-        patch(f"{MODULE}._is_configured", return_value=True),
-        patch(f"{MODULE}.db") as mock_db,
-        patch(f"{MODULE}.GoogleSheetsClient", return_value=mock_client),
-        patch(f"{MODULE}.settings") as mock_settings,
-    ):
-        mock_db.connection.return_value.__aenter__.return_value = mock_conn
-        mock_settings.gsheets_eval_spreadsheet_id = "sheet-123"
-        mock_settings.gsheets_eval_tab = "SICU - bronze"
-
-        await sync_brand_to_sheet("Nike")
-
-        # Should write to row 2 (index 1 + 1)
-        mock_client.write_rows.assert_awaited_once()
-        args = mock_client.write_rows.call_args
-        assert args[0][1] == "'SICU - bronze'!A2"
-        assert args[0][2] == [
-            [SUBMITTED_DATE, "Feb 2026", "Nike", "Sepatu", "88.0", "ID", "15%"]
-        ]
-        mock_client.append_rows.assert_not_awaited()
-
-
-async def test_sync_brand_to_sheet_writes_header_when_empty():
-    """should write header row when sheet is empty before appending"""
-    mock_data = {
-        "period": "Jan 2026",
-        "brand_name": "Nike",
-        "kategori": "Sepatu",
-        "final_score": 72.50,
-    }
-    mock_conn = AsyncMock()
-    mock_conn.fetchrow = AsyncMock(return_value=mock_data)
-
-    mock_client = AsyncMock()
-    mock_client.fetch_headers = AsyncMock(return_value=[])
-    mock_client.read_column = AsyncMock(return_value=[])
-
-    with (
-        patch(f"{MODULE}._is_configured", return_value=True),
-        patch(f"{MODULE}.db") as mock_db,
-        patch(f"{MODULE}.GoogleSheetsClient", return_value=mock_client),
-        patch(f"{MODULE}.settings") as mock_settings,
-    ):
-        mock_db.connection.return_value.__aenter__.return_value = mock_conn
-        mock_settings.gsheets_eval_spreadsheet_id = "sheet-123"
-        mock_settings.gsheets_eval_tab = "SICU - bronze"
-
-        await sync_brand_to_sheet("Nike")
-
-        # Should write header first, then append
-        assert mock_client.write_rows.await_count == 1
-        header_args = mock_client.write_rows.call_args
-        assert header_args[0][2] == [HEADER_ROW]
-        mock_client.append_rows.assert_awaited_once()
-
-
-async def test_sync_brand_to_sheet_skips_when_no_evaluations():
-    """should skip when brand has no evaluations in DB"""
-    mock_conn = AsyncMock()
-    mock_conn.fetchrow = AsyncMock(return_value=None)
-
-    with (
-        patch(f"{MODULE}._is_configured", return_value=True),
-        patch(f"{MODULE}.db") as mock_db,
-    ):
-        mock_db.connection.return_value.__aenter__.return_value = mock_conn
-
-        await sync_brand_to_sheet("Unknown")
-        # No GoogleSheetsClient instantiated, no exception
-
-
-async def test_sync_brand_to_sheet_runs_full_sync_when_header_is_missing():
-    """should rebuild the sheet when row 1 no longer matches the expected header"""
-    mock_data = {
-        "period": "Feb 2026",
-        "brand_name": "Digi Living",
-        "kategori": "Home",
-        "final_score": 65.0,
-    }
-    mock_conn = AsyncMock()
-    mock_conn.fetchrow = AsyncMock(return_value=mock_data)
-
-    mock_client = AsyncMock()
-    mock_client.fetch_headers = AsyncMock(return_value=["Feb 2026", "Digi Living", "", "65.00"])
-
-    with (
-        patch(f"{MODULE}._is_configured", return_value=True),
-        patch(f"{MODULE}.db") as mock_db,
-        patch(f"{MODULE}.GoogleSheetsClient", return_value=mock_client),
-        patch(f"{MODULE}.settings") as mock_settings,
         patch(f"{MODULE}.full_sync_eval_sheet", new=AsyncMock()) as mock_full_sync,
     ):
-        mock_db.connection.return_value.__aenter__.return_value = mock_conn
-        mock_settings.gsheets_eval_spreadsheet_id = "sheet-123"
-        mock_settings.gsheets_eval_tab = "SICU - bronze"
+        mock_full_sync.return_value = {"success": True, "brands_synced": 3}
 
-        await sync_brand_to_sheet("Digi Living")
+        await sync_brand_to_sheet("Nike")
 
         mock_full_sync.assert_awaited_once()
-        mock_client.read_column.assert_not_awaited()
-        mock_client.append_rows.assert_not_awaited()
+
+
+async def test_sync_brand_to_sheet_swallows_failures():
+    """should stay fire-and-forget safe when the rebuild raises"""
+    with (
+        patch(f"{MODULE}._is_configured", return_value=True),
+        patch(f"{MODULE}.full_sync_eval_sheet", new=AsyncMock()) as mock_full_sync,
+    ):
+        mock_full_sync.side_effect = RuntimeError("sheets down")
+
+        await sync_brand_to_sheet("Nike")  # must not raise
 
 
 # --- remove_brand_from_sheet ---
@@ -430,3 +295,31 @@ async def test_full_sync_writes_header_and_data():
         assert rows[0] == HEADER_ROW
         assert rows[1] == [SUBMITTED_DATE, "Jan 2026", "Nike", "Sepatu", "72.5", "ID", "12%"]
         assert rows[2] == [SUBMITTED_DATE, "Feb 2026", "Adidas", "", "85.0", "ID", ""]
+
+
+async def test_full_sync_writes_rows_newest_submission_first():
+    """should keep the query's newest-first order when writing rows"""
+    newer = datetime(2026, 7, 1, 5, 0, 0, tzinfo=timezone.utc)
+    older = datetime(2026, 6, 23, 5, 0, 0, tzinfo=timezone.utc)
+    brand_data = [
+        {"submitted_at": newer, "period": "Jul 2026", "brand_name": "Adidas",
+         "kategori": "Sepatu", "final_score": 85.0},
+        {"submitted_at": older, "period": "Jun 2026", "brand_name": "Nike",
+         "kategori": "Sepatu", "final_score": 72.5},
+    ]
+    mock_client = AsyncMock()
+
+    with (
+        patch(f"{MODULE}.settings") as mock_settings,
+        patch(f"{MODULE}.db") as mock_db,
+        patch(f"{MODULE}.GoogleSheetsClient", return_value=mock_client),
+        patch(f"{MODULE}._get_latest_evaluation_per_brand", return_value=brand_data),
+    ):
+        mock_settings.gsheets_eval_spreadsheet_id = "sheet-123"
+        mock_settings.gsheets_eval_tab = "SICU - bronze"
+        mock_db.connection.return_value.__aenter__.return_value = AsyncMock()
+
+        await full_sync_eval_sheet()
+
+        rows = mock_client.write_rows.call_args[0][2]
+        assert [row[0] for row in rows[1:]] == ["1 Jul 2026", "23 Jun 2026"]

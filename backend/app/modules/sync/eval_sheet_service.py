@@ -2,7 +2,7 @@
 
 Writes one row per brand with: Waktu Submit, Periode Data, Brand Name,
 Kategori, AHA Compatibility Score, Country. Data comes from the latest
-evaluation (by created_at) for each brand.
+evaluation (by created_at) for each brand, ordered newest submission first.
 """
 
 import logging
@@ -55,52 +55,32 @@ def _is_configured() -> bool:
 async def _get_latest_evaluation_per_brand(
     conn: Connection,
 ) -> list[dict[str, Any]]:
-    """Return latest evaluation data per brand for the eval sheet.
+    """Return latest evaluation data per brand, newest submission first.
 
     Each row contains: period, brand_name, kategori, final_score.
-    'Latest' means most recent created_at per brand.
+    'Latest' means most recent created_at per brand. The result order is the
+    sheet's row order — most recently submitted at the top.
     """
     rows = await conn.fetch(
         """
-        SELECT DISTINCT ON (e.brand_id)
-               COALESCE(e.period, '') AS period,
-               b.brand_name,
-               COALESCE(e.marketplace, 'ID') AS marketplace,
-               b.raw_data,
-               e.final_score,
-               e.calculator_results,
-               e.created_at AS submitted_at
-        FROM evaluations e
-        JOIN brand_vp_data b ON e.brand_id = b.id
-        ORDER BY e.brand_id, e.created_at DESC
+        WITH latest_per_brand AS (
+            SELECT DISTINCT ON (e.brand_id)
+                   COALESCE(e.period, '') AS period,
+                   b.brand_name,
+                   COALESCE(e.marketplace, 'ID') AS marketplace,
+                   b.raw_data,
+                   e.final_score,
+                   e.calculator_results,
+                   e.created_at AS submitted_at
+            FROM evaluations e
+            JOIN brand_vp_data b ON e.brand_id = b.id
+            ORDER BY e.brand_id, e.created_at DESC
+        )
+        SELECT * FROM latest_per_brand
+        ORDER BY submitted_at DESC, brand_name
         """
     )
     return [_normalize_eval_sheet_row(dict(row)) for row in rows]
-
-
-async def _get_latest_evaluation_for_brand(
-    conn: Connection,
-    brand_name: str,
-) -> dict[str, Any] | None:
-    """Return the latest evaluation data for a single brand."""
-    row = await conn.fetchrow(
-        """
-        SELECT COALESCE(e.period, '') AS period,
-               b.brand_name,
-               COALESCE(e.marketplace, 'ID') AS marketplace,
-               b.raw_data,
-               e.final_score,
-               e.calculator_results,
-               e.created_at AS submitted_at
-        FROM evaluations e
-        JOIN brand_vp_data b ON e.brand_id = b.id
-        WHERE b.brand_name = $1
-        ORDER BY e.created_at DESC
-        LIMIT 1
-        """,
-        brand_name,
-    )
-    return _normalize_eval_sheet_row(dict(row)) if row else None
 
 
 def _normalize_eval_sheet_row(data: dict[str, Any]) -> dict[str, Any]:
@@ -153,7 +133,11 @@ def _brand_row(data: dict[str, Any]) -> list[str]:
 
 
 async def sync_brand_to_sheet(brand_name: str) -> None:
-    """Write or overwrite a brand's row in the eval sheet with latest data.
+    """Reflect a brand's latest evaluation in the eval sheet.
+
+    Rows are ordered by submission time, newest first — a property of the whole
+    sheet, not of one row — so a single brand's change is applied by rewriting
+    every row in order. That also self-heals header drift and stale rows.
 
     Fire-and-forget safe — logs errors instead of raising.
     """
@@ -161,55 +145,11 @@ async def sync_brand_to_sheet(brand_name: str) -> None:
         return
 
     try:
-        # Fetch latest evaluation data from DB
-        async with db.connection() as conn:
-            data = await _get_latest_evaluation_for_brand(conn, brand_name)
-
-        if not data:
-            logger.debug(f"No evaluations for '{brand_name}', skipping sheet sync")
-            return
-
-        client = GoogleSheetsClient()
-        spreadsheet_id = settings.gsheets_eval_spreadsheet_id
-
-        headers = await client.fetch_headers(spreadsheet_id, _tab_ref())
-        if headers and headers != HEADER_ROW:
-            logger.warning(
-                "Eval sheet header drift detected; running full sync before brand update",
-                extra={"brand_name": brand_name, "headers": headers},
-            )
-            await full_sync_eval_sheet()
-            return
-
-        # Read existing brand names from column C
-        existing = await client.read_column(spreadsheet_id, f"{_tab_ref()}!C:C")
-
-        # Find existing row index (0-based, including header)
-        row_idx = None
-        for i, name in enumerate(existing):
-            if name == brand_name:
-                row_idx = i
-                break
-
-        row = _brand_row(data)
-
-        if row_idx is not None:
-            # Overwrite existing row (1-based for Sheets API)
-            await client.write_rows(
-                spreadsheet_id,
-                f"{_tab_ref()}!A{row_idx + 1}",
-                [row],
-            )
-            logger.info(f"Updated brand '{brand_name}' in eval sheet")
-        else:
-            # Write header if sheet is empty
-            if not existing:
-                await client.write_rows(spreadsheet_id, f"{_tab_ref()}!A1", [HEADER_ROW])
-
-            # Append new row
-            await client.append_rows(spreadsheet_id, _eval_range(), [row])
-            logger.info(f"Added brand '{brand_name}' to eval sheet")
-
+        result = await full_sync_eval_sheet()
+        logger.info(
+            f"Eval sheet rebuilt after change to brand '{brand_name}'",
+            extra={"brands_synced": result.get("brands_synced", 0)},
+        )
     except Exception:
         logger.exception(f"Failed to sync brand '{brand_name}' to eval sheet")
 
