@@ -72,3 +72,49 @@ class TestPlainMessagePicEmail:
             {**_FIXTURE, "brand_raw_data": {}}, language="id"
         )
         assert out.startswith("[EMAIL TO: ]")
+
+
+class TestRealBenchmarkNote:
+    """The Bisnis section closes with the Real Benchmark disclaimer.
+
+    Standing policy copy, not evaluation data: it must reach both emitters, in
+    the recipient's language, and only in the section the layout assigns it to.
+    """
+
+    def test_text_closes_business_section_with_the_note(self) -> None:
+        out = render_email(_FIXTURE, language="id", fmt="text")
+        business = out.split("👥")[0]
+        assert "Real Benchmark: Real benchmark akan diambil dari omset" in business
+        assert "penentu skema kerjasama." in business
+
+    @pytest.mark.parametrize(
+        ("lang", "needle"),
+        [
+            ("id", "Omset seller center hanya digunakan"),
+            ("en", "Seller Center revenue is used solely"),
+            ("th", "ยอดขายจาก Seller Center ใช้เพียงเพื่อกำหนดรูปแบบความร่วมมือ"),
+        ],
+    )
+    def test_text_note_follows_the_recipient_language(self, lang: str, needle: str) -> None:
+        assert needle in render_email(_FIXTURE, language=lang, fmt="text")
+
+    def test_html_band_sits_in_the_business_card_only(self) -> None:
+        out = render_email(_FIXTURE, language="id", fmt="html")
+        # ID reports append an English copy below the divider, so the band —
+        # like every other section — appears once per language copy.
+        assert out.count("Omset seller center hanya digunakan") == 1
+        assert out.count("Seller Center revenue is used solely") == 1
+
+        head, _, tail = out.partition("Omset seller center hanya digunakan")
+        # The nearest preceding section header is Bisnis, not another category.
+        assert head.rindex("Bisnis") > head.rindex("Operasional")
+        assert "Tinjauan Pengunjung" not in head[head.rindex("Bisnis"):]
+
+    def test_html_accent_is_a_cell_not_a_one_sided_border(self) -> None:
+        # Outlook's Word engine drops border-left but paints cell backgrounds.
+        out = render_email(_FIXTURE, language="id", fmt="html")
+        # PRIMARY_LIGHT is shared with other blocks, so anchor on the note text
+        # and read backwards to the band that wraps it.
+        band = out[:out.index("Omset seller center hanya digunakan")]
+        assert 'width="3" style="width:3px;background-color:#325FEC' in band[-600:]
+        assert "border-left" not in band[-600:]

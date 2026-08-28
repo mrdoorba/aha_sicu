@@ -14,11 +14,14 @@ from urllib.parse import urlsplit, urlunsplit
 # Re-imported here because the HTML section renderers and _get_strings depend on
 # them, and external callers/tests import these names from this module.
 from app.modules.email.layout import (
+    SectionNote,
     _load_locale,
     _resolve_ads_output_text,  # noqa: F401  re-exported for callers/tests
     _resolve_metric_name,
     _resolve_translatable_text,
     _translate,  # noqa: F401  re-exported for callers/tests
+    resolve_section_note,
+    section_note,
 )
 
 # ---------------------------------------------------------------------------
@@ -577,6 +580,30 @@ def _render_metric_card(
     )
 
 
+def _render_section_note(note: SectionNote, lang: str) -> str:
+    """Full-width tinted band closing a section, as one grid row.
+
+    The 3px accent is a table cell rather than ``border-left``: Outlook's Word
+    engine drops one-sided borders but paints cell backgrounds reliably.
+    """
+    label, body = resolve_section_note(note, lang)
+    return (
+        f'<tr><td colspan="2" style="padding:4px">'
+        f'<table width="100%" cellpadding="0" cellspacing="0" border="0" '
+        f'style="background-color:{PRIMARY_LIGHT};border-radius:6px">'
+        f'<tr>'
+        f'<td width="3" style="width:3px;background-color:{PRIMARY_BLUE};'
+        f'border-radius:6px 0 0 6px">&nbsp;</td>'
+        f'<td style="padding:10px 12px">'
+        f'<div style="font-size:11px;font-weight:700;letter-spacing:0.06em;'
+        f'text-transform:uppercase;color:{PRIMARY_BLUE};padding-bottom:4px">'
+        f'{_esc(label)}</div>'
+        f'<div style="font-size:12px;line-height:1.6;color:{TEXT_DARK}">'
+        f'{_esc(body)}</div>'
+        f'</td></tr></table></td></tr>'
+    )
+
+
 def _render_detailed_evaluation(
     categories: list[dict[str, Any]],
     S: dict[str, str],
@@ -665,6 +692,12 @@ def _render_detailed_evaluation(
 
         if pending_left is not None:
             grid_rows.append(f'<tr><td {_HALF}>{pending_left}</td><td {_HALF}>&nbsp;</td></tr>')
+
+        # Standing disclaimer closing the section, if the layout gives it one.
+        # Not data-driven: it renders whenever the section does.
+        note = section_note(cat.get("category", ""))
+        if note:
+            grid_rows.append(_render_section_note(note, lang))
 
         grid_html = "\n".join(grid_rows)
 

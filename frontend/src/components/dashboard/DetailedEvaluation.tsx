@@ -65,6 +65,9 @@ function formatAffiliateCommissionValue(value: unknown): string | null {
   return null;
 }
 
+/** Canonical backend name of the category that owns the trend card. */
+const BUSINESS_CATEGORY = 'Bisnis Analisis';
+
 const LATEST_MONTH_KEY = 'scoring.monthlySales';
 const PAST_MONTH_KEY = 'scoring.pastMonthlySales';
 
@@ -334,7 +337,9 @@ export const DetailedEvaluation = ({
                       <div className="grid gap-3 sm:grid-cols-2">
                         {cards}
                       </div>
-                      <SalesTrendChart data={salesTrend.points} average={salesTrend.average} />
+                      {cat.category === BUSINESS_CATEGORY && (
+                        <SalesTrendChart data={salesTrend.points} average={salesTrend.average} />
+                      )}
                     </>
                   ) : (
                     <p className="text-sm text-muted-foreground py-8 text-center">

@@ -263,6 +263,20 @@ SectionKind = Literal["normal", "promo"]
 
 
 @dataclass(frozen=True)
+class SectionNote:
+    """A standing disclaimer that closes a section, below its rows.
+
+    Not derived from evaluation data — it is fixed policy copy about how a
+    number should be read, so it renders whether or not the section's rows are
+    present. Both emitters resolve these keys from the frontend locale files,
+    which is how the email and the dashboard card stay one string.
+    """
+
+    label_key: str
+    body_key: str
+
+
+@dataclass(frozen=True)
 class EmailSection:
     """One ordered category section of the email body.
 
@@ -279,6 +293,8 @@ class EmailSection:
     kind:
         ``"normal"`` for plain row extraction, ``"promo"`` for the special
         promo-tool range (31..41) + summary rows (42, 43).
+    note:
+        Standing disclaimer closing the section; ``None`` for most sections.
     """
 
     category: str
@@ -286,6 +302,7 @@ class EmailSection:
     header_key: str
     rows: tuple[int, ...] | None = None
     kind: SectionKind = "normal"
+    note: SectionNote | None = None
 
 
 # Promo tool rows start at 31 and span 11 tools (31-41), plus summary rows 42, 43.
@@ -293,9 +310,19 @@ _PROMO_START_ROW = 31
 _PROMO_TOOL_COUNT = 11
 _PROMO_SUMMARY_ROWS = (42, 43)
 
+# Shared with the dashboard's trend card (SalesTrendChart.tsx) — same keys, so
+# the prospect reads one wording whether they are shown the deck or the email.
+_REAL_BENCHMARK_NOTE = SectionNote(
+    label_key="presentation.salesTrend.realBenchmark.label",
+    body_key="presentation.salesTrend.realBenchmark.note",
+)
+
 EMAIL_SECTIONS: tuple[EmailSection, ...] = (
     EmailSection("Kesehatan Operasional Toko", "📊", "emailBody.section.operational"),
-    EmailSection("Bisnis Analisis", "📈", "emailBody.section.business", rows=(13, 20)),
+    EmailSection(
+        "Bisnis Analisis", "📈", "emailBody.section.business", rows=(13, 20),
+        note=_REAL_BENCHMARK_NOTE,
+    ),
     EmailSection("Tinjauan Pengunjung", "👥", "emailBody.section.visitors", rows=(28, 29)),
     EmailSection("Promo Toko", "🏷️", "emailBody.section.promoTools", kind="promo"),
     EmailSection("Jumlah Produk & Status Toko", "📦", "emailBody.section.productsStatus"),
@@ -303,6 +330,20 @@ EMAIL_SECTIONS: tuple[EmailSection, ...] = (
     EmailSection("Partisipasi Campaign", "🎯", "emailBody.section.campaign", rows=(57,)),
     EmailSection("Kompetisi TOP Produk", "🏆", "emailBody.section.competition"),
 )
+
+
+def section_note(category: str) -> SectionNote | None:
+    """The standing note closing *category* (canonical Indonesian name), if any.
+
+    The seam the HTML renderer crosses instead of re-declaring which sections
+    carry which note.
+    """
+    return next((s.note for s in EMAIL_SECTIONS if s.category == category), None)
+
+
+def resolve_section_note(note: SectionNote, lang: str) -> tuple[str, str]:
+    """Resolve *note* to its ``(label, body)`` text in *lang*."""
+    return _t(note.label_key, None, lang), _t(note.body_key, None, lang)
 
 
 # ---------------------------------------------------------------------------
@@ -384,6 +425,10 @@ def _render_text(result: dict[str, Any], language: str) -> str:
             continue
         sections.append(f"{section.emoji} {_t(section.header_key, None, language)}")
         sections.extend(msgs)
+        if section.note:
+            label, body = resolve_section_note(section.note, language)
+            sections.append("")
+            sections.append(f"{label}: {body}")
         sections.append("")
 
     # Conclusion / marketing / budget / closing.

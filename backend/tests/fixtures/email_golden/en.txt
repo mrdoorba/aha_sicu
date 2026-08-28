@@ -6,6 +6,8 @@ Foto produk sudah menggunakan background yang baik
 scoring.bizRow13
 Conversion rate di atas benchmark
 
+Real Benchmark: The real benchmark is taken from order-list revenue less cancellations. It can only be calculated once the brand has completed the registration form. Seller Center revenue is used solely to determine the partnership scheme.
+
 👥 Visitor Overview:
 Jumlah pengunjung sehat
 Tren pengunjung meningkat

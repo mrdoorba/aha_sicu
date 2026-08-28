@@ -506,6 +506,8 @@
   "presentation.intelligence.topSku": "Top SKU",
   "presentation.kesimpulan.marketingBudget": "Min. Marketing Budget",
   "presentation.loading": "Gathering evaluation data...",
+  "presentation.salesTrend.realBenchmark.label": "Real Benchmark",
+  "presentation.salesTrend.realBenchmark.note": "The real benchmark is taken from order-list revenue less cancellations. It can only be calculated once the brand has completed the registration form. Seller Center revenue is used solely to determine the partnership scheme.",
   "presentation.salesTrend.title": "Sales Trend — Last 6 Months",
   "presentation.salesTrend.tooltip": "Sales",
   "presentation.section.dataIntelligence": "Data Intelligence",

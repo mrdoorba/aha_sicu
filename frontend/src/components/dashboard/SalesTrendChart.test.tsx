@@ -88,7 +88,31 @@ describe('Business sales trend', () => {
     expect(bars.at(0)?.getAttribute('fill')).toBe('var(--muted-foreground)');
   });
 
-  it('renders no chart for categories without sales rows', () => {
+  it('closes the trend card with the Real Benchmark note', () => {
+    render(<DetailedEvaluation scoreBreakdown={businessBreakdown} />);
+
+    expect(screen.getByText('presentation.salesTrend.realBenchmark.label')).toBeInTheDocument();
+    expect(screen.getByText('presentation.salesTrend.realBenchmark.note')).toBeInTheDocument();
+  });
+
+  it('keeps the note when there is too little history to plot', () => {
+    // One month is a card, not a trend — but the prospect still has to be told
+    // which benchmark counts, and a thin history is when that matters most.
+    const [latest, ...pastMonths] = businessBreakdown[0].rows;
+    const { container } = render(
+      <DetailedEvaluation
+        scoreBreakdown={[{
+          ...businessBreakdown[0],
+          rows: [latest, pastMonths.at(-1)!],
+        }]}
+      />,
+    );
+
+    expect(container.querySelector('.recharts-wrapper')).toBeNull();
+    expect(screen.getByText('presentation.salesTrend.realBenchmark.note')).toBeInTheDocument();
+  });
+
+  it('renders no chart and no note for categories without sales rows', () => {
     const { container } = render(
       <DetailedEvaluation
         scoreBreakdown={[
@@ -112,5 +136,8 @@ describe('Business sales trend', () => {
     );
 
     expect(container.querySelector('.recharts-wrapper')).toBeNull();
+    expect(
+      screen.queryByText('presentation.salesTrend.realBenchmark.note'),
+    ).not.toBeInTheDocument();
   });
 });

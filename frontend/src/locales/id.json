@@ -506,6 +506,8 @@
   "presentation.intelligence.topSku": "Top SKU",
   "presentation.kesimpulan.marketingBudget": "Min. Anggaran Marketing",
   "presentation.loading": "Mengumpulkan data evaluasi...",
+  "presentation.salesTrend.realBenchmark.label": "Real Benchmark",
+  "presentation.salesTrend.realBenchmark.note": "Real benchmark akan diambil dari omset daftar pesanan yang dikurangi dengan pembatalan. Perhitungan real benchmark baru dapat dilakukan setelah brand mengisi form registrasi. Omset seller center hanya digunakan sebagai penentu skema kerjasama.",
   "presentation.salesTrend.title": "Tren Penjualan — 6 Bulan Terakhir",
   "presentation.salesTrend.tooltip": "Penjualan",
   "presentation.section.dataIntelligence": "Data Inteligensi",

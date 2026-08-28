@@ -6,6 +6,8 @@ Foto produk sudah menggunakan background yang baik
 scoring.bizRow13
 Conversion rate di atas benchmark
 
+เกณฑ์เปรียบเทียบจริง: เกณฑ์เปรียบเทียบจริงคำนวณจากยอดขายในรายการคำสั่งซื้อ หักด้วยรายการที่ถูกยกเลิก และคำนวณได้หลังจากแบรนด์กรอกแบบฟอร์มลงทะเบียนแล้วเท่านั้น ยอดขายจาก Seller Center ใช้เพียงเพื่อกำหนดรูปแบบความร่วมมือ
+
 👥 ภาพรวมผู้เยี่ยมชม:
 Jumlah pengunjung sehat
 Tren pengunjung meningkat

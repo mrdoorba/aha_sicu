@@ -6,6 +6,8 @@ Foto produk sudah menggunakan background yang baik
 scoring.bizRow13
 Conversion rate di atas benchmark
 
+Real Benchmark: Real benchmark akan diambil dari omset daftar pesanan yang dikurangi dengan pembatalan. Perhitungan real benchmark baru dapat dilakukan setelah brand mengisi form registrasi. Omset seller center hanya digunakan sebagai penentu skema kerjasama.
+
 👥 Tinjauan Pengunjung:
 Jumlah pengunjung sehat
 Tren pengunjung meningkat

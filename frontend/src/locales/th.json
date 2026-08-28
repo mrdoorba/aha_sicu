@@ -506,6 +506,8 @@
   "presentation.intelligence.topSku": "Top SKU",
   "presentation.kesimpulan.marketingBudget": "งบประมาณการตลาดขั้นต่ำ",
   "presentation.loading": "กำลังรวบรวมข้อมูลการประเมิน...",
+  "presentation.salesTrend.realBenchmark.label": "เกณฑ์เปรียบเทียบจริง",
+  "presentation.salesTrend.realBenchmark.note": "เกณฑ์เปรียบเทียบจริงคำนวณจากยอดขายในรายการคำสั่งซื้อ หักด้วยรายการที่ถูกยกเลิก และคำนวณได้หลังจากแบรนด์กรอกแบบฟอร์มลงทะเบียนแล้วเท่านั้น ยอดขายจาก Seller Center ใช้เพียงเพื่อกำหนดรูปแบบความร่วมมือ",
   "presentation.salesTrend.title": "แนวโน้มยอดขาย — 6 เดือนล่าสุด",
   "presentation.salesTrend.tooltip": "ยอดขาย",
   "presentation.section.dataIntelligence": "ข้อมูลเชิงลึก",

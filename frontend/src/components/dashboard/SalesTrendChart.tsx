@@ -33,13 +33,22 @@ function compact(value: number): string {
   return String(value);
 }
 
+/**
+ * The business category's trend card. Call it for that category only — it always
+ * renders, because the Real Benchmark note it carries has to reach the prospect
+ * even for a brand with too little history to plot (that is when mistaking
+ * Seller Center omset for the benchmark costs most). The chart itself appears
+ * only when there is a series.
+ */
 export const SalesTrendChart = ({ data, average }: SalesTrendChartProps) => {
   const { t } = useTranslation();
 
-  if (data.length === 0) return null;
+  const hasTrend = data.length > 0;
 
   return (
     <div className="mt-6 rounded-lg border border-border/80 bg-card p-4">
+      {hasTrend && (
+      <>
       <div className="mb-4 flex items-baseline justify-between gap-4">
         <p className="text-sm font-semibold text-foreground">{t('presentation.salesTrend.title')}</p>
         <p className="text-xs text-muted-foreground">
@@ -109,6 +118,22 @@ export const SalesTrendChart = ({ data, average }: SalesTrendChartProps) => {
             </Bar>
           </BarChart>
         </ResponsiveContainer>
+      </div>
+      </>
+      )}
+
+      {/* The benchmark the prospect actually gets is not the one drawn above:
+          Seller Center omset only picks the scheme. Same copy, same keys, as
+          the email's Bisnis section — see layout.py's SectionNote. */}
+      <div className={hasTrend ? 'mt-4 border-t border-border/80 pt-4' : ''}>
+        <div className="rounded-md border-l-[3px] border-primary bg-primary/10 px-3 py-2.5">
+          <p className="mb-1 text-[11px] font-bold uppercase tracking-wider text-primary">
+            {t('presentation.salesTrend.realBenchmark.label')}
+          </p>
+          <p className="text-xs leading-relaxed text-foreground">
+            {t('presentation.salesTrend.realBenchmark.note')}
+          </p>
+        </div>
       </div>
     </div>
   );
