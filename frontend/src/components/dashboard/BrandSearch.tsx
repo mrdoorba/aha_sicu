@@ -3,7 +3,10 @@ import { useTranslation } from 'react-i18next';
 import { Search, Loader2 } from 'lucide-react';
 import { useBrands } from '../../hooks/useBrands';
 import { Input } from '../ui/input';
+import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
+
+const SEARCH_RESULT_LIMIT = 10;
 
 interface BrandSearchProps {
   onSelect: (brandId: number) => void;
@@ -21,7 +24,7 @@ export const BrandSearch = ({ onSelect }: BrandSearchProps) => {
     return () => clearTimeout(timer);
   }, [search]);
 
-  const { data, isLoading } = useBrands(1, 10, debouncedSearch);
+  const { data, isLoading } = useBrands(1, SEARCH_RESULT_LIMIT, debouncedSearch);
 
   return (
     <div className="flex w-full flex-col items-center justify-center space-y-8 py-20">
@@ -54,25 +57,33 @@ export const BrandSearch = ({ onSelect }: BrandSearchProps) => {
           <Card className="absolute left-0 right-0 top-full z-50 mt-2 overflow-hidden shadow-2xl">
             <CardContent className="p-0">
               {data?.items && data.items.length > 0 ? (
-                <ul className="divide-y divide-border">
-                  {data.items.map((brand) => (
-                    <li key={brand.id}>
-                      <button
-                        className="flex w-full items-center px-4 py-4 text-left transition-colors hover:bg-muted"
-                        onClick={() => onSelect(brand.id)}
-                      >
-                        <div className="flex-1">
-                          <p className="font-semibold text-foreground">
+                <>
+                  <ul className="divide-y divide-border">
+                    {data.items.map((brand) => (
+                      <li key={brand.id}>
+                        <button
+                          className="flex w-full items-center gap-3 px-4 py-4 text-left transition-colors hover:bg-muted"
+                          onClick={() => onSelect(brand.id)}
+                        >
+                          <span className="flex-1 font-semibold text-foreground">
                             {brand.brand_name}
-                          </p>
-                          <p className="text-sm text-muted-foreground">
-                            {String(brand.raw_data?.['Store Name'] || brand.brand_name)}
-                          </p>
-                        </div>
-                      </button>
-                    </li>
-                  ))}
-                </ul>
+                          </span>
+                          <Badge variant="secondary">
+                            {brand.marketplace === 'TH' ? '🇹🇭' : '🇮🇩'} {brand.marketplace}
+                          </Badge>
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                  {data.total > data.items.length && (
+                    <p className="border-t border-border px-4 py-2 text-center text-xs text-muted-foreground">
+                      {t('brandSearch.showingCount', {
+                        shown: data.items.length,
+                        total: data.total,
+                      })}
+                    </p>
+                  )}
+                </>
               ) : !isLoading ? (
                 <div className="px-4 py-8 text-center text-muted-foreground">
                   {t('brandSearch.noResults', { query: debouncedSearch })}

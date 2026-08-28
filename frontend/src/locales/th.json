@@ -65,6 +65,7 @@
   "auth.accessDeniedEmailHistory": "การเข้าถึงถูกปฏิเสธ — ประวัติอีเมลต้องการบทบาท leader หรือ admin",
   "brandSearch.noResults": "ไม่พบแบรนด์ที่ตรงกับ \"{{query}}\"",
   "brandSearch.placeholder": "พิมพ์ชื่อแบรนด์...",
+  "brandSearch.showingCount": "แสดง {{shown}} จาก {{total}} แบรนด์ที่ตรงกัน",
   "brandSearch.subtitle": "ป้อนชื่อแบรนด์เพื่อเริ่มศูนย์การนำเสนอ",
   "brandSearch.title": "ค้นหาแบรนด์",
   "brandTable.badge.available": "พร้อมใช้งาน",

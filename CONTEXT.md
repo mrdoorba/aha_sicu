@@ -26,3 +26,17 @@ catalogue every noun.
 - **Email renderer** — turns a `ScoringResult` + language + format into the
   report text/HTML. The seam the frontend crosses (via `/email/preview`)
   instead of re-assembling the layout itself.
+
+## Brand lookup
+
+- **Brand lookup** — finding *one* brand by typed text, to open it. Distinct
+  from **brand browsing**, which pages through the whole roster. Both read the
+  same brand list, but lookup is judged on whether the brand you meant is
+  visible without paging; browsing is judged on stable, predictable order.
+- **Match tier** — how closely a brand's name answers the typed text: **exact**,
+  then **prefix**, then **substring**. Lookup orders by tier first and
+  alphabetically within a tier; browsing (no text typed) is alphabetical only.
+  A name that *is* the query outranks 49 names that merely contain it.
+- **Marketplace** — the storefront a brand sells on (`ID`, `TH`). A brand is
+  identified by name *and* marketplace, never name alone: the same name can
+  exist in both, and lookup results must show which one is which.

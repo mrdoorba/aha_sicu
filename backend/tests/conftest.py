@@ -1,5 +1,6 @@
 """Shared pytest fixtures and configuration."""
 
+import os
 from contextlib import asynccontextmanager
 from unittest.mock import AsyncMock, patch
 
@@ -119,3 +120,31 @@ def auth_headers():
         return user, headers, _AuthContext()
 
     return _make
+
+
+@pytest.fixture
+async def pg_conn():
+    """A real Postgres connection inside a transaction that is always rolled back.
+
+    Skips when DATABASE_URL is unset or unreachable, so the suite still runs on a
+    machine with no database. Use this only for behaviour that lives in SQL --
+    ordering, filtering, constraints -- where a mocked connection proves nothing.
+    """
+    import asyncpg
+
+    dsn = os.environ.get("DATABASE_URL")
+    if not dsn:
+        pytest.skip("DATABASE_URL not set")
+
+    try:
+        conn = await asyncpg.connect(dsn)
+    except (OSError, asyncpg.PostgresError) as exc:
+        pytest.skip(f"Postgres unreachable: {exc}")
+
+    txn = conn.transaction()
+    await txn.start()
+    try:
+        yield conn
+    finally:
+        await txn.rollback()
+        await conn.close()

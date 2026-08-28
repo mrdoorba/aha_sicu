@@ -65,6 +65,7 @@
   "auth.accessDeniedEmailHistory": "Akses ditolak — riwayat email memerlukan peran leader atau admin",
   "brandSearch.noResults": "Tidak ada brand ditemukan untuk \"{{query}}\"",
   "brandSearch.placeholder": "Ketik nama brand...",
+  "brandSearch.showingCount": "Menampilkan {{shown}} dari {{total}} brand yang cocok",
   "brandSearch.subtitle": "Masukkan nama brand untuk memulai pusat presentasi.",
   "brandSearch.title": "Cari Brand",
   "brandTable.badge.available": "Tersedia",

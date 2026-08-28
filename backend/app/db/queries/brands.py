@@ -168,7 +168,12 @@ async def get_brands_with_meeting(
     search: str | None = None,
     marketplaces: list[str] | None = None,
 ) -> list[BrandWithMeetingRow]:
-    """Get VP brands with LEFT JOIN to meeting data, with optional search and marketplace filter."""
+    """Get VP brands with LEFT JOIN to meeting data, with optional search and marketplace filter.
+
+    Ordered by match tier when searching -- exact name, then prefix, then
+    substring, alphabetical within each tier. Without a search term every row
+    shares tier 0, so browsing stays plain alphabetical.
+    """
     search_escaped = escape_like(search) if search else None
     return await fetch_all(
         conn,
@@ -181,7 +186,14 @@ async def get_brands_with_meeting(
             ON v.brand_name = m.brand_name AND v.marketplace = m.marketplace
         WHERE ($1::text IS NULL OR v.brand_name ILIKE '%' || $1 || '%' ESCAPE '\')
           AND ($2::text[] IS NULL OR v.marketplace = ANY($2))
-        ORDER BY v.brand_name ASC
+        ORDER BY
+            CASE
+                WHEN $1::text IS NULL THEN 0
+                WHEN v.brand_name ILIKE $1 ESCAPE '\' THEN 0
+                WHEN v.brand_name ILIKE $1 || '%' ESCAPE '\' THEN 1
+                ELSE 2
+            END,
+            v.brand_name ASC
         LIMIT $3 OFFSET $4
         """,
         search_escaped,

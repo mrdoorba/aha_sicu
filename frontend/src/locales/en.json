@@ -65,6 +65,7 @@
   "auth.accessDeniedEmailHistory": "Access denied — email history requires leader or admin role",
   "brandSearch.noResults": "No brands found matching \"{{query}}\"",
   "brandSearch.placeholder": "Type brand name...",
+  "brandSearch.showingCount": "Showing {{shown}} of {{total}} matching brands",
   "brandSearch.subtitle": "Enter a brand name to start the presentation hub.",
   "brandSearch.title": "Search for Brand",
   "brandTable.badge.available": "Available",
