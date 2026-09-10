@@ -69,6 +69,16 @@ def _read_vp(raw_value: object) -> float | None:
     return None if vp == 0.0 else vp
 
 
+def has_scored_vp(raw_data: dict | None) -> bool:
+    """True when a VP sheet row carries a real VP number.
+
+    The sheet lists some brands on two rows: the real one scored, the leftover
+    one blank or ``0``. Sync reads this to keep the scored row, so the same fact
+    about what counts as a VP decides both the penalty and which row survives.
+    """
+    return _read_vp((raw_data or {}).get(_VP_COLUMN)) is not None
+
+
 def read_package_fit(raw_data: dict | None) -> PackageFit:
     """Judge a brand's VP against its package, from its VP sheet row."""
     raw_data = raw_data or {}

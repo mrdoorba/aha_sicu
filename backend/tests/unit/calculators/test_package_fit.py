@@ -2,7 +2,7 @@
 
 import pytest
 
-from app.calculators.package_fit import PACKAGE_BARS, read_package_fit
+from app.calculators.package_fit import PACKAGE_BARS, has_scored_vp, read_package_fit
 
 
 def _row(package: str = "New Star", vp: str = "80") -> dict:
@@ -103,3 +103,28 @@ class TestRealSheetRows:
     def test_matches_the_agreed_outcome(self, brand, package, vp, expected):
         fit = read_package_fit({"Brand": brand, "Package": package, "VP": vp})
         assert fit.adjustment == expected
+
+
+class TestHasScoredVp:
+    """The predicate sync uses to pick a duplicate brand's real row."""
+
+    def test_a_real_number_counts_as_scored(self):
+        assert has_scored_vp({"VP": "72"}) is True
+
+    def test_zero_does_not_count_as_scored(self):
+        assert has_scored_vp({"VP": "0"}) is False
+
+    def test_blank_does_not_count_as_scored(self):
+        assert has_scored_vp({"VP": ""}) is False
+
+    def test_a_missing_column_does_not_count_as_scored(self):
+        assert has_scored_vp({"Package": "New Star"}) is False
+
+    def test_none_does_not_count_as_scored(self):
+        assert has_scored_vp(None) is False
+
+    def test_it_agrees_with_the_vp_the_penalty_reads(self):
+        """One fact, one source: both readers must never disagree."""
+        for cell in ["72", "0", "", "  ", "n/a", "1,05", "110"]:
+            row = {"VP": cell}
+            assert has_scored_vp(row) is (read_package_fit(row).vp is not None)
