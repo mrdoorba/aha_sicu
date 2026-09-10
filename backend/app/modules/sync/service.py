@@ -2,9 +2,11 @@
 
 import logging
 import time
+from collections.abc import Callable
 from datetime import datetime, timezone
 from typing import Any
 
+from app.calculators.package_fit import has_scored_vp
 from app.config import settings
 from app.db.connection import db
 from app.db.queries import brands as brand_queries
@@ -109,6 +111,7 @@ async def _sync_sheet_to_table(
     brand_column: str,
     sheet_type: str,
     marketplace: str = "ID",
+    prefer_row: Callable[[dict[str, Any]], bool] | None = None,
 ) -> SheetSyncResult:
     """Sync rows from a sheet to a database table.
 
@@ -117,6 +120,10 @@ async def _sync_sheet_to_table(
         table: Target table name ("brand_vp_data" or "brand_meeting_data").
         brand_column: Column name containing the brand name.
         sheet_type: "vp" or "meeting" for logging.
+        prefer_row: Decides which of two rows sharing a brand name survives.
+            A row this returns True for is never displaced by one it returns
+            False for; otherwise the later row wins. None means the later row
+            always wins.
 
     Returns:
         SheetSyncResult with counts and errors.
@@ -145,10 +152,19 @@ async def _sync_sheet_to_table(
             success=True,
         )
 
-    # Step 2: Deduplicate by brand_name (last occurrence wins)
+    # Step 2: Deduplicate by brand_name (last occurrence wins, unless
+    # prefer_row ranks the row already held above it)
     seen: dict[str, dict[str, Any]] = {}
     for row_data in valid_rows:
         brand_name = row_data.get(brand_column, "").strip()
+        held = seen.get(brand_name)
+        if (
+            prefer_row is not None
+            and held is not None
+            and prefer_row(held)
+            and not prefer_row(row_data)
+        ):
+            continue
         seen[brand_name] = row_data
 
     dedup_count = len(valid_rows) - len(seen)
@@ -274,6 +290,7 @@ async def _sync_vp_sheets(
                 brand_column=cfg["brand_column"],
                 sheet_type=key,
                 marketplace=mk,
+                prefer_row=has_scored_vp,
             )
             results[key] = result
 

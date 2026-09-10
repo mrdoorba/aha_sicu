@@ -206,3 +206,112 @@ async def test_sync_sheet_deduplicates_when_duplicate_brand_names(mock_db, mock_
     # Nike's data should be the LAST occurrence
     nike_idx = brand_names.index("Nike")
     assert raw_data_list[nike_idx]["data"] == "new"
+
+
+async def test_sync_sheet_keeps_the_scored_vp_row_over_a_later_blank_twin(
+    mock_db, mock_brand_queries
+):
+    """A brand listed twice keeps the row that carries a VP, whatever its order.
+
+    The VP sheet lists some brands on two rows, one of them left at VP 0. Plain
+    last-occurrence-wins handed the database the empty twin, so the brand's real
+    VP never reached the evaluation page.
+    """
+    from app.calculators.package_fit import has_scored_vp
+    from app.modules.sync.service import _sync_sheet_to_table
+
+    rows = [
+        # Scored row first, leftover twin after — the order that used to lose.
+        {"brand": "Your Glasses", "Package": "New Star", "VP": "72"},
+        {"brand": "Your Glasses", "Package": "New Star", "VP": "0"},
+        # And the other way round, which already worked.
+        {"brand": "De Leaf Thanaka", "Package": "Rising Star", "VP": ""},
+        {"brand": "De Leaf Thanaka", "Package": "Rising Star", "VP": "88"},
+    ]
+
+    result = await _sync_sheet_to_table(
+        rows=rows,
+        table="brand_vp_data",
+        brand_column="brand",
+        sheet_type="vp_id",
+        prefer_row=has_scored_vp,
+    )
+
+    assert result.rows_synced == 2
+    call_args = mock_brand_queries.batch_upsert_brand_data.call_args
+    brand_names = call_args.kwargs["brand_names"]
+    raw_data_list = call_args.kwargs["raw_data_list"]
+
+    kept = {name: raw_data_list[i]["VP"] for i, name in enumerate(brand_names)}
+    assert kept == {"Your Glasses": "72", "De Leaf Thanaka": "88"}
+
+
+async def test_sync_sheet_keeps_the_later_row_when_both_twins_are_scored(
+    mock_db, mock_brand_queries
+):
+    """The preference only breaks ties the sheet leaves; otherwise later wins."""
+    from app.calculators.package_fit import has_scored_vp
+    from app.modules.sync.service import _sync_sheet_to_table
+
+    rows = [
+        {"brand": "Maxxlife", "Package": "Superstar", "VP": "81"},
+        {"brand": "Maxxlife", "Package": "Superstar", "VP": "93"},
+    ]
+
+    await _sync_sheet_to_table(
+        rows=rows,
+        table="brand_vp_data",
+        brand_column="brand",
+        sheet_type="vp_id",
+        prefer_row=has_scored_vp,
+    )
+
+    call_args = mock_brand_queries.batch_upsert_brand_data.call_args
+    assert call_args.kwargs["raw_data_list"][0]["VP"] == "93"
+
+
+async def test_sync_sheet_keeps_a_blank_row_when_no_twin_is_scored(
+    mock_db, mock_brand_queries
+):
+    """A brand with nothing but blank rows is still synced, not dropped."""
+    from app.calculators.package_fit import has_scored_vp
+    from app.modules.sync.service import _sync_sheet_to_table
+
+    rows = [
+        {"brand": "Ghost Brand", "Package": "New Star", "VP": "0"},
+        {"brand": "Ghost Brand", "Package": "New Star", "VP": ""},
+    ]
+
+    result = await _sync_sheet_to_table(
+        rows=rows,
+        table="brand_vp_data",
+        brand_column="brand",
+        sheet_type="vp_id",
+        prefer_row=has_scored_vp,
+    )
+
+    assert result.rows_synced == 1
+    call_args = mock_brand_queries.batch_upsert_brand_data.call_args
+    assert call_args.kwargs["brand_names"] == ["Ghost Brand"]
+
+
+async def test_sync_sheet_without_a_preference_still_takes_the_last_row(
+    mock_db, mock_brand_queries
+):
+    """The meeting sheet passes no preference, so its dedup is unchanged."""
+    from app.modules.sync.service import _sync_sheet_to_table
+
+    rows = [
+        {"brand": "Nike", "notes": "first"},
+        {"brand": "Nike", "notes": "second"},
+    ]
+
+    await _sync_sheet_to_table(
+        rows=rows,
+        table="brand_meeting_data",
+        brand_column="brand",
+        sheet_type="m1_id",
+    )
+
+    call_args = mock_brand_queries.batch_upsert_brand_data.call_args
+    assert call_args.kwargs["raw_data_list"][0]["notes"] == "second"
