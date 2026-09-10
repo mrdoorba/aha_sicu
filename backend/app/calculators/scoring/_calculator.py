@@ -9,6 +9,7 @@ Spec: logic/scoring-system-template-sicu.md
 
 from __future__ import annotations
 
+from app.calculators.package_fit import PackageFit
 from app.calculators.scoring.categories import (
     _score_ads,
     _score_business,
@@ -61,6 +62,7 @@ def calculate_score(
     rules: dict | None = None,
     rule_version: int = 1,
     marketplace: str = "ID",
+    package_fit: PackageFit | None = None,
 ) -> ScoringResult:
     """Compute the full scoring system.
 
@@ -78,6 +80,8 @@ def calculate_score(
         email: Optional email address (G3).
         rules: Optional rules dict from DB. Falls back to defaults when None.
         rule_version: Version of the rules used (from DB).
+        package_fit: The brand's VP read against its package's bar. Its
+            adjustment lands on the total score. None means no adjustment.
 
     Returns:
         ScoringResult with all scores, messages, and email body.
@@ -110,7 +114,11 @@ def calculate_score(
     ]
 
     # --- Total score (H4) ---
-    total_score = sum(cat.score for cat in all_categories)
+    # The category total is what the panel's rows add up to; the VP adjustment
+    # rides on top of it. Like the category total, the result may go negative.
+    category_total = sum(cat.score for cat in all_categories)
+    vp_adjustment = package_fit.adjustment if package_fit else 0.0
+    total_score = category_total + vp_adjustment
 
     # --- G-column messages ---
     _generate_operational_messages(cat_operational, manual_data, rules)
@@ -159,6 +167,8 @@ def calculate_score(
     return ScoringResult(
         total_score=total_score,
         category_scores=all_categories,
+        category_total=category_total,
+        vp_adjustment=vp_adjustment,
         verdict=verdict,
         conclusion=g66,
         marketing_estimation=g68,

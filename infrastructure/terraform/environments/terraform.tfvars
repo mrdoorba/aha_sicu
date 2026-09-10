@@ -18,6 +18,7 @@ cloud_run_cpu           = "1"
 # Google Sheets spreadsheet IDs (shared)
 gsheets_vp_spreadsheet_id      = "1AH9-KuHJXLwxuv82LC5stBmvA-Db-mAfZGJfbUKkvWc"
 gsheets_meeting_spreadsheet_id = "1AH9-KuHJXLwxuv82LC5stBmvA-Db-mAfZGJfbUKkvWc"
+gsheets_vp_spreadsheet_id_th   = "1hBUMHef3akTIza5i9trWERCVDSJGF-eNgwca0Lzg0g0"
 
 # Google Sheets eval spreadsheet IDs (per-environment)
 dev_gsheets_eval_spreadsheet_id  = "1sU6OF8l2YsV5E_InP6rUHVqE_q9cSxN5ovU1PSEFT18"

@@ -69,6 +69,41 @@ export const EvaluationHeader = ({ brand, isLoading, isError, marketplace }: Eva
     );
   }
 
+  const fit = brand.package_fit;
+  const packageBadges = fit ? (
+    <>
+      <Badge
+        className={
+          fit.bar !== null
+            ? 'bg-primary text-primary-foreground hover:bg-primary/90'
+            : 'bg-muted text-muted-foreground hover:bg-muted'
+        }
+      >
+        {fit.package ?? t('evaluationHeader.packageUnknown')}
+      </Badge>
+      {fit.vp !== null && fit.bar !== null ? (
+        <Badge
+          variant="outline"
+          className={
+            fit.met
+              ? 'border-green-600/40 font-semibold tabular-nums text-green-700 dark:text-green-400'
+              : 'border-destructive/40 font-semibold tabular-nums text-destructive'
+          }
+        >
+          {t('evaluationHeader.vpAgainstBar', {
+            vp: Math.round(fit.vp),
+            bar: Math.round(fit.bar),
+          })}{' '}
+          {fit.met ? '\u2713' : '\u2717'}
+        </Badge>
+      ) : (
+        <Badge variant="outline" className="text-muted-foreground">
+          {t('evaluationHeader.vpUnjudged')}
+        </Badge>
+      )}
+    </>
+  ) : null;
+
   const vpFields = VP_DISPLAY_FIELDS
     .filter((key) => {
       const val = brand.raw_data[key];
@@ -98,6 +133,7 @@ export const EvaluationHeader = ({ brand, isLoading, isError, marketplace }: Eva
             {t('evaluationHeader.meetingData')}
           </Badge>
         ) : null}
+        {packageBadges}
       </div>
 
       {/* VP Data Fields */}

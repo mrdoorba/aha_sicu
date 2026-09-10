@@ -8,6 +8,7 @@ from typing import Any, Literal
 
 from asyncpg import Connection
 
+from app.calculators.package_fit import read_package_fit
 from app.calculators.scoring import calculate_score
 from app.core.exceptions import AppException, CalculatorException
 from app.core.utils import ensure_dict
@@ -433,6 +434,7 @@ async def generate_score(
             rules=rules_jsonb,
             rule_version=rule_version,
             marketplace=marketplace,
+            package_fit=read_package_fit(ensure_dict(brand.get("raw_data"))),
         )
     except Exception as e:
         raise CalculatorException(
@@ -472,6 +474,8 @@ async def generate_score(
     return ScoringResponse(
         total_score=result.total_score,
         category_scores=category_scores,
+        category_total=result.category_total,
+        vp_adjustment=result.vp_adjustment,
         verdict=result.verdict,
         conclusion=result.conclusion,
         marketing_estimation=result.marketing_estimation,

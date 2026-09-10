@@ -66,7 +66,8 @@ def test_category_score_i18n_field():
 
 def test_scoring_result_i18n_fields():
     result = ScoringResult(
-        total_score=50, category_scores=[], verdict="✔️",
+        total_score=50, category_scores=[], category_total=50,
+        vp_adjustment=0.0, verdict="✔️",
         conclusion="test", marketing_estimation="test",
         marketing_percentage="10%", marketing_budget="test",
         closing_message="test", email_subject="test",
