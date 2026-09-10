@@ -27,8 +27,11 @@ export interface CategoryScore {
 }
 
 export interface ScoringResult {
+  /** Category total plus the VP adjustment — the AHA Compatibility Score. */
   total_score: number;
   category_scores: CategoryScore[];
+  category_total: number;
+  vp_adjustment: number;
   verdict: string;
   conclusion: string;
   conclusion_i18n?: TranslatableText[];

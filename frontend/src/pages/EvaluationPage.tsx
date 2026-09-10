@@ -126,7 +126,7 @@ export const EvaluationPage = () => {
 
               {/* Right panel: score summary */}
               <aside className="hidden w-56 shrink-0 lg:block">
-                <ScorePanel scoringResult={scoringResult} />
+                <ScorePanel scoringResult={scoringResult} packageFit={brand?.package_fit} />
               </aside>
             </div>
           </>

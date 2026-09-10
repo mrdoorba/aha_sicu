@@ -47,8 +47,10 @@ class CategoryScore:
 class ScoringResult:
     """Complete result of the scoring system."""
 
-    total_score: float
+    total_score: float               # H4, after the VP adjustment
     category_scores: list[CategoryScore]
+    category_total: float            # sum of category scores, before adjustment
+    vp_adjustment: float             # 0.0, or -10.0 when VP misses its bar
     verdict: str                     # F75 value
     conclusion: str                  # G66
     marketing_estimation: str        # G68

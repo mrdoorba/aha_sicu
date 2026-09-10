@@ -4,7 +4,9 @@ import json
 from datetime import datetime
 from typing import Any
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, computed_field, field_validator
+
+from app.calculators.package_fit import read_package_fit
 
 
 def _parse_json(v: Any) -> dict[str, Any] | None:
@@ -14,6 +16,22 @@ def _parse_json(v: Any) -> dict[str, Any] | None:
     if isinstance(v, str):
         return json.loads(v)
     return v
+
+
+class PackageFitSchema(BaseModel):
+    """A brand's VP read against the bar its package sets.
+
+    ``adjustment`` is the points the AHA Compatibility Score gains or loses
+    (``-10.0`` on a shortfall). ``bar`` is null for an unrecognised package and
+    ``vp`` is null when the sheet carries no usable number; ``met`` is null
+    whenever there was nothing to judge.
+    """
+
+    package: str | None
+    vp: float | None
+    bar: float | None
+    adjustment: float
+    met: bool | None
 
 
 class BrandListItem(BaseModel):
@@ -46,6 +64,19 @@ class BrandDetailResponse(BaseModel):
     @classmethod
     def parse_jsonb(cls, v: Any) -> dict[str, Any] | None:
         return _parse_json(v)
+
+    @computed_field
+    @property
+    def package_fit(self) -> PackageFitSchema:
+        """Derived from raw_data, so the header can show it before scoring runs."""
+        fit = read_package_fit(self.raw_data)
+        return PackageFitSchema(
+            package=fit.package,
+            vp=fit.vp,
+            bar=fit.bar,
+            adjustment=fit.adjustment,
+            met=fit.met,
+        )
 
 
 class BrandListResponse(BaseModel):

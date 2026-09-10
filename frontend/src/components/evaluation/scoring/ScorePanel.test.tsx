@@ -5,6 +5,8 @@ import type { ScoringResult } from '../../../hooks/useScoring';
 
 const MOCK_RESULT: ScoringResult = {
   total_score: 75,
+  category_total: 75,
+  vp_adjustment: 0,
   category_scores: [
     { category: 'Kesehatan Operasional Toko', score: 5, max_score: 10, rows: [], available: true },
     { category: 'Bisnis Analisis', score: 10, max_score: 20, rows: [], available: true },
@@ -43,7 +45,12 @@ describe('ScorePanel', () => {
   });
 
   it('shows total score when result exists', () => {
-    render(<ScorePanel scoringResult={MOCK_RESULT} />);
+    // category_total differs from the total so the assertion names one element.
+    render(
+      <ScorePanel
+        scoringResult={{ ...MOCK_RESULT, total_score: 75, category_total: 85, vp_adjustment: -10 }}
+      />
+    );
     expect(screen.getByText('75')).toBeInTheDocument();
   });
 
@@ -68,5 +75,59 @@ describe('ScorePanel', () => {
     expect(screen.getByText('Kompetisi')).toBeInTheDocument();
     expect(screen.getByText('Stok')).toBeInTheDocument();
     expect(screen.getByText('Diskon')).toBeInTheDocument();
+  });
+
+  it('shows the category total and a nil VP adjustment', () => {
+    render(<ScorePanel scoringResult={MOCK_RESULT} />);
+
+    expect(screen.getByText('Jumlah kategori')).toBeInTheDocument();
+    expect(screen.getByText('Penyesuaian VP')).toBeInTheDocument();
+  });
+
+  it('shows the shortfall and its reason when VP misses the bar', () => {
+    render(
+      <ScorePanel
+        scoringResult={{ ...MOCK_RESULT, total_score: 65, category_total: 75, vp_adjustment: -10 }}
+        packageFit={{ package: 'Rising Star', vp: 65, bar: 80, adjustment: -10, met: false }}
+      />
+    );
+
+    expect(screen.getByText('65')).toBeInTheDocument();          // total after the cut
+    expect(screen.getByText('\u221210')).toBeInTheDocument();     // minus sign, not hyphen
+    expect(
+      screen.getByText('VP 65 di bawah ambang Rising Star (80).')
+    ).toBeInTheDocument();
+  });
+
+  it('explains a met bar rather than leaving the nil adjustment bare', () => {
+    render(
+      <ScorePanel
+        scoringResult={MOCK_RESULT}
+        packageFit={{ package: 'New Star', vp: 65, bar: 65, adjustment: 0, met: true }}
+      />
+    );
+
+    expect(
+      screen.getByText('VP 65 memenuhi ambang New Star (65).')
+    ).toBeInTheDocument();
+  });
+
+  it('says so when VP or package cannot be judged', () => {
+    render(
+      <ScorePanel
+        scoringResult={MOCK_RESULT}
+        packageFit={{ package: 'New Star', vp: null, bar: 65, adjustment: 0, met: null }}
+      />
+    );
+
+    expect(
+      screen.getByText('VP atau Package brand ini belum bisa dinilai — skor tidak disesuaikan.')
+    ).toBeInTheDocument();
+  });
+
+  it('leaves the adjustment rows out entirely before a score exists', () => {
+    render(<ScorePanel scoringResult={null} />);
+
+    expect(screen.queryByText('Jumlah kategori')).not.toBeInTheDocument();
   });
 });

@@ -176,6 +176,8 @@ class ScoringResponse(BaseModel):
 
     total_score: float
     category_scores: list[CategoryScoreItem]
+    category_total: float
+    vp_adjustment: float
     verdict: VerdictType
     conclusion: str
     marketing_estimation: str

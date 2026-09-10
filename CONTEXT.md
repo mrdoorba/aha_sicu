@@ -16,6 +16,17 @@ catalogue every noun.
 - **Seller Center omset** — the revenue read off Seller Center and plotted as
   the sales trend. Decides the cooperation scheme only; it is never the Real
   Benchmark, and the trend card and email say so in as many words.
+- **AHA Compatibility Score** — the number a brand is judged by, stored as an
+  evaluation's `final_score`: the **category total** plus the **VP adjustment**.
+  Distinct from the partner score (the ✓/✗ tally). It may go negative.
+- **Category total** — the sum of the category scores, before any adjustment.
+  What the score panel's rows add up to, so it is shown alongside the
+  Compatibility Score rather than replaced by it.
+- **VP adjustment** — the points a brand loses when its **VP** falls below the
+  bar its **Package** sets. Ten points or nothing; never a bonus. A brand whose
+  VP or Package cannot be judged is never adjusted, so sheet bookkeeping costs
+  nobody points. The reason for a shortfall is internal: it reaches the score,
+  never the partner's report.
 - **Category** — one scored section of an evaluation (operational, business,
   visitors, promo tools, products/status, ads, campaign, competition, stock).
   Carries `RowScore` rows.
@@ -50,6 +61,14 @@ catalogue every noun.
   then **prefix**, then **substring**. Lookup orders by tier first and
   alphabetically within a tier; browsing (no text typed) is alphabetical only.
   A name that *is* the query outranks 49 names that merely contain it.
+- **Package** — the tier a brand sits in, read from the BD sheet: `New Star`,
+  `Rising Star`, `Superstar`. The sheet's `GMV Tier` column carries the same
+  fact in machine form (`lt100` / `mid` / `gte300`); Package is the name we
+  read and show. Each package sets the minimum **VP** a brand must clear.
+- **VP** — the BD team's own score for a brand, a column on its VP sheet row,
+  not something an evaluation computes. `0` means "not yet scored" — it marks a
+  duplicate row whose real data sits on the brand's other row — and is treated
+  as absent, never as a zero.
 - **Marketplace** — the storefront a brand sells on (`ID`, `TH`). A brand is
   identified by name *and* marketplace, never name alone: the same name can
   exist in both, and lookup results must show which one is which.
