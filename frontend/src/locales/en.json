@@ -213,7 +213,6 @@
   "emailHistory.statusSpam": "Spam",
   "emailHistory.subject": "Subject",
   "emailHistory.title": "Email History",
-  "email.subject": "Scoring Report - {{store}} - {{period}}",
   "emailBody": {
     "section": {
       "operational": "Store Operational Performance:",

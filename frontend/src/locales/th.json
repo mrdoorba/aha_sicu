@@ -213,7 +213,6 @@
   "emailHistory.statusSpam": "สแปม",
   "emailHistory.subject": "หัวข้อ",
   "emailHistory.title": "ประวัติอีเมล",
-  "email.subject": "รายงานคะแนน - {{store}} - {{period}}",
   "emailBody": {
     "section": {
       "operational": "ประสิทธิภาพการดำเนินงานร้านค้า:",
