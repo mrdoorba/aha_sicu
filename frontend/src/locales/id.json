@@ -213,7 +213,6 @@
   "emailHistory.statusSpam": "Spam",
   "emailHistory.subject": "Subjek",
   "emailHistory.title": "Riwayat Email",
-  "email.subject": "Laporan Scoring - {{store}} - {{period}}",
   "emailBody": {
     "section": {
       "operational": "Performa Operasional Toko:",
