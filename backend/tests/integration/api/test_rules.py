@@ -246,3 +246,61 @@ def test_get_rules_jsonb_categories(client):
                 assert expected in rule_categories, (
                     f"Missing category '{expected}' in {rule['template']} rules"
                 )
+
+
+# The scheduler role is what an allowlisted service account authenticates as
+# (OIDC path in get_current_user). Reading rules is open to it so a downstream
+# consumer scores against live thresholds; writing them is not.
+SCHEDULER_EMAIL = "aha-coms-sicu-prod-sched-sa@project.iam.gserviceaccount.com"
+
+
+def _patch_scheduler_identity(mock_firebase, mock_oidc, mock_settings):
+    """Make get_current_user resolve to an allowlisted service account."""
+    from app.core.exceptions import AuthException
+
+    mock_firebase.side_effect = AuthException(
+        code="AUTH_TOKEN_INVALID", detail="Token validation failed"
+    )
+    mock_oidc.return_value = {
+        "email": SCHEDULER_EMAIL,
+        "issuer": "https://accounts.google.com",
+    }
+    mock_settings.allowed_scheduler_emails = SCHEDULER_EMAIL
+
+
+def test_get_rules_scheduler_role_allowed(client):
+    """Test GET /api/v1/rules returns 200 for an allowlisted service account."""
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_firebase,
+        patch("app.core.dependencies.verify_oidc_token") as mock_oidc,
+        patch("app.core.dependencies.settings") as mock_settings,
+        patch("app.modules.rules.service.db") as mock_rules_db,
+    ):
+        _patch_scheduler_identity(mock_firebase, mock_oidc, mock_settings)
+        mock_rules_conn = AsyncMock()
+        mock_rules_db.connection.return_value.__aenter__.return_value = mock_rules_conn
+        mock_rules_conn.fetch = AsyncMock(return_value=SAMPLE_RULES)
+
+        response = client.get("/api/v1/rules", headers=AUTH_HEADERS)
+        assert response.status_code == 200
+
+
+def test_update_rules_scheduler_role_forbidden(client):
+    """Test PUT /api/v1/rules/default returns 403 for a service account.
+
+    Read access to the thresholds is not write access to them.
+    """
+    with (
+        patch("app.core.dependencies.verify_firebase_token") as mock_firebase,
+        patch("app.core.dependencies.verify_oidc_token") as mock_oidc,
+        patch("app.core.dependencies.settings") as mock_settings,
+    ):
+        _patch_scheduler_identity(mock_firebase, mock_oidc, mock_settings)
+
+        response = client.put(
+            "/api/v1/rules/default",
+            json={"rules": DEFAULT_RULES},
+            headers=AUTH_HEADERS,
+        )
+        assert response.status_code == 403
+        assert response.json()["code"] == "RULE_ACCESS_DENIED"
