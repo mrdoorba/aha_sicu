@@ -94,6 +94,12 @@ variable "gsheets_vp_spreadsheet_id_th" {
   default     = ""
 }
 
+variable "gsheets_meeting_spreadsheet_id_th" {
+  description = "Google Sheets spreadsheet ID for 1st Meeting brand data (Thailand)"
+  type        = string
+  default     = ""
+}
+
 # =============================================================================
 # Email Variables
 # =============================================================================

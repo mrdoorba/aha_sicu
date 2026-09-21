@@ -23,6 +23,15 @@ resource "google_sql_database_instance" "main" {
       update_track = "stable"
     }
 
+    # Enabled out-of-band and live on the instance since before this config
+    # declared any flags. Codified here so an apply reconciles to what is
+    # actually running: omitting it makes every apply drop IAM database
+    # authentication, which is not a decision any unrelated change should carry.
+    database_flags {
+      name  = "cloudsql.iam_authentication"
+      value = "on"
+    }
+
     database_flags {
       name  = "log_connections"
       value = "on"
