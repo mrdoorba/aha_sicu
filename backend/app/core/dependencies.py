@@ -57,7 +57,11 @@ async def get_current_user(
                 code="AUTH_TOKEN_INVALID",
                 detail="Service account authorization not configured",
             )
-        allowed = [e.strip() for e in allowed_raw.split(",")]
+        # Blank entries are dropped, not kept: a stray or trailing comma would
+        # otherwise leave "" in the allowlist, and a token carrying no email
+        # claim reads as "" too — which would match it. An allowlist that
+        # reduces to nothing matches nothing, so this stays fail-closed.
+        allowed = [e.strip() for e in allowed_raw.split(",") if e.strip()]
         if oidc_claims["email"] not in allowed:
             logger.warning("OIDC auth rejected: %s not in allowlist", oidc_claims["email"])
             raise AuthException(

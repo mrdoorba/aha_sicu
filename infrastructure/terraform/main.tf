@@ -135,6 +135,7 @@ module "dev" {
   gsheets_eval_spreadsheet_id    = var.dev_gsheets_eval_spreadsheet_id
   gsheets_vp_spreadsheet_id_th   = var.gsheets_vp_spreadsheet_id_th
   enable_scheduler               = false
+  additional_scheduler_emails    = var.dev_additional_scheduler_emails
 
   cors_origins = [
     "https://aha-coms-sicu-dev.web.app",
@@ -178,6 +179,7 @@ module "prod" {
   gsheets_eval_spreadsheet_id    = var.prod_gsheets_eval_spreadsheet_id
   gsheets_vp_spreadsheet_id_th   = var.gsheets_vp_spreadsheet_id_th
   enable_scheduler               = true
+  additional_scheduler_emails    = var.prod_additional_scheduler_emails
   # Prod runs images from the dev registry (promote reuses the develop digest),
   # so it needs no registry of its own.
   create_registry = false

@@ -24,6 +24,13 @@ gsheets_vp_spreadsheet_id_th   = "1hBUMHef3akTIza5i9trWERCVDSJGF-eNgwca0Lzg0g0"
 dev_gsheets_eval_spreadsheet_id  = "1sU6OF8l2YsV5E_InP6rUHVqE_q9cSxN5ovU1PSEFT18"
 prod_gsheets_eval_spreadsheet_id = "1RS798qnTYwk8usogqjBaeYUTKQJMsONm4p1Cik92HYM"
 
+# Service accounts allowed on the API's OIDC path, beyond each environment's own
+# scheduler SA. AHABOT's backfill job reads stored evaluations and the scoring
+# rules as its Cloud Run runtime SA; Cloud Run's metadata server mints the token,
+# so no key is exchanged. Cross-project is fine — the token is Google-signed
+# either way. The audience it must mint against is prod_cloud_run_url above.
+prod_additional_scheduler_emails = ["ahabot-api-backend@ahabot-backend.iam.gserviceaccount.com"]
+
 # Cloud SQL
 cloud_sql_tier          = "db-f1-micro"
 cloud_sql_disk_size     = 10

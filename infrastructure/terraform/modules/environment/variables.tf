@@ -159,6 +159,12 @@ variable "enable_scheduler" {
   default     = true
 }
 
+variable "additional_scheduler_emails" {
+  description = "Service account emails allowed to authenticate over the API's OIDC path, beyond this environment's own scheduler SA. For downstream systems that read the API as a service account rather than as a human."
+  type        = list(string)
+  default     = []
+}
+
 variable "create_registry" {
   description = "Whether to create an Artifact Registry for this env. Prod sets false — it reuses dev's image digest via promote and never builds its own."
   type        = bool
