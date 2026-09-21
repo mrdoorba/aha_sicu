@@ -76,6 +76,18 @@ variable "prod_gsheets_eval_spreadsheet_id" {
   default     = ""
 }
 
+variable "dev_additional_scheduler_emails" {
+  description = "Extra service account emails allowed on the API's OIDC path (dev)"
+  type        = list(string)
+  default     = []
+}
+
+variable "prod_additional_scheduler_emails" {
+  description = "Extra service account emails allowed on the API's OIDC path (prod)"
+  type        = list(string)
+  default     = []
+}
+
 variable "gsheets_vp_spreadsheet_id_th" {
   description = "Google Sheets spreadsheet ID for VP brand data (Thailand)"
   type        = string

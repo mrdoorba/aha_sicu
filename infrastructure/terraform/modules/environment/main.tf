@@ -283,6 +283,16 @@ locals {
   cloud_run_service_name          = var.cloud_run_service_name != "" ? var.cloud_run_service_name : "aha-coms-sicu-${var.environment}-api"
   scheduler_target_url            = var.cloud_run_url != "" ? var.cloud_run_url : google_cloud_run_v2_service.api.uri
   scheduler_service_account_email = try(google_service_account.scheduler[0].email, "")
+
+  # The API splits ALLOWED_SCHEDULER_EMAILS on "," and matches a token's email
+  # claim against the result. compact() drops the empty string the scheduler SA
+  # leaves when enable_scheduler is false: without it the allowlist would carry
+  # "", and a token whose email claim is absent reads as "" too — which would
+  # match. Keep compact() even if the list looks like it can never be empty.
+  allowed_scheduler_emails = join(",", compact(concat(
+    [local.scheduler_service_account_email],
+    var.additional_scheduler_emails,
+  )))
 }
 
 resource "google_cloud_run_v2_service" "api" {
@@ -451,7 +461,7 @@ resource "google_cloud_run_v2_service" "api" {
 
       env {
         name  = "ALLOWED_SCHEDULER_EMAILS"
-        value = local.scheduler_service_account_email
+        value = local.allowed_scheduler_emails
       }
 
       env {
