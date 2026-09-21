@@ -130,12 +130,13 @@ module "dev" {
   gmail_dwd_enabled       = var.dev_gmail_dwd_enabled
   cloud_run_url           = var.dev_cloud_run_url
 
-  gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
-  gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id
-  gsheets_eval_spreadsheet_id    = var.dev_gsheets_eval_spreadsheet_id
-  gsheets_vp_spreadsheet_id_th   = var.gsheets_vp_spreadsheet_id_th
-  enable_scheduler               = false
-  additional_scheduler_emails    = var.dev_additional_scheduler_emails
+  gsheets_vp_spreadsheet_id         = var.gsheets_vp_spreadsheet_id
+  gsheets_meeting_spreadsheet_id    = var.gsheets_meeting_spreadsheet_id
+  gsheets_eval_spreadsheet_id       = var.dev_gsheets_eval_spreadsheet_id
+  gsheets_vp_spreadsheet_id_th      = var.gsheets_vp_spreadsheet_id_th
+  gsheets_meeting_spreadsheet_id_th = var.gsheets_meeting_spreadsheet_id_th
+  enable_scheduler                  = false
+  additional_scheduler_emails       = var.dev_additional_scheduler_emails
 
   cors_origins = [
     "https://aha-coms-sicu-dev.web.app",
@@ -174,12 +175,13 @@ module "prod" {
   gmail_dwd_key_override = module.dev.email_dwd_private_key
   cloud_run_url          = var.prod_cloud_run_url
 
-  gsheets_vp_spreadsheet_id      = var.gsheets_vp_spreadsheet_id
-  gsheets_meeting_spreadsheet_id = var.gsheets_meeting_spreadsheet_id
-  gsheets_eval_spreadsheet_id    = var.prod_gsheets_eval_spreadsheet_id
-  gsheets_vp_spreadsheet_id_th   = var.gsheets_vp_spreadsheet_id_th
-  enable_scheduler               = true
-  additional_scheduler_emails    = var.prod_additional_scheduler_emails
+  gsheets_vp_spreadsheet_id         = var.gsheets_vp_spreadsheet_id
+  gsheets_meeting_spreadsheet_id    = var.gsheets_meeting_spreadsheet_id
+  gsheets_eval_spreadsheet_id       = var.prod_gsheets_eval_spreadsheet_id
+  gsheets_vp_spreadsheet_id_th      = var.gsheets_vp_spreadsheet_id_th
+  gsheets_meeting_spreadsheet_id_th = var.gsheets_meeting_spreadsheet_id_th
+  enable_scheduler                  = true
+  additional_scheduler_emails       = var.prod_additional_scheduler_emails
   # Prod runs images from the dev registry (promote reuses the develop digest),
   # so it needs no registry of its own.
   create_registry = false
