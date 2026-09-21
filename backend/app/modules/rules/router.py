@@ -14,11 +14,14 @@ router = APIRouter(prefix="/api/v1/rules", tags=["rules"])
 @router.get("", response_model=list[ScoringRuleResponse])
 async def list_rules(
     marketplace: str = Query("ID", description="Marketplace code (ID or TH)"),
-    current_user: dict = Depends(require_role("leader", "admin")),
+    current_user: dict = Depends(require_role("leader", "admin", "scheduler")),
 ) -> list[ScoringRuleResponse]:
     """Get all scoring rules for a marketplace.
 
-    Requires leader or admin role.
+    Requires leader or admin role. Also open to ``scheduler`` — the role an
+    allowlisted service account authenticates as — so a downstream consumer
+    scoring against our thresholds reads them here rather than pinning its own
+    copy. Read-only; updating rules stays leader/admin.
     """
     return await get_all_rules(marketplace=marketplace)
 
