@@ -66,6 +66,7 @@ docs/superpowers/
 .claude/
 .cursor/
 .gemini/
+.serena/
 .github/prompts/
 .github/skills/
 .omx/
