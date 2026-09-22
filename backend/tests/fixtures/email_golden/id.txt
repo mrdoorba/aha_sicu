@@ -30,6 +30,7 @@ scoring.adsRoas
 
 • Jenis Iklan yang aktif digunakan:
   {{semua_total}} Iklan Produk Otomatis Semua Halaman.
+  {{toko_total}} Iklan Toko ({{toko_auto}} Otomatis & {{toko_manual}} Manual).
 
 📌 Jumlah produk yang dipartisipasikan ke dalam iklan kurang maksimal (saran >50%).
 📌 Jumlah iklan dengan status aktif kurang maksimal (saran >50%).

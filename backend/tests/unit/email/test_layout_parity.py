@@ -118,3 +118,21 @@ class TestRealBenchmarkNote:
         band = out[:out.index("Omset seller center hanya digunakan")]
         assert 'width="3" style="width:3px;background-color:#325FEC' in band[-600:]
         assert "border-left" not in band[-600:]
+
+
+def test_retired_flag_key_is_dropped_not_printed_raw() -> None:
+    """An evaluation stored before a flag was retired must not show the key.
+
+    ``ads.flag.noShopAd`` was removed from the locales; rows written before
+    that still carry it in ``ak4_i18n``.
+    """
+    from app.modules.email.layout import _render_flag_list_text
+
+    rendered = _render_flag_list_text(
+        [{"key": "ads.flag.productLow"}, {"key": "ads.flag.noShopAd"}], "id"
+    )
+    assert "noShopAd" not in rendered
+    assert rendered == (
+        "📌 Jumlah produk yang dipartisipasikan ke dalam iklan "
+        "kurang maksimal (saran >50%)."
+    )

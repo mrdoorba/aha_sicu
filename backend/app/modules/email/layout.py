@@ -210,10 +210,18 @@ def _render_ad_list_text(i18n: dict[str, Any] | None, lang: str) -> str:
 
 
 def _render_flag_list_text(i18n: list[dict[str, Any]] | None, lang: str) -> str:
-    """Mirror frontend ``renderFlagList``: one translated line per flag."""
+    """Mirror frontend ``renderFlagList``: one translated line per flag.
+
+    A flag whose key no longer exists in the locale is dropped rather than
+    printed raw: evaluations stored before a flag was retired still carry its
+    key, and a traveller must not be shown ``ads.flag.noShopAd``.
+    """
     if not i18n:
         return ""
-    return "\n".join(_t(flag.get("key", ""), flag.get("vars"), lang) for flag in i18n)
+    lines = [
+        _translate(flag.get("key", ""), flag.get("vars"), lang) for flag in i18n
+    ]
+    return "\n".join(line for line in lines if line)
 
 
 def _build_ads_keyword_text(calculator_results: dict[str, Any], lang: str) -> str:

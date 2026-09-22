@@ -38,5 +38,11 @@ export function renderFlagList(
   t: TFunction,
 ): string {
   if (!i18n) return fallbackText;
-  return i18n.map((flag) => t(flag.key, flag.vars)).join('\n');
+  // A retired flag key still lives in evaluations stored before it was
+  // removed; i18next returns the key itself on a miss, so drop those lines
+  // rather than show a raw key.
+  return i18n
+    .map((flag) => t(flag.key, flag.vars))
+    .filter((line, i) => line !== i18n[i].key)
+    .join('\n');
 }
