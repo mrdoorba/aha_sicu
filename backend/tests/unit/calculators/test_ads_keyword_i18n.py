@@ -108,6 +108,7 @@ class TestSheet1I18nAk3:
              "Penempatan Iklan": "Halaman Pencarian", "Mode Bidding": "Bidding Otomatis"},
         ]
         result = calculate_sheet1(rows, 10)
+        assert result["ak3_i18n"]["key"] == "ads.typeBreakdownWithShop"
         assert result["ak3_i18n"]["vars"]["toko_total"] == "1"
         assert result["ak3_i18n"]["vars"]["toko_auto"] == "1"
         assert result["ak3_i18n"]["vars"]["toko_manual"] == "0"
@@ -153,21 +154,3 @@ class TestSheet1I18nAk4Individual:
         result = calculate_sheet1(rows, 100)  # 1/3 active = 33% < 50%
         keys = [f["key"] for f in result["ak4_i18n"]]
         assert "ads.flag.activeLow" in keys
-
-    def test_ak4_i18n_has_no_shop_ad_flag_when_no_toko(self):
-        rows = [
-            {"Status": "Berjalan", "Jenis Iklan": "Iklan Produk", "Nama Iklan": "Ad 1",
-             "Penempatan Iklan": "Semua Penempatan", "Mode Bidding": "Bidding Otomatis"},
-        ]
-        result = calculate_sheet1(rows, 100)
-        keys = [f["key"] for f in result["ak4_i18n"]]
-        assert "ads.flag.noShopAd" in keys
-
-    def test_ak4_i18n_no_shop_ad_flag_absent_when_toko_exists(self):
-        rows = [
-            {"Status": "Berjalan", "Jenis Iklan": "Iklan Toko", "Nama Iklan": "Shop Ad",
-             "Penempatan Iklan": "Halaman Pencarian", "Mode Bidding": "Bidding Otomatis"},
-        ]
-        result = calculate_sheet1(rows, 100)
-        keys = [f["key"] for f in result["ak4_i18n"]]
-        assert "ads.flag.noShopAd" not in keys

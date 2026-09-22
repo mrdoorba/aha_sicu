@@ -182,14 +182,17 @@ def calculate_sheet1(
             elif bidding == "Bidding Manual":
                 toko_manual += 1
 
-    # Indonesian AK3: 2 categories (Semua Penempatan + Iklan Toko)
-    # English AK3: 4 categories (Search, Recommendation, All, Shop Ad)
+    # AK3 lists the ad types actually in use; the Iklan Toko line is omitted
+    # entirely when the brand runs none.
     ak3 = (
         "• Jenis Iklan yang aktif digunakan:\n"
-        f"  {semua_total} Iklan Produk Otomatis Semua Halaman.\n"
-        f"  {toko_total} Iklan Toko "
-        f"({toko_auto} Otomatis & {toko_manual} Manual)."
+        f"  {semua_total} Iklan Produk Otomatis Semua Halaman."
     )
+    if toko_total > 0:
+        ak3 += (
+            f"\n  {toko_total} Iklan Toko "
+            f"({toko_auto} Otomatis & {toko_manual} Manual)."
+        )
 
     # --- AK4: Recommendation Flags ---
     # Indonesian: 3 flags | English: 9 flags
@@ -221,13 +224,6 @@ def calculate_sheet1(
         )
     # else: suppressed
 
-    # Remaining flags check ALL rows (including ended)
-    all_jenis = [_safe_str(r.get("Jenis Iklan")) for r in rows]
-
-    # Iklan Toko flag (both languages — flag 3)
-    if not any(j == "Iklan Toko" for j in all_jenis):
-        flags.append("📌 Iklan Toko belum dimanfaatkan.")
-
     ak4 = "\n".join(flags)
 
     # --- i18n structured data ---
@@ -244,7 +240,10 @@ def calculate_sheet1(
     }
 
     ak3_i18n = {
-        "key": "ads.typeBreakdown",
+        "key": (
+            "ads.typeBreakdownWithShop" if toko_total > 0
+            else "ads.typeBreakdown"
+        ),
         "vars": {
             "semua_total": str(semua_total),
             "toko_total": str(toko_total),
@@ -265,9 +264,6 @@ def calculate_sheet1(
         ak4_i18n_flags.append({"key": "ads.flag.activeLow", "vars": {}})
     elif product_pct >= 0.5:
         ak4_i18n_flags.append({"key": "ads.flag.activeGood", "vars": {}})
-
-    if not any(j == "Iklan Toko" for j in all_jenis):
-        ak4_i18n_flags.append({"key": "ads.flag.noShopAd", "vars": {}})
 
     ak4_i18n = ak4_i18n_flags
 
