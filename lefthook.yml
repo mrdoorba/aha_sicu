@@ -1,19 +1,30 @@
 # Lefthook — git hook manager
 # Install: brew install lefthook && lefthook install
-# Runs lint + full tests before push to catch CI failures early.
+#
+# Two stages, split by cost. The fast lints run on every commit (~7s); the
+# typecheck and the two test suites run once per push (~58s) so they guard the
+# push without taxing every commit. A lint therefore runs at exactly one stage,
+# never both.
+#
+# `uv run` needs `--extra dev` here: ruff and pytest live in
+# [project.optional-dependencies] dev, which uv does not install without it.
 
-pre-push:
+pre-commit:
   parallel: true
   commands:
     backend-lint:
       root: backend/
-      run: uv run ruff check .
+      run: uv run --extra dev ruff check .
     frontend-lint:
       root: frontend/
       run: npm run lint
+
+pre-push:
+  parallel: true
+  commands:
     backend-tests:
       root: backend/
-      run: uv run pytest tests/ -x --tb=short -q
+      run: uv run --extra dev pytest tests/ -x --tb=short -q
     frontend-typecheck:
       root: frontend/
       run: npx tsc -b --noEmit
