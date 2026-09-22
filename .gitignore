@@ -67,6 +67,9 @@ docs/superpowers/
 .cursor/
 .gemini/
 .serena/
+
+# SwiftPM cache dropped in the repo root by a local tool
+.build/
 .github/prompts/
 .github/skills/
 .omx/

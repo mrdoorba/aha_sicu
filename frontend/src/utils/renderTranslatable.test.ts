@@ -1,6 +1,6 @@
 import { describe, it, expect, vi } from 'vitest';
 import type { TFunction } from 'i18next';
-import { renderTranslatable } from './renderTranslatable';
+import { renderTranslatable, renderFlagList } from './renderTranslatable';
 
 describe('renderTranslatable', () => {
   const mockT: TFunction = vi.fn((key: string, vars?: Record<string, string>) => {
@@ -28,5 +28,21 @@ describe('renderTranslatable', () => {
   it('should fall back to text when i18n is undefined', () => {
     const result = renderTranslatable('fallback text', undefined, mockT);
     expect(result).toBe('fallback text');
+  });
+});
+
+describe('renderFlagList', () => {
+  // i18next returns the key itself on a miss; a stored evaluation may still
+  // carry a flag key that was since retired from the locales.
+  const mockT = ((key: string) =>
+    key === 'ads.flag.productLow' ? '📌 Partisipasi produk kurang maksimal.' : key) as TFunction;
+
+  it('drops a flag whose key no longer exists in the locale', () => {
+    const result = renderFlagList(
+      'fallback',
+      [{ key: 'ads.flag.productLow' }, { key: 'ads.flag.noShopAd' }],
+      mockT,
+    );
+    expect(result).toBe('📌 Partisipasi produk kurang maksimal.');
   });
 });

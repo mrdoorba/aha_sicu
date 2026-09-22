@@ -86,13 +86,15 @@ class TestSheet1I18nAk3:
         result = calculate_sheet1(rows, 10)
         assert "ak3_i18n" in result
 
-    def test_ak3_i18n_key_is_ads_type_breakdown(self):
+    def test_ak3_i18n_key_is_no_shop_variant_without_toko(self):
         rows = [
             {"Status": "Berjalan", "Jenis Iklan": "Iklan Produk", "Nama Iklan": "Ad 1",
              "Penempatan Iklan": "Semua Penempatan", "Mode Bidding": "Bidding Otomatis"},
         ]
         result = calculate_sheet1(rows, 10)
-        assert result["ak3_i18n"]["key"] == "ads.typeBreakdown"
+        # No Iklan Toko rows: the product-only variant, so the report carries
+        # no "0 Iklan Toko" line.
+        assert result["ak3_i18n"]["key"] == "ads.typeBreakdownNoShop"
 
     def test_ak3_i18n_vars_has_semua_total(self):
         rows = [
@@ -108,7 +110,6 @@ class TestSheet1I18nAk3:
              "Penempatan Iklan": "Halaman Pencarian", "Mode Bidding": "Bidding Otomatis"},
         ]
         result = calculate_sheet1(rows, 10)
-        assert result["ak3_i18n"]["key"] == "ads.typeBreakdownWithShop"
         assert result["ak3_i18n"]["vars"]["toko_total"] == "1"
         assert result["ak3_i18n"]["vars"]["toko_auto"] == "1"
         assert result["ak3_i18n"]["vars"]["toko_manual"] == "0"

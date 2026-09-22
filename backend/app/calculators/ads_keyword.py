@@ -240,9 +240,11 @@ def calculate_sheet1(
     }
 
     ak3_i18n = {
+        # ``ads.typeBreakdown`` keeps both lines so evaluations stored before
+        # this change still render the Iklan Toko line they were scored with.
         "key": (
-            "ads.typeBreakdownWithShop" if toko_total > 0
-            else "ads.typeBreakdown"
+            "ads.typeBreakdown" if toko_total > 0
+            else "ads.typeBreakdownNoShop"
         ),
         "vars": {
             "semua_total": str(semua_total),
