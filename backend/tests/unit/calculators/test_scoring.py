@@ -825,7 +825,7 @@ class TestGColumnMessages:
         assert g13.score == 10.0
         assert "[Menurun" in g13.message
         assert "toleransi" not in g13.message
-        assert g13.benchmark == ">108"
+        assert g13.benchmark == "108"
 
 
 # ---------------------------------------------------------------------------
@@ -2346,6 +2346,22 @@ class TestMessageTemplatesProducts:
         prod = result.category_scores[4]
         g46 = next(r for r in prod.rows if r.row == 46)
         assert g46.message == "STATUS: Shopee Mall approved"
+
+    def test_star_plus_pass_recommends_shopee_mall(self):
+        data = {"products": {"productCount": 50, "storeStatus": "Star+"}}
+        result = calculate_score(
+            manual_data=data, calculator_results={},
+            template="fashion", verdict="✔️",
+            store_name="S", period="P", brand_name="B",
+        )
+        prod = result.category_scores[4]
+        g46 = next(r for r in prod.rows if r.row == 46)
+        assert g46.verdict == "✔️"
+        assert g46.message == (
+            "✔️ Status Toko = Star+ [OK]\n"
+            "💡 Disarankan Shopee Mall untuk meningkatkan kepercayaan terhadap brand."
+        )
+        assert g46.message_i18n.key == "scoring.storeStatus.passStarPlus"
 
 
 class TestMessageTemplatesAds:
