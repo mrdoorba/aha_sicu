@@ -42,6 +42,20 @@ describe('CategoryMetricCard', () => {
     expect(icons).toHaveLength(0);
   });
 
+  it('labels the monthly-sales benchmark as the 6-month average', () => {
+    render(
+      <CategoryMetricCard
+        {...baseProps}
+        metric="Penjualan Bulan Aug 2026"
+        metric_i18n={{ key: 'scoring.monthlySales', vars: { month: 'Aug 2026' } }}
+        benchmark="25,381,500"
+        verdict="❌"
+      />,
+    );
+    expect(screen.getByText('Rata-rata 6 bulan terakhir: 25,381,500')).toBeInTheDocument();
+    expect(screen.queryByText(/Benchmark:/)).not.toBeInTheDocument();
+  });
+
   it('applies break-all class to message text', () => {
     render(
       <CategoryMetricCard

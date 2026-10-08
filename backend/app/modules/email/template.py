@@ -534,8 +534,14 @@ def _render_metric_card(
     if has_detail:
         detail_parts: list[str] = []
         if has_benchmark:
+            # The monthly-sales benchmark is the 6-month average, so it says so.
+            metric_key = (row.get("metric_i18n") or {}).get("key")
+            benchmark_label = (
+                _resolve_translatable_text({"key": "scoring.monthlySales.benchmarkLabel"}, S["benchmark"], lang)
+                if metric_key == "scoring.monthlySales" else S["benchmark"]
+            )
             detail_parts.append(
-                f'<div class="sm" style="padding-bottom:3px">{_esc(S["benchmark"])}: {_esc(benchmark)}</div>'
+                f'<div class="sm" style="padding-bottom:3px">{_esc(benchmark_label)}: {_esc(benchmark)}</div>'
             )
         if message:
             detail_parts.append(

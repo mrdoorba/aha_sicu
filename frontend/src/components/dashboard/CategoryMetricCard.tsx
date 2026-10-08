@@ -25,6 +25,10 @@ export const CategoryMetricCard = ({ metric, value, benchmark, message, metric_i
   const i18nLink = message_i18n?.vars?.link ? localizeShopeeLink(message_i18n.vars.link, marketplace) : undefined;
   const displayMessage = i18nLink ? `${translatedMessage}\n↪${i18nLink}` : translatedMessage;
   const displayBenchmark = renderTranslatable(benchmark, benchmark_i18n, t);
+  // The monthly-sales benchmark is the 6-month average, so it says so.
+  const benchmarkLabel = metric_i18n?.key === 'scoring.monthlySales'
+    ? t('scoring.monthlySales.benchmarkLabel')
+    : 'Benchmark';
 
   const displayValue = (() => {
     if (value_i18n) {
@@ -59,7 +63,7 @@ export const CategoryMetricCard = ({ metric, value, benchmark, message, metric_i
       </div>
       {((benchmark && benchmark !== '-') || message) && (
         <div className="text-xs text-muted-foreground border-t border-border/50 pt-2 space-y-0.5">
-          {benchmark && benchmark !== '-' && <p>Benchmark: {displayBenchmark}</p>}
+          {benchmark && benchmark !== '-' && <p>{benchmarkLabel}: {displayBenchmark}</p>}
           {message && (() => {
             const colorClass = (displayMessage.includes('✔️') || displayMessage.includes('✅')) ? 'text-green-600' :
               displayMessage.includes('❌') ? 'text-orange-600' : '';

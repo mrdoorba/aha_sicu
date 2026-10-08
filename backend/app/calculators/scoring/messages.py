@@ -308,8 +308,13 @@ def _generate_products_messages(cat: CategoryScore, rules: dict | None = None) -
                 tmpl = _get_rule_value(prod_rules, "store_status_points", "message_pass",
                     "✔️ Status Toko = {store_status} [OK]")
                 row.message = _format_message_template(tmpl, store_status=store_status)
+                i18n_key = "scoring.storeStatus.pass"
+                # Star+ passes, but Mall is still the status to aim for.
+                if store_status == "Star+":
+                    row.message += "\n💡 Disarankan Shopee Mall untuk meningkatkan kepercayaan terhadap brand."
+                    i18n_key = "scoring.storeStatus.passStarPlus"
                 row.message_i18n = TranslatableText(
-                    key="scoring.storeStatus.pass",
+                    key=i18n_key,
                     vars={"value": store_status},
                 )
             elif row.verdict == "❌":
