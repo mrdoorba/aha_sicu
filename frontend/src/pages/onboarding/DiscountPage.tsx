@@ -5,8 +5,10 @@ import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
 import { PREVIEW_BRAND } from '../../mocks/onboarding';
 
 const IDR = new Intl.NumberFormat('id-ID');
-const COUNT_MS = 1500;
-const HOLD_MS = 450;
+const COUNT_MS = 850;
+const HOLD_MS = 220;
+/** A beat after the number lands, so the badge reads as its own moment. */
+const BADGE_DELAY_MS = 260;
 
 function prefersReducedMotion(): boolean {
   return window.matchMedia?.('(prefers-reduced-motion: reduce)').matches ?? false;
@@ -22,6 +24,8 @@ function useDiscountCountdown(from: number) {
   const [done, setDone] = useState(() => reduced);
   const raf = useRef<number | undefined>(undefined);
 
+  const badgeTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
   useEffect(() => {
     if (reduced) return;
 
@@ -35,7 +39,8 @@ function useDiscountCountdown(from: number) {
         raf.current = requestAnimationFrame(step);
       } else {
         setAmount(0);
-        setDone(true);
+        // Let the zero sit on its own for a beat before the badge arrives.
+        badgeTimer.current = setTimeout(() => setDone(true), BADGE_DELAY_MS);
       }
     };
 
@@ -45,6 +50,7 @@ function useDiscountCountdown(from: number) {
 
     return () => {
       clearTimeout(hold);
+      if (badgeTimer.current) clearTimeout(badgeTimer.current);
       if (raf.current) cancelAnimationFrame(raf.current);
     };
   }, [from, reduced]);
@@ -82,18 +88,22 @@ export const DiscountPage = () => {
             Rp {IDR.format(amount)}
           </p>
 
-          {done && (
-            <div className="mt-5">
-              {/* Gold is the reserved win colour and needs dark ink (DESIGN.md). */}
-              <span className="inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2 text-[13px] font-extrabold text-deep-navy">
-                <Check className="size-4" aria-hidden="true" />
-                DISKON 100% DITERAPKAN
-              </span>
-              <p className="mt-3 text-[15px] font-bold text-foreground">
-                Ditanggung penuh oleh AHA Commerce
-              </p>
-            </div>
-          )}
+          {/* Height is reserved so the card doesn't grow when the badge lands —
+              the gap below the number is the point, not a layout shift. */}
+          <div className="mt-10 min-h-18">
+            {done && (
+              <div className="animate-in fade-in slide-in-from-bottom-2 duration-300">
+                {/* Gold is the reserved win colour and needs dark ink (DESIGN.md). */}
+                <span className="inline-flex items-center gap-2 rounded-full bg-gold px-4 py-2 text-[13px] font-extrabold text-deep-navy">
+                  <Check className="size-4" aria-hidden="true" />
+                  DISKON 100% DITERAPKAN
+                </span>
+                <p className="mt-3 text-[15px] font-bold text-foreground">
+                  Ditanggung penuh oleh AHA Commerce
+                </p>
+              </div>
+            )}
+          </div>
         </div>
 
         <div className="px-6 pb-9 pt-7 sm:px-11">
