@@ -1,5 +1,5 @@
-import { lazy, Suspense, useState, useRef, useEffect, useCallback } from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { lazy, Suspense, useState, useRef, useEffect, useCallback, type ReactNode } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { AuthProvider } from './context/AuthContext';
@@ -7,6 +7,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import { Toaster } from './components/ui/sonner';
 import { DowntimeWarningDialog } from './components/DowntimeWarningDialog';
 import { RoleProtectedRoute } from './components/auth/RoleProtectedRoute';
+import { previewRoutes } from './pages/preview/PreviewRoutes';
 
 const LoginPage = lazy(() => import('./pages/LoginPage').then((module) => ({ default: module.LoginPage })));
 const DashboardPage = lazy(() => import('./pages/DashboardPage').then((module) => ({ default: module.DashboardPage })));
@@ -20,6 +21,29 @@ const EmailHistoryPage = lazy(() => import('./pages/EmailHistoryPage').then((mod
 const MainLayout = lazy(() => import('./components/layout/MainLayout').then((module) => ({ default: module.MainLayout })));
 
 const queryClient = new QueryClient();
+
+/**
+ * Routes under /preview render on their own, outside AuthProvider.
+ *
+ * These screens are brand-facing and public by nature: mounting the authed
+ * app's shell around them would pull in the downtime dialog, the toaster and
+ * an auth subscription none of them use, and would put a login redirect in
+ * front of a page whose whole point is that a stranger can open it.
+ */
+function PreviewGate({ children }: { children: ReactNode }) {
+  const { pathname } = useLocation();
+
+  if (pathname.startsWith('/preview')) {
+    return (
+      <Suspense fallback={null}>
+        <Routes>{previewRoutes()}</Routes>
+      </Suspense>
+    );
+  }
+
+  return <>{children}</>;
+}
+
 
 function App() {
   const { t } = useTranslation();
@@ -50,9 +74,10 @@ function App() {
         >
           Skip to main content
         </a>
-        <AuthProvider>
-          <DowntimeWarningDialog open={showDowntimeWarning} onDismiss={handleDismiss} />
+        <PreviewGate>
           <Suspense fallback={null}>
+            <AuthProvider>
+            <DowntimeWarningDialog open={showDowntimeWarning} onDismiss={handleDismiss} />
             <Routes>
               <Route path="/login" element={<LoginPage />} />
 
@@ -111,9 +136,10 @@ function App() {
 
               <Route path="/" element={<Navigate to="/dashboard" replace />} />
             </Routes>
+            <Toaster />
+            </AuthProvider>
           </Suspense>
-          <Toaster />
-        </AuthProvider>
+        </PreviewGate>
       </BrowserRouter>
     </QueryClientProvider>
   );

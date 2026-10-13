@@ -64,3 +64,33 @@ In practice:
 
 This is a tiebreaker for where code goes, not a licence to refactor on sight. A one-line
 fix stays a one-line fix.
+
+## Frontend design rules
+
+### Focus the first filter on desktop (org-wide, 2026-10-13)
+
+On **report / dashboard / list** pages, focus the page's first filter field when it
+mounts — the brand selector, the search box, whichever control the user would reach
+for first. Use `useAutoFocusFirstFilter`; don't hand-roll it and don't use the bare
+`autoFocus` attribute, which obeys none of the conditions below.
+
+```tsx
+const autoFocusRef = useAutoFocusFirstFilter<HTMLInputElement>();
+<Input ref={autoFocusRef} ... />
+```
+
+Four conditions, all load-bearing:
+
+- **Desktop only** — `(min-width: 1024px) and (pointer: fine)`. Width alone catches a
+  tablet in landscape, where focusing a field throws the on-screen keyboard over the
+  content the user came to read.
+- **Focus, never open.** No dropdown may pop. `.focus()` on an input or a Radix
+  `SelectTrigger` moves the caret without opening anything — that's the behaviour we
+  want, so don't "help" by calling `.click()`.
+- **`preventScroll: true`** — focusing must not scroll the page.
+- **Never steal focus.** If anything is already focused, do nothing. A user who clicks
+  faster than the data loads keeps their target.
+
+Forms and modals are unaffected — they keep focusing their own first field.
+
+Origin: Alfiano, relayed via AHAbot; Heroes task B7BEF31F (Stephen Lawrence).
