@@ -39,6 +39,53 @@ export function previewDeadline(): Date {
   return addWorkdays(new Date(), 7);
 }
 
+export const VOUCHER_CODE_LENGTH = 12;
+
+/**
+ * What the claim page can learn about a typed code.
+ *
+ * `idle` and `typing` are deliberately separate from `unknown`: shouting
+ * "kode tidak ditemukan" at someone who has entered four characters is wrong,
+ * so nothing is judged until a full code is present.
+ */
+export type VoucherLookup =
+  | { state: 'idle' }
+  | { state: 'typing'; remaining: number }
+  | { state: 'unknown' }
+  | { state: 'expired'; expiredOn: Date }
+  | { state: 'claimed'; claimedOn: Date }
+  | { state: 'valid'; brand: typeof PREVIEW_BRAND; expiresAt: Date };
+
+/** Codes that let every branch be reached by hand in the preview. */
+export const PREVIEW_TEST_CODES = {
+  valid: PREVIEW_BRAND.code,
+  expired: 'EXPIRED00001',
+  claimed: 'CLAIMED00001',
+} as const;
+
+export function lookupVoucher(raw: string): VoucherLookup {
+  const code = raw.trim().toUpperCase();
+
+  if (code.length === 0) return { state: 'idle' };
+  if (code.length < VOUCHER_CODE_LENGTH) {
+    return { state: 'typing', remaining: VOUCHER_CODE_LENGTH - code.length };
+  }
+
+  if (code === PREVIEW_TEST_CODES.valid) {
+    return { state: 'valid', brand: PREVIEW_BRAND, expiresAt: previewDeadline() };
+  }
+  if (code === PREVIEW_TEST_CODES.expired) {
+    return { state: 'expired', expiredOn: new Date(Date.now() - 4 * 86_400_000) };
+  }
+  if (code === PREVIEW_TEST_CODES.claimed) {
+    return { state: 'claimed', claimedOn: new Date(Date.now() - 9 * 86_400_000) };
+  }
+  return { state: 'unknown' };
+}
+
+/** Where a brand without a voucher is sent. */
+export const AHA_WHATSAPP = 'https://wa.me/6281234567890';
+
 /** Rows for the Brands table, one per voucher state so every branch is visible. */
 export function previewVouchers(): PreviewVoucher[] {
   const now = new Date();
