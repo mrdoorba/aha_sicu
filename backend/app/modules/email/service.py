@@ -281,7 +281,7 @@ async def send_evaluation_email(
     if not subject:
         subject = S["subject"].format(brand_name=brand_name, period=period)
     # Tag the subject with the brand's market. EN is left untagged.
-    prefix = {"id": "[ID] ", "th": "[TH] "}.get(language, "")
+    prefix = {"id": "🇮🇩 ", "th": "🇹🇭 "}.get(language, "")
     if prefix and not subject.startswith(prefix):
         subject = prefix + subject
 
