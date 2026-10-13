@@ -7,9 +7,11 @@ import { Input } from '../components/ui/input';
 import { Button } from '../components/ui/button';
 import { Card, CardContent } from '../components/ui/card';
 import { useBrands } from '../hooks/useBrands';
+import { useAutoFocusFirstFilter } from '../hooks/useAutoFocusFirstFilter';
 
 export const BrandsPage = () => {
   const { t } = useTranslation();
+  const autoFocusRef = useAutoFocusFirstFilter<HTMLInputElement>();
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
@@ -99,6 +101,7 @@ export const BrandsPage = () => {
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="pl-10"
+            ref={autoFocusRef}
           />
         </div>
 

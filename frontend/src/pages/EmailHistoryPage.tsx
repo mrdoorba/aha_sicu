@@ -30,6 +30,7 @@ import { useEmailHistory } from '../hooks/useEmailHistory';
 import { useDeleteEmailHistory } from '../hooks/useDeleteEmailHistory';
 import { useCurrentUser } from '../hooks/useCurrentUser';
 import { getIntlLocale } from '../lib/languages';
+import { useAutoFocusFirstFilter } from '../hooks/useAutoFocusFirstFilter';
 import { toast } from 'sonner';
 
 const STATUS_BADGE_STYLES: Record<string, string> = {
@@ -62,6 +63,7 @@ const FILTER_STATUSES = ['sent', 'delivered', 'bounced', 'opened', 'deferred', '
 
 export const EmailHistoryPage = () => {
   const { t, i18n } = useTranslation();
+  const autoFocusRef = useAutoFocusFirstFilter<HTMLInputElement>();
   const [searchParams, setSearchParams] = useSearchParams();
   const { profile } = useCurrentUser();
   const isAdmin = profile?.role === 'admin';
@@ -261,6 +263,7 @@ export const EmailHistoryPage = () => {
           value={searchInput}
           onChange={(e) => setSearchInput(e.target.value)}
           className="pl-9 pr-9"
+          ref={autoFocusRef}
         />
         {searchInput && (
           <Button

@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Search, Loader2 } from 'lucide-react';
 import { useBrands } from '../../hooks/useBrands';
+import { useAutoFocusFirstFilter } from '../../hooks/useAutoFocusFirstFilter';
 import { Input } from '../ui/input';
 import { Badge } from '../ui/badge';
 import { Card, CardContent } from '../ui/card';
@@ -14,6 +15,7 @@ interface BrandSearchProps {
 
 export const BrandSearch = ({ onSelect }: BrandSearchProps) => {
   const { t } = useTranslation();
+  const autoFocusRef = useAutoFocusFirstFilter<HTMLInputElement>();
   const [search, setSearch] = useState('');
   const [debouncedSearch, setDebouncedSearch] = useState('');
 
@@ -46,7 +48,7 @@ export const BrandSearch = ({ onSelect }: BrandSearchProps) => {
             className="h-14 pl-12 pr-4 text-lg shadow-lg transition-shadow focus-visible:ring-primary"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            autoFocus
+            ref={autoFocusRef}
           />
           {isLoading && search && (
             <Loader2 className="absolute right-4 top-1/2 size-5 -translate-y-1/2 animate-spin text-primary" />
