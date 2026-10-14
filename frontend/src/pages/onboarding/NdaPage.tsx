@@ -12,6 +12,19 @@ import { cn } from '../../lib/utils';
 
 const ENTITY_TYPES = ['PT', 'CV', 'Perorangan'] as const;
 
+/**
+ * Marks a field the brand cannot skip.
+ *
+ * Marwah, 14 Oct: an incomplete company form must block signing outright. A
+ * blank in a signed NDA is a document that names nobody, and chasing it
+ * afterwards costs a day per brand.
+ */
+const Required = () => (
+  <span className="ms-0.5 text-penalti" aria-label="wajib diisi">
+    *
+  </span>
+);
+
 /** Digital signature, or print-sign-scan for partners who require paper. */
 type SignMode = 'digital' | 'manual';
 
@@ -33,7 +46,10 @@ export const NdaPage = () => {
 
   const signature = pic.trim() || 'Nama Anda';
   // On the paper route nothing is agreed until the scan is in.
-  const canContinue = mode === 'digital' || uploaded;
+  // Every company field is required, so an empty one blocks signing on BOTH
+  // routes — a printed NDA with a blank party is no better than a digital one.
+  const complete = [company, pic, role, address].every((v) => v.trim().length > 0);
+  const canContinue = complete && (mode === 'digital' || uploaded);
 
   return (
     <OnboardingLayout current={2} width="max-w-6xl">
@@ -91,6 +107,7 @@ export const NdaPage = () => {
               <fieldset className="mb-5">
                 <legend className="mb-2 text-[13px] font-bold text-foreground">
                   Bentuk badan usaha
+                  <Required />
                 </legend>
                 <RadioGroup
                   value={entity}
@@ -120,9 +137,12 @@ export const NdaPage = () => {
                   className="mb-1.5 block text-[13px] font-bold"
                 >
                   Nama perusahaan / brand
+                  <Required />
                 </Label>
                 <Input
                   id="company"
+                  required
+                  aria-invalid={company.trim().length === 0}
                   value={company}
                   onChange={(e) => setCompany(e.target.value)}
                   className="h-11"
@@ -135,9 +155,12 @@ export const NdaPage = () => {
                   className="mb-1.5 block text-[13px] font-bold"
                 >
                   Nama penanggung jawab
+                  <Required />
                 </Label>
                 <Input
                   id="pic"
+                  required
+                  aria-invalid={pic.trim().length === 0}
                   value={pic}
                   onChange={(e) => setPic(e.target.value)}
                   className="h-11"
@@ -150,9 +173,12 @@ export const NdaPage = () => {
                   className="mb-1.5 block text-[13px] font-bold"
                 >
                   Jabatan PIC
+                  <Required />
                 </Label>
                 <Input
                   id="role"
+                  required
+                  aria-invalid={role.trim().length === 0}
                   value={role}
                   onChange={(e) => setRole(e.target.value)}
                   className="h-11"
@@ -165,9 +191,12 @@ export const NdaPage = () => {
                   className="mb-1.5 block text-[13px] font-bold"
                 >
                   Alamat perusahaan
+                  <Required />
                 </Label>
                 <textarea
                   id="address"
+                  required
+                  aria-invalid={address.trim().length === 0}
                   rows={3}
                   value={address}
                   onChange={(e) => setAddress(e.target.value)}
@@ -282,11 +311,13 @@ export const NdaPage = () => {
               : 'Tanda tangani & lanjutkan →'}
           </Link>
           <p className="text-center text-xs leading-relaxed text-muted-foreground">
-            {mode === 'manual'
-              ? canContinue
-                ? 'Berkas Anda dikirim ke tim Partnership untuk diperiksa.'
-                : 'Unggah NDA yang sudah ditandatangani untuk melanjutkan.'
-              : 'Salinan PDF dikirim ke email Anda dan disimpan di akun SICU.'}
+            {!complete
+              ? 'Lengkapi semua kolom bertanda * sebelum menandatangani.'
+              : mode === 'manual'
+                ? uploaded
+                  ? 'Berkas Anda dikirim ke tim Partnership untuk diperiksa.'
+                  : 'Unggah NDA yang sudah ditandatangani untuk melanjutkan.'
+                : 'Salinan PDF dikirim ke email Anda dan disimpan di akun SICU.'}
           </p>
 
           {/* An NDA binds AHA too, so it is not an agreement until AHA has

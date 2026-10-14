@@ -1,26 +1,28 @@
 import { Link } from 'react-router-dom';
-import { Copy, TriangleAlert } from 'lucide-react';
+import { Check, Copy, ExternalLink, TriangleAlert } from 'lucide-react';
 import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
+import { TutorialVideo } from '../../components/onboarding/TutorialVideo';
 import { Button } from '../../components/ui/button';
-import { PREVIEW_BRAND } from '../../mocks/onboarding';
+import {
+  PREVIEW_BRAND,
+  SHOPEE_SUBACCOUNT_URL,
+  SUBACCOUNT_ROLES,
+} from '../../mocks/onboarding';
+import { cn } from '../../lib/utils';
 
-const STEPS = [
-  {
-    title: 'Buka Seller Centre › Pengaturan Toko › Pengaturan Sub Akun',
-    body: 'Hanya akun utama (main account) yang bisa membuat sub akun.',
-  },
-  {
-    title: 'Klik "Tambah Sub Akun" dan tempel email di atas',
-    body: 'Gunakan tombol Salin agar tidak ada salah ketik.',
-  },
-  {
-    title: 'Beri hak akses: Pesanan, Produk, Keuangan, Iklan, Data',
-    body: 'Tanpa kelimanya, sebagian kategori SICU tidak bisa dinilai.',
-  },
-];
-
-const CopyField = ({ label, value, hint }: { label: string; value: string; hint?: string }) => (
-  <div className="min-w-0 flex-1 basis-64">
+const CopyField = ({
+  label,
+  value,
+  hint,
+  wide,
+}: {
+  label: string;
+  value: string;
+  hint?: string;
+  /** The sub-account email is long enough to wrap its own button off the row. */
+  wide?: boolean;
+}) => (
+  <div className={cn('min-w-0 flex-1', wide ? 'basis-full' : 'basis-60')}>
     <p className="mb-1.5 text-xs font-extrabold tracking-wider text-muted-foreground">{label}</p>
     <div className="flex flex-wrap items-center gap-2">
       <code className="break-all rounded-lg border border-border bg-secondary px-3 py-2.5 font-mono text-[15px] font-bold text-foreground">
@@ -31,8 +33,28 @@ const CopyField = ({ label, value, hint }: { label: string; value: string; hint?
         Salin
       </Button>
     </div>
-    {hint && <p className="mt-2 text-xs text-muted-foreground">{hint}</p>}
+    {hint && <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{hint}</p>}
   </div>
+);
+
+const Step = ({
+  n,
+  title,
+  children,
+}: {
+  n: number;
+  title: React.ReactNode;
+  children?: React.ReactNode;
+}) => (
+  <li className="flex items-start gap-4">
+    <span className="grid size-7.5 shrink-0 place-items-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">
+      {n}
+    </span>
+    <div className="min-w-0 flex-1">
+      <p className="mb-1 text-sm font-bold text-foreground">{title}</p>
+      {children}
+    </div>
+  </li>
 );
 
 export const TutorialPage = () => (
@@ -41,65 +63,118 @@ export const TutorialPage = () => (
       Buat sub akun Shopee untuk tim AHA
     </h1>
     <p className="mb-6 max-w-[72ch] text-sm leading-relaxed text-muted-foreground">
-      Supaya kami bisa menarik data toko Anda, buat satu sub akun di Seller Centre dengan email dan
-      kata sandi berikut. Akun ini kami hapus setelah evaluasi selesai.
+      Kami membutuhkan akses untuk menganalisa performa toko{' '}
+      <strong className="text-foreground">{PREVIEW_BRAND.name}</strong> melalui sub akun yang bisa
+      Anda buat dengan cara berikut. Akun ini kami hapus setelah evaluasi selesai.
     </p>
 
-    <div className="mb-6 rounded-2xl border-2 border-primary bg-card p-6">
-      <div className="flex flex-wrap gap-5">
-        <CopyField
-          label="EMAIL SUB AKUN"
-          value={PREVIEW_BRAND.subAccountEmail}
-          hint="Diambil otomatis dari voucher Anda."
-        />
-        <CopyField label="KATA SANDI" value={PREVIEW_BRAND.subAccountPassword} />
-      </div>
+    <div className="mb-6">
+      <TutorialVideo />
+    </div>
 
-      <div className="mt-5 flex gap-3 rounded-xl border border-penalti/30 bg-penalti/5 p-4">
-        <TriangleAlert className="mt-0.5 size-[18px] shrink-0 text-penalti" aria-hidden="true" />
-        <p className="text-[13px] leading-relaxed text-foreground">
-          <strong>Email dan kata sandi harus sama persis.</strong> Kalau berbeda, sistem kami tidak
-          bisa masuk dan evaluasi tertunda. Kalau Anda terlanjur memakai yang lain, isi form di
-          langkah berikutnya.
+    <ol className="mb-6 flex flex-col gap-7 rounded-2xl border border-border bg-card p-7">
+      <Step
+        n={1}
+        title={
+          <>
+            Kunjungi halaman sub akun Shopee{' '}
+            <a
+              href={SHOPEE_SUBACCOUNT_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="inline-flex items-center gap-1 font-bold text-primary underline underline-offset-2"
+            >
+              subaccount.shopee.com/member
+              <ExternalLink className="size-3.5" aria-hidden="true" />
+            </a>
+          </>
+        }
+      >
+        <p className="text-[13px] leading-relaxed text-muted-foreground">
+          Hanya akun utama (main account) yang bisa membuat sub akun.
         </p>
-      </div>
-    </div>
+      </Step>
 
-    <div className="rounded-2xl border border-border bg-card p-7">
-      <h2 className="mb-5 text-[17px] font-extrabold text-foreground">
-        Langkah-langkah di Seller Centre
-      </h2>
+      <Step n={2} title={<>Klik &ldquo;Tambah Anggota&rdquo;</>} />
 
-      <ol className="flex flex-col gap-6">
-        {STEPS.map((step, i) => (
-          <li key={step.title} className="flex flex-wrap items-start gap-4">
-            <span className="grid size-7.5 shrink-0 place-items-center rounded-full bg-primary text-sm font-extrabold text-primary-foreground">
-              {i + 1}
-            </span>
-            <div className="min-w-0 flex-1 basis-60">
-              <p className="mb-1 text-sm font-bold text-foreground">{step.title}</p>
-              <p className="text-[13px] leading-relaxed text-muted-foreground">{step.body}</p>
-            </div>
-            <div className="grid h-36 w-64 shrink-0 place-items-center rounded-xl border-2 border-dashed border-border bg-secondary p-3 text-center">
-              <span className="text-xs font-bold text-muted-foreground">
-                [TANGKAPAN LAYAR {i + 1} — menyusul dari AHA]
-              </span>
-            </div>
-          </li>
-        ))}
-      </ol>
+      <Step n={3} title="Isi dengan data berikut">
+        <div className="mt-3.5 rounded-xl border-2 border-primary bg-card p-5">
+          <div className="flex flex-wrap gap-5">
+            <CopyField label="NAMA ANGGOTA" value={PREVIEW_BRAND.subAccountMemberName} />
+            <CopyField label="LOGIN ID" value={PREVIEW_BRAND.subAccountLoginId} />
+            <CopyField label="PASSWORD LOG IN" value={PREVIEW_BRAND.subAccountPassword} />
+            <CopyField
+              wide
+              label="ALAMAT EMAIL"
+              value={PREVIEW_BRAND.subAccountEmail}
+              hint="Diambil otomatis dari voucher Anda."
+            />
+          </div>
 
-      <p className="mt-6 border-t border-border pt-4 text-xs leading-relaxed text-muted-foreground">
-        Isi dan jumlah langkah menyesuaikan tutorial final yang Anda kirim — struktur halaman ini
-        tidak berubah.
-      </p>
-    </div>
+          <div className="mt-5 rounded-xl border border-border bg-secondary p-4">
+            <p className="mb-1 text-xs font-extrabold tracking-wider text-muted-foreground">
+              NO. HP
+            </p>
+            <p className="text-[13px] leading-relaxed text-foreground">
+              Gunakan nomor yang <strong>belum pernah dipakai di Shopee</strong>. Nomor yang sudah
+              terdaftar akan ditolak saat sub akun dibuat.
+            </p>
+          </div>
+
+          <div className="mt-4 flex gap-3 rounded-xl border border-penalti/30 bg-penalti/5 p-4">
+            <TriangleAlert className="mt-0.5 size-[18px] shrink-0 text-penalti" aria-hidden="true" />
+            <p className="text-[13px] leading-relaxed text-foreground">
+              <strong>Login ID, email dan password harus sama persis.</strong> Kalau berbeda, sistem
+              kami tidak bisa masuk dan evaluasi tertunda. Kalau Anda terlanjur memakai yang lain,
+              isi form di langkah berikutnya.
+            </p>
+          </div>
+        </div>
+      </Step>
+
+      <Step n={4} title="Pengaturan Peran — centang semuanya">
+        <p className="mb-3.5 text-[13px] leading-relaxed text-muted-foreground">
+          Tanpa salah satu izin di bawah, ada kategori SICU yang tidak bisa dinilai sama sekali.
+        </p>
+        <ul className="flex flex-col gap-2 rounded-xl border border-border bg-secondary/50 p-5">
+          {SUBACCOUNT_ROLES.map((role) => (
+            <li key={role.label}>
+              <p className="flex items-start gap-2 text-[13px] font-semibold text-foreground">
+                <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                {role.label}
+              </p>
+              {role.children && (
+                <ul className="ms-6 mt-2 flex flex-col gap-2">
+                  {role.children.map((child) => (
+                    <li
+                      key={child}
+                      className="flex items-start gap-2 text-[13px] text-secondary-foreground"
+                    >
+                      <Check className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+                      {child}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </li>
+          ))}
+        </ul>
+      </Step>
+    </ol>
 
     <Link
       to="/preview/onboarding/sub-akun"
-      className="mt-6 block h-13 rounded-full bg-primary text-center text-[15px] font-bold leading-[52px] text-primary-foreground hover:bg-primary-dark"
+      className="block h-13 rounded-full bg-primary text-center text-[15px] font-bold leading-[52px] text-primary-foreground hover:bg-primary-dark"
     >
       Saya sudah membuat sub akun →
     </Link>
+
+    {/* Marwah's written steps ended with "konfirmasi ke kak Marwah lewat
+        WhatsApp". Dropped on her and Alfiano's instruction (14 Oct): the next
+        screen already confirms it in-app, so a WhatsApp round trip would be a
+        second way to say the same thing — and the slower one. */}
+    <p className="mt-4 text-center text-xs leading-relaxed text-muted-foreground">
+      Tidak perlu konfirmasi lewat WhatsApp — langkah berikutnya sudah mengabari tim kami.
+    </p>
   </OnboardingLayout>
 );
