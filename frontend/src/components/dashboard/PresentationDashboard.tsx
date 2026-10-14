@@ -58,11 +58,11 @@ export const PresentationDashboard = ({ brandId, onBack }: PresentationDashboard
           </p>
         </div>
         <div className="flex flex-col w-full gap-3">
-          <Button onClick={() => navigate(`/evaluation/${brandId}`)} size="lg" className="h-14 rounded-2xl shadow-xl shadow-primary/20 text-lg font-bold transition-all hover:scale-[1.02]">
+          <Button onClick={() => navigate(`/evaluation/${brandId}`)} size="lg" className="h-14 shadow-xl shadow-primary/20 text-lg font-bold transition-all hover:scale-[1.02]">
             <PlusCircle className="mr-2 size-5" />
             {t('presentation.empty.startEvaluation')}
           </Button>
-          <Button onClick={onBack} variant="ghost" size="lg" className="h-14 rounded-2xl text-muted-foreground hover:text-foreground">
+          <Button onClick={onBack} variant="ghost" size="lg" className="h-14 text-muted-foreground hover:text-foreground">
             <ArrowLeft className="mr-2 size-5" />
             {t('presentation.empty.backToSearch')}
           </Button>

@@ -82,7 +82,7 @@ export const SubAccountPage = () => {
 
       <Link
         to="/preview/onboarding/proses"
-        className="block h-13 rounded-xl bg-primary text-center text-[15px] font-bold leading-[52px] text-primary-foreground hover:bg-primary-dark"
+        className="block h-13 rounded-full bg-primary text-center text-[15px] font-bold leading-[52px] text-primary-foreground hover:bg-primary-dark"
       >
         Kirim &amp; mulai evaluasi →
       </Link>

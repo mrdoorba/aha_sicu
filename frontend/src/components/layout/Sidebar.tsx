@@ -110,7 +110,7 @@ export const Sidebar = ({ className, hoverExpand = false }: SidebarProps) => {
         <div className="flex h-16 items-center justify-between px-2">
           <div className="flex items-center gap-2 min-w-0">
             <button
-              className="shrink-0 flex items-center justify-center h-10 w-10 rounded-lg text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
+              className="shrink-0 flex items-center justify-center h-10 w-10 rounded-full text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground transition-colors"
               onClick={() => setIsPinned((p) => !p)}
             >
               <img src="/images/aha-logo-icon.webp" alt="Store ICU Logo" className="size-7 object-contain" />

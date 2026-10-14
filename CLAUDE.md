@@ -94,3 +94,17 @@ Four conditions, all load-bearing:
 Forms and modals are unaffected — they keep focusing their own first field.
 
 Origin: Alfiano, relayed via AHAbot; Heroes task B7BEF31F (Stephen Lawrence).
+
+### Buttons and filter chips are pills (org-wide, 2026-10-14)
+
+Every **button** and every **filter / choice chip** is fully rounded — `rounded-full`,
+a capsule at any height, a circle when it's an icon button. The `Button` primitive
+already carries it, so use `Button` and don't re-specify a radius; a hand-rolled
+`<button>` or a `<Link>` styled as a CTA must set `rounded-full` itself.
+
+Everything else keeps its normal radius: inputs, selects, cards, callouts, tables,
+`<code>` spans, nav rows and disclosure headers. A full-width row is not a button —
+rounding its ends makes it read as one.
+
+Origin: Stephen Lawrence, relayed via AHAbot; Heroes task 2D0C552F. Same rule applied
+in the MP App.

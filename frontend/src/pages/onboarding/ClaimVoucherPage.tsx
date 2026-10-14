@@ -138,7 +138,7 @@ export const ClaimVoucherPage = () => {
             aria-disabled={!valid}
             tabIndex={valid ? undefined : -1}
             className={cn(
-              'block h-12 rounded-xl text-center text-[15px] font-bold leading-[48px]',
+              'block h-12 rounded-full text-center text-[15px] font-bold leading-[48px]',
               valid
                 ? 'aha-field-cta text-white'
                 : 'pointer-events-none bg-muted text-muted-foreground',
@@ -159,7 +159,7 @@ export const ClaimVoucherPage = () => {
               href={AHA_WHATSAPP}
               target="_blank"
               rel="noreferrer"
-              className="inline-flex h-10 items-center gap-2 rounded-xl border border-border px-4 text-[13px] font-bold text-foreground hover:bg-secondary"
+              className="inline-flex h-10 items-center gap-2 rounded-full border border-border px-4 text-[13px] font-bold text-foreground hover:bg-secondary"
             >
               <MessageCircle className="size-4" aria-hidden="true" />
               Hubungi tim AHA Commerce

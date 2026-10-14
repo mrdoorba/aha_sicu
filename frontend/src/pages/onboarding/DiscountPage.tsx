@@ -143,7 +143,7 @@ export const DiscountPage = () => {
 
           <Link
             to="/preview/onboarding/nda"
-            className="block h-13 rounded-xl bg-primary text-center text-[15px] font-bold leading-[52px] text-primary-foreground hover:bg-primary-dark"
+            className="block h-13 rounded-full bg-primary text-center text-[15px] font-bold leading-[52px] text-primary-foreground hover:bg-primary-dark"
           >
             Lanjut ke NDA →
           </Link>

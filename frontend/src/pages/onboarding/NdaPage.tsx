@@ -49,8 +49,8 @@ export const NdaPage = () => {
                   htmlFor={`entity-${type}`}
                   className={
                     entity === type
-                      ? 'flex cursor-pointer items-center gap-2 rounded-xl border-2 border-primary bg-accent/30 px-4 py-2.5 text-[13px] font-bold text-primary'
-                      : 'flex cursor-pointer items-center gap-2 rounded-xl border border-border px-4 py-2.5 text-[13px] font-semibold text-foreground'
+                      ? 'flex cursor-pointer items-center gap-2 rounded-full border-2 border-primary bg-accent/30 px-4 py-2.5 text-[13px] font-bold text-primary'
+                      : 'flex cursor-pointer items-center gap-2 rounded-full border border-border px-4 py-2.5 text-[13px] font-semibold text-foreground'
                   }
                 >
                   <RadioGroupItem value={type} id={`entity-${type}`} />
@@ -184,7 +184,7 @@ export const NdaPage = () => {
 
           <Link
             to="/preview/onboarding/tutorial"
-            className="block h-13 rounded-xl bg-primary text-center text-[15px] font-bold leading-[52px] text-primary-foreground hover:bg-primary-dark"
+            className="block h-13 rounded-full bg-primary text-center text-[15px] font-bold leading-[52px] text-primary-foreground hover:bg-primary-dark"
           >
             Tanda tangani &amp; lanjutkan →
           </Link>
