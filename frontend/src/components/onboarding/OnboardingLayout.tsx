@@ -70,7 +70,11 @@ export const OnboardingLayout = ({
 
         {showDeadline && (
           <div className="mb-6">
-            <DeadlineMeter remaining={deadline.workdays} date={deadline.date} />
+            <DeadlineMeter
+              remaining={deadline.workdays}
+              hours={deadline.hours}
+              date={deadline.date}
+            />
           </div>
         )}
 

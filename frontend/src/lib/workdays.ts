@@ -42,8 +42,50 @@ export function workdaysBetween(from: Date, to: Date): number {
   return days;
 }
 
+/**
+ * When a working day ends, for deadline purposes: 17:00 local time.
+ *
+ * A deadline printed as a bare date is really a deadline at midnight, which
+ * nobody means and nobody staffs. Naming the hour makes the window honest —
+ * and it is the hour shown to the brand, so it cannot live only in the backend.
+ */
+export const BUSINESS_END_HOUR = 17;
+
+/** The same calendar day, at the close of business. */
+export function atBusinessEnd(date: Date): Date {
+  const out = new Date(date.getTime());
+  out.setHours(BUSINESS_END_HOUR, 0, 0, 0);
+  return out;
+}
+
+/**
+ * Whole hours left in today's working day, floored at 0.
+ *
+ * Zero outside working hours and on a weekend: those hours are not time the
+ * brand can use, so counting them would overstate the window.
+ */
+export function hoursLeftToday(now: Date): number {
+  if (!isWorkday(now)) return 0;
+  const end = atBusinessEnd(now);
+  if (now >= end) return 0;
+  return Math.floor((end.getTime() - now.getTime()) / 3_600_000);
+}
+
 const ID_DATE = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+
+const ID_DATE_TIME = new Intl.DateTimeFormat('id-ID', {
+  day: 'numeric',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+});
 
 export function formatDeadline(date: Date): string {
   return ID_DATE.format(date);
+}
+
+/** The deadline with its hour — '23 Okt 2026, 17.00'. */
+export function formatDeadlineTime(date: Date): string {
+  return ID_DATE_TIME.format(date);
 }

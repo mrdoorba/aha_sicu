@@ -1,5 +1,14 @@
 import { describe, it, expect } from 'vitest';
-import { addWorkdays, isWorkday, workdaysBetween, formatDeadline } from './workdays';
+import {
+  BUSINESS_END_HOUR,
+  addWorkdays,
+  atBusinessEnd,
+  formatDeadline,
+  formatDeadlineTime,
+  hoursLeftToday,
+  isWorkday,
+  workdaysBetween,
+} from './workdays';
 
 // 2026-10-13 is a Tuesday. Local-time constructor on purpose: the helper uses
 // getDay(), so a UTC-parsed date would shift the weekday in non-UTC zones.
@@ -78,5 +87,38 @@ describe('formatDeadline', () => {
     const out = formatDeadline(TUE);
     expect(out).toMatch(/13/);
     expect(out).toMatch(/2026/);
+  });
+});
+
+describe('business hours', () => {
+  it('ends the working day at 17:00 on the same date', () => {
+    const end = atBusinessEnd(new Date('2026-10-14T03:12:00'));
+    expect(end.getHours()).toBe(BUSINESS_END_HOUR);
+    expect(end.getMinutes()).toBe(0);
+    expect(end.getDate()).toBe(14);
+  });
+
+  it('counts whole working hours left in the day', () => {
+    // Wednesday 13:30 → 3 whole hours before 17:00, not 3.5 rounded up.
+    expect(hoursLeftToday(new Date('2026-10-14T13:30:00'))).toBe(3);
+    expect(hoursLeftToday(new Date('2026-10-14T09:00:00'))).toBe(8);
+  });
+
+  it('gives no hours once the working day is over', () => {
+    expect(hoursLeftToday(new Date('2026-10-14T17:00:00'))).toBe(0);
+    expect(hoursLeftToday(new Date('2026-10-14T21:40:00'))).toBe(0);
+  });
+
+  it('gives no hours at the weekend', () => {
+    // Saturday and Sunday are not time the brand can use.
+    expect(hoursLeftToday(new Date('2026-10-17T10:00:00'))).toBe(0);
+    expect(hoursLeftToday(new Date('2026-10-18T10:00:00'))).toBe(0);
+  });
+
+  it('prints the deadline with its hour', () => {
+    const label = formatDeadlineTime(atBusinessEnd(new Date('2026-10-23T08:00:00')));
+    expect(label).toContain('23');
+    expect(label).toContain('Okt');
+    expect(label).toMatch(/17[.:]00/);
   });
 });

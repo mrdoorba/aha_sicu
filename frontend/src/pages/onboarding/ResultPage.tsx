@@ -102,10 +102,11 @@ export const ResultPage = () => {
         </section>
       </div>
 
+      {/* The internal 100-point score is not the brand's business: explaining
+          that AHA's own scoring awards points when a metric FAILS invites a
+          question we don't want to answer on a results page. */}
       <p className="mx-auto mt-5 max-w-[72ch] text-center text-xs leading-relaxed text-muted-foreground">
-        Angka di halaman ini adalah <strong>kesehatan toko</strong> — makin tinggi makin baik. Ini
-        bukan skor 100 poin yang dipakai tim AHA secara internal, yang justru memberi poin saat
-        sebuah metrik gagal.
+        Angka di halaman ini adalah <strong>kesehatan toko</strong> — makin tinggi makin baik.
       </p>
     </OnboardingLayout>
   );
