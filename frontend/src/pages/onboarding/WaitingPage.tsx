@@ -80,7 +80,7 @@ export const WaitingPage = () => (
 
       <p className="inline-flex items-center gap-2 rounded-xl border border-border bg-secondary px-4 py-2.5 text-[13px] font-bold text-secondary-foreground">
         <Clock className="size-4" aria-hidden="true" />
-        Estimasi selesai: 2–3 hari kerja
+        Estimasi selesai: 1–2 hari kerja
       </p>
 
       <Link

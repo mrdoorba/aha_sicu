@@ -1,8 +1,9 @@
 import type { ReactNode } from 'react';
-import { Link } from 'react-router-dom';
-import { Check, Clock } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
+import { Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { formatDeadline, previewDeadlineLabel } from './deadline';
+import { DeadlineMeter } from './DeadlineMeter';
+import { previewDeadlineLabel } from './deadline';
 
 export const ONBOARDING_STEPS = [
   { n: 1, label: 'Biaya', path: '/preview/onboarding/biaya' },
@@ -16,7 +17,7 @@ export const ONBOARDING_STEPS = [
 interface OnboardingLayoutProps {
   /** 1–6. Steps below this render as done, this one as current. */
   current: number;
-  /** The remaining-time pill is meaningless once the work is with AHA. */
+  /** The remaining-time meter is meaningless once the work is with AHA. */
   showDeadline?: boolean;
   children: ReactNode;
   /** Tailwind max-width for the content column; screens differ a lot in density. */
@@ -29,10 +30,11 @@ export const OnboardingLayout = ({
   children,
   width = 'max-w-5xl',
 }: OnboardingLayoutProps) => {
-  const deadline = previewDeadlineLabel();
+  const { search } = useLocation();
+  const deadline = previewDeadlineLabel(search);
 
   return (
-    <div className="min-h-screen bg-slate-50 px-4 py-8 sm:px-8">
+    <div className="min-h-screen bg-background px-4 py-8 sm:px-8">
       <div className={cn('mx-auto', width)}>
         <nav aria-label="Langkah onboarding" className="mb-7">
           <ol className="flex flex-wrap items-center gap-2">
@@ -46,9 +48,11 @@ export const OnboardingLayout = ({
                     aria-current={active ? 'step' : undefined}
                     className={cn(
                       'flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-semibold transition-colors',
-                      active && 'bg-blue-600 text-white',
-                      done && 'text-green-700 hover:bg-green-50',
-                      !active && !done && 'text-slate-400 hover:bg-slate-100',
+                      active && 'bg-primary text-primary-foreground',
+                      done && 'text-primary hover:bg-accent',
+                      !active &&
+                        !done &&
+                        'text-muted-foreground hover:bg-secondary',
                     )}
                   >
                     {done && <Check className="size-3.5" aria-hidden="true" />}
@@ -61,16 +65,14 @@ export const OnboardingLayout = ({
               );
             })}
 
-            {showDeadline && (
-              <li className="ms-auto">
-                <span className="flex items-center gap-1.5 rounded-full border border-orange-200 bg-orange-50 px-3 py-1.5 text-xs font-bold text-orange-800">
-                  <Clock className="size-3.5" aria-hidden="true" />
-                  Sisa {deadline.workdays} hari kerja · sampai {formatDeadline(deadline.date)}
-                </span>
-              </li>
-            )}
           </ol>
         </nav>
+
+        {showDeadline && (
+          <div className="mb-6">
+            <DeadlineMeter remaining={deadline.workdays} date={deadline.date} />
+          </div>
+        )}
 
         {children}
       </div>
