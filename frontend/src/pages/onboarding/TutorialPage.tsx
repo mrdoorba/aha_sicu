@@ -97,7 +97,7 @@ export const TutorialPage = () => (
 
     <Link
       to="/preview/onboarding/sub-akun"
-      className="mt-6 block h-13 rounded-xl bg-primary text-center text-[15px] font-bold leading-[52px] text-primary-foreground hover:bg-primary-dark"
+      className="mt-6 block h-13 rounded-full bg-primary text-center text-[15px] font-bold leading-[52px] text-primary-foreground hover:bg-primary-dark"
     >
       Saya sudah membuat sub akun →
     </Link>

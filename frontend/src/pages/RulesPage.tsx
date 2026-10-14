@@ -191,7 +191,7 @@ export const RulesPage = () => {
           <p className="text-destructive mb-4">{t('rules.page.errorLoading')}</p>
           <button
             onClick={() => refetch()}
-            className="px-4 py-2 bg-primary text-primary-foreground rounded-md hover:bg-primary/90"
+            className="px-4 py-2 bg-primary text-primary-foreground rounded-full hover:bg-primary/90"
           >
             {t('rules.page.retry')}
           </button>

@@ -113,7 +113,7 @@ export const Header = () => {
               <span className="text-sm text-gray-300">{user?.email}</span>
               <button
                 onClick={handleLogoutClick}
-                className="px-3 py-1.5 text-sm bg-white/10 hover:bg-white/20 rounded-md transition-colors"
+                className="px-3 py-1.5 text-sm bg-white/10 hover:bg-white/20 rounded-full transition-colors"
               >
                 {t('header.logout')}
               </button>
