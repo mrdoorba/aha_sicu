@@ -32,6 +32,9 @@ export const PREVIEW_BRAND = {
   /** Derived from the voucher's brand — the brand never types this. */
   subAccountEmail: 'aha+covermake@ahacommerce.net',
   subAccountPassword: 'caberawit123!',
+  /** Shopee's sub-account form asks for a login ID separately from the email. */
+  subAccountLoginId: 'aha789',
+  subAccountMemberName: 'AHA',
   priceIdr: 3_000_000,
 };
 
@@ -172,4 +175,38 @@ export const PREVIEW_RECOMMENDATIONS = [
     title: 'Tambah jumlah produk aktif',
     body: '25 produk, benchmark 35. Varian dari SKU terlaris adalah tambahan termurah.',
   },
+];
+
+/** Where Shopee's sub-account form lives. */
+export const SHOPEE_SUBACCOUNT_URL = 'https://subaccount.shopee.com/member';
+
+/**
+ * The permissions the sub account must carry, exactly as Shopee labels them.
+ *
+ * Supplied by Marwah on 14 Oct 2026. Nesting mirrors Shopee's own form, so a
+ * brand can tick down the list without translating our wording into theirs —
+ * and a missing permission silently removes a whole SICU category, so the list
+ * is reproduced rather than summarised.
+ */
+export interface SubAccountRole {
+  label: string;
+  children?: string[];
+}
+
+export const SUBACCOUNT_ROLES: SubAccountRole[] = [
+  { label: 'Akses ke Daftar Pesanan', children: ['Akses ke Rincian Pesanan'] },
+  { label: 'Akses ke Iklanku', children: ['Ekspor File'] },
+  { label: 'Akses ke Promo Toko' },
+  { label: 'Akses ke Promo Shopee' },
+  { label: 'Akses ke Afiliasi' },
+  { label: 'Lihat Pusat Promosi' },
+  { label: 'Akses ke Brand Membership' },
+  { label: 'Akses ke Data Toko Saya', children: ['Akses ke Kesehatan Toko'] },
+  { label: "Akses ke 'Produk Saya'", children: ['Edit secara Massal', 'Download Masal'] },
+];
+
+/** Marwah's walkthrough, one per language. */
+export const SUBACCOUNT_VIDEOS = [
+  { code: 'id' as const, flag: '🇮🇩', label: 'Bahasa Indonesia', youtubeId: 'W9AC-ZiZc0Y' },
+  { code: 'en' as const, flag: '🇬🇧', label: 'English', youtubeId: '3XdmtrBfp44' },
 ];

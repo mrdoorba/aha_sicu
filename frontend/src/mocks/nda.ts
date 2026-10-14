@@ -115,5 +115,15 @@ export function previewNdaQueue(): NdaRecord[] {
   ];
 }
 
-/** Who signs for AHA Commerce. */
-export const AHA_SIGNER = { name: 'Marwah K.', role: 'Partnership Lead' } as const;
+/**
+ * Who signs for AHA Commerce (Pihak Pertama).
+ *
+ * Marwah, 14 Oct: the first party's signatory is Pak Andre, not Partnership.
+ * His full legal name and title still need confirming before this reaches a
+ * real document — see docs/nda-requirements.md. Marwah still verifies manual
+ * uploads; signing and verifying are deliberately different people.
+ */
+export const AHA_SIGNER = {
+  name: 'Pak Andre',
+  role: 'Penandatangan Pihak Pertama',
+} as const;
