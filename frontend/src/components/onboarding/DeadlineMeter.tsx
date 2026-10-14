@@ -1,9 +1,10 @@
 import { Clock } from 'lucide-react';
 import { cn } from '../../lib/utils';
-import { formatDeadline } from '../../lib/workdays';
+import { formatDeadlineTime } from '../../lib/workdays';
 import {
   TOTAL_WORKDAYS,
   deadlineMeter,
+  remainingLabel,
   type DeadlineUrgency,
 } from './deadline';
 
@@ -21,18 +22,22 @@ const TEXT: Record<DeadlineUrgency, string> = {
 
 interface DeadlineMeterProps {
   remaining: number;
+  /** Working hours left in today, shown alongside the days. */
+  hours?: number;
   date: Date;
   total?: number;
 }
 
 export const DeadlineMeter = ({
   remaining,
+  hours: hoursLeft = 0,
   date,
   total = TOTAL_WORKDAYS,
 }: DeadlineMeterProps) => {
-  const { clamped, urgency, percent, expired } = deadlineMeter(
+  const { clamped, hours, urgency, percent } = deadlineMeter(
     remaining,
     total,
+    hoursLeft,
   );
 
   return (
@@ -45,12 +50,12 @@ export const DeadlineMeter = ({
           )}
         >
           <Clock className="size-4" aria-hidden="true" />
-          {expired ? 'Waktu klaim habis' : `Sisa ${clamped} hari kerja`}
+          {remainingLabel(clamped, hours)}
         </p>
         <p className="text-[13px] text-muted-foreground">
           Batas akhir{' '}
           <span className="font-semibold text-foreground">
-            {formatDeadline(date)}
+            {formatDeadlineTime(date)}
           </span>
         </p>
       </div>
@@ -61,11 +66,7 @@ export const DeadlineMeter = ({
         aria-valuenow={clamped}
         aria-valuemin={0}
         aria-valuemax={total}
-        aria-valuetext={
-          expired
-            ? 'Waktu klaim habis'
-            : `Sisa ${clamped} dari ${total} hari kerja`
-        }
+        aria-valuetext={`${remainingLabel(clamped, hours)}, dari ${total} hari kerja`}
       >
         <div
           className={cn(

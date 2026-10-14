@@ -1,5 +1,10 @@
 import { describe, expect, it } from 'vitest';
-import { TOTAL_WORKDAYS, deadlineMeter, remainingFromSearch } from './deadline';
+import {
+  TOTAL_WORKDAYS,
+  deadlineMeter,
+  remainingFromSearch,
+  remainingLabel,
+} from './deadline';
 
 describe('deadlineMeter', () => {
   it('is full on the day the voucher is claimed', () => {
@@ -60,5 +65,35 @@ describe('remainingFromSearch', () => {
     expect(remainingFromSearch('?sisa=abc')).toBeNull();
     expect(remainingFromSearch('?sisa=')).toBeNull();
     expect(remainingFromSearch('?sisa=1.5')).toBeNull();
+  });
+});
+
+describe('remainingLabel', () => {
+  it('shows days and hours together', () => {
+    expect(remainingLabel(7, 3)).toBe('Sisa 7 hari kerja 3 jam');
+  });
+
+  it('drops the hours when there are none left today', () => {
+    expect(remainingLabel(7, 0)).toBe('Sisa 7 hari kerja');
+  });
+
+  it('counts in hours alone on the last day', () => {
+    expect(remainingLabel(0, 4)).toBe('Sisa 4 jam');
+  });
+
+  it('is expired only when both are gone', () => {
+    expect(remainingLabel(0, 0)).toBe('Waktu klaim habis');
+  });
+});
+
+describe('deadlineMeter with hours', () => {
+  it('is not expired while hours remain on the last day', () => {
+    // 0 working days but 4 hours left is a brand that can still finish.
+    expect(deadlineMeter(0, TOTAL_WORKDAYS, 4).expired).toBe(false);
+    expect(deadlineMeter(0, TOTAL_WORKDAYS, 0).expired).toBe(true);
+  });
+
+  it('never reports negative hours', () => {
+    expect(deadlineMeter(2, TOTAL_WORKDAYS, -5).hours).toBe(0);
   });
 });
