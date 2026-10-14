@@ -1,8 +1,10 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { PenLine, Printer, ShieldCheck } from 'lucide-react';
+import { Clock, PenLine, Printer, ShieldCheck } from 'lucide-react';
 import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
 import { NdaManualUpload } from '../../components/onboarding/NdaManualUpload';
+import { NdaSignatures } from '../../components/onboarding/NdaSignatures';
+import { AHA_SIGNER } from '../../mocks/nda';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { RadioGroup, RadioGroupItem } from '../../components/ui/radio-group';
@@ -254,44 +256,14 @@ export const NdaPage = () => {
               dihapus Pihak Pertama setelah evaluasi selesai.
             </p>
 
-            <div className="flex flex-wrap gap-6 border-t border-border pt-3">
-              <div className="min-w-0 flex-1 basis-36">
-                <p className="mb-0.5 text-[11px] text-muted-foreground">
-                  Pihak Kedua
-                </p>
-                {/* On the paper route this space is for a pen, so it stays
-                    blank — printing a typed signature the brand never made
-                    would defeat the point of signing by hand. */}
-                {mode === 'manual' ? (
-                  <p
-                    className="h-9 border-b border-foreground/40"
-                    aria-label="Ruang tanda tangan"
-                  />
-                ) : (
-                  <p className="text-3xl leading-tight text-foreground [font-family:'Caveat',cursive]">
-                    {signature}
-                  </p>
-                )}
-                <p className="mt-0.5 text-[11px] font-bold text-foreground">
-                  {pic}
-                </p>
-                <p className="text-[11px] text-muted-foreground">{role}</p>
-              </div>
-              <div className="min-w-0 flex-1 basis-36">
-                <p className="mb-0.5 text-[11px] text-muted-foreground">
-                  Pihak Pertama
-                </p>
-                <p className="text-3xl leading-tight text-muted-foreground [font-family:'Caveat',cursive]">
-                  AHA Commerce
-                </p>
-                <p className="mt-0.5 text-[11px] font-bold text-foreground">
-                  Marwah K.
-                </p>
-                <p className="text-[11px] text-muted-foreground">
-                  Partnership Lead
-                </p>
-              </div>
-            </div>
+            <NdaSignatures
+              pic={pic}
+              picRole={role}
+              brandRoute={mode === 'manual' ? 'paper' : 'digital'}
+              brandSigned
+              ahaRoute={null}
+              ahaSigned={false}
+            />
           </article>
 
           <Link
@@ -315,6 +287,18 @@ export const NdaPage = () => {
                 ? 'Berkas Anda dikirim ke tim Partnership untuk diperiksa.'
                 : 'Unggah NDA yang sudah ditandatangani untuk melanjutkan.'
               : 'Salinan PDF dikirim ke email Anda dan disimpan di akun SICU.'}
+          </p>
+
+          {/* An NDA binds AHA too, so it is not an agreement until AHA has
+              signed it. Saying "selesai" here would be a lie the brand only
+              discovers when they look for the executed copy. */}
+          <p className="flex items-start gap-2 rounded-xl border border-border bg-secondary p-3.5 text-xs leading-relaxed text-secondary-foreground">
+            <Clock className="mt-0.5 size-4 shrink-0 text-primary" aria-hidden="true" />
+            <span>
+              Setelah Anda tanda tangan, <strong>{AHA_SIGNER.name}</strong> (
+              {AHA_SIGNER.role}) menandatangani dari pihak AHA Commerce. Salinan final yang sudah
+              ditandatangani kedua pihak dikirim ke email Anda — biasanya dalam 1 hari kerja.
+            </span>
           </p>
         </section>
       </div>

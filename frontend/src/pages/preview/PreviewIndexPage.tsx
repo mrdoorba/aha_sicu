@@ -21,6 +21,11 @@ const BRAND_SCREENS = [
   { to: '/preview/onboarding/sub-akun', label: '4 · Kirim sub akun', note: 'form cadangan' },
   { to: '/preview/onboarding/proses', label: '5 · Menunggu', note: 'checklist, bukan spinner' },
   { to: '/preview/onboarding/hasil', label: '6 · Hasil SICU', note: 'radar kesehatan' },
+  {
+    to: '/preview/internal/nda',
+    label: 'Internal · Tanda tangan NDA',
+    note: 'sisi AHA · digital & kertas',
+  },
 ];
 
 export const PreviewIndexPage = () => {
