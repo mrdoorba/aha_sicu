@@ -24,6 +24,9 @@ const WaitingPage = lazy(() =>
 const ResultPage = lazy(() =>
   import('../onboarding/ResultPage').then((m) => ({ default: m.ResultPage })),
 );
+const InternalNdaPage = lazy(() =>
+  import('./InternalNdaPage').then((m) => ({ default: m.InternalNdaPage })),
+);
 
 /**
  * Routes for the fake-data onboarding preview.
@@ -52,6 +55,9 @@ export function previewRoutes() {
         <Route path="sub-akun" element={<SubAccountPage />} />
         <Route path="proses" element={<WaitingPage />} />
         <Route path="hasil" element={<ResultPage />} />
+      </Route>
+      <Route path="internal">
+        <Route path="nda" element={<InternalNdaPage />} />
       </Route>
     </Route>
   );
