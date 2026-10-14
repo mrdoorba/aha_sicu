@@ -5,6 +5,7 @@ import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
 import { NdaManualUpload } from '../../components/onboarding/NdaManualUpload';
 import { NdaSignatures } from '../../components/onboarding/NdaSignatures';
 import { AHA_SIGNER } from '../../mocks/nda';
+import { formatDeadline } from '../../lib/workdays';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { RadioGroup, RadioGroupItem } from '../../components/ui/radio-group';
@@ -46,6 +47,11 @@ export const NdaPage = () => {
 
   const signature = pic.trim() || 'Nama Anda';
   // On the paper route nothing is agreed until the scan is in.
+  // Marwah asked for the creation date on the document itself. Computed at
+  // render so a preview never shows a stale one; the real flow will stamp it
+  // when the NDA is generated.
+  const createdOn = formatDeadline(new Date());
+
   // Every company field is required, so an empty one blocks signing on BOTH
   // routes — a printed NDA with a blank party is no better than a digital one.
   const complete = [company, pic, role, address].every((v) => v.trim().length > 0);
@@ -240,6 +246,29 @@ export const NdaPage = () => {
         {/* Live NDA */}
         <section className="flex min-w-0 flex-1 basis-[400px] flex-col gap-3.5">
           <article className="rounded-2xl border border-border bg-card px-8 py-8 text-xs leading-[1.85] text-secondary-foreground">
+            {/* Kop surat. Marwah, 14 Oct: the NDA needs the AHA logo, or at
+                minimum letterhead, "supaya resmi". The mark is the real asset
+                copied from aha-coms (1080x1080) — DESIGN.md bans redrawing it,
+                and this document gets printed, so an approximation would show. */}
+            <header className="mb-6 flex items-center justify-between gap-4 border-b-2 border-foreground/15 pb-4">
+              <div className="flex items-center gap-3">
+                <img src="/aha-logo.png" alt="AHA Commerce" className="size-9 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-[13px] font-extrabold leading-tight text-foreground">
+                    PT AHA Commerce Indonesia
+                  </p>
+                  <p className="text-[10px] leading-tight text-muted-foreground">
+                    ahacommerce.net
+                  </p>
+                </div>
+              </div>
+              <p className="shrink-0 text-end text-[10px] leading-tight text-muted-foreground">
+                Dibuat
+                <br />
+                <span className="font-semibold text-foreground">{createdOn}</span>
+              </p>
+            </header>
+
             <p className="mb-1 text-center text-[11px] font-extrabold tracking-[0.12em] text-muted-foreground">
               PERJANJIAN KERAHASIAAN
             </p>
