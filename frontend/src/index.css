@@ -53,6 +53,7 @@
   --color-purple: var(--purple);
   --color-penalti: var(--penalti);
   --color-success: var(--success);
+  --color-success-ink: var(--success-ink);
   --color-warning: var(--warning);
   --color-info: var(--info);
 }
@@ -94,6 +95,10 @@
   --sidebar-ring: #325FEC;
   /* Custom project variables */
   --success: #22C55E;              /* Green */
+  /* Text-safe green. --success is 2.3:1 on white — fine as a fill, unreadable
+     as body copy. The SICU report prints its pass verdicts as text, so it uses
+     this one (4.5:1) instead. */
+  --success-ink: #15803D;
   --warning: #F4C144;              /* Gold */
   --info: #325FEC;                 /* Primary Blue */
   /* Radar chart */
@@ -144,6 +149,7 @@
   --sidebar-border: #1E293B;
   --sidebar-ring: #325FEC;
   --success: #22C55E;
+  --success-ink: #4ADE80;          /* Lifted for dark surfaces */
   --warning: #F4C144;
   --info: #325FEC;
   /* Radar chart */
