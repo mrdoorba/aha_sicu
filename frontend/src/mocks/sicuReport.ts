@@ -41,10 +41,17 @@ export interface ReportMetric {
   verdictKey?: string;
   verdictVars?: VerdictVars;
   status: MetricStatus;
-  /** Competition rows run the full width and carry a product link. */
-  wide?: boolean;
   /** Competition rows link out to the product. */
   link?: boolean;
+  /**
+   * Which verdict variable carries the row's real title.
+   *
+   * Competition rows are all named 'Produk Kompetisi'; what distinguishes them
+   * is the product, which the email buries inside the verdict sentence. Naming
+   * it here lets the row print the product and keep the metric name as a
+   * kicker, rather than three identical headings in a column.
+   */
+  titleVar?: string;
 }
 
 export interface ReportGroup {
@@ -259,8 +266,8 @@ export const REPORT_GROUPS: ReportGroup[] = [
           marketPrice: '215,027',
         },
         status: 'bad',
-        wide: true,
         link: true,
+        titleVar: 'name',
       },
       {
         labelKey: 'scoring.competitionProduct',
@@ -274,8 +281,8 @@ export const REPORT_GROUPS: ReportGroup[] = [
           marketPrice: '831,364',
         },
         status: 'good',
-        wide: true,
         link: true,
+        titleVar: 'name',
       },
       {
         labelKey: 'scoring.competitionProduct',
@@ -289,8 +296,8 @@ export const REPORT_GROUPS: ReportGroup[] = [
           marketPrice: '166,759',
         },
         status: 'good',
-        wide: true,
         link: true,
+        titleVar: 'name',
       },
     ],
   },
