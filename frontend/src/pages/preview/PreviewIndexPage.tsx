@@ -16,16 +16,11 @@ import { previewVouchers } from '../../mocks/onboarding';
 const BRAND_SCREENS = [
   { to: '/preview/daftar', label: 'Klaim voucher', note: 'publik · register gradient' },
   { to: '/preview/onboarding/biaya', label: '1 · Diskon 100%', note: 'animasi 3 jt → Rp 0' },
-  { to: '/preview/onboarding/nda', label: '2 · Form + NDA', note: 'tanda tangan otomatis' },
+  { to: '/preview/onboarding/nda', label: '2 · Form + NDA', note: 'minta NDA via DocuSign' },
   { to: '/preview/onboarding/tutorial', label: '3 · Tutorial sub akun', note: 'screenshot menyusul' },
   { to: '/preview/onboarding/sub-akun', label: '4 · Kirim sub akun', note: 'form cadangan' },
   { to: '/preview/onboarding/proses', label: '5 · Menunggu', note: 'checklist, bukan spinner' },
   { to: '/preview/onboarding/hasil', label: '6 · Hasil SICU', note: 'radar kesehatan' },
-  {
-    to: '/preview/internal/nda',
-    label: 'Internal · Tanda tangan NDA',
-    note: 'sisi AHA · digital & kertas',
-  },
 ];
 
 export const PreviewIndexPage = () => {
