@@ -78,14 +78,19 @@ describe('the report mirrors the SICU email', () => {
     }
   });
 
-  it('runs competition rows full width, since they carry a product name', () => {
+  it('titles competition rows by product, since the metric name repeats', () => {
+    // All three are 'Produk Kompetisi'; what tells them apart is the product,
+    // which the email buries inside the verdict sentence.
     const competition = REPORT_GROUPS.find((g) => g.titleKey === 'email.category.competition')!;
-    expect(competition.metrics.every((m) => m.wide && m.link)).toBe(true);
-    // Nothing else is full width.
+    expect(competition.metrics.every((m) => m.link && m.titleVar === 'name')).toBe(true);
+    for (const m of competition.metrics) {
+      expect(m.verdictVars?.[m.titleVar!], m.benchmark).toBeTruthy();
+    }
+    // Nothing else is retitled.
     const others = REPORT_GROUPS.filter(
       (g) => g.titleKey !== 'email.category.competition',
     ).flatMap((g) => g.metrics);
-    expect(others.some((m) => m.wide)).toBe(false);
+    expect(others.some((m) => m.titleVar)).toBe(false);
   });
 
   it('attaches the REAL BENCHMARK aside to Bisnis only', () => {
