@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Check, Clock, Loader2 } from 'lucide-react';
 import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
 import { PREVIEW_BRAND } from '../../mocks/onboarding';
@@ -6,18 +7,41 @@ import { cn } from '../../lib/utils';
 
 type StageState = 'done' | 'running' | 'waiting';
 
-const STAGES: { title: string; detail: string; state: StageState }[] = [
-  { title: 'Sub akun diterima', detail: 'Hari ini 09:41', state: 'done' },
+interface Stage {
+  titleKey: string;
+  detailKey: string;
+  detailVars?: Record<string, string>;
+  state: StageState;
+}
+
+const STAGES: Stage[] = [
   {
-    title: 'Menarik data toko dari Seller Centre',
-    detail: 'Sedang berjalan · pesanan, produk, iklan, stok',
+    titleKey: 'onboarding.wait.stage1',
+    detailKey: 'onboarding.wait.stage1Detail',
+    detailVars: { time: '09.41' },
+    state: 'done',
+  },
+  {
+    titleKey: 'onboarding.wait.stage2',
+    detailKey: 'onboarding.wait.stage2Detail',
     state: 'running',
   },
-  { title: 'Evaluasi 8 kategori SICU', detail: 'Belum mulai', state: 'waiting' },
-  { title: 'Laporan & rekomendasi disiapkan', detail: 'Belum mulai', state: 'waiting' },
+  {
+    titleKey: 'onboarding.wait.stage3',
+    detailKey: 'onboarding.wait.notStarted',
+    state: 'waiting',
+  },
+  {
+    titleKey: 'onboarding.wait.stage4',
+    detailKey: 'onboarding.wait.notStarted',
+    state: 'waiting',
+  },
 ];
 
-export const WaitingPage = () => (
+export const WaitingPage = () => {
+  const { t } = useTranslation();
+
+  return (
   // The deadline pill is hidden here: the clock is AHA's now, not the brand's.
   <OnboardingLayout current={5} showDeadline={false} width="max-w-2xl">
     <div className="rounded-2xl border border-border bg-card px-6 py-11 text-center sm:px-11">
@@ -26,18 +50,17 @@ export const WaitingPage = () => (
       </span>
 
       <h1 className="mb-2.5 text-2xl font-extrabold tracking-tight text-foreground">
-        Tim AHA sedang mengerjakan evaluasi Anda
+        {t('onboarding.wait.title')}
       </h1>
       <p className="mx-auto mb-9 max-w-[54ch] text-sm leading-relaxed text-muted-foreground">
-        Tidak ada yang perlu Anda lakukan. Kami kirim email ke{' '}
-        <strong className="text-foreground">{PREVIEW_BRAND.email}</strong> begitu hasilnya siap.
+        {t('onboarding.wait.body', { email: PREVIEW_BRAND.email })}
       </p>
 
       <ol className="mb-8 flex flex-col text-left">
         {STAGES.map((stage, i) => {
           const last = i === STAGES.length - 1;
           return (
-            <li key={stage.title} className="relative flex items-start gap-4 pb-5.5">
+            <li key={stage.titleKey} className="relative flex items-start gap-4 pb-5.5">
               {!last && (
                 <span
                   aria-hidden="true"
@@ -69,9 +92,11 @@ export const WaitingPage = () => (
                     stage.state === 'waiting' ? 'text-muted-foreground' : 'text-foreground',
                   )}
                 >
-                  {stage.title}
+                  {t(stage.titleKey)}
                 </p>
-                <p className="text-[13px] text-muted-foreground">{stage.detail}</p>
+                <p className="text-[13px] text-muted-foreground">
+                  {t(stage.detailKey, stage.detailVars)}
+                </p>
               </div>
             </li>
           );
@@ -80,20 +105,20 @@ export const WaitingPage = () => (
 
       <p className="inline-flex items-center gap-2 rounded-xl border border-border bg-secondary px-4 py-2.5 text-[13px] font-bold text-secondary-foreground">
         <Clock className="size-4" aria-hidden="true" />
-        Estimasi selesai: 1–2 hari kerja
+        {t('onboarding.wait.eta')}
       </p>
 
       <Link
         to="/preview/onboarding/hasil"
         className="mt-7 block text-sm font-bold text-primary underline underline-offset-4"
       >
-        [pratinjau] lompat ke hasil →
+        {t('onboarding.wait.jump')}
       </Link>
     </div>
 
     <p className="mx-auto mt-5 max-w-[60ch] text-center text-xs leading-relaxed text-muted-foreground">
-      Halaman ini satu-satunya yang brand lihat sampai verdict keluar. Brand tidak bisa
-      mempercepatnya, dan tidak melihat apa pun milik brand lain.
+      {t('onboarding.wait.footnote')}
     </p>
   </OnboardingLayout>
-);
+  );
+};

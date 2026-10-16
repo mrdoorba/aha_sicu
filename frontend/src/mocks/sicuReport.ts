@@ -8,6 +8,12 @@
  * a verdict reworded on the page is a verdict that no longer matches the one
  * the brand already has in their inbox.
  *
+ * Every label and verdict is a TRANSLATION KEY, not a finished sentence, and
+ * they are the same keys `backend/app/modules/email/template.py` renders from
+ * (the backend reads these very locale files). That is the whole point: the
+ * brand reads the result in the language the email reached them in, and nobody
+ * has to keep two wordings of "Kurang Baik" in step by hand.
+ *
  * The numbers are the email's. Only the competition product names are changed,
  * because the sample brand in this preview sells cosmetics and the email's
  * example is a car-care store.
@@ -21,24 +27,31 @@ export type MetricStatus =
   /** Context, not a verdict — these carry no tick and no benchmark. */
   | 'info';
 
+/** The values a verdict template interpolates. The email passes the same ones. */
+export type VerdictVars = Record<string, string | number>;
+
 export interface ReportMetric {
-  label: string;
+  /** Key for the metric name, as the email names it. */
+  labelKey: string;
   /** Pre-formatted, because the email prints each one its own way. */
   value: string;
+  /** Numerals and comparators — language-neutral, so not a key. */
   benchmark?: string;
   /** The coloured line under the rule. Absent on 'info' metrics. */
-  verdict?: string;
+  verdictKey?: string;
+  verdictVars?: VerdictVars;
   status: MetricStatus;
   /** Competition rows run the full width and carry a product link. */
   wide?: boolean;
-  linkLabel?: string;
+  /** Competition rows link out to the product. */
+  link?: boolean;
 }
 
 export interface ReportGroup {
-  title: string;
+  titleKey: string;
   metrics: ReportMetric[];
   /** The REAL BENCHMARK aside that sits under Bisnis. */
-  note?: { title: string; body: string };
+  note?: { titleKey: string; bodyKey: string };
 }
 
 export const REPORT_SCORE = {
@@ -46,7 +59,7 @@ export const REPORT_SCORE = {
   value: 42,
   /** Shown beside it in the email as a separate chip — a different number. */
   compatibility: 73,
-  verdict: 'Performa dapat Ditingkatkan',
+  verdictKey: 'email.performance_verdict',
 };
 
 export const REPORT_META = {
@@ -58,233 +71,288 @@ export const REPORT_META = {
 
 export const REPORT_GROUPS: ReportGroup[] = [
   {
-    title: 'Operasional',
+    titleKey: 'email.category.operational',
     metrics: [
       {
-        label: 'Tingkat Pesanan Tidak Terselesaikan',
+        labelKey: 'fields.operational.unfulfilledOrderRate',
         value: '0%',
         benchmark: '<1%',
-        verdict: 'Tingkat Pesanan Tidak Terselesaikan = 0.0% [Sudah Baik]',
+        verdictKey: 'scoring.unfulfilledOrderRate.pass',
+        verdictVars: { value: '0.0%' },
         status: 'good',
       },
       {
-        label: 'Tingkat Keterlambatan Pengiriman',
+        labelKey: 'fields.operational.lateShipmentRate',
         value: '2.33%',
         benchmark: '<1%',
-        verdict: 'Tingkat Keterlambatan Pengiriman = 2.3% [Kurang Baik, nilai disarankan: <1%]',
+        verdictKey: 'scoring.lateShipmentRate.fail',
+        verdictVars: { value: '2.3%', threshold: 1 },
         status: 'bad',
       },
       {
-        label: 'Waktu Persiapan',
+        labelKey: 'scoring.preparationTime',
         value: '0.55',
         benchmark: '<1',
-        verdict: 'Masa Pengemasan = 0.55 hari [Sudah Baik]',
+        verdictKey: 'scoring.preparationTime.pass',
+        verdictVars: { value: '0.55' },
         status: 'good',
       },
       {
-        label: 'Persentase Chat Dibalas',
+        labelKey: 'fields.operational.chatResponseRate',
         value: '100%',
         benchmark: '>95%',
-        verdict: 'Persentase Chat Dibalas = 100% [Sudah Baik]',
+        verdictKey: 'scoring.chatResponseRate.pass',
+        verdictVars: { value: '100%' },
         status: 'good',
       },
       {
-        label: 'Rating Keseluruhan',
+        labelKey: 'scoring.overallRating',
         value: '4.91',
         benchmark: '>4.7',
-        verdict: 'Keseluruhan Penilaian = 4.91 [Sudah Baik]',
+        verdictKey: 'scoring.overallRating.pass',
+        verdictVars: { value: '4.91' },
         status: 'good',
       },
     ],
   },
   {
-    title: 'Bisnis',
+    titleKey: 'email.category.business',
     metrics: [
-      { label: 'Rata-rata Penjualan 6 Bulan', value: '91,076,096', status: 'info' },
+      { labelKey: 'scoring.avgSales6mo', value: '91,076,096', status: 'info' },
       {
-        label: 'Conversion Rate',
+        labelKey: 'scoring.conversionRate',
         value: '0.99%',
         benchmark: '>3%',
-        verdict: 'Tingkat Konversi = 1.0% [Kurang Baik, nilai disarankan: >3%]',
+        verdictKey: 'scoring.conversionRate.fail',
+        verdictVars: { value: '1.0%', benchmark: '>3%' },
         status: 'bad',
       },
     ],
     note: {
-      title: 'REAL BENCHMARK',
-      body: 'Real benchmark akan diambil dari omset daftar pesanan yang dikurangi dengan pembatalan. Perhitungan real benchmark baru dapat dilakukan setelah brand mengisi form registrasi. Omset seller center hanya digunakan sebagai penentu skema kerjasama.',
+      titleKey: 'presentation.salesTrend.realBenchmark.label',
+      bodyKey: 'presentation.salesTrend.realBenchmark.note',
     },
   },
   {
-    title: 'Pengunjung',
+    titleKey: 'email.category.visitors',
     metrics: [
-      { label: 'Total Pengunjung', value: '4,973', status: 'info' },
-      { label: 'Pengunjung Kembali', value: '1,253', status: 'info' },
+      { labelKey: 'fields.visitors.totalVisitors', value: '4,973', status: 'info' },
+      { labelKey: 'scoring.returningVisitors', value: '1,253', status: 'info' },
       {
-        label: '% Pengunjung Kembali',
+        labelKey: 'scoring.returningVisitorPct',
         value: '25.2%',
         benchmark: '>23%',
-        verdict: '% Pengunjung Lama = 25.2% [Sudah Baik]',
+        verdictKey: 'scoring.returningVisitorPct.pass',
+        verdictVars: { value: '25.2%' },
         status: 'good',
       },
       {
-        label: 'Total Followers',
+        labelKey: 'scoring.totalFollowers',
         value: '4,100',
         benchmark: '>50000',
-        verdict: 'Total Pengikut = 4,100 [Kurang Baik, nilai disarankan: >50.000]',
+        verdictKey: 'scoring.totalFollowers.fail',
+        verdictVars: { value: '4,100' },
         status: 'bad',
       },
     ],
   },
   {
-    title: 'Alat Promo',
+    titleKey: 'email.category.promo',
     metrics: [
       {
-        label: 'Tingkat Penggunaan Promo',
+        labelKey: 'scoring.promoUsageRate',
         value: '27.3%',
         benchmark: '>80%',
-        verdict: 'Penggunaan alat promosi = 27% [Kurang Baik, nilai disarankan: >80%]',
+        verdictKey: 'scoring.promoUsageRate.fail',
+        verdictVars: { value: '27%', threshold: 80 },
         status: 'bad',
       },
       {
-        label: 'Efektivitas Promo',
+        labelKey: 'scoring.promoEffectiveness',
         value: '9.1%',
         benchmark: '>90%',
-        verdict: 'Efektifitas alat promosi = 9% [Kurang Baik, nilai disarankan: >90%]',
+        verdictKey: 'scoring.promoEffectiveness.fail',
+        verdictVars: { value: '9%', threshold: 90 },
         status: 'bad',
       },
     ],
   },
   {
-    title: 'Produk & Status',
+    titleKey: 'email.category.products',
     metrics: [
       {
-        label: 'Jumlah Produk',
+        labelKey: 'category.products',
         value: '152',
         benchmark: '>=35',
-        verdict: 'Jumlah Produk = 152 [OK]',
+        verdictKey: 'scoring.productCount.pass',
+        verdictVars: { value: '152' },
         status: 'good',
       },
       {
-        label: 'Status Toko',
+        labelKey: 'fields.products.storeStatus',
         value: 'Star+',
         benchmark: 'Shopee Mall',
-        verdict: 'Status Toko = Star+ [OK]',
+        verdictKey: 'scoring.storeStatus.pass',
+        verdictVars: { value: 'Star+' },
         status: 'good',
       },
     ],
   },
   {
-    title: 'Iklan',
+    titleKey: 'email.category.ads',
     metrics: [
-      { label: 'Penjualan Iklan', value: '70,336,473', status: 'info' },
-      { label: 'Biaya Iklan', value: '4,306,553', status: 'info' },
-      { label: 'ROI Iklan', value: '16.3', benchmark: '>9', verdict: 'ROI = 16.3 [Sudah Baik]', status: 'good' },
+      { labelKey: 'fields.ads.adSales', value: '70,336,473', status: 'info' },
+      { labelKey: 'fields.ads.adCost', value: '4,306,553', status: 'info' },
       {
-        label: '% GMV Iklan',
+        labelKey: 'scoring.adsROI',
+        value: '16.3',
+        benchmark: '>9',
+        verdictKey: 'scoring.adsROI.pass',
+        verdictVars: { value: '16.3' },
+        status: 'good',
+      },
+      {
+        labelKey: 'scoring.adsGMVPct',
         value: '75.8%',
         benchmark: '<74%',
-        verdict:
-          '% GMV Iklan / GMV Toko = 75.8% [Terlalu bergantung terhadap Iklan, nilai disarankan: <74%]',
+        verdictKey: 'scoring.adsGMVPct.fail',
+        verdictVars: { value: '75.8%', threshold: 74 },
         status: 'bad',
       },
       {
-        label: '% Biaya Iklan',
+        labelKey: 'scoring.adsCostPct',
         value: '4.6%',
         benchmark: '<10%',
-        verdict: '[Penggunaan iklan terlalu minim (4.6%). Nilai disarankan: 5%-10%.]',
+        verdictKey: 'scoring.adsCostPct.tooMinimal',
+        verdictVars: { value: '4.6%', min: 5, max: 10 },
         status: 'bad',
       },
     ],
   },
   {
-    title: 'Campaign',
+    titleKey: 'email.category.campaign',
     metrics: [
-      { label: 'Sesi Dinominasikan', value: '3', status: 'info' },
-      { label: 'Sesi Tersedia', value: '10', status: 'info' },
+      { labelKey: 'fields.campaign.nominatedSessions', value: '3', status: 'info' },
+      { labelKey: 'fields.campaign.availableSessions', value: '10', status: 'info' },
       {
-        label: 'Partisipasi Campaign',
+        labelKey: 'categories.campaign',
         value: '30.0%',
         benchmark: '>90%',
-        verdict: '% Partisipasi Campaign = 30.0% [Kurang Baik, nilai disarankan: >90%]',
+        verdictKey: 'scoring.campaignParticipation.fail',
+        verdictVars: { value: '30.0%', threshold: 90 },
         status: 'bad',
       },
     ],
   },
   {
-    title: 'Kompetisi',
+    titleKey: 'email.category.competition',
     metrics: [
       {
-        label: 'Produk Kompetisi',
+        labelKey: 'scoring.competitionProduct',
         value: '245,000',
         benchmark: 'IDR 215,027',
-        verdict:
-          'Covermake Cushion Foundation SPF50 / 15g (IDR 245,000) = ✗ [tidak kompetitif (harga kisaran pasaran: IDR 215,027)]',
+        verdictKey: 'scoring.competitionProduct.fail',
+        verdictVars: {
+          name: 'Covermake Cushion Foundation SPF50 / 15g',
+          currency: 'IDR',
+          sellingPrice: '245,000',
+          marketPrice: '215,027',
+        },
         status: 'bad',
         wide: true,
-        linkLabel: 'Lihat di Shopee',
+        link: true,
       },
       {
-        label: 'Produk Kompetisi',
+        labelKey: 'scoring.competitionProduct',
         value: '835,000',
         benchmark: 'IDR 831,364',
-        verdict:
-          'Covermake Pro Artistry Palette / 24 Shades Limited Edition (IDR 835,000) = ✓ [kompetitif]',
+        verdictKey: 'scoring.competitionProduct.pass',
+        verdictVars: {
+          name: 'Covermake Pro Artistry Palette / 24 Shades Limited Edition',
+          currency: 'IDR',
+          sellingPrice: '835,000',
+          marketPrice: '831,364',
+        },
         status: 'good',
         wide: true,
-        linkLabel: 'Lihat di Shopee',
+        link: true,
       },
       {
-        label: 'Produk Kompetisi',
+        labelKey: 'scoring.competitionProduct',
         value: '145,000',
         benchmark: 'IDR 166,759',
-        verdict: 'Covermake Hydra Serum Vitamin C - 30ml (IDR 145,000) = ✓ [kompetitif]',
+        verdictKey: 'scoring.competitionProduct.pass',
+        verdictVars: {
+          name: 'Covermake Hydra Serum Vitamin C - 30ml',
+          currency: 'IDR',
+          sellingPrice: '145,000',
+          marketPrice: '166,759',
+        },
         status: 'good',
         wide: true,
-        linkLabel: 'Lihat di Shopee',
+        link: true,
       },
     ],
   },
   {
-    title: 'Stok',
+    titleKey: 'email.category.stock',
     metrics: [
       {
-        label: 'Rata-rata Stok Top 20% SKU',
+        labelKey: 'scoring.avgStockTop20',
         value: '73',
         benchmark: '>=24',
-        verdict: 'Rata² Stok TOP 20% SKU = 73 [Sudah Baik]',
+        verdictKey: 'scoring.avgStockTop20.pass',
+        verdictVars: { value: '73' },
         status: 'good',
       },
       {
-        label: 'Ketersediaan Stok',
+        labelKey: 'evaluationDetail.stockAvailability',
         value: '5.0%',
         benchmark: '≤10% stok habis',
-        verdict: '% Ketersediaan Stok = 5% stok habis [Sudah Baik]',
+        verdictKey: 'scoring.stockAvailability.pass',
+        verdictVars: { value: '5%' },
         status: 'good',
       },
     ],
   },
 ];
 
-export const REPORT_CONCLUSIONS = [
-  'Pendapatan toko dalam range 62 juta - 135 juta per bulan selama 6 bulan terakhir',
-  'Kualitas operasional toko sudah cukup baik',
-  'Nama produk disarankan untuk dimulai dengan nama brand dan mencantumkan FAB produk (Feature, Advantage, & Benefit).',
-  'Gambar produk utama sebaiknya menampilkan logo brand termasuk FAB (Features, Advantage, Benefit).',
-  'Beberapa fitur promosi masih belum optimal.',
-  'Partisipasi Campaign Shopee belum maksimal.',
-  'Pastikan produk yang stoknya habis diarsipkan',
-  'Tinjau dan optimalkan produk yang kurang laku',
-  'Range diskon: 9.6% ~ 10.3%',
+export const REPORT_CONCLUSIONS: { key: string; vars?: VerdictVars }[] = [
+  { key: 'conclusion.salesRange', vars: { min: 62, max: 135 } },
+  { key: 'conclusion.operationalGood' },
+  { key: 'conclusion.productNaming' },
+  { key: 'conclusion.photoBackground' },
+  { key: 'conclusion.promoUnderutilized' },
+  { key: 'conclusion.campaignLow' },
+  { key: 'conclusion.stockNotArchived' },
+  { key: 'conclusion.unsoldProducts' },
+  { key: 'conclusion.discountRange', vars: { range: '9.6% ~ 10.3%' } },
 ];
 
 export const REPORT_MARKETING_BUDGET = {
-  label: 'EST. BIAYA MARKETING',
-  body: 'Minimum budget marketing yang dibutuhkan AHA untuk meningkatkan performa penjualan toko = 10%',
+  labelKey: 'email.marketing_budget',
+  bodyKey: 'marketing.budgetRecommendation',
+  bodyVars: { pct: '10%' },
 };
 
 export const REPORT_CLOSING = {
-  body: 'Kami melihat bahwa potensi dari Toko {brand} masih belum maksimal. Silahkan klik di link berikut ini untuk menjadwalkan sesi konsultasi yang lebih mendalam untuk menemukan solusi yang tepat bagi bisnis Anda.',
-  cta: 'Jadwalkan Konsultasi Gratis',
-  outro: 'Semoga apa yang kami bagikan dapat bermanfaat.',
-  signoff: 'Salam sukses,',
+  /**
+   * The email writes the closing as one string: body, booking link, outro,
+   * separated by blank lines. The page draws them as three things, so it reads
+   * the same key and splits on the paragraph breaks rather than keeping a
+   * second copy of the wording that would drift from the email's.
+   */
+  key: 'closing.potential',
+  ctaKey: 'email.schedule_consultation',
+  signoffKey: 'email.signoff_regards',
 };
+
+/** Body / booking link / outro, from the email's single closing string. */
+export function splitClosing(text: string): {
+  body: string;
+  link: string;
+  outro: string;
+} {
+  const parts = text.split('\n\n').map((p) => p.trim());
+  return { body: parts[0] ?? '', link: parts[1] ?? '', outro: parts[2] ?? '' };
+}

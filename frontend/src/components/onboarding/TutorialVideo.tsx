@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
 import { Play } from 'lucide-react';
 import { SUBACCOUNT_VIDEOS } from '../../mocks/onboarding';
 import { cn } from '../../lib/utils';
@@ -12,6 +13,10 @@ import { cn } from '../../lib/utils';
  * `youtube-nocookie` for the same reason.
  */
 export const TutorialVideo = () => {
+  const { t } = useTranslation();
+  // Independent of the page language on purpose: there are two recordings and
+  // three UI languages, so a Thai reader has to be able to choose which of the
+  // two they would rather watch.
   const [lang, setLang] = useState(SUBACCOUNT_VIDEOS[0]);
   const [playing, setPlaying] = useState(false);
 
@@ -19,16 +24,18 @@ export const TutorialVideo = () => {
     <div className="overflow-hidden rounded-2xl border border-border bg-card">
       <div className="flex flex-wrap items-center justify-between gap-3 border-b border-border px-6 py-4">
         <div>
-          <h2 className="text-[15px] font-extrabold text-foreground">Video panduan</h2>
+          <h2 className="text-[15px] font-extrabold text-foreground">
+            {t('onboarding.tutorial.videoTitle')}
+          </h2>
           <p className="text-[13px] text-muted-foreground">
-            Langkah yang sama, dijelaskan dari awal sampai selesai.
+            {t('onboarding.tutorial.videoSubtitle')}
           </p>
         </div>
 
         <div
           className="inline-flex gap-1 rounded-full bg-secondary p-1"
           role="group"
-          aria-label="Bahasa video"
+          aria-label={t('onboarding.tutorial.videoLangLabel')}
         >
           {SUBACCOUNT_VIDEOS.map((video) => (
             <button
@@ -59,7 +66,7 @@ export const TutorialVideo = () => {
           <iframe
             key={lang.youtubeId}
             src={`https://www.youtube-nocookie.com/embed/${lang.youtubeId}?autoplay=1`}
-            title={`Tutorial sub akun — ${lang.label}`}
+            title={t('onboarding.tutorial.videoCaption', { language: lang.label })}
             allow="accelerometer; autoplay; clipboard-write; encrypted-media; picture-in-picture"
             allowFullScreen
             className="absolute inset-0 size-full border-0"
@@ -69,7 +76,7 @@ export const TutorialVideo = () => {
             type="button"
             onClick={() => setPlaying(true)}
             className="group absolute inset-0 grid place-items-center"
-            aria-label={`Putar tutorial sub akun dalam ${lang.label}`}
+            aria-label={t('onboarding.tutorial.videoPlay', { language: lang.label })}
           >
             <img
               src={`https://i.ytimg.com/vi/${lang.youtubeId}/hqdefault.jpg`}

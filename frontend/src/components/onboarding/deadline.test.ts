@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest';
+import i18n from '../../i18n';
 import {
   TOTAL_WORKDAYS,
   deadlineMeter,
@@ -69,20 +70,50 @@ describe('remainingFromSearch', () => {
 });
 
 describe('remainingLabel', () => {
+  // The label is a key plus its numbers now, so the test renders it through the
+  // real i18n instance: that pins the Indonesian wording exactly as before AND
+  // catches a branch that someone forgets to translate, which a key-only
+  // assertion would wave through.
+  const render = (days: number, hours: number, lang: string) => {
+    const { key, vars } = remainingLabel(days, hours);
+    return i18n.getFixedT(lang)(key, vars);
+  };
+
   it('shows days and hours together', () => {
-    expect(remainingLabel(7, 3)).toBe('Sisa 7 hari kerja 3 jam');
+    expect(render(7, 3, 'id')).toBe('Sisa 7 hari kerja 3 jam');
+    expect(render(7, 3, 'en')).toBe('7 working days 3 hours left');
   });
 
   it('drops the hours when there are none left today', () => {
-    expect(remainingLabel(7, 0)).toBe('Sisa 7 hari kerja');
+    expect(render(7, 0, 'id')).toBe('Sisa 7 hari kerja');
+    expect(render(7, 0, 'en')).toBe('7 working days left');
   });
 
   it('counts in hours alone on the last day', () => {
-    expect(remainingLabel(0, 4)).toBe('Sisa 4 jam');
+    expect(render(0, 4, 'id')).toBe('Sisa 4 jam');
+    expect(render(0, 4, 'en')).toBe('4 hours left');
   });
 
   it('is expired only when both are gone', () => {
-    expect(remainingLabel(0, 0)).toBe('Waktu klaim habis');
+    expect(render(0, 0, 'id')).toBe('Waktu klaim habis');
+    expect(render(0, 0, 'en')).toBe('Claim window closed');
+  });
+
+  it('says something in every language, on every branch', () => {
+    for (const lang of ['id', 'en', 'th']) {
+      for (const [days, hours] of [
+        [7, 3],
+        [7, 0],
+        [0, 4],
+        [0, 0],
+      ]) {
+        const text = render(days, hours, lang);
+        // An untranslated key falls back to the key itself — which would read
+        // as 'onboarding.deadline.days' on the brand's screen.
+        expect(text, `${lang} ${days}d${hours}h`).not.toContain('onboarding.');
+        expect(text, `${lang} ${days}d${hours}h`).not.toContain('{{');
+      }
+    }
   });
 });
 

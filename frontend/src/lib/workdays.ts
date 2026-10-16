@@ -71,21 +71,48 @@ export function hoursLeftToday(now: Date): number {
   return Math.floor((end.getTime() - now.getTime()) / 3_600_000);
 }
 
-const ID_DATE = new Intl.DateTimeFormat('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+/**
+ * Date formatters, one cached instance per locale.
+ *
+ * Locale is a parameter rather than a constant because the brand picks the
+ * onboarding language and the deadline is the one date they act on — printing
+ * '23 Okt' to someone reading the flow in Thai is the kind of small mismatch
+ * that makes people doubt the rest of the page. The default keeps every
+ * existing caller in the authed app on Indonesian, unchanged.
+ */
+const DATE_FORMATS = new Map<string, Intl.DateTimeFormat>();
+const DATE_TIME_FORMATS = new Map<string, Intl.DateTimeFormat>();
 
-const ID_DATE_TIME = new Intl.DateTimeFormat('id-ID', {
-  day: 'numeric',
-  month: 'short',
-  year: 'numeric',
-  hour: '2-digit',
-  minute: '2-digit',
-});
+function formatter(
+  cache: Map<string, Intl.DateTimeFormat>,
+  locale: string,
+  options: Intl.DateTimeFormatOptions,
+): Intl.DateTimeFormat {
+  let found = cache.get(locale);
+  if (!found) {
+    found = new Intl.DateTimeFormat(locale, options);
+    cache.set(locale, found);
+  }
+  return found;
+}
 
-export function formatDeadline(date: Date): string {
-  return ID_DATE.format(date);
+export const DEFAULT_DATE_LOCALE = 'id-ID';
+
+export function formatDeadline(date: Date, locale = DEFAULT_DATE_LOCALE): string {
+  return formatter(DATE_FORMATS, locale, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+  }).format(date);
 }
 
 /** The deadline with its hour — '23 Okt 2026, 17.00'. */
-export function formatDeadlineTime(date: Date): string {
-  return ID_DATE_TIME.format(date);
+export function formatDeadlineTime(date: Date, locale = DEFAULT_DATE_LOCALE): string {
+  return formatter(DATE_TIME_FORMATS, locale, {
+    day: 'numeric',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(date);
 }

@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { TriangleAlert } from 'lucide-react';
 import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
 import { Input } from '../../components/ui/input';
@@ -15,6 +16,7 @@ import { cn } from '../../lib/utils';
 type SubAccountChoice = 'given' | 'own';
 
 export const SubAccountPage = () => {
+  const { t } = useTranslation();
   // Nothing is preselected. A pre-ticked 'sudah' is the answer most brands
   // would leave untouched, and a wrong yes here costs the team a failed login
   // and a day of back-and-forth.
@@ -24,15 +26,14 @@ export const SubAccountPage = () => {
   return (
     <OnboardingLayout current={4} width="max-w-3xl">
       <h1 className="mb-2 text-2xl font-extrabold tracking-tight text-foreground">
-        Konfirmasi sub akun Anda
+        {t('onboarding.sub.title')}
       </h1>
       <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
-        Pilih salah satu — setelah ini tim AHA mulai menarik data dan Anda tidak perlu melakukan
-        apa pun lagi.
+        {t('onboarding.sub.subtitle')}
       </p>
 
       <fieldset className="mb-6">
-        <legend className="sr-only">Status sub akun</legend>
+        <legend className="sr-only">{t('onboarding.sub.legend')}</legend>
 
         <div className="flex flex-col gap-3">
           <Label
@@ -51,7 +52,7 @@ export const SubAccountPage = () => {
             />
             <span className="min-w-0 flex-1">
               <span className="mb-2 block text-[15px] font-bold text-foreground">
-                Sudah — saya memakai email dan kata sandi yang diberikan
+                {t('onboarding.sub.givenTitle')}
               </span>
               <span className="block break-all rounded-lg border border-border bg-secondary px-3 py-2.5 font-mono text-[13px] text-secondary-foreground">
                 {PREVIEW_BRAND.subAccountEmail} · {PREVIEW_BRAND.subAccountPassword}
@@ -75,10 +76,10 @@ export const SubAccountPage = () => {
             />
             <span className="min-w-0 flex-1">
               <span className="block text-[15px] font-bold text-foreground">
-                Saya memakai email / kata sandi yang berbeda
+                {t('onboarding.sub.ownTitle')}
               </span>
               <span className="mt-1 block text-[13px] leading-relaxed text-muted-foreground">
-                Isi kredensial yang benar-benar Anda pakai.
+                {t('onboarding.sub.ownSubtitle')}
               </span>
 
               {choice === 'own' && (
@@ -89,36 +90,34 @@ export const SubAccountPage = () => {
                       aria-hidden="true"
                     />
                     <span className="text-[13px] leading-relaxed text-foreground">
-                      Boleh saja — tapi proses jadi lebih lambat karena tim kami harus memasukkan
-                      kredensial ini secara manual.
+                      {t('onboarding.sub.ownWarning')}
                     </span>
                   </span>
 
                   <span className="mb-4 block">
                     <Label htmlFor="own-email" className="mb-1.5 block text-[13px] font-bold">
-                      Email sub akun yang Anda pakai
+                      {t('onboarding.sub.ownEmail')}
                     </Label>
                     <Input
                       id="own-email"
                       type="email"
-                      placeholder="email@contoh.com"
+                      placeholder={t('onboarding.sub.ownEmailPlaceholder')}
                       className="h-11"
                     />
                   </span>
                   <span className="block">
                     <Label htmlFor="own-pw" className="mb-1.5 block text-[13px] font-bold">
-                      Kata sandi sub akun
+                      {t('onboarding.sub.ownPassword')}
                     </Label>
                     <Input
                       id="own-pw"
                       type="password"
-                      placeholder="Kata sandi yang Anda buat"
+                      placeholder={t('onboarding.sub.ownPasswordPlaceholder')}
                       className="h-11"
                     />
                   </span>
                   <span className="mt-3 block text-xs leading-relaxed text-muted-foreground">
-                    Disimpan terenkripsi, hanya terbaca tim evaluasi, dan dihapus bersama sub akun
-                    setelah evaluasi selesai.
+                    {t('onboarding.sub.encrypted')}
                   </span>
                 </span>
               )}
@@ -138,13 +137,11 @@ export const SubAccountPage = () => {
             : 'pointer-events-none bg-muted text-muted-foreground',
         )}
       >
-        Kirim &amp; mulai evaluasi →
+        {t('onboarding.sub.cta')}
       </Link>
 
       <p className="mt-4 text-center text-xs leading-relaxed text-muted-foreground">
-        {chosen
-          ? 'Menekan tombol ini mengirim notifikasi ke tim AHA bahwa brand Anda siap dievaluasi.'
-          : 'Pilih salah satu di atas untuk melanjutkan.'}
+        {chosen ? t('onboarding.sub.hintChosen') : t('onboarding.sub.hintPick')}
       </p>
     </OnboardingLayout>
   );

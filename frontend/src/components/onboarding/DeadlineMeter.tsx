@@ -1,5 +1,7 @@
 import { Clock } from 'lucide-react';
+import { useTranslation } from 'react-i18next';
 import { cn } from '../../lib/utils';
+import { getIntlLocale } from '../../lib/languages';
 import { formatDeadlineTime } from '../../lib/workdays';
 import {
   TOTAL_WORKDAYS,
@@ -34,11 +36,14 @@ export const DeadlineMeter = ({
   date,
   total = TOTAL_WORKDAYS,
 }: DeadlineMeterProps) => {
+  const { t, i18n } = useTranslation();
   const { clamped, hours, urgency, percent } = deadlineMeter(
     remaining,
     total,
     hoursLeft,
   );
+  const label = remainingLabel(clamped, hours);
+  const remainingText = t(label.key, label.vars);
 
   return (
     <div className="rounded-2xl border border-border bg-card px-5 py-4">
@@ -50,12 +55,12 @@ export const DeadlineMeter = ({
           )}
         >
           <Clock className="size-4" aria-hidden="true" />
-          {remainingLabel(clamped, hours)}
+          {remainingText}
         </p>
         <p className="text-[13px] text-muted-foreground">
-          Batas akhir{' '}
+          {t('onboarding.deadline.due')}{' '}
           <span className="font-semibold text-foreground">
-            {formatDeadlineTime(date)}
+            {formatDeadlineTime(date, getIntlLocale(i18n.language))}
           </span>
         </p>
       </div>
@@ -66,7 +71,10 @@ export const DeadlineMeter = ({
         aria-valuenow={clamped}
         aria-valuemin={0}
         aria-valuemax={total}
-        aria-valuetext={`${remainingLabel(clamped, hours)}, dari ${total} hari kerja`}
+        aria-valuetext={t('onboarding.deadline.progress', {
+          label: remainingText,
+          total,
+        })}
       >
         <div
           className={cn(

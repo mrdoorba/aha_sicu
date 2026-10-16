@@ -1,17 +1,20 @@
 import type { ReactNode } from 'react';
 import { Link, useLocation } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Check } from 'lucide-react';
 import { cn } from '../../lib/utils';
+import { useOnboardingLanguage } from '../../lib/onboardingLanguage';
 import { DeadlineMeter } from './DeadlineMeter';
+import { LanguagePicker } from './LanguagePicker';
 import { previewDeadlineLabel } from './deadline';
 
 export const ONBOARDING_STEPS = [
-  { n: 1, label: 'Biaya', path: '/preview/onboarding/biaya' },
-  { n: 2, label: 'NDA', path: '/preview/onboarding/nda' },
-  { n: 3, label: 'Tutorial', path: '/preview/onboarding/tutorial' },
-  { n: 4, label: 'Sub akun', path: '/preview/onboarding/sub-akun' },
-  { n: 5, label: 'Proses', path: '/preview/onboarding/proses' },
-  { n: 6, label: 'Hasil', path: '/preview/onboarding/hasil' },
+  { n: 1, labelKey: 'onboarding.steps.cost', path: '/preview/onboarding/biaya' },
+  { n: 2, labelKey: 'onboarding.steps.nda', path: '/preview/onboarding/nda' },
+  { n: 3, labelKey: 'onboarding.steps.tutorial', path: '/preview/onboarding/tutorial' },
+  { n: 4, labelKey: 'onboarding.steps.subAccount', path: '/preview/onboarding/sub-akun' },
+  { n: 5, labelKey: 'onboarding.steps.process', path: '/preview/onboarding/proses' },
+  { n: 6, labelKey: 'onboarding.steps.result', path: '/preview/onboarding/hasil' },
 ] as const;
 
 interface OnboardingLayoutProps {
@@ -30,13 +33,17 @@ export const OnboardingLayout = ({
   children,
   width = 'max-w-5xl',
 }: OnboardingLayoutProps) => {
+  const { t } = useTranslation();
+  // Every step restores the choice, not just the first screen: a brand who
+  // picks English on the claim page and reloads on step 4 has already told us.
+  useOnboardingLanguage();
   const { search } = useLocation();
   const deadline = previewDeadlineLabel(search);
 
   return (
     <div className="min-h-screen bg-background px-4 py-8 sm:px-8">
       <div className={cn('mx-auto', width)}>
-        <nav aria-label="Langkah onboarding" className="mb-7">
+        <nav aria-label={t('onboarding.nav.label')} className="mb-7">
           <ol className="flex flex-wrap items-center gap-2">
             {ONBOARDING_STEPS.map((step) => {
               const done = step.n < current;
@@ -58,13 +65,16 @@ export const OnboardingLayout = ({
                     {done && <Check className="size-3.5" aria-hidden="true" />}
                     <span>
                       {step.n}
-                      <span className="hidden sm:inline"> · {step.label}</span>
+                      <span className="hidden sm:inline"> · {t(step.labelKey)}</span>
                     </span>
                   </Link>
                 </li>
               );
             })}
 
+            <li className="ms-auto">
+              <LanguagePicker />
+            </li>
           </ol>
         </nav>
 
