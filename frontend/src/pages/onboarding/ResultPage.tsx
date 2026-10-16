@@ -12,12 +12,12 @@ import {
 } from '../../mocks/sicuReport';
 
 /**
- * The section numbers are the email's own — 01, 02, 05.
+ * Section numbers match the email: 01, 02, 03.
  *
- * 03 and 04 are missing there too. Kept rather than renumbered, because BD
- * asked for the page to match the email and a page numbered 01/02/03 would no
- * longer line up with the copy sitting in the brand's inbox. Worth fixing at
- * the source template instead.
+ * The email read 01, 02, 05 until Oct 2026. Data Intelligence (03) and the
+ * Score Breakdown radar (04) were removed from it in #53 and the later headers
+ * kept their original numbers — a leftover, not a missing section. Fixed in
+ * backend/app/modules/email/template.py and mirrored here.
  */
 const SectionHeading = ({ n, children }: { n: string; children: React.ReactNode }) => (
   <h2 className="mb-5 flex items-baseline gap-2.5">
@@ -127,7 +127,7 @@ export const ResultPage = () => (
     </section>
 
     <section>
-      <SectionHeading n="05">Kesimpulan</SectionHeading>
+      <SectionHeading n="03">Kesimpulan</SectionHeading>
 
       <div className="rounded-2xl border border-border bg-card p-8">
         <ul className="mb-7 flex flex-col gap-3.5">

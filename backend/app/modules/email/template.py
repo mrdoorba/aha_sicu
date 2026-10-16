@@ -848,7 +848,7 @@ def _render_kesimpulan(calculator_results: dict[str, Any], S: dict[str, str], *,
 <!-- Kesimpulan -->
 <tr>
   <td style="padding:16px 30px 24px 30px;">
-    {_section_header("05", S['kesimpulan'])}
+    {_section_header("03", S['kesimpulan'])}
     <table role="presentation" width="100%" cellpadding="0" cellspacing="0" border="0"
            style="background-color:{WHITE};border-radius:8px;border:1px solid {BORDER_LIGHT};">
       <tr>
@@ -1114,7 +1114,10 @@ def render_email_html_body(
         S_l = _get_strings(lang)
         cat_map_l = _get_category_map(lang)
         score_overview = _render_score_overview(categories, S_l, final_score)
-        # Data Intelligence (03) + Score Breakdown radar (04) dropped from the email.
+        # Data Intelligence and the Score Breakdown radar were dropped from the
+        # email in #53 (2 Jul 2026). They used to be sections 03 and 04, which
+        # is why Kesimpulan was numbered 05 for three months — a leftover, not a
+        # missing section. The sections are numbered by what renders.
         detailed = _render_detailed_evaluation(categories, S_l, cat_map_l, lang, marketplace)
         kesimpulan = _render_kesimpulan(calculator_results, S_l, language=lang, marketplace=marketplace)
         signoff = _render_signoff(S_l)

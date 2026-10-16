@@ -847,9 +847,16 @@ class TestKesimpulan:
         html = _render_full(evaluation_data)
         assert _get_strings("id")["kesimpulan"] in html
 
-    def test_section_number_05(self, evaluation_data: dict) -> None:
+    def test_section_number_is_03_not_05(self, evaluation_data: dict) -> None:
+        """Kesimpulan is the third section that renders, so it is numbered 03.
+
+        It was 05 until Oct 2026: Data Intelligence (03) and the Score Breakdown
+        radar (04) were removed in #53 but the later headers kept their original
+        numbers, leaving the email reading 01, 02, 05.
+        """
         html = _render_full(evaluation_data)
-        assert "05" in html
+        assert "03" in html
+        assert "05" not in html
 
     def test_skips_when_no_scoring_summary(self, sample_categories: list[dict]) -> None:
         data = {
