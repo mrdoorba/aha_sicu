@@ -1,6 +1,8 @@
 import { useMemo, useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, MessageCircle, ShieldCheck } from 'lucide-react';
+import { LanguagePicker } from '../../components/onboarding/LanguagePicker';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { VoucherStatus } from '../../components/onboarding/VoucherStatus';
@@ -11,6 +13,7 @@ import {
   lookupVoucher,
 } from '../../mocks/onboarding';
 import { useAutoFocusFirstFilter } from '../../hooks/useAutoFocusFirstFilter';
+import { useOnboardingLanguage } from '../../lib/onboardingLanguage';
 import { cn } from '../../lib/utils';
 
 /**
@@ -25,6 +28,8 @@ import { cn } from '../../lib/utils';
  * wordmark stands in until the asset is copied over.
  */
 export const ClaimVoucherPage = () => {
+  const { t } = useTranslation();
+  useOnboardingLanguage();
   // Starts empty on purpose: the no-voucher state is the one most visitors
   // will actually meet, so it is the one the page has to handle best.
   const [code, setCode] = useState('');
@@ -38,27 +43,34 @@ export const ClaimVoucherPage = () => {
   return (
     <div className="aha-field min-h-screen px-4 py-10 sm:px-8">
       <div className="mx-auto w-full max-w-lg">
+        {/* The picker comes before anything a brand has to read: someone who
+            cannot read Indonesian should not have to parse the page to find
+            the control that fixes that. */}
+        <div className="mb-6 flex justify-end">
+          <LanguagePicker className="bg-white/15" />
+        </div>
+
         <header className="mb-8 text-center">
           <p className="mb-6 text-xl font-extrabold tracking-tight text-white">AHA Commerce</p>
           <h1 className="mb-3 text-3xl font-extrabold leading-tight tracking-tight text-white">
             Store ICU
           </h1>
           <p className="mx-auto max-w-[38ch] text-sm leading-relaxed text-white/90">
-            Cek kesehatan toko Shopee Anda — 8 kategori, 70+ metrik, dikerjakan tim AHA Commerce.
+            {t('onboarding.claim.tagline')}
           </p>
         </header>
 
         <div className="rounded-2xl bg-card p-6 shadow-xl sm:p-8">
           <h2 className="mb-2 text-xl font-extrabold tracking-tight text-foreground">
-            Klaim voucher Anda
+            {t('onboarding.claim.title')}
           </h2>
           <p className="mb-6 text-sm leading-relaxed text-muted-foreground">
-            Masukkan kode dari tim BD. Nama brand terisi otomatis.
+            {t('onboarding.claim.subtitle')}
           </p>
 
           <div className="mb-5">
             <Label htmlFor="kode" className="mb-1.5 block text-[13px] font-bold">
-              Kode voucher
+              {t('onboarding.claim.codeLabel')}
             </Label>
             <div className="relative">
               <Input
@@ -91,19 +103,25 @@ export const ClaimVoucherPage = () => {
             <>
               <div className="mb-5 rounded-xl border border-border bg-secondary p-4">
                 <p className="mb-2.5 text-[11px] font-extrabold tracking-wider text-primary">
-                  TERISI OTOMATIS DARI VOUCHER
+                  {t('onboarding.claim.autofilled')}
                 </p>
                 <dl className="grid grid-cols-2 gap-3">
                   <div>
-                    <dt className="mb-0.5 text-xs text-muted-foreground">Nama brand</dt>
+                    <dt className="mb-0.5 text-xs text-muted-foreground">
+                      {t('onboarding.claim.brandName')}
+                    </dt>
                     <dd className="text-sm font-bold text-foreground">{lookup.brand.name}</dd>
                   </div>
                   <div>
-                    <dt className="mb-0.5 text-xs text-muted-foreground">Marketplace</dt>
+                    <dt className="mb-0.5 text-xs text-muted-foreground">
+                      {t('onboarding.claim.marketplace')}
+                    </dt>
                     <dd className="text-sm font-bold text-foreground">🇮🇩 Shopee Indonesia</dd>
                   </div>
                   <div className="col-span-2">
-                    <dt className="mb-0.5 text-xs text-muted-foreground">Toko</dt>
+                    <dt className="mb-0.5 text-xs text-muted-foreground">
+                      {t('onboarding.claim.store')}
+                    </dt>
                     <dd className="text-sm font-bold text-foreground">{lookup.brand.storeUrl}</dd>
                   </div>
                 </dl>
@@ -111,23 +129,38 @@ export const ClaimVoucherPage = () => {
 
               <div className="mb-4">
                 <Label htmlFor="email" className="mb-1.5 block text-[13px] font-bold">
-                  Email
+                  {t('onboarding.claim.email')}
                 </Label>
-                <Input id="email" type="email" placeholder="nama@perusahaan.com" className="h-11" />
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder={t('onboarding.claim.emailPlaceholder')}
+                  className="h-11"
+                />
               </div>
 
               <div className="mb-6 grid gap-3.5 sm:grid-cols-2">
                 <div>
                   <Label htmlFor="pw" className="mb-1.5 block text-[13px] font-bold">
-                    Kata sandi
+                    {t('onboarding.claim.password')}
                   </Label>
-                  <Input id="pw" type="password" placeholder="Min. 8 karakter" className="h-11" />
+                  <Input
+                    id="pw"
+                    type="password"
+                    placeholder={t('onboarding.claim.passwordPlaceholder')}
+                    className="h-11"
+                  />
                 </div>
                 <div>
                   <Label htmlFor="pw2" className="mb-1.5 block text-[13px] font-bold">
-                    Ulangi sandi
+                    {t('onboarding.claim.repeatPassword')}
                   </Label>
-                  <Input id="pw2" type="password" placeholder="Ulangi" className="h-11" />
+                  <Input
+                    id="pw2"
+                    type="password"
+                    placeholder={t('onboarding.claim.repeatPlaceholder')}
+                    className="h-11"
+                  />
                 </div>
               </div>
             </>
@@ -144,16 +177,17 @@ export const ClaimVoucherPage = () => {
                 : 'pointer-events-none bg-muted text-muted-foreground',
             )}
           >
-            Buat akun SICU
+            {t('onboarding.claim.cta')}
           </Link>
 
           {/* The dead end needs an exit. A brand cannot issue itself a voucher,
               so without this the page is simply a wall. */}
           <div className="mt-6 border-t border-border pt-5">
-            <p className="mb-1 text-[13px] font-bold text-foreground">Belum punya voucher?</p>
+            <p className="mb-1 text-[13px] font-bold text-foreground">
+              {t('onboarding.claim.noVoucherTitle')}
+            </p>
             <p className="mb-3.5 text-xs leading-relaxed text-muted-foreground">
-              Voucher SICU hanya diterbitkan tim BD AHA Commerce setelah meeting pertama. Kalau
-              Anda belum pernah bertemu tim kami, mulai dari sini.
+              {t('onboarding.claim.noVoucherBody')}
             </p>
             <a
               href={AHA_WHATSAPP}
@@ -162,7 +196,7 @@ export const ClaimVoucherPage = () => {
               className="inline-flex h-10 items-center gap-2 rounded-full border border-border px-4 text-[13px] font-bold text-foreground hover:bg-secondary"
             >
               <MessageCircle className="size-4" aria-hidden="true" />
-              Hubungi tim AHA Commerce
+              {t('onboarding.claim.contactCta')}
             </a>
           </div>
         </div>
@@ -170,10 +204,10 @@ export const ClaimVoucherPage = () => {
         <div className="mt-5 text-center">
           <p className="flex items-center justify-center gap-2 text-xs text-white/85">
             <ShieldCheck className="size-4" aria-hidden="true" />
-            Pratinjau — tidak ada akun yang benar-benar dibuat.
+            {t('onboarding.claim.previewNote')}
           </p>
           <p className="mt-2 text-xs text-white/70">
-            Coba:{' '}
+            {t('onboarding.claim.tryLabel')}{' '}
             <button
               type="button"
               onClick={() => setCode(PREVIEW_TEST_CODES.valid)}
@@ -181,7 +215,7 @@ export const ClaimVoucherPage = () => {
             >
               {PREVIEW_TEST_CODES.valid}
             </button>{' '}
-            (valid) ·{' '}
+            {t('onboarding.claim.tryValid')} ·{' '}
             <button
               type="button"
               onClick={() => setCode(PREVIEW_TEST_CODES.expired)}

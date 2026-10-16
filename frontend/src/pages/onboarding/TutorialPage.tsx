@@ -1,4 +1,5 @@
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Check, Copy, ExternalLink, TriangleAlert } from 'lucide-react';
 import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
 import { TutorialVideo } from '../../components/onboarding/TutorialVideo';
@@ -16,26 +17,35 @@ const CopyField = ({
   hint,
   wide,
 }: {
+  /** Already translated by the caller — this is the printed label. */
   label: string;
   value: string;
   hint?: string;
   /** The sub-account email is long enough to wrap its own button off the row. */
   wide?: boolean;
-}) => (
-  <div className={cn('min-w-0 flex-1', wide ? 'basis-full' : 'basis-60')}>
+}) => {
+  const { t } = useTranslation();
+  return (
+    <div className={cn('min-w-0 flex-1', wide ? 'basis-full' : 'basis-60')}>
     <p className="mb-1.5 text-xs font-extrabold tracking-wider text-muted-foreground">{label}</p>
     <div className="flex flex-wrap items-center gap-2">
       <code className="break-all rounded-lg border border-border bg-secondary px-3 py-2.5 font-mono text-[15px] font-bold text-foreground">
         {value}
       </code>
-      <Button variant="outline" size="sm" className="h-9.5 gap-1.5" aria-label={`Salin ${label}`}>
-        <Copy className="size-3.5" aria-hidden="true" />
-        Salin
-      </Button>
+      <Button
+          variant="outline"
+          size="sm"
+          className="h-9.5 gap-1.5"
+          aria-label={t('onboarding.tutorial.copyAria', { label })}
+        >
+          <Copy className="size-3.5" aria-hidden="true" />
+          {t('onboarding.tutorial.copy')}
+        </Button>
+      </div>
+      {hint && <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{hint}</p>}
     </div>
-    {hint && <p className="mt-2 text-xs leading-relaxed text-muted-foreground">{hint}</p>}
-  </div>
-);
+  );
+};
 
 const Step = ({
   n,
@@ -57,15 +67,16 @@ const Step = ({
   </li>
 );
 
-export const TutorialPage = () => (
+export const TutorialPage = () => {
+  const { t } = useTranslation();
+
+  return (
   <OnboardingLayout current={3} width="max-w-4xl">
     <h1 className="mb-2 text-2xl font-extrabold tracking-tight text-foreground">
-      Buat sub akun Shopee untuk tim AHA
+      {t('onboarding.tutorial.title')}
     </h1>
     <p className="mb-6 max-w-[72ch] text-sm leading-relaxed text-muted-foreground">
-      Kami membutuhkan akses untuk menganalisa performa toko{' '}
-      <strong className="text-foreground">{PREVIEW_BRAND.name}</strong> melalui sub akun yang bisa
-      Anda buat dengan cara berikut. Akun ini kami hapus setelah evaluasi selesai.
+      {t('onboarding.tutorial.intro', { brand: PREVIEW_BRAND.name })}
     </p>
 
     <div className="mb-6">
@@ -77,7 +88,7 @@ export const TutorialPage = () => (
         n={1}
         title={
           <>
-            Kunjungi halaman sub akun Shopee{' '}
+            {t('onboarding.tutorial.step1')}{' '}
             <a
               href={SHOPEE_SUBACCOUNT_URL}
               target="_blank"
@@ -91,52 +102,68 @@ export const TutorialPage = () => (
         }
       >
         <p className="text-[13px] leading-relaxed text-muted-foreground">
-          Hanya akun utama (main account) yang bisa membuat sub akun.
+          {t('onboarding.tutorial.step1Note')}
         </p>
       </Step>
 
-      <Step n={2} title={<>Klik &ldquo;Tambah Anggota&rdquo;</>} />
+      <Step n={2} title={t('onboarding.tutorial.step2')} />
 
-      <Step n={3} title="Isi dengan data berikut">
+      <Step n={3} title={t('onboarding.tutorial.step3')}>
         <div className="mt-3.5 rounded-xl border-2 border-primary bg-card p-5">
           <div className="flex flex-wrap gap-5">
-            <CopyField label="NAMA ANGGOTA" value={PREVIEW_BRAND.subAccountMemberName} />
-            <CopyField label="LOGIN ID" value={PREVIEW_BRAND.subAccountLoginId} />
-            <CopyField label="PASSWORD LOG IN" value={PREVIEW_BRAND.subAccountPassword} />
+            <CopyField
+              label={t('onboarding.tutorial.memberName')}
+              value={PREVIEW_BRAND.subAccountMemberName}
+            />
+            <CopyField
+              label={t('onboarding.tutorial.loginId')}
+              value={PREVIEW_BRAND.subAccountLoginId}
+            />
+            <CopyField
+              label={t('onboarding.tutorial.password')}
+              value={PREVIEW_BRAND.subAccountPassword}
+            />
             <CopyField
               wide
-              label="ALAMAT EMAIL"
+              label={t('onboarding.tutorial.emailAddress')}
               value={PREVIEW_BRAND.subAccountEmail}
-              hint="Diambil otomatis dari voucher Anda."
+              hint={t('onboarding.tutorial.emailHint')}
             />
           </div>
 
           <div className="mt-5 rounded-xl border border-border bg-secondary p-4">
             <p className="mb-1 text-xs font-extrabold tracking-wider text-muted-foreground">
-              NO. HP
+              {t('onboarding.tutorial.phoneLabel')}
             </p>
             <p className="text-[13px] leading-relaxed text-foreground">
-              Gunakan nomor yang <strong>belum pernah dipakai di Shopee</strong>. Nomor yang sudah
-              terdaftar akan ditolak saat sub akun dibuat.
+              {t('onboarding.tutorial.phoneBody', {
+                strong: t('onboarding.tutorial.phoneBodyStrong'),
+              })}
             </p>
           </div>
 
           <div className="mt-4 flex gap-3 rounded-xl border border-penalti/30 bg-penalti/5 p-4">
             <TriangleAlert className="mt-0.5 size-[18px] shrink-0 text-penalti" aria-hidden="true" />
             <p className="text-[13px] leading-relaxed text-foreground">
-              <strong>Login ID, email dan password harus sama persis.</strong> Kalau berbeda, sistem
-              kami tidak bisa masuk dan evaluasi tertunda. Kalau Anda terlanjur memakai yang lain,
-              isi form di langkah berikutnya.
+              <strong>{t('onboarding.tutorial.exactTitle')}</strong>{' '}
+              {t('onboarding.tutorial.exactBody')}
             </p>
           </div>
         </div>
       </Step>
 
-      <Step n={4} title="Pengaturan Peran — centang semuanya">
-        <p className="mb-3.5 text-[13px] leading-relaxed text-muted-foreground">
-          Tanpa salah satu izin di bawah, ada kategori SICU yang tidak bisa dinilai sama sekali.
+      <Step n={4} title={t('onboarding.tutorial.step4')}>
+        <p className="mb-2 text-[13px] leading-relaxed text-muted-foreground">
+          {t('onboarding.tutorial.step4Note')}
         </p>
-        <ul className="flex flex-col gap-2 rounded-xl border border-border bg-secondary/50 p-5">
+        {/* The permission names below stay in Shopee's own Indonesian: they are
+            the strings the brand has to find on Shopee's screen, and a
+            translated list would send them hunting for wording Shopee never
+            shows. The note explains why they are not in the page's language. */}
+        <p className="mb-3.5 text-[13px] leading-relaxed text-muted-foreground">
+          {t('onboarding.tutorial.rolesNote')}
+        </p>
+        <ul lang="id" className="flex flex-col gap-2 rounded-xl border border-border bg-secondary/50 p-5">
           {SUBACCOUNT_ROLES.map((role) => (
             <li key={role.label}>
               <p className="flex items-start gap-2 text-[13px] font-semibold text-foreground">
@@ -166,7 +193,7 @@ export const TutorialPage = () => (
       to="/preview/onboarding/sub-akun"
       className="block h-13 rounded-full bg-primary text-center text-[15px] font-bold leading-[52px] text-primary-foreground hover:bg-primary-dark"
     >
-      Saya sudah membuat sub akun →
+      {t('onboarding.tutorial.cta')}
     </Link>
 
     {/* Marwah's written steps ended with "konfirmasi ke kak Marwah lewat
@@ -174,7 +201,8 @@ export const TutorialPage = () => (
         screen already confirms it in-app, so a WhatsApp round trip would be a
         second way to say the same thing — and the slower one. */}
     <p className="mt-4 text-center text-xs leading-relaxed text-muted-foreground">
-      Tidak perlu konfirmasi lewat WhatsApp — langkah berikutnya sudah mengabari tim kami.
+      {t('onboarding.tutorial.noWhatsapp')}
     </p>
   </OnboardingLayout>
-);
+  );
+};

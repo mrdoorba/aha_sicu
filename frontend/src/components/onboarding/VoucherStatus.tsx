@@ -1,5 +1,7 @@
+import { useTranslation } from 'react-i18next';
 import { CheckCircle2, CircleAlert, Clock, Info } from 'lucide-react';
 import type { VoucherLookup } from '../../mocks/onboarding';
+import { getIntlLocale } from '../../lib/languages';
 import { formatDeadline } from '../../lib/workdays';
 
 /**
@@ -10,11 +12,14 @@ import { formatDeadline } from '../../lib/workdays';
  * "kode tidak ditemukan" on its own would simply lose them.
  */
 export const VoucherStatus = ({ lookup }: { lookup: VoucherLookup }) => {
+  const { t, i18n } = useTranslation();
+  const locale = getIntlLocale(i18n.language);
+
   if (lookup.state === 'idle') {
     return (
       <p className="mt-2 flex items-start gap-1.5 text-xs text-muted-foreground">
         <Info className="mt-px size-3.5 shrink-0" aria-hidden="true" />
-        12 karakter, dikirim tim BD lewat WhatsApp.
+        {t('onboarding.voucher.hint')}
       </p>
     );
   }
@@ -22,7 +27,9 @@ export const VoucherStatus = ({ lookup }: { lookup: VoucherLookup }) => {
   if (lookup.state === 'typing') {
     return (
       <p className="mt-2 text-xs text-muted-foreground" aria-live="polite">
-        Kurang {lookup.remaining} karakter lagi.
+        {/* `remaining`, not `count`: a `count` option switches i18next into
+            plural resolution, which is not what this sentence wants. */}
+        {t('onboarding.voucher.typing', { remaining: lookup.remaining })}
       </p>
     );
   }
@@ -34,7 +41,9 @@ export const VoucherStatus = ({ lookup }: { lookup: VoucherLookup }) => {
         aria-live="polite"
       >
         <CheckCircle2 className="mt-px size-3.5 shrink-0" aria-hidden="true" />
-        Voucher valid · klaim sebelum {formatDeadline(lookup.expiresAt)}
+        {t('onboarding.voucher.valid', {
+          date: formatDeadline(lookup.expiresAt, locale),
+        })}
       </p>
     );
   }
@@ -47,9 +56,10 @@ export const VoucherStatus = ({ lookup }: { lookup: VoucherLookup }) => {
       >
         <Clock className="mt-px size-4 shrink-0 text-foreground" aria-hidden="true" />
         <p className="text-xs leading-relaxed text-foreground">
-          <strong>Voucher ini sudah kedaluwarsa</strong> pada{' '}
-          {formatDeadline(lookup.expiredOn)}. Hubungi tim BD Anda — mereka bisa menerbitkan kode
-          baru tanpa biaya.
+          <strong>{t('onboarding.voucher.expiredTitle')}</strong>{' '}
+          {t('onboarding.voucher.expiredBody', {
+            date: formatDeadline(lookup.expiredOn, locale),
+          })}
         </p>
       </div>
     );
@@ -63,12 +73,14 @@ export const VoucherStatus = ({ lookup }: { lookup: VoucherLookup }) => {
       >
         <Info className="mt-px size-4 shrink-0 text-primary" aria-hidden="true" />
         <p className="text-xs leading-relaxed text-secondary-foreground">
-          <strong>Voucher ini sudah dipakai</strong> pada {formatDeadline(lookup.claimedOn)}. Kalau
-          itu Anda, silakan{' '}
+          <strong>{t('onboarding.voucher.claimedTitle')}</strong>{' '}
+          {t('onboarding.voucher.claimedBody', {
+            date: formatDeadline(lookup.claimedOn, locale),
+          })}{' '}
           <a href="#" className="font-bold text-primary underline underline-offset-2">
-            masuk ke akun Anda
+            {t('onboarding.voucher.claimedLink')}
           </a>{' '}
-          — tidak perlu voucher lagi.
+          {t('onboarding.voucher.claimedTail')}
         </p>
       </div>
     );
@@ -81,8 +93,8 @@ export const VoucherStatus = ({ lookup }: { lookup: VoucherLookup }) => {
     >
       <CircleAlert className="mt-px size-4 shrink-0 text-penalti" aria-hidden="true" />
       <p className="text-xs leading-relaxed text-foreground">
-        <strong>Kode tidak dikenal.</strong> Periksa lagi penulisannya, atau minta tim BD Anda
-        mengirim ulang kodenya.
+        <strong>{t('onboarding.voucher.unknownTitle')}</strong>{' '}
+        {t('onboarding.voucher.unknownBody')}
       </p>
     </div>
   );

@@ -1,6 +1,17 @@
+import { useTranslation } from 'react-i18next';
 import { Check, ExternalLink, X } from 'lucide-react';
 import type { ReportMetric } from '../../mocks/sicuReport';
 import { cn } from '../../lib/utils';
+
+/**
+ * The email's verdict strings start with ✔️ or ❌. The card already draws a
+ * tick or a cross of its own, so printing the glyph too would say it twice —
+ * and the second one is the ugly one. Only a LEADING glyph is removed: the
+ * competition verdicts carry theirs mid-sentence, where it is the sentence.
+ */
+function stripLeadingVerdictGlyph(text: string): string {
+  return text.replace(/^[✔✅❌✗×]️?\s*/u, '');
+}
 
 /**
  * One metric card, as the SICU email draws it.
@@ -13,7 +24,9 @@ import { cn } from '../../lib/utils';
  * scored.
  */
 export const ReportMetricCard = ({ metric }: { metric: ReportMetric }) => {
-  const { label, value, benchmark, verdict, status, wide, linkLabel } = metric;
+  const { t } = useTranslation();
+  const { labelKey, value, benchmark, verdictKey, verdictVars, status, wide, link } = metric;
+  const verdict = verdictKey ? stripLeadingVerdictGlyph(t(verdictKey, verdictVars)) : null;
 
   return (
     <div
@@ -29,12 +42,18 @@ export const ReportMetricCard = ({ metric }: { metric: ReportMetric }) => {
       <div className="flex items-start justify-between gap-4">
         <p className="flex min-w-0 items-start gap-2 text-sm font-bold text-primary">
           {status === 'good' && (
-            <Check className="mt-0.5 size-4 shrink-0 text-success-ink" aria-label="Sudah baik" />
+            <Check
+              className="mt-0.5 size-4 shrink-0 text-success-ink"
+              aria-label={t('onboarding.result.good')}
+            />
           )}
           {status === 'bad' && (
-            <X className="mt-0.5 size-4 shrink-0 text-penalti" aria-label="Kurang baik" />
+            <X
+              className="mt-0.5 size-4 shrink-0 text-penalti"
+              aria-label={t('onboarding.result.bad')}
+            />
           )}
-          {label}
+          {t(labelKey)}
         </p>
         <p className="shrink-0 text-lg font-extrabold text-primary tabular-nums">{value}</p>
       </div>
@@ -43,7 +62,9 @@ export const ReportMetricCard = ({ metric }: { metric: ReportMetric }) => {
         <>
           <div className="my-3 h-px bg-border" aria-hidden="true" />
           {benchmark && (
-            <p className="mb-1 text-[13px] text-foreground">Benchmark: {benchmark}</p>
+            <p className="mb-1 text-[13px] text-foreground">
+              {t('email.benchmark')}: {benchmark}
+            </p>
           )}
           {verdict && (
             <p
@@ -58,12 +79,12 @@ export const ReportMetricCard = ({ metric }: { metric: ReportMetric }) => {
         </>
       )}
 
-      {linkLabel && (
+      {link && (
         <a
           href="#"
           className="mt-3 inline-flex items-center gap-1.5 text-[13px] font-semibold text-muted-foreground hover:text-primary"
         >
-          {linkLabel}
+          {t('email.view_on_shopee')}
           <ExternalLink className="size-3.5" aria-hidden="true" />
         </a>
       )}

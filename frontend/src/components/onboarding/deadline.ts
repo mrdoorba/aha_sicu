@@ -80,14 +80,21 @@ export function deadlineMeter(
 }
 
 /**
- * The remaining-time sentence.
+ * The remaining-time sentence, as a translation key plus its numbers.
  *
- * Hours are shown alongside the days rather than only at the end, because
- * 'sisa 1 hari kerja' is read as a full day by someone looking at it at 16:30.
+ * A key rather than a finished string because this file is pure and the flow
+ * is now ID/EN/TH: handing `t` into the arithmetic would make the one piece
+ * worth unit-testing depend on an i18n instance. Hours are carried alongside
+ * the days rather than only at the end, because 'sisa 1 hari kerja' is read as
+ * a full day by someone looking at it at 16:30.
  */
-export function remainingLabel(days: number, hours: number): string {
-  if (days === 0 && hours === 0) return 'Waktu klaim habis';
-  if (days === 0) return `Sisa ${hours} jam`;
-  if (hours === 0) return `Sisa ${days} hari kerja`;
-  return `Sisa ${days} hari kerja ${hours} jam`;
+export function remainingLabel(
+  days: number,
+  hours: number,
+): { key: string; vars: { days: number; hours: number } } {
+  const vars = { days, hours };
+  if (days === 0 && hours === 0) return { key: 'onboarding.deadline.expired', vars };
+  if (days === 0) return { key: 'onboarding.deadline.hours', vars };
+  if (hours === 0) return { key: 'onboarding.deadline.days', vars };
+  return { key: 'onboarding.deadline.daysHours', vars };
 }

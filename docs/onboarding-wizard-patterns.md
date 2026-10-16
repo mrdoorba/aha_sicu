@@ -228,14 +228,37 @@ From aha-coms `DESIGN.md` — ask AHAbot's own repo for the current copy.
 
 ## i18n
 
-`i18next`, flat dotted keys, one file per language: `locales/{id,en,th}.json`, 846
+`i18next`, flat dotted keys, one file per language: `locales/{id,en,th}.json`, ~985
 keys each, all three maintained. If we align with AHAbot, align on **key names** —
 the file shape doesn't need to match.
 
-One position worth agreeing on: we do **not** machine-translate NDA clause text into
-EN/TH. Translating a legal document changes what people sign. UI chrome in all three
-languages; the document body stays Indonesian as the binding version, with a note
-saying so, until Legal supplies reviewed translations.
+The picker is its own component, not the authed `LanguageToggle`: that one persists
+through an authenticated API call, and a brand on the public sign-up page has no
+account yet. The choice goes to `localStorage` and is restored on **every** step, not
+just the first — someone who picks English on step 1 and reloads on step 4 has
+already told us once.
+
+**Reuse the keys the email already has.** The results page prints the SICU email, and
+the backend renders that email from these same locale files. So the page stores a key
+and its numbers (`scoring.adsROI.pass`, `{ value: '16.3' }`), never a finished
+sentence. The brand reads the result in the language the email reached them in, and
+nobody keeps two wordings of "Kurang Baik" in step by hand.
+
+Three things stay untranslated, deliberately, each with a visible line saying why:
+
+- **NDA clause text.** Translating a legal document changes what people sign. UI
+  chrome in all three languages; the document body stays Indonesian as the binding
+  version until Legal supplies reviewed translations.
+- **Third-party UI labels.** The Shopee permission names are the strings the brand has
+  to find on Shopee's own screen. A translated list sends them hunting for wording
+  Shopee never shows.
+- **Currency in its own convention.** `Rp 3.000.000` stays Indonesian-formatted in
+  every language, because that is how the number is written.
+
+Two cheap tests are worth more than they look: one asserting the three files carry
+identical keys and placeholders (a missing key does not throw — i18next prints the key
+itself on the brand's screen), and one rendering every key the results page asks for in
+all three languages.
 
 ## What NOT to copy
 

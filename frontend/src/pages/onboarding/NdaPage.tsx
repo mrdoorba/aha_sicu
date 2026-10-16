@@ -1,10 +1,12 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
+import { useTranslation } from 'react-i18next';
 import { Check, Mail, ShieldCheck } from 'lucide-react';
 import { OnboardingLayout } from '../../components/onboarding/OnboardingLayout';
 import { Input } from '../../components/ui/input';
 import { Label } from '../../components/ui/label';
 import { RadioGroup, RadioGroupItem } from '../../components/ui/radio-group';
+import { getIntlLocale } from '../../lib/languages';
 import { formatDeadline } from '../../lib/workdays';
 import { cn } from '../../lib/utils';
 
@@ -17,11 +19,14 @@ const ENTITY_TYPES = ['PT', 'CV', 'Perorangan'] as const;
  * These fields are what the internal team generates the NDA from, so a blank
  * here is a document that names nobody and a day lost chasing it.
  */
-const Required = () => (
-  <span className="ms-0.5 text-penalti" aria-label="wajib diisi">
-    *
-  </span>
-);
+const Required = () => {
+  const { t } = useTranslation();
+  return (
+    <span className="ms-0.5 text-penalti" aria-label={t('onboarding.nda.required')}>
+      *
+    </span>
+  );
+};
 
 /**
  * The NDA step.
@@ -33,6 +38,7 @@ const Required = () => (
  * counter-signature queue were all removed with that decision.
  */
 export const NdaPage = () => {
+  const { t, i18n } = useTranslation();
   const [entity, setEntity] = useState<string>('PT');
   const [company, setCompany] = useState('PT Covermake Indonesia');
   const [pic, setPic] = useState('Budi Santoso');
@@ -44,7 +50,7 @@ export const NdaPage = () => {
   // Stamped at render in the preview. The real flow stamps it when the NDA is
   // generated and stores it — a creation date that moves every time the
   // document is opened is worse than no date.
-  const createdOn = formatDeadline(new Date());
+  const createdOn = formatDeadline(new Date(), getIntlLocale(i18n.language));
 
   const complete = [company, pic, role, address].every((v) => v.trim().length > 0);
   // Agreement alone isn't enough: the team can't generate anything from a form
@@ -56,9 +62,8 @@ export const NdaPage = () => {
       <div className="mb-6 flex gap-3 rounded-xl border border-border bg-secondary p-4">
         <ShieldCheck className="mt-0.5 size-[22px] shrink-0 text-primary" aria-hidden="true" />
         <p className="text-sm leading-relaxed text-secondary-foreground">
-          <strong>NDA ini melindungi Anda, bukan kami.</strong> Dokumen ini mengikat AHA Commerce
-          untuk menjaga kerahasiaan seluruh data toko, penjualan dan produk Anda — dan melarang
-          kami membagikannya ke pihak mana pun, termasuk brand lain.
+          <strong>{t('onboarding.nda.protectTitle')}</strong>{' '}
+          {t('onboarding.nda.protectBody')}
         </p>
       </div>
 
@@ -66,16 +71,15 @@ export const NdaPage = () => {
         <section className="min-w-0 flex-1 basis-[420px]">
           <div className="rounded-2xl border border-border bg-card p-7">
             <h1 className="mb-1 text-xl font-extrabold tracking-tight text-foreground">
-              Data perusahaan
+              {t('onboarding.nda.formTitle')}
             </h1>
             <p className="mb-6 text-[13px] leading-relaxed text-muted-foreground">
-              Dipakai tim AHA untuk menyiapkan NDA Anda. Pratinjau di sebelah kanan ikut berubah
-              saat Anda mengetik.
+              {t('onboarding.nda.formSubtitle')}
             </p>
 
             <fieldset className="mb-5">
               <legend className="mb-2 text-[13px] font-bold text-foreground">
-                Bentuk badan usaha
+                {t('onboarding.nda.entityLegend')}
                 <Required />
               </legend>
               <RadioGroup value={entity} onValueChange={setEntity} className="flex flex-wrap gap-2">
@@ -98,7 +102,7 @@ export const NdaPage = () => {
 
             <div className="mb-4">
               <Label htmlFor="company" className="mb-1.5 block text-[13px] font-bold">
-                Nama perusahaan / brand
+                {t('onboarding.nda.company')}
                 <Required />
               </Label>
               <Input
@@ -113,7 +117,7 @@ export const NdaPage = () => {
 
             <div className="mb-4">
               <Label htmlFor="pic" className="mb-1.5 block text-[13px] font-bold">
-                Nama penanggung jawab
+                {t('onboarding.nda.pic')}
                 <Required />
               </Label>
               <Input
@@ -128,7 +132,7 @@ export const NdaPage = () => {
 
             <div className="mb-4">
               <Label htmlFor="role" className="mb-1.5 block text-[13px] font-bold">
-                Jabatan PIC
+                {t('onboarding.nda.role')}
                 <Required />
               </Label>
               <Input
@@ -143,7 +147,7 @@ export const NdaPage = () => {
 
             <div className="mb-6">
               <Label htmlFor="address" className="mb-1.5 block text-[13px] font-bold">
-                Alamat perusahaan
+                {t('onboarding.nda.address')}
                 <Required />
               </Label>
               <textarea
@@ -165,15 +169,29 @@ export const NdaPage = () => {
                 className="mt-0.5 size-4 accent-primary"
               />
               <span className="text-foreground">
-                Saya menyatakan berwenang mewakili <strong>{company}</strong> dan menyetujui isi
-                NDA di samping.
+                {t('onboarding.nda.consent', { company })}
               </span>
             </Label>
           </div>
         </section>
 
         <section className="flex min-w-0 flex-1 basis-[400px] flex-col gap-3.5">
-          <article className="rounded-2xl border border-border bg-card px-8 py-8 text-xs leading-[1.85] text-secondary-foreground">
+          {/* The document below is NOT translated, in any language, and that is
+              deliberate. It is the operative text of an agreement: a machine
+              translation of a clause is a second version of what the brand is
+              agreeing to, and the moment the two differ we have handed someone
+              a reason to argue about which one they signed. The chrome around
+              it is translated; the clauses are not, and this line says so. */}
+          {i18n.language !== 'id' && (
+            <p className="rounded-xl border border-border bg-secondary px-4 py-3 text-[13px] leading-relaxed text-secondary-foreground">
+              {t('onboarding.nda.languageNote')}
+            </p>
+          )}
+
+          <article
+            lang="id"
+            className="rounded-2xl border border-border bg-card px-8 py-8 text-xs leading-[1.85] text-secondary-foreground"
+          >
             <header className="mb-6 flex items-center justify-between gap-4 border-b-2 border-foreground/15 pb-4">
               <div className="flex items-center gap-3">
                 <img src="/aha-logo.png" alt="AHA Commerce" className="size-9 shrink-0" />
@@ -185,7 +203,7 @@ export const NdaPage = () => {
                 </div>
               </div>
               <p className="shrink-0 text-end text-[10px] leading-tight text-muted-foreground">
-                Dibuat
+                {t('onboarding.nda.createdOn')}
                 <br />
                 <span className="font-semibold text-foreground">{createdOn}</span>
               </p>
@@ -229,8 +247,7 @@ export const NdaPage = () => {
                 Drawing empty signature lines on a document nobody signs on this
                 page would imply the brand is meant to do something with them. */}
             <p className="border-t border-border pt-3.5 text-[11px] leading-relaxed text-muted-foreground">
-              Pratinjau. Penandatanganan dilakukan melalui DocuSign — tautan dikirim ke email Anda
-              oleh tim AHA Commerce.
+              {t('onboarding.nda.previewNote')}
             </p>
           </article>
 
@@ -240,12 +257,10 @@ export const NdaPage = () => {
                 <Check className="mt-0.5 size-5 shrink-0 text-primary" aria-hidden="true" />
                 <div>
                   <p className="mb-1 text-sm font-bold text-foreground">
-                    Permintaan NDA terkirim ke tim AHA Commerce
+                    {t('onboarding.nda.sentTitle')}
                   </p>
                   <p className="text-[13px] leading-relaxed text-secondary-foreground">
-                    Anda akan menerima email dari DocuSign berisi NDA untuk ditandatangani,
-                    biasanya dalam 1 hari kerja. Anda bisa lanjut ke langkah berikutnya sambil
-                    menunggu.
+                    {t('onboarding.nda.sentBody')}
                   </p>
                 </div>
               </div>
@@ -254,7 +269,7 @@ export const NdaPage = () => {
                 to="/preview/onboarding/tutorial"
                 className="block h-13 rounded-full bg-primary text-center text-[15px] font-bold leading-[52px] text-primary-foreground hover:bg-primary-dark"
               >
-                Lanjut ke tutorial sub akun →
+                {t('onboarding.nda.continueCta')}
               </Link>
             </>
           ) : (
@@ -271,14 +286,14 @@ export const NdaPage = () => {
                 )}
               >
                 <Mail className="size-4.5" aria-hidden="true" />
-                Minta NDA dari tim AHA
+                {t('onboarding.nda.requestCta')}
               </button>
               <p className="text-center text-xs leading-relaxed text-muted-foreground">
                 {!complete
-                  ? 'Lengkapi semua kolom bertanda * terlebih dahulu.'
+                  ? t('onboarding.nda.hintIncomplete')
                   : !agreed
-                    ? 'Centang persetujuan di samping untuk meminta NDA.'
-                    : 'Tim AHA akan mengirim NDA melalui DocuSign ke email Anda.'}
+                    ? t('onboarding.nda.hintAgree')
+                    : t('onboarding.nda.hintReady')}
               </p>
             </>
           )}
